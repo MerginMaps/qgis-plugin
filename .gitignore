@@ -1,0 +1,17 @@
+build-*
+Makefile
+Makefile.*
+*.aux.xml
+*.orig
+*~
+nbproject*
+*.zip
+*-swp
+.idea/
+.idea/*
+*.autosave
+.pytest_cache
+.cache
+.coverage
+*.pyc
+__pycache__/
