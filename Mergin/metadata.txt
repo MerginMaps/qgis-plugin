@@ -20,7 +20,7 @@ changelog=0.1.0:
 homepage=https://gitlab.cloud.lutraconsulting.co.uk/mergin/mergin-qgis-plugin
 tracker=https://gitlab.cloud.lutraconsulting.co.uk/mergin/mergin-qgis-plugin
 repository=https://gitlab.cloud.lutraconsulting.co.uk/mergin/mergin-qgis-plugin
-icon=images/mergin.ico
+icon=images/icon.png
 
 ; experimental flag
 experimental=False
