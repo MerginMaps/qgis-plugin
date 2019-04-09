@@ -13,14 +13,10 @@ class ConfigurationDialog(QDialog):
         self.ui = uic.loadUi(ui_file, self)
 
         settings = QSettings()
-        last_url = settings.value('Mergin/URL', '')
+        last_url = settings.value('Mergin/URL', 'https://public.cloudmergin.com')
         self.ui.merginURL.setText(last_url)
 
-    def run(self):
+    def writeSettings(self):
         settings = QSettings()
-        if bool(self.exec_()):
-            url = self.ui.merginURL.text()
-            settings.setValue("Mergin/URL", url)
-        else:
-            last_url = settings.value('Mergin/URL', '')
-            self.ui.merginURL.setText(last_url)
+        url = self.ui.merginURL.text()
+        settings.setValue("Mergin/URL", url)

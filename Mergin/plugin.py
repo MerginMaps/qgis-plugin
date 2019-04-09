@@ -60,11 +60,10 @@ class MerginRootItem(QgsDataCollectionItem):
     def __init__(self):
         QgsDataCollectionItem.__init__(self, None, "Mergin", "/Mergin")
         self.setIcon(QIcon(os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/icon.png")))
-        self.dlg = ConfigurationDialog()
 
     def createChildren(self):
         settings = QSettings()
-        url = settings.value('Mergin/URL', '')
+        url = settings.value('Mergin/URL', 'https://public.cloudmergin.com')
         mc = MerginClient(url, '', '')
         try:
             projects = mc.projects_list()
@@ -85,9 +84,14 @@ class MerginRootItem(QgsDataCollectionItem):
             items.append(item)
         return items
 
+    def configure(self):
+        dlg = ConfigurationDialog()
+        if dlg.exec_():
+            dlg.writeSettings()
+
     def actions(self, parent):
         action_configure = QAction("Configure", parent)
-        action_configure.triggered.connect(self.dlg.run)
+        action_configure.triggered.connect(self.configure)
 
         action_refresh = QAction("Reload", parent)
         action_refresh.triggered.connect(self.refresh)
