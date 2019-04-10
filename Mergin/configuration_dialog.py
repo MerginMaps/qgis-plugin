@@ -14,9 +14,17 @@ class ConfigurationDialog(QDialog):
 
         settings = QSettings()
         last_url = settings.value('Mergin/URL', 'https://public.cloudmergin.com')
+        username = settings.value('Mergin/username', '')
+        password = settings.value('Mergin/password', '')
         self.ui.merginURL.setText(last_url)
+        self.ui.username.setText(username)
+        self.ui.password.setText(password)
 
     def writeSettings(self):
         settings = QSettings()
         url = self.ui.merginURL.text()
+        username = self.ui.username.text()
+        password = self.ui.password.text()
         settings.setValue("Mergin/URL", url)
+        settings.setValue("Mergin/username", username)
+        settings.setValue("Mergin/password", password)

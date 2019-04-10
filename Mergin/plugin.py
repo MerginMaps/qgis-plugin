@@ -64,7 +64,10 @@ class MerginRootItem(QgsDataCollectionItem):
     def createChildren(self):
         settings = QSettings()
         url = settings.value('Mergin/URL', 'https://public.cloudmergin.com')
-        mc = MerginClient(url, '', '')
+        # TODO replace with something safer
+        username = settings.value('Mergin/username', '')
+        password = settings.value('Mergin/password', '')
+        mc = MerginClient(url, username, password)
         try:
             projects = mc.projects_list()
         except URLError:
