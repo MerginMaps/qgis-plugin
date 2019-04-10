@@ -4,6 +4,8 @@ from qgis.PyQt.QtWidgets import QDialog
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QSettings
 
+from .utils import auth_ok
+
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_config.ui')
 
 
@@ -19,6 +21,8 @@ class ConfigurationDialog(QDialog):
         self.ui.merginURL.setText(last_url)
         self.ui.username.setText(username)
         self.ui.password.setText(password)
+        self.ui.test_connection_btn.clicked.connect(self.test_connection)
+        self.ui.test_status.setText('')
 
     def writeSettings(self):
         settings = QSettings()
@@ -28,3 +32,13 @@ class ConfigurationDialog(QDialog):
         settings.setValue("Mergin/URL", url)
         settings.setValue("Mergin/username", username)
         settings.setValue("Mergin/password", password)
+
+    def test_connection(self):
+        url = self.ui.merginURL.text()
+        username = self.ui.username.text()
+        password = self.ui.password.text()
+        if auth_ok(url, username, password):
+            msg = "<font color=green> OK </font>"
+        else:
+            msg = "<font color=red> Connection failed </font>"
+        self.ui.test_status.setText(msg)

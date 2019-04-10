@@ -23,6 +23,7 @@ from urllib.error import URLError
 from .configuration_dialog import ConfigurationDialog
 
 from .client import MerginClient
+from .utils import auth_ok
 
 this_dir = os.path.dirname(__file__)
 
@@ -67,6 +68,12 @@ class MerginRootItem(QgsDataCollectionItem):
         # TODO replace with something safer
         username = settings.value('Mergin/username', '')
         password = settings.value('Mergin/password', '')
+
+        if not auth_ok(url, username, password):
+            error_item = QgsErrorItem(self, "Failed to get projects from server", "/Mergin/error")
+            sip.transferto(error_item, self)
+            return [error_item]
+
         mc = MerginClient(url, username, password)
         try:
             projects = mc.projects_list()
