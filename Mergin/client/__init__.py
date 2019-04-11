@@ -106,6 +106,8 @@ class MerginClient:
 
     def get(self, path, data=None):
         url = urllib.parse.urljoin(self.url, path)
+        if data:
+            url += "?" + urllib.parse.urlencode(data)
         request = urllib.request.Request(url)
         request.add_header("Authorization", "Basic {}".format(self._auth_header))
         return self.opener.open(request) 
@@ -116,8 +118,9 @@ class MerginClient:
         request.add_header("Authorization", "Basic {}".format(self._auth_header))
         return self.opener.open(request) 
 
-    def projects_list(self):
-        resp = self.get('/v1/project')
+    def projects_list(self, tags=None):
+        params = {"tags": ",".join(tags)} if tags else None
+        resp = self.get('/v1/project', params)
         projects = json.load(resp)
         return projects
 
