@@ -21,6 +21,7 @@ from qgis.PyQt.QtCore import QSettings, Qt
 from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
+from .create_project_dialog import CreateProjectDialog
 from .client import MerginClient
 from .utils import auth_ok, find_qgis_files
 
@@ -184,13 +185,22 @@ class MerginRootItem(QgsDataCollectionItem):
         if dlg.exec_():
             dlg.writeSettings()
 
+    def create_project(self):
+        dlg = CreateProjectDialog()
+        if dlg.exec_():
+            dlg.create_project()
+            self.refresh()
+
     def actions(self, parent):
-        action_configure = QAction("Configure", parent)
+        action_configure = QAction(QIcon(os.path.join(icon_path, "cog-solid.svg")), "Configure", parent)
         action_configure.triggered.connect(self.configure)
 
-        action_refresh = QAction("Reload", parent)
+        action_refresh = QAction(QIcon(os.path.join(icon_path, "redo-solid.svg")), "Reload", parent)
         action_refresh.triggered.connect(self.refresh)
-        return [action_configure, action_refresh]
+
+        action_create = QAction(QIcon(os.path.join(icon_path, "plus-square-solid.svg")), "Create new project", parent)
+        action_create.triggered.connect(self.create_project)
+        return [action_configure, action_refresh, action_create]
 
 
 class DataItemProvider(QgsDataItemProvider):
