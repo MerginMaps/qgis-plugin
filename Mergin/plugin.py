@@ -5,27 +5,26 @@
 
 import sip
 import os
+import shutil
 from qgis.PyQt.QtGui import QIcon
 from qgis.core import (
     QgsApplication,
     QgsDataItem,
-    QgsLayerItem,
     QgsDataCollectionItem,
     QgsErrorItem,
     QgsDataItemProvider,
-    QgsDataProvider
+    QgsDataProvider,
+    QgsProject
 )
-from qgis.PyQt.QtWidgets import QAction
-from qgis.PyQt.QtCore import QSettings
-
-
+from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QApplication
+from qgis.PyQt.QtCore import QSettings, Qt
 from urllib.error import URLError
+
 from .configuration_dialog import ConfigurationDialog
-
 from .client import MerginClient
-from .utils import auth_ok
+from .utils import auth_ok, find_qgis_files
 
-this_dir = os.path.dirname(__file__)
+icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
 
 
 class MerginPlugin:
@@ -50,9 +49,95 @@ class MerginProjectItem(QgsDataItem):
 
     def __init__(self, parent, project_name):
         QgsDataItem.__init__(self, QgsDataItem.Collection, parent, project_name, "/Mergin/" + project_name)
-        self.repo_name = project_name
-        # TODO get some fancy icon
-        self.setIcon(QgsLayerItem.iconDefault())
+        self.project_name = project_name
+        settings = QSettings()
+        self.path = settings.value('Mergin/localProjects/{}/path'.format(self.project_name), None)
+        # check local project dir was not unintentionally removed
+        if self.path:
+            if not os.path.exists(self.path):
+                self.path = None
+        
+        if self.path:
+            self.setIcon(QIcon(os.path.join(icon_path, "folder-solid.svg")))
+        else:
+            self.setIcon(QIcon(os.path.join(icon_path, "cloud-solid.svg")))
+
+    def download(self):
+        parent_dir = QFileDialog.getExistingDirectory(None, "Open Directory", "", QFileDialog.ShowDirsOnly)
+        if not parent_dir:
+            return
+
+        target_dir = os.path.join(parent_dir, self.project_name)
+        settings = QSettings()
+        url = settings.value('Mergin/URL', 'https://public.cloudmergin.com')
+        username = settings.value('Mergin/username', '')
+        password = settings.value('Mergin/password', '')
+        mc = MerginClient(url, username, password)
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            mc.download_project(self.project_name, target_dir)
+            settings.setValue('Mergin/localProjects/{}/path'.format(self.project_name), target_dir)
+            self.path = target_dir
+            self.setIcon(QIcon(os.path.join(icon_path, "folder-solid.svg")))
+            QApplication.restoreOverrideCursor()
+
+            msg = "Your project {} has been successfully downloaded. " \
+                  "Do you want to open project file?".format(self.project_name)
+            btn_reply = QMessageBox.question(None, 'Project download', msg,
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if btn_reply == QMessageBox.Yes:
+                self.open_project()
+        except (URLError, ValueError):
+            QApplication.restoreOverrideCursor()
+            msg = "Failed to download your project {}.\n" \
+                  "Please make sure your Mergin settings are correct".format(self.project_name)
+            QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
+
+    def remove_local_project(self):
+        if not self.path:
+            return
+
+        msg = "Your local changes will be lost. Make sure your project is synchronised with server. \n\n" \
+              "Do you want to proceed?".format(self.project_name)
+        btn_reply = QMessageBox.question(None, 'Remove local project', msg,
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        if btn_reply == QMessageBox.No:
+            return
+
+        if os.path.exists(self.path):
+            shutil.rmtree(self.path)
+        settings = QSettings()
+        settings.remove('Mergin/localProjects/{}/path'.format(self.project_name))
+        self.path = None
+        self.setIcon(QIcon(os.path.join(icon_path, "cloud-solid.svg")))
+
+    def open_project(self):
+        if not self.path:
+            return 
+
+        qgis_files = find_qgis_files(self.path)
+        if len(qgis_files) == 1:
+            QgsProject.instance().read(qgis_files[0])
+        else:
+            msg = "Plugin can only load project with single QGIS file but {} found.".format(len(qgis_files))
+            QMessageBox.warning(None, 'Load QGIS project', msg, QMessageBox.Close)
+
+    def actions(self, parent):
+        action_download = QAction(QIcon(os.path.join(icon_path, "cloud-download-alt-solid.svg")), "Download", parent)
+        action_download.triggered.connect(self.download)
+
+        action_remove_local = QAction(QIcon(os.path.join(icon_path, "trash-solid.svg")), "Remove locally", parent)
+        action_remove_local.triggered.connect(self.remove_local_project)
+
+        action_open_project = QAction("Open QGIS project", parent)
+        action_open_project.triggered.connect(self.open_project)
+
+        if self.path:
+            actions = [action_open_project, action_remove_local]
+        else:
+            actions = [action_download]
+        return actions
 
 
 class MerginRootItem(QgsDataCollectionItem):
@@ -76,7 +161,7 @@ class MerginRootItem(QgsDataCollectionItem):
 
         mc = MerginClient(url, username, password)
         try:
-            projects = mc.projects_list()
+            projects = mc.projects_list(['valid_qgis'])
         except URLError:
             error_item = QgsErrorItem(self, "Failed to get projects from server", "/Mergin/error")
             sip.transferto(error_item, self)

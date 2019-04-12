@@ -1,3 +1,4 @@
+import os
 from urllib.error import URLError, HTTPError
 from .client import MerginClient
 
@@ -16,3 +17,13 @@ def auth_ok(url, username, password):
     except (URLError, ValueError):
         return False
     return True
+
+
+def find_qgis_files(directory):
+    qgis_files = []
+    for root, dirs, files in os.walk(directory):
+        for f in files:
+            _, ext = os.path.splitext(f)
+            if ext in ['.qgs', '.qgz']:
+                qgis_files.append(os.path.join(root, f))           
+    return qgis_files
