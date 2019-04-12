@@ -15,3 +15,4 @@ nbproject*
 .coverage
 *.pyc
 __pycache__/
+Mergin/client

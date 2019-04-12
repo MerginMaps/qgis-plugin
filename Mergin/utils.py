@@ -1,6 +1,6 @@
 import os
 from urllib.error import URLError, HTTPError
-from .client import MerginClient
+from .client import MerginClient, ClientError
 
 
 def auth_ok(url, username, password):
@@ -8,9 +8,14 @@ def auth_ok(url, username, password):
     mc = MerginClient(url, username, password)
     try:
         mc.get('/auth/user/{}'.format(username))
-    except HTTPError as err:
+    except ClientError as err:
+        try:
+            err.args[0].decode('utf-8')
+            return False
+        except AttributeError:
+            pass
         # desired testing exception saying that auth is correct
-        if err.code == 403:
+        if "You don't have the permission to access the requested resource" in err.args[0]:
             return True
         else:
             return False
