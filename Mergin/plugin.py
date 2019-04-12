@@ -16,8 +16,8 @@ from qgis.core import (
     QgsDataProvider,
     QgsProject
 )
-from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox
-from qgis.PyQt.QtCore import QSettings
+from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QApplication
+from qgis.PyQt.QtCore import QSettings, Qt
 from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
@@ -53,8 +53,9 @@ class MerginProjectItem(QgsDataItem):
         settings = QSettings()
         self.path = settings.value('Mergin/localProjects/{}/path'.format(self.project_name), None)
         # check local project dir was not unintentionally removed
-        if not os.path.exists(self.path):
-            self.path = None
+        if self.path:
+            if not os.path.exists(self.path):
+                self.path = None
         
         if self.path:
             self.setIcon(QIcon(os.path.join(icon_path, "folder-solid.svg")))
@@ -73,11 +74,13 @@ class MerginProjectItem(QgsDataItem):
         password = settings.value('Mergin/password', '')
         mc = MerginClient(url, username, password)
 
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             mc.download_project(self.project_name, target_dir)
             settings.setValue('Mergin/localProjects/{}/path'.format(self.project_name), target_dir)
             self.path = target_dir
             self.setIcon(QIcon(os.path.join(icon_path, "folder-solid.svg")))
+            QApplication.restoreOverrideCursor()
 
             msg = "Your project {} has been successfully downloaded. " \
                   "Do you want to open project file?".format(self.project_name)
@@ -86,6 +89,7 @@ class MerginProjectItem(QgsDataItem):
             if btn_reply == QMessageBox.Yes:
                 self.open_project()
         except (URLError, ValueError):
+            QApplication.restoreOverrideCursor()
             msg = "Failed to download your project {}.\n" \
                   "Please make sure your Mergin settings are correct".format(self.project_name)
             QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
@@ -95,7 +99,7 @@ class MerginProjectItem(QgsDataItem):
             return
 
         msg = "Your local changes will be lost. Make sure your project is synchronised with server. \n\n" \
-              "Do you want proceed?".format(self.project_name)
+              "Do you want to proceed?".format(self.project_name)
         btn_reply = QMessageBox.question(None, 'Remove local project', msg,
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if btn_reply == QMessageBox.No:

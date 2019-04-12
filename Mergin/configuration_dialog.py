@@ -1,8 +1,8 @@
 
 import os
-from qgis.PyQt.QtWidgets import QDialog
+from qgis.PyQt.QtWidgets import QDialog, QApplication
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import QSettings
+from qgis.PyQt.QtCore import QSettings, Qt
 
 from .utils import auth_ok
 
@@ -34,6 +34,7 @@ class ConfigurationDialog(QDialog):
         settings.setValue("Mergin/password", password)
 
     def test_connection(self):
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         url = self.ui.merginURL.text()
         username = self.ui.username.text()
         password = self.ui.password.text()
@@ -41,4 +42,5 @@ class ConfigurationDialog(QDialog):
             msg = "<font color=green> OK </font>"
         else:
             msg = "<font color=red> Connection failed </font>"
+        QApplication.restoreOverrideCursor()
         self.ui.test_status.setText(msg)

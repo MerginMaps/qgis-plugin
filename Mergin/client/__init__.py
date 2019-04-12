@@ -105,7 +105,7 @@ class MerginClient:
         self._auth_header = base64.standard_b64encode(auth_string.encode('utf-8')).decode('utf-8')
 
     def get(self, path, data=None):
-        url = urllib.parse.urljoin(self.url, path)
+        url = urllib.parse.urljoin(self.url, urllib.parse.quote(path))
         if data:
             url += "?" + urllib.parse.urlencode(data)
         request = urllib.request.Request(url)
@@ -113,7 +113,7 @@ class MerginClient:
         return self.opener.open(request) 
 
     def post(self, path, data, headers={}):
-        url = urllib.parse.urljoin(self.url, path)
+        url = urllib.parse.urljoin(self.url, urllib.parse.quote(path))
         request = urllib.request.Request(url, data, headers)
         request.add_header("Authorization", "Basic {}".format(self._auth_header))
         return self.opener.open(request) 
