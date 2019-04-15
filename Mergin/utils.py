@@ -27,3 +27,12 @@ def find_qgis_files(directory):
             if ext in ['.qgs', '.qgz']:
                 qgis_files.append(os.path.join(root, f))           
     return qgis_files
+
+
+def find_local_conflicts(directory):
+    conflict_files = []
+    for root, dirs, files in os.walk(directory):
+        for f in files:
+            if '_conflict_copy' in f:
+                conflict_files.append(os.path.join(root, f))
+    return conflict_files
