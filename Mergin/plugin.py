@@ -22,13 +22,7 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .create_project_dialog import CreateProjectDialog
-from .utils import auth_ok, find_qgis_files, find_local_conflicts
-
-try:
-    from .mergin.client import MerginClient
-except ImportError:
-    from mergin.client import MerginClient
-
+from .utils import auth_ok, find_qgis_files, find_local_conflicts, get_mergin_auth, create_mergin_client
 
 icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
 
@@ -75,10 +69,7 @@ class MerginProjectItem(QgsDataItem):
 
         target_dir = os.path.join(parent_dir, self.project_name)
         settings = QSettings()
-        url = settings.value('Mergin/URL', 'https://public.cloudmergin.com')
-        username = settings.value('Mergin/username', '')
-        password = settings.value('Mergin/password', '')
-        mc = MerginClient(url, username, password)
+        mc = create_mergin_client()
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
@@ -134,11 +125,7 @@ class MerginProjectItem(QgsDataItem):
             return
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
-        settings = QSettings()
-        url = settings.value('Mergin/URL', 'https://public.cloudmergin.com')
-        username = settings.value('Mergin/username', '')
-        password = settings.value('Mergin/password', '')
-        mc = MerginClient(url, username, password)
+        mc = create_mergin_client()
 
         try:
             mc.pull_project(self.path)
@@ -192,18 +179,14 @@ class MerginRootItem(QgsDataCollectionItem):
         self.setIcon(QIcon(os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/icon.png")))
 
     def createChildren(self):
-        settings = QSettings()
-        url = settings.value('Mergin/URL', 'https://public.cloudmergin.com')
-        # TODO replace with something safer
-        username = settings.value('Mergin/username', '')
-        password = settings.value('Mergin/password', '')
+        url, username, password = get_mergin_auth()
 
         if not auth_ok(url, username, password):
             error_item = QgsErrorItem(self, "Failed to get projects from server", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
 
-        mc = MerginClient(url, username, password)
+        mc = create_mergin_client()
         try:
             projects = mc.projects_list(['valid_qgis'])
         except URLError:

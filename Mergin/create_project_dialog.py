@@ -2,11 +2,7 @@ import os
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QApplication, QMessageBox
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QSettings, Qt
-
-try:
-    from .mergin.client import MerginClient
-except ImportError:
-    from mergin.client import MerginClient
+from .utils import create_mergin_client
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_create_project.ui')
 
@@ -46,10 +42,7 @@ class CreateProjectDialog(QDialog):
 
     def create_project(self):
         settings = QSettings()
-        url = settings.value('Mergin/URL', 'https://public.cloudmergin.com')
-        username = settings.value('Mergin/username', '')
-        password = settings.value('Mergin/password', '')
-        mc = MerginClient(url, username, password)
+        mc = create_mergin_client()
         project_name = self.ui.project_name.text()
         project_dir = self.ui.project_dir.text()
 

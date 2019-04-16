@@ -10,4 +10,4 @@ link to qgis plugin:
 
 ## Production
 Download py-client wheel from https://pypiserver.cloud.lutraconsulting.co.uk/ to ship with plugin
-and update its version in [package](Mergin/__init__.py).
+and update its [version](Mergin/utils.py).
