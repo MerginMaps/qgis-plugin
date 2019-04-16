@@ -3,7 +3,10 @@ from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QApplica
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QSettings, Qt
 
-from .client import MerginClient
+try:
+    from .mergin.client import MerginClient
+except ImportError:
+    from mergin.client import MerginClient
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_create_project.ui')
 

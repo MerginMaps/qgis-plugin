@@ -22,8 +22,13 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .create_project_dialog import CreateProjectDialog
-from .client import MerginClient
 from .utils import auth_ok, find_qgis_files, find_local_conflicts
+
+try:
+    from .mergin.client import MerginClient
+except ImportError:
+    from mergin.client import MerginClient
+
 
 icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
 

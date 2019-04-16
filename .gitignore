@@ -15,4 +15,7 @@ nbproject*
 .coverage
 *.pyc
 __pycache__/
-Mergin/client
+Mergin/mergin
+*.whl
+.idea/
+.DS_Store

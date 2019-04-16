@@ -1,6 +1,10 @@
 import os
 from urllib.error import URLError
-from .client import MerginClient, ClientError
+
+try:
+    from .mergin.client import MerginClient, ClientError
+except ImportError:
+    from mergin.client import MerginClient, ClientError
 
 
 def auth_ok(url, username, password):
