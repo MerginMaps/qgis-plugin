@@ -21,8 +21,8 @@ from qgis.PyQt.QtCore import QSettings, Qt
 from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
-from .client import MerginClient
-from .utils import auth_ok, find_qgis_files
+from .create_project_dialog import CreateProjectDialog
+from .utils import auth_ok, find_qgis_files, find_local_conflicts, get_mergin_auth, create_mergin_client
 
 icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
 
@@ -69,10 +69,7 @@ class MerginProjectItem(QgsDataItem):
 
         target_dir = os.path.join(parent_dir, self.project_name)
         settings = QSettings()
-        url = settings.value('Mergin/URL', 'https://public.cloudmergin.com')
-        username = settings.value('Mergin/username', '')
-        password = settings.value('Mergin/password', '')
-        mc = MerginClient(url, username, password)
+        mc = create_mergin_client()
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
@@ -123,6 +120,37 @@ class MerginProjectItem(QgsDataItem):
             msg = "Plugin can only load project with single QGIS file but {} found.".format(len(qgis_files))
             QMessageBox.warning(None, 'Load QGIS project', msg, QMessageBox.Close)
 
+    def sync_project(self):
+        if not self.path:
+            return
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        mc = create_mergin_client()
+
+        try:
+            mc.pull_project(self.path)
+            conflicts = find_local_conflicts(self.path)
+            if conflicts:
+                msg = "Following conflicts between local and server version found: \n\n"
+                for item in conflicts:
+                    msg += item + "\n"
+                msg += "\nYou may want to fix them before upload otherwise they will be uploaded as new files. " \
+                       "Do you wish to proceed?"
+                btn_reply = QMessageBox.question(None, 'Conflicts found', msg,
+                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if btn_reply == QMessageBox.No:
+                    QApplication.restoreOverrideCursor()
+                    return    
+            
+            mc.push_project(self.path)
+            QApplication.restoreOverrideCursor()
+            msg = "Mergin project {} synchronized successfully".format(self.project_name)
+            QMessageBox.information(None, 'Project sync', msg, QMessageBox.Close)
+        except Exception as e:
+            QApplication.restoreOverrideCursor()
+            msg = "Failed to synchronize your project {}:\n\n{}".format(self.project_name, str(e))
+            QMessageBox.critical(None, 'Project sync', msg, QMessageBox.Close)
+
     def actions(self, parent):
         action_download = QAction(QIcon(os.path.join(icon_path, "cloud-download-alt-solid.svg")), "Download", parent)
         action_download.triggered.connect(self.download)
@@ -133,8 +161,11 @@ class MerginProjectItem(QgsDataItem):
         action_open_project = QAction("Open QGIS project", parent)
         action_open_project.triggered.connect(self.open_project)
 
+        action_sync_project = QAction(QIcon(os.path.join(icon_path, "sync-solid.svg")), "Synchronize", parent)
+        action_sync_project.triggered.connect(self.sync_project)
+
         if self.path:
-            actions = [action_open_project, action_remove_local]
+            actions = [action_open_project, action_sync_project, action_remove_local]
         else:
             actions = [action_download]
         return actions
@@ -148,18 +179,14 @@ class MerginRootItem(QgsDataCollectionItem):
         self.setIcon(QIcon(os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/icon.png")))
 
     def createChildren(self):
-        settings = QSettings()
-        url = settings.value('Mergin/URL', 'https://public.cloudmergin.com')
-        # TODO replace with something safer
-        username = settings.value('Mergin/username', '')
-        password = settings.value('Mergin/password', '')
+        url, username, password = get_mergin_auth()
 
         if not auth_ok(url, username, password):
             error_item = QgsErrorItem(self, "Failed to get projects from server", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
 
-        mc = MerginClient(url, username, password)
+        mc = create_mergin_client()
         try:
             projects = mc.projects_list(['valid_qgis'])
         except URLError:
@@ -184,13 +211,22 @@ class MerginRootItem(QgsDataCollectionItem):
         if dlg.exec_():
             dlg.writeSettings()
 
+    def create_project(self):
+        dlg = CreateProjectDialog()
+        if dlg.exec_():
+            dlg.create_project()
+            self.refresh()
+
     def actions(self, parent):
-        action_configure = QAction("Configure", parent)
+        action_configure = QAction(QIcon(os.path.join(icon_path, "cog-solid.svg")), "Configure", parent)
         action_configure.triggered.connect(self.configure)
 
-        action_refresh = QAction("Reload", parent)
+        action_refresh = QAction(QIcon(os.path.join(icon_path, "redo-solid.svg")), "Reload", parent)
         action_refresh.triggered.connect(self.refresh)
-        return [action_configure, action_refresh]
+
+        action_create = QAction(QIcon(os.path.join(icon_path, "plus-square-solid.svg")), "Create new project", parent)
+        action_create.triggered.connect(self.create_project)
+        return [action_configure, action_refresh, action_create]
 
 
 class DataItemProvider(QgsDataItemProvider):
