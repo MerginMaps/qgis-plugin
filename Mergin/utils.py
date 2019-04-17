@@ -11,7 +11,7 @@ try:
 except ImportError:
     import sys
     this_dir = os.path.dirname(os.path.realpath(__file__))
-    path = os.path.join(this_dir, 'mergin_client-dev-py3-none-any.whl')
+    path = os.path.join(this_dir, 'mergin_client.whl')
     sys.path.append(path)
     from mergin.client import MerginClient, ClientError
 
