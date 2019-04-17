@@ -9,5 +9,6 @@ link to qgis plugin:
     ln -s <path-to-py-client>/mergin/ <path-to-mergin-qgis-plugin>/Mergin/mergin
 
 ## Production
-Download py-client wheel from https://pypiserver.cloud.lutraconsulting.co.uk/ to ship with plugin
-and update its [version](Mergin/utils.py).
+To create zip with py-client dependency with `<version>` run
+
+    bash package.sh <version>
