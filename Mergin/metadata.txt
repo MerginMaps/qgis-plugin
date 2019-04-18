@@ -7,7 +7,7 @@ description=Handle Mergin projects
 version=2019.3
 author=Lutra Consulting
 email=info@lutraconsulting.co.uk
-about=Handle Mergin projects
+about=Mergin is a repository for storing and tracking changes to QGIS projects/data. It is linked with Input(a QGIS mobile app). With this plugin, users can upload and sync their data to Mergin service.
 ; end of mandatory metadata
 
 ; start of optional metadata
