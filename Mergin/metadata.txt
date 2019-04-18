@@ -17,9 +17,9 @@ changelog=2019.3:
 ; tags are in comma separated value format, spaces are allowed
 ; tags=
 
-homepage=https://gitlab.cloud.lutraconsulting.co.uk/mergin/mergin-qgis-plugin
-tracker=https://gitlab.cloud.lutraconsulting.co.uk/mergin/mergin-qgis-plugin
-repository=https://gitlab.cloud.lutraconsulting.co.uk/mergin/mergin-qgis-plugin
+homepage=https://public.cloudmergin.com
+tracker=https://github.com/lutraconsulting/qgis-mergin-plugin/issues
+repository=https://github.com/lutraconsulting/qgis-mergin-plugin
 icon=images/icon.png
 
 ; experimental flag
