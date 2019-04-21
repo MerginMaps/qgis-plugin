@@ -14,4 +14,4 @@ A typical workflow for setting up a project for field survey:
 
 Mergin QGIS plugin will assist users with steps 2 and 5.
 
-To learn more about how to use this plugin, see ![user's documentation](docs/user-docs.md)
+To learn more about how to use this plugin, see [user's documentation](docs/user-docs.md)
