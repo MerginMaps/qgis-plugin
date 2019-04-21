@@ -7,7 +7,7 @@ To use Mergin plugin, you will need to:
 
 Once, you have installed the plugin, a new provider will appear in your QGIS Browser panel.
 
-<img src="docs/images/mergin-browser.png">
+<img src="images/mergin-browser.png">
 
 **Note 1**: that there is no menu entry or toolbar icons for Mergin plugin. The only method to interact with the service is through the QGIS Browser panel.
 
@@ -24,7 +24,7 @@ To be able to view Mergin projects, we need to sign in:
   - Click **Test Connection** and it should show <span style="color:green">OK</span>.
 4. Click **OK**
 
-<img src="docs/images/mergin-settings.png">
+<img src="images/mergin-settings.png">
 
 To view the list of your projects, click on the arrow to the right of Mergin in your QGIS browser panel.
 
@@ -37,6 +37,8 @@ You can start a new project by right-clicking on Mergin from the browser panel a
 - Type a name for **Project name**
 - Selecting **Public** will make your project available to all Mergin users
 - **Project Directory** will be the folder where your project and associated layers reside
+
+<img src="images/mergin-new-project.png">
 
 ### Download a project
 To download a project:
