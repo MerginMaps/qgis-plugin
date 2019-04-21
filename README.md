@@ -1,14 +1,17 @@
-# mergin QGIS plugin
+# Mergin QGIS plugin
+<img src="Mergin/images/icon.png">
 
-QGIS plugin to simplify handling of Mergin projects.
+QGIS plugin aims to simplify handling of [Mergin](https://public.cloudmergin.com/) projects.
 
-## Development/Testing
-Download python [client](https://github.com/lutraconsulting/mergin-py-client) and
-link to qgis plugin:
+[Mergin](https://public.cloudmergin.com/) is a service to store, synchronise and manage GIS data and QGIS projects. Currently, [Mergin](https://public.cloudmergin.com/) is used as the back-end of [Input](https://inputapp.io/), an [open source](https://github.com/lutraconsulting/input) mobile application to collect data in field.
 
-    ln -s <path-to-py-client>/mergin/ <path-to-mergin-qgis-plugin>/Mergin/mergin
+A typical workflow for setting up a project for field survey:
+1. User sets up the project in QGIS desktop
+2. The project gets uploaded to  [Mergin](https://public.cloudmergin.com/)
+3. Projects and data will be available on [Input](https://inputapp.io/) mobile application
+4. Collected data from [Input](https://inputapp.io/) will be synchronised back to [Mergin](https://public.cloudmergin.com/)
+5. Data will be available to view on QGIS desktop
 
-## Production
-To create zip with py-client dependency with `<version>` run
+Mergin QGIS plugin will assist users with steps 2 and 5.
 
-    bash package.sh <version>
+To learn more about how to use this plugin, see ![user's documentation](docs/user-docs.md)
