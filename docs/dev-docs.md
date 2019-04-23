@@ -9,4 +9,4 @@ link to qgis plugin:
 ## Production
 To create zip with py-client dependency with `<version>` run
 
-    bash package.sh <version>
+    bash scripts/package.sh <version>

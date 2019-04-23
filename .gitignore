@@ -19,3 +19,4 @@ Mergin/mergin
 *.whl
 .idea/
 .DS_Store
+mergin-py-client

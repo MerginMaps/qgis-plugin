@@ -3,8 +3,14 @@
 set -e
 
 VERSION=$1
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-rm -f $DIR/mergin.zip
-pip download --extra-index-url https://pypiserver.cloud.lutraconsulting.co.uk/ mergin-client==$VERSION
-mv mergin_client-$VERSION-py3-none-any.whl $DIR/Mergin/mergin_client.whl
-zip -r mergin.zip Mergin/ -x Mergin/__pycache__/\* -x Mergin/mergin/\*
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )"
+rm -f mergin.zip
+rm -rf mergin-py-client
+git clone git@github.com:lutraconsulting/mergin-py-client.git
+cd mergin-py-client
+git checkout $VERSION
+cd ..
+rm -rf Mergin/mergin
+cp -r mergin-py-client/mergin Mergin
+rm -rf mergin-py-client
+zip -r mergin.zip Mergin/ -x Mergin/__pycache__/\*
