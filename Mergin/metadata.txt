@@ -11,7 +11,10 @@ about=Mergin is a repository for storing and tracking changes to QGIS projects/d
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2019.3:
+changelog=2019.4
+  - Added groups for Mergin projects (with filters)
+  - Changed auth using login endpoint or bearer token
+  <p>2019.3:
   - Initial release
 
 ; tags are in comma separated value format, spaces are allowed

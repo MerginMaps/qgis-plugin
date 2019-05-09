@@ -1,4 +1,6 @@
 import os
+import pytz
+from datetime import datetime
 from urllib.error import URLError
 from qgis.core import (
     QgsApplication,
@@ -14,22 +16,6 @@ except ImportError:
     path = os.path.join(this_dir, 'mergin_client.whl')
     sys.path.append(path)
     from mergin.client import MerginClient, ClientError
-
-
-def auth_ok(url, username, password):
-    """ Temporary auth check on server. """
-    mc = MerginClient(url, username, password)
-    try:
-        mc.get('/auth/user/{}'.format(username))
-    except ClientError as err:
-        # desired testing exception saying that auth is correct
-        if "You don't have the permission to access the requested resource" in err.args[0]:
-            return True
-        else:
-            return False
-    except (URLError, ValueError):
-        return False
-    return True
 
 
 def find_qgis_files(directory):
@@ -88,5 +74,18 @@ def set_mergin_auth(url, username, password):
 
 def create_mergin_client():
     url, username, password = get_mergin_auth()
-    mc = MerginClient(url, username, password)
-    return mc
+    settings = QSettings()
+    auth_token = settings.value('Mergin/auth_token', None)
+    if auth_token:
+        mc = MerginClient(url, 'Bearer {}'.format(auth_token))
+        # check token expiration
+        delta = mc._auth_session['expire'] - datetime.now(pytz.utc)
+        if delta.total_seconds() > 1:
+            return mc
+
+    try:
+        mc = MerginClient(url, None, username, password)
+    except (URLError, ClientError):
+        raise 
+    settings.setValue('Mergin/auth_token', mc._auth_session['token'])
+    return MerginClient(url, 'Bearer {}'.format(mc._auth_session['token']))
