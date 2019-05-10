@@ -38,10 +38,13 @@ class MerginPlugin:
     def initGui(self):
         self.data_item_provider = DataItemProvider()
         QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
+        if self.iface.browserModel().initialized():
+            self.iface.browserModel().reload()
 
     def unload(self):
         QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.data_item_provider)
         self.data_item_provider = None
+        self.iface.browserModel().reload()
 
 
 class MerginProjectItem(QgsDataItem):
@@ -180,10 +183,10 @@ class MerginProjectItem(QgsDataItem):
 class MerginGroupItem(QgsDataCollectionItem):
     """ Mergin group data item. Contains filtered list of Mergin projects. """
 
-    def __init__(self, grp_name, grp_filter, icon_path):
+    def __init__(self, grp_name, grp_filter, icon):
         QgsDataCollectionItem.__init__(self, None, grp_name, "/Mergin" + grp_name)
         self.filter = grp_filter
-        self.setIcon(QIcon(os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/{}".format(icon_path))))
+        self.setIcon(QIcon(os.path.join(icon_path, icon)))
 
     def createChildren(self):
         mc = create_mergin_client()
@@ -232,19 +235,19 @@ class MerginRootItem(QgsDataCollectionItem):
             return [error_item]
 
         items = []
-        my_projects = MerginGroupItem("My projects", "created", "FA_icons/user-solid.svg")
+        my_projects = MerginGroupItem("My projects", "created", "user-solid.svg")
         my_projects.setState(QgsDataItem.Populated)
         my_projects.refresh()
         sip.transferto(my_projects, self)
         items.append(my_projects)
 
-        shared_projects = MerginGroupItem("Shared with me", "shared", "FA_icons/user-friends-solid.svg")
+        shared_projects = MerginGroupItem("Shared with me", "shared", "user-friends-solid.svg")
         shared_projects.setState(QgsDataItem.Populated)
         shared_projects.refresh()
         sip.transferto(shared_projects, self)
         items.append(shared_projects)
 
-        all_projects = MerginGroupItem("All projects", None, "FA_icons/list-solid.svg")
+        all_projects = MerginGroupItem("All projects", None, "list-solid.svg")
         all_projects.setState(QgsDataItem.Populated)
         all_projects.refresh()
         sip.transferto(all_projects, self)
