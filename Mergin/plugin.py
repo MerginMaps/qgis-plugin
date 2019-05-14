@@ -22,7 +22,7 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .create_project_dialog import CreateProjectDialog
-from .utils import auth_ok, find_qgis_files, find_local_conflicts, get_mergin_auth, create_mergin_client
+from .utils import find_qgis_files, find_local_conflicts, create_mergin_client
 
 icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
 
@@ -38,18 +38,22 @@ class MerginPlugin:
     def initGui(self):
         self.data_item_provider = DataItemProvider()
         QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
+        if self.iface.browserModel().initialized():
+            self.iface.browserModel().reload()
 
     def unload(self):
         QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.data_item_provider)
         self.data_item_provider = None
+        self.iface.browserModel().reload()
 
 
 class MerginProjectItem(QgsDataItem):
     """ Data item to represent a Mergin project. """
 
-    def __init__(self, parent, project_name):
-        QgsDataItem.__init__(self, QgsDataItem.Collection, parent, project_name, "/Mergin/" + project_name)
-        self.project_name = project_name
+    def __init__(self, parent, project):
+        self.project = project
+        self.project_name = os.path.join(project['namespace'], project['name'])
+        QgsDataItem.__init__(self, QgsDataItem.Collection, parent, self.project_name, "/Mergin/" + self.project_name)
         settings = QSettings()
         self.path = settings.value('Mergin/localProjects/{}/path'.format(self.project_name), None)
         # check local project dir was not unintentionally removed
@@ -67,7 +71,7 @@ class MerginProjectItem(QgsDataItem):
         if not parent_dir:
             return
 
-        target_dir = os.path.join(parent_dir, self.project_name)
+        target_dir = os.path.join(parent_dir, self.project['name'])
         settings = QSettings()
         mc = create_mergin_client()
 
@@ -89,6 +93,11 @@ class MerginProjectItem(QgsDataItem):
             QApplication.restoreOverrideCursor()
             msg = "Failed to download your project {}.\n" \
                   "Please make sure your Mergin settings are correct".format(self.project_name)
+            QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
+        except Exception as e:
+            QApplication.restoreOverrideCursor()
+            msg = "Failed to download your project {}.\n" \
+                  "{}".format(self.project_name, str(e))
             QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
 
     def remove_local_project(self):
@@ -171,24 +180,18 @@ class MerginProjectItem(QgsDataItem):
         return actions
 
 
-class MerginRootItem(QgsDataCollectionItem):
-    """ Mergin root data item with configuration dialog. """
+class MerginGroupItem(QgsDataCollectionItem):
+    """ Mergin group data item. Contains filtered list of Mergin projects. """
 
-    def __init__(self):
-        QgsDataCollectionItem.__init__(self, None, "Mergin", "/Mergin")
-        self.setIcon(QIcon(os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/icon.png")))
+    def __init__(self, grp_name, grp_filter, icon):
+        QgsDataCollectionItem.__init__(self, None, grp_name, "/Mergin" + grp_name)
+        self.filter = grp_filter
+        self.setIcon(QIcon(os.path.join(icon_path, icon)))
 
     def createChildren(self):
-        url, username, password = get_mergin_auth()
-
-        if not auth_ok(url, username, password):
-            error_item = QgsErrorItem(self, "Failed to get projects from server", "/Mergin/error")
-            sip.transferto(error_item, self)
-            return [error_item]
-
         mc = create_mergin_client()
         try:
-            projects = mc.projects_list(['valid_qgis'])
+            projects = mc.projects_list(tags=['valid_qgis'], flag=self.filter)
         except URLError:
             error_item = QgsErrorItem(self, "Failed to get projects from server", "/Mergin/error")
             sip.transferto(error_item, self)
@@ -200,33 +203,77 @@ class MerginRootItem(QgsDataCollectionItem):
 
         items = []
         for project in projects:
-            item = MerginProjectItem(self, project['name'])
+            item = MerginProjectItem(self, project)
             item.setState(QgsDataItem.Populated)  # make it non-expandable
             sip.transferto(item, self)
             items.append(item)
+        return items
+
+    def actions(self, parent):
+        action_refresh = QAction(QIcon(os.path.join(icon_path, "redo-solid.svg")), "Reload", parent)
+        action_refresh.triggered.connect(self.refresh)
+        return [action_refresh]
+
+
+class MerginRootItem(QgsDataCollectionItem):
+    """ Mergin root data containing project groups item with configuration dialog. """
+
+    def __init__(self):
+        QgsDataCollectionItem.__init__(self, None, "Mergin", "/Mergin")
+        self.setIcon(QIcon(os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/icon.png")))
+
+    def createChildren(self):
+        try:
+            mc = create_mergin_client()
+        except URLError:
+            error_item = QgsErrorItem(self, "Failed to get projects from server", "/Mergin/error")
+            sip.transferto(error_item, self)
+            return [error_item]
+        except Exception as err:
+            error_item = QgsErrorItem(self, "Error: {}".format(str(err)), "/Mergin/error")
+            sip.transferto(error_item, self)
+            return [error_item]
+
+        items = []
+        my_projects = MerginGroupItem("My projects", "created", "user-solid.svg")
+        my_projects.setState(QgsDataItem.Populated)
+        my_projects.refresh()
+        sip.transferto(my_projects, self)
+        items.append(my_projects)
+
+        shared_projects = MerginGroupItem("Shared with me", "shared", "user-friends-solid.svg")
+        shared_projects.setState(QgsDataItem.Populated)
+        shared_projects.refresh()
+        sip.transferto(shared_projects, self)
+        items.append(shared_projects)
+
+        all_projects = MerginGroupItem("All projects", None, "list-solid.svg")
+        all_projects.setState(QgsDataItem.Populated)
+        all_projects.refresh()
+        sip.transferto(all_projects, self)
+        items.append(all_projects)
+
         return items
 
     def configure(self):
         dlg = ConfigurationDialog()
         if dlg.exec_():
             dlg.writeSettings()
+            self.depopulate()
 
     def create_project(self):
         dlg = CreateProjectDialog()
         if dlg.exec_():
             dlg.create_project()
-            self.refresh()
+            self.depopulate()
 
     def actions(self, parent):
         action_configure = QAction(QIcon(os.path.join(icon_path, "cog-solid.svg")), "Configure", parent)
         action_configure.triggered.connect(self.configure)
 
-        action_refresh = QAction(QIcon(os.path.join(icon_path, "redo-solid.svg")), "Reload", parent)
-        action_refresh.triggered.connect(self.refresh)
-
         action_create = QAction(QIcon(os.path.join(icon_path, "plus-square-solid.svg")), "Create new project", parent)
         action_create.triggered.connect(self.create_project)
-        return [action_configure, action_refresh, action_create]
+        return [action_configure, action_create]
 
 
 class DataItemProvider(QgsDataItemProvider):
