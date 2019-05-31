@@ -38,13 +38,15 @@ class MerginPlugin:
     def initGui(self):
         self.data_item_provider = DataItemProvider()
         QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
-        if self.iface.browserModel().initialized():
-            self.iface.browserModel().reload()
+        # related to https://github.com/lutraconsulting/qgis-mergin-plugin/issues/3
+        # if self.iface.browserModel().initialized():
+        #     self.iface.browserModel().reload()
 
     def unload(self):
         QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.data_item_provider)
         self.data_item_provider = None
-        self.iface.browserModel().reload()
+        # this is crashing qgis on exit
+        # self.iface.browserModel().reload()
 
 
 class MerginProjectItem(QgsDataItem):
