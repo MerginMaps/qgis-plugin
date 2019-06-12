@@ -22,7 +22,7 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .create_project_dialog import CreateProjectDialog
-from .utils import find_qgis_files, find_local_conflicts, create_mergin_client
+from .utils import find_qgis_files, find_local_conflicts, create_mergin_client, ClientError
 
 icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
 
@@ -162,6 +162,25 @@ class MerginProjectItem(QgsDataItem):
             msg = "Failed to synchronize your project {}:\n\n{}".format(self.project_name, str(e))
             QMessageBox.critical(None, 'Project sync', msg, QMessageBox.Close)
 
+    def remove_remote_project(self):
+        msg = "Do you really want to remove project {} from server?".format(self.project_name)
+        btn_reply = QMessageBox.question(None, 'Remove project', msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if btn_reply == QMessageBox.No:
+            return
+
+        mc = create_mergin_client()
+        try:
+            mc.delete_project(self.project_name)
+            msg = "Mergin project removed successfully."
+            QMessageBox.information(None, 'Remove project', msg, QMessageBox.Close)
+            root_item = self.parent().parent()
+            groups = root_item.children()
+            for g in groups:
+                g.refresh()
+        except (URLError, ClientError) as e:
+            msg = "Failed to remove project {}:\n\n{}".format(self.project_name, str(e))
+            QMessageBox.critical(None, 'Remove project', msg, QMessageBox.Close)
+
     def actions(self, parent):
         action_download = QAction(QIcon(os.path.join(icon_path, "cloud-download-alt-solid.svg")), "Download", parent)
         action_download.triggered.connect(self.download)
@@ -175,10 +194,15 @@ class MerginProjectItem(QgsDataItem):
         action_sync_project = QAction(QIcon(os.path.join(icon_path, "sync-solid.svg")), "Synchronize", parent)
         action_sync_project.triggered.connect(self.sync_project)
 
+        action_remove_remote = QAction(QIcon(os.path.join(icon_path, "trash-alt-solid.svg")), "Remove from server", parent)
+        action_remove_remote.triggered.connect(self.remove_remote_project)
+
         if self.path:
             actions = [action_open_project, action_sync_project, action_remove_local]
         else:
             actions = [action_download]
+            if self.project['permissions']['delete']:
+                actions.append(action_remove_remote)
         return actions
 
 

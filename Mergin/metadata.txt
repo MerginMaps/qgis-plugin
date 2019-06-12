@@ -12,6 +12,7 @@ about=Mergin is a repository for storing and tracking changes to QGIS projects/d
 
 ; start of optional metadata
 changelog=2019.4
+  - Added option to remove project from server
   - Fixed create project function (valid QGIS project, appears as local)
   - Added groups for Mergin projects (with filters)
   - Changed auth using login endpoint or bearer token
