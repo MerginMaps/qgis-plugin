@@ -1,6 +1,5 @@
 import os
-import pytz
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.error import URLError
 from qgis.core import (
     QgsApplication,
@@ -77,9 +76,9 @@ def create_mergin_client():
     settings = QSettings()
     auth_token = settings.value('Mergin/auth_token', None)
     if auth_token:
-        mc = MerginClient(url, 'Bearer {}'.format(auth_token))
+        mc = MerginClient(url, auth_token)
         # check token expiration
-        delta = mc._auth_session['expire'] - datetime.now(pytz.utc)
+        delta = mc._auth_session['expire'] - datetime.now(timezone.utc)
         if delta.total_seconds() > 1:
             return mc
 
@@ -88,4 +87,4 @@ def create_mergin_client():
     except (URLError, ClientError):
         raise 
     settings.setValue('Mergin/auth_token', mc._auth_session['token'])
-    return MerginClient(url, 'Bearer {}'.format(mc._auth_session['token']))
+    return MerginClient(url, mc._auth_session['token'])
