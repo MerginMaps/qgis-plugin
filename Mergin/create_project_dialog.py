@@ -2,7 +2,7 @@ import os
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QApplication, QMessageBox
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QSettings, Qt
-from .utils import create_mergin_client
+from .utils import create_mergin_client, find_qgis_files
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_create_project.ui')
 
@@ -47,6 +47,14 @@ class CreateProjectDialog(QDialog):
         project_dir = self.ui.project_dir.text()
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
+        qgis_files = find_qgis_files(project_dir)
+        if not len(qgis_files) == 1:
+            QApplication.restoreOverrideCursor()
+            msg = "Failed to complete Mergin project creation.\n" \
+                  "Please select directory with single QGIS file."
+            QMessageBox.critical(None, 'Create Project', msg, QMessageBox.Close)
+            return
+
         try:
             mc.create_project(project_name, project_dir, self.ui.is_public.isChecked())
             QApplication.restoreOverrideCursor()
