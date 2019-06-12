@@ -2,7 +2,7 @@ import os
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QApplication, QMessageBox
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QSettings, Qt
-from .utils import create_mergin_client, find_qgis_files
+from .utils import create_mergin_client, find_qgis_files, get_mergin_auth
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_create_project.ui')
 
@@ -40,30 +40,35 @@ class CreateProjectDialog(QDialog):
         else:
             self.ui.project_dir.setText('')
 
+    def _return_failure(self, reason):
+        QApplication.restoreOverrideCursor()
+        msg = "Failed to complete Mergin project creation.\n" + reason
+        QMessageBox.critical(None, 'Create Project', msg, QMessageBox.Close)
+
     def create_project(self):
         settings = QSettings()
         mc = create_mergin_client()
         project_name = self.ui.project_name.text()
         project_dir = self.ui.project_dir.text()
-
+        _, username, _ = get_mergin_auth()
         QApplication.setOverrideCursor(Qt.WaitCursor)
+
         qgis_files = find_qgis_files(project_dir)
         if not len(qgis_files) == 1:
-            QApplication.restoreOverrideCursor()
-            msg = "Failed to complete Mergin project creation.\n" \
-                  "Please select directory with single QGIS file."
-            QMessageBox.critical(None, 'Create Project', msg, QMessageBox.Close)
+            self._return_failure("Project directory has to contain single QGIS file.")
+            return
+
+        if '.mergin' in os.listdir(project_dir):
+            self._return_failure("Selected directory is already assigned to mergin project.")
             return
 
         try:
             mc.create_project(project_name, project_dir, self.ui.is_public.isChecked())
             QApplication.restoreOverrideCursor()
-            settings.setValue('Mergin/localProjects/{}/path'.format(project_name), project_dir)
+            settings.setValue('Mergin/localProjects/{}/path'.format(os.path.join(username, project_name)), project_dir)
             msg = "Mergin project created successfully"
             QMessageBox.information(None, 'Create Project', msg, QMessageBox.Close)
         except Exception as e:
-            QApplication.restoreOverrideCursor()
             settings.remove('Mergin/localProjects/{}/path'.format(project_name))
-            msg = "Failed to complete Mergin project creation:\n{}\n\n" \
-                  "There might be a broken project at server, please use web interface to fix the issue.".format(str(e))
-            QMessageBox.critical(None, 'Create Project', msg, QMessageBox.Close)
+            msg = str(e) + "\n\nThere might be a broken project at server, please use web interface to fix the issue."
+            self._return_failure(msg)
