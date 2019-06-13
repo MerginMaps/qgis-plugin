@@ -6,6 +6,7 @@
 import sip
 import os
 import shutil
+import posixpath
 from qgis.PyQt.QtGui import QIcon
 from qgis.core import (
     QgsApplication,
@@ -54,7 +55,7 @@ class MerginProjectItem(QgsDataItem):
 
     def __init__(self, parent, project):
         self.project = project
-        self.project_name = os.path.join(project['namespace'], project['name'])
+        self.project_name = posixpath.join(project['namespace'], project['name'])  # we need posix path for server API calls
         QgsDataItem.__init__(self, QgsDataItem.Collection, parent, self.project_name, "/Mergin/" + self.project_name)
         settings = QSettings()
         self.path = settings.value('Mergin/localProjects/{}/path'.format(self.project_name), None)
@@ -73,7 +74,7 @@ class MerginProjectItem(QgsDataItem):
         if not parent_dir:
             return
 
-        target_dir = os.path.join(parent_dir, self.project['name'])
+        target_dir = os.path.abspath(os.path.join(parent_dir, self.project['name']))
         settings = QSettings()
         mc = create_mergin_client()
 
