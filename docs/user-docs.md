@@ -57,3 +57,6 @@ You can also use **Synchronize** function to download changes made to your local
 If you no longer want to have the project and its associated files available locally, you can delete them by right-clicking on the project from browser panel and select **Remove locally**.
 
 Ensure to use this function to remove the projects. Deleting the files manually might cause synchronisation problems.
+
+### Remove project from server
+This will remove your project from Mergin server. You need to first remove the project locally, to be able to delete it from the server.
