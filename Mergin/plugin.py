@@ -218,7 +218,7 @@ class MerginGroupItem(QgsDataCollectionItem):
     def createChildren(self):
         mc = create_mergin_client()
         try:
-            projects = mc.projects_list(tags=['valid_qgis'], flag=self.filter)
+            projects = mc.projects_list(flag=self.filter)
         except URLError:
             error_item = QgsErrorItem(self, "Failed to get projects from server", "/Mergin/error")
             sip.transferto(error_item, self)
