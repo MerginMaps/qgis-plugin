@@ -210,10 +210,11 @@ class MerginProjectItem(QgsDataItem):
 class MerginGroupItem(QgsDataCollectionItem):
     """ Mergin group data item. Contains filtered list of Mergin projects. """
 
-    def __init__(self, grp_name, grp_filter, icon):
+    def __init__(self, grp_name, grp_filter, icon, order):
         QgsDataCollectionItem.__init__(self, None, grp_name, "/Mergin" + grp_name)
         self.filter = grp_filter
         self.setIcon(QIcon(os.path.join(icon_path, icon)))
+        self.setSortKey(order)
 
     def createChildren(self):
         mc = create_mergin_client()
@@ -262,19 +263,19 @@ class MerginRootItem(QgsDataCollectionItem):
             return [error_item]
 
         items = []
-        my_projects = MerginGroupItem("My projects", "created", "user-solid.svg")
+        my_projects = MerginGroupItem("My projects", "created", "user-solid.svg", 1)
         my_projects.setState(QgsDataItem.Populated)
         my_projects.refresh()
         sip.transferto(my_projects, self)
         items.append(my_projects)
 
-        shared_projects = MerginGroupItem("Shared with me", "shared", "user-friends-solid.svg")
+        shared_projects = MerginGroupItem("Shared with me", "shared", "user-friends-solid.svg", 2)
         shared_projects.setState(QgsDataItem.Populated)
         shared_projects.refresh()
         sip.transferto(shared_projects, self)
         items.append(shared_projects)
 
-        all_projects = MerginGroupItem("All projects", None, "list-solid.svg")
+        all_projects = MerginGroupItem("Explore", None, "list-solid.svg", 3)
         all_projects.setState(QgsDataItem.Populated)
         all_projects.refresh()
         sip.transferto(all_projects, self)
