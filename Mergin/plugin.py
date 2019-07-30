@@ -240,7 +240,13 @@ class MerginGroupItem(QgsDataCollectionItem):
     def actions(self, parent):
         action_refresh = QAction(QIcon(os.path.join(icon_path, "redo-solid.svg")), "Reload", parent)
         action_refresh.triggered.connect(self.refresh)
-        return [action_refresh]
+        actions = [action_refresh]
+
+        action_create = QAction(QIcon(os.path.join(icon_path, "plus-square-solid.svg")), "Create new project", parent)
+        action_create.triggered.connect(self.parent().create_project)
+        if self.name() == "My projects":
+            actions.append(action_create)
+        return actions
 
 
 class MerginRootItem(QgsDataCollectionItem):
