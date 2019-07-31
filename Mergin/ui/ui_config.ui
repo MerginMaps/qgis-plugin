@@ -6,62 +6,72 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>362</width>
-    <height>191</height>
+    <width>454</width>
+    <height>263</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Mergin Settings</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout_2">
-   <item row="1" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>URL</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0" colspan="3">
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
     <widget class="QLabel" name="label_2">
+     <property name="maximumSize">
+      <size>
+       <width>160</width>
+       <height>76</height>
+      </size>
+     </property>
      <property name="text">
-      <string>Mergin Settings</string>
+      <string/>
+     </property>
+     <property name="pixmap">
+      <pixmap>../images/logo_color.svg</pixmap>
+     </property>
+     <property name="scaledContents">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
-   <item row="1" column="2">
-    <widget class="QLineEdit" name="merginURL"/>
-   </item>
-   <item row="2" column="2">
-    <widget class="QLineEdit" name="username"/>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="label_3">
-     <property name="text">
-      <string>Username</string>
+   <item>
+    <widget class="QLineEdit" name="username">
+     <property name="placeholderText">
+      <string>Username or email</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="2">
-    <widget class="QgsPasswordLineEdit" name="password"/>
-   </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="label_4">
+   <item>
+    <widget class="QgsPasswordLineEdit" name="password">
      <property name="text">
+      <string/>
+     </property>
+     <property name="placeholderText">
       <string>Password</string>
      </property>
     </widget>
    </item>
-   <item row="9" column="2">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QCheckBox" name="custom_url">
+       <property name="text">
+        <string>Custom Mergin server</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="merginURL">
+       <property name="text">
+        <string>https://public.cloudmergin.com/</string>
+       </property>
+       <property name="placeholderText">
+        <string>URL</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
-   <item row="8" column="2">
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QToolButton" name="test_connection_btn">
@@ -74,6 +84,30 @@
       <widget class="QLabel" name="test_status">
        <property name="text">
         <string>Not tested yet</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt;&quot;&gt;Don't have an account yet? &lt;/span&gt;&lt;a href=&quot;https://public.cloudmergin.com/&quot;&gt;&lt;span style=&quot; font-size:9pt; text-decoration: underline; color:#0000ff;&quot;&gt;Sign up&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-size:9pt;&quot;&gt; now!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="openExternalLinks">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDialogButtonBox" name="buttonBox">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="standardButtons">
+        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
        </property>
       </widget>
      </item>
