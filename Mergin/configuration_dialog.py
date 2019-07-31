@@ -16,6 +16,7 @@ except ImportError:
 from .utils import get_mergin_auth, set_mergin_auth
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_config.ui')
+MERGIN_URL = 'https://public.cloudmergin.com'
 
 
 class ConfigurationDialog(QDialog):
@@ -28,9 +29,18 @@ class ConfigurationDialog(QDialog):
         self.ui.password.setText(password)
         self.ui.test_connection_btn.clicked.connect(self.test_connection)
         self.ui.test_status.setText('')
+        self.ui.custom_url.setChecked(url.rstrip('/') != MERGIN_URL)
+        self.ui.merginURL.setVisible(self.ui.custom_url.isChecked())
+        self.ui.custom_url.stateChanged.connect(self.toggle_custom_url)
+
+    def toggle_custom_url(self):
+        self.ui.merginURL.setVisible(self.ui.custom_url.isChecked())
+
+    def server_url(self):
+        return self.ui.merginURL.text() if self.ui.custom_url.isChecked() else MERGIN_URL
 
     def writeSettings(self):
-        url = self.ui.merginURL.text()
+        url = self.server_url()
         username = self.ui.username.text()
         password = self.ui.password.text()
         set_mergin_auth(url, username, password)
@@ -40,7 +50,7 @@ class ConfigurationDialog(QDialog):
 
     def test_connection(self):
         QApplication.setOverrideCursor(Qt.WaitCursor)
-        url = self.ui.merginURL.text()
+        url = self.server_url()
         username = self.ui.username.text()
         password = self.ui.password.text()
         try:
