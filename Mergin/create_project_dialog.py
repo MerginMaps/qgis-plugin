@@ -11,19 +11,18 @@ class CreateProjectDialog(QDialog):
     def __init__(self):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
-        self.ui.input_validation.setText('')
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
         self.ui.project_name.textChanged.connect(self.text_changed)
         self.ui.get_project_dir.clicked.connect(self.get_directory)
+        self.ui.project_dir_btn.toggled.connect(self.toggle_select_dir)
+        self.toggle_select_dir()
 
     def text_changed(self):
-        if self.ui.project_name.text():
-            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)
-            msg = ''
-        else:
-            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
-            msg = '<font color=red>Please set up project name</font>'
-        self.ui.input_validation.setText(msg)
+        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(bool(self.ui.project_name.text()))
+
+    def toggle_select_dir(self):
+        self.ui.get_project_dir.setEnabled(self.ui.project_dir_btn.isChecked())
+        self.ui.project_dir.setEnabled(self.ui.project_dir_btn.isChecked())
 
     def get_directory(self):
         project_dir = QFileDialog.getExistingDirectory(None, "Open Directory", "", QFileDialog.ShowDirsOnly)
@@ -41,7 +40,7 @@ class CreateProjectDialog(QDialog):
         settings = QSettings()
         mc = create_mergin_client()
         project_name = self.ui.project_name.text()
-        project_dir = self.ui.project_dir.text()
+        project_dir = self.ui.project_dir.text() if self.ui.project_dir_btn.isChecked() else None
         _, username, _ = get_mergin_auth()
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
