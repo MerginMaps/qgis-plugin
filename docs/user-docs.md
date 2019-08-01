@@ -18,7 +18,6 @@ To be able to view Mergin projects, we need to sign in:
 1. In the browser panel, right-click on Mergin
 2. Select **Configure**
 3. A new window will appear:
-  - For **URL**: type **https://public.cloudmergin.com**
   - For **Username**: type your Mergin username
   - For **Password**: type your Mergin password
   - Click **Test Connection** and it should show <span style="color:green">OK</span>.
@@ -26,17 +25,23 @@ To be able to view Mergin projects, we need to sign in:
 
 <img src="images/mergin-settings.png">
 
+**Note 3**: the default URL for the Mergin service is set to https://public.cloudmergin.com/. You can change that, by selecting **Custom Mergin server**.
+
 To view the list of your projects, click on the arrow to the right of Mergin in your QGIS browser panel.
 
 ## Using Mergin plugin
 The following functionalities are available from Mergin plugin:
 
 ### Create a new project
-You can start a new project by right-clicking on Mergin from the browser panel and selecting **Create new project**:
+You can start a new project by right-clicking on Mergin from the browser panel and selecting **Create new project**. The project can be an empty placeholder on the Mergin server. If you already have all the data and QGIS project file locally on a folder, you can create a project on the server and point it to the local folder.
 
 - Type a name for **Project name**
 - Selecting **Public** will make your project available to all Mergin users
-- **Project Directory** will be the folder where your project and associated layers reside
+- To create a placeholder on the Mergin server, select **Blank project**. Note that after creating the blank project, you need to download it locally and transfer your QGIS project and data to the folder.
+
+Alternatively, if you have the data and project already in a folder:
+- Select **Initialize from local drive** and point to the folder containing QGIS project and data.
+
 
 <img src="images/mergin-new-project.png">
 
