@@ -58,6 +58,8 @@ With Mergin service you can synchronise your local changes back to the server. S
 
 You can also use **Synchronize** function to download changes made to your local projects from Mergin.
 
+**Note 4** there is a known issue with project an open project and synchronisation. It is recommended to close your project and then proceed with synchronisation, until the issue is resolved.
+
 ### Remove a local/downloaded project
 If you no longer want to have the project and its associated files available locally, you can delete them by right-clicking on the project from browser panel and select **Remove locally**.
 

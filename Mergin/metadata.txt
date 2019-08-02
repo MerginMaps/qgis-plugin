@@ -4,14 +4,19 @@ name=Mergin
 qgisMinimumVersion=3.4
 qgisMaximumVersion=3.99
 description=Handle Mergin projects
-version=2019.4
+version=2019.4-1
 author=Lutra Consulting
 email=info@lutraconsulting.co.uk
 about=Mergin is a repository for storing and tracking changes to QGIS projects/data. It is linked with Input(a QGIS mobile app). With this plugin, users can upload and sync their data to Mergin service.
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2019.4
+changelog=2019.4-1
+  - Multi-threaded download and upload
+  - Possibility to create empty project on the Mergin server from within the plugin
+  - Possibility to download empty projects
+  - Better dialogue windows for configuration and project creation
+  <p>2019.4:
   - Added option to remove project from server
   - Fixed create project function (valid QGIS project, appears as local)
   - Added groups for Mergin projects (with filters)
