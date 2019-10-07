@@ -23,7 +23,7 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .create_project_dialog import CreateProjectDialog
-from .utils import find_qgis_files, find_local_conflicts, create_mergin_client, ClientError
+from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, changes_from_metadata
 
 icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
 
@@ -132,6 +132,48 @@ class MerginProjectItem(QgsDataItem):
             msg = "Plugin can only load project with single QGIS file but {} found.".format(len(qgis_files))
             QMessageBox.warning(None, 'Load QGIS project', msg, QMessageBox.Close)
 
+    def project_status(self):
+        if not self.path:
+            return
+
+        try:
+            mc = create_mergin_client()
+            pull_changes, push_changes = mc.project_status(self.path)
+            pull_added, pull_removed, pull_updated, pull_renamed = changes_from_metadata(pull_changes)
+            push_added, push_removed, push_updated, push_renamed = changes_from_metadata(push_changes)
+
+            pull_msg = "Pending changes from the latest server version: \n"
+            if pull_added:
+                pull_msg += f"added: {pull_added} \n"
+            if pull_removed:
+                pull_msg += f"removed: {pull_removed} \n"
+            if pull_updated:
+                pull_msg += f"updated: {pull_updated} \n"
+            if pull_renamed:
+                pull_msg += f"renamed: {pull_renamed} \n"
+
+            push_msg = "These local changes have been found: \n"
+            if push_added:
+                push_msg += f"added: {push_added} \n"
+            if push_removed:
+                push_msg += f"removed: {push_removed} \n"
+            if push_updated:
+                push_msg += f"updated: {push_updated} \n"
+            if push_renamed:
+                push_msg += f"renamed: {push_renamed} \n"
+
+            msg = ''
+            if sum(len(v) for v in pull_changes.values()):
+                msg += pull_msg + "\n"
+            if sum(len(v) for v in push_changes.values()):
+                msg += push_msg
+            if not msg:
+                msg = "Project is already up-to-date"
+            QMessageBox.information(None, 'Project status', msg, QMessageBox.Close)
+        except (URLError, ClientError, InvalidProject) as e:
+            msg = f"Failed to get status for project {self.project_name}:\n\n{str(e)}"
+            QMessageBox.critical(None, 'Project status', msg, QMessageBox.Close)
+
     def sync_project(self):
         if not self.path:
             return
@@ -140,8 +182,11 @@ class MerginProjectItem(QgsDataItem):
         mc = create_mergin_client()
 
         try:
-            mc.pull_project(self.path)
-            conflicts = find_local_conflicts(self.path)
+            pull_changes, push_changes = mc.project_status(self.path)
+            if not sum(len(v) for v in list(pull_changes.values())+list(push_changes.values())):
+                QMessageBox.information(None, 'Project sync', 'Project is already up-to-date', QMessageBox.Close)
+
+            conflicts = mc.pull_project(self.path)
             if conflicts:
                 msg = "Following conflicts between local and server version found: \n\n"
                 for item in conflicts:
@@ -198,8 +243,11 @@ class MerginProjectItem(QgsDataItem):
         action_remove_remote = QAction(QIcon(os.path.join(icon_path, "trash-alt-solid.svg")), "Remove from server", parent)
         action_remove_remote.triggered.connect(self.remove_remote_project)
 
+        action_status = QAction(QIcon(os.path.join(icon_path, "info-circle-solid.svg")), "Status", parent)
+        action_status.triggered.connect(self.project_status)
+
         if self.path:
-            actions = [action_open_project, action_sync_project, action_remove_local]
+            actions = [action_open_project, action_status, action_sync_project, action_remove_local]
         else:
             actions = [action_download]
             if self.project['permissions']['delete']:
