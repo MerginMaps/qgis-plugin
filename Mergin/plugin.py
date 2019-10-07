@@ -178,14 +178,15 @@ class MerginProjectItem(QgsDataItem):
         if not self.path:
             return
 
-        QApplication.setOverrideCursor(Qt.WaitCursor)
         mc = create_mergin_client()
 
         try:
             pull_changes, push_changes = mc.project_status(self.path)
             if not sum(len(v) for v in list(pull_changes.values())+list(push_changes.values())):
                 QMessageBox.information(None, 'Project sync', 'Project is already up-to-date', QMessageBox.Close)
+                return
 
+            QApplication.setOverrideCursor(Qt.WaitCursor)
             conflicts = mc.pull_project(self.path)
             if conflicts:
                 msg = "Following conflicts between local and server version found: \n\n"
