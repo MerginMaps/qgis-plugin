@@ -8,13 +8,13 @@ from qgis.core import (
 from qgis.PyQt.QtCore import QSettings
 
 try:
-    from .mergin.client import MerginClient, ClientError
+    from .mergin.client import MerginClient, ClientError, InvalidProject
 except ImportError:
     import sys
     this_dir = os.path.dirname(os.path.realpath(__file__))
     path = os.path.join(this_dir, 'mergin_client.whl')
     sys.path.append(path)
-    from mergin.client import MerginClient, ClientError
+    from mergin.client import MerginClient, ClientError, InvalidProject
 
 
 def find_qgis_files(directory):
@@ -25,15 +25,6 @@ def find_qgis_files(directory):
             if ext in ['.qgs', '.qgz']:
                 qgis_files.append(os.path.join(root, f))           
     return qgis_files
-
-
-def find_local_conflicts(directory):
-    conflict_files = []
-    for root, dirs, files in os.walk(directory):
-        for f in files:
-            if '_conflict_copy' in f:
-                conflict_files.append(os.path.join(root, f))
-    return conflict_files
 
 
 def get_mergin_auth():
@@ -88,3 +79,11 @@ def create_mergin_client():
         raise 
     settings.setValue('Mergin/auth_token', mc._auth_session['token'])
     return MerginClient(url, mc._auth_session['token'])
+
+
+def changes_from_metadata(metadata):
+    added = ", ".join(f['path'] for f in metadata['added'])
+    removed = ", ".join(f['path'] for f in metadata['removed'])
+    updated = ", ".join(f['path'] for f in metadata['updated'])
+    renamed = ", ".join(f"{f['path']} -> {f['new_path']}" for f in metadata['renamed'])
+    return added, removed, updated, renamed
