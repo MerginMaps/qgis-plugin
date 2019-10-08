@@ -2,6 +2,12 @@
 
 set -e
 
+if [ -z "$1" ]
+  then
+    echo "Please specify py-client git branch/tag you want to use"
+    exit 1
+fi
+
 VERSION=$1
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )"
 rm -f mergin.zip
@@ -14,6 +20,8 @@ git checkout $VERSION
 python3 setup.py sdist bdist_wheel
 mkdir -p mergin/deps
 pip wheel -r mergin_client.egg-info/requires.txt -w mergin/deps
+unzip mergin/deps/pygeodiff-*.whl -d mergin/deps
+rm -rf mergin/deps/*.dist-info
 cd ..
 # create final .zip
 rm -rf Mergin/mergin
