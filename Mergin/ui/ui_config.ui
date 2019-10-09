@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>454</width>
-    <height>263</height>
+    <width>535</width>
+    <height>293</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -49,6 +49,24 @@
       <string>Password</string>
      </property>
     </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <item>
+      <widget class="QCheckBox" name="save_credentials">
+       <property name="text">
+        <string>Save credentials</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="master_password_status">
+       <property name="text">
+        <string>Warning: You may be prompt for QGIS master password</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
