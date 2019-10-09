@@ -16,6 +16,8 @@ except ImportError:
     sys.path.append(path)
     from mergin.client import MerginClient, ClientError, InvalidProject
 
+MERGIN_URL = 'https://public.cloudmergin.com'
+
 
 def find_qgis_files(directory):
     qgis_files = []
@@ -29,11 +31,15 @@ def find_qgis_files(directory):
 
 def get_mergin_auth():
     settings = QSettings()
-    authcfg = settings.value('Mergin/authcfg', None)
+    save_credentials = settings.value('Mergin/saveCredentials', 'false').lower() == 'true'
+    mergin_url = settings.value('Mergin/server', MERGIN_URL)
     auth_manager = QgsApplication.authManager()
+    if not save_credentials or not auth_manager.masterPasswordIsSet():
+        return mergin_url, '', ''
+
+    authcfg = settings.value('Mergin/authcfg', None)
     cfg = QgsAuthMethodConfig()
     auth_manager.loadAuthenticationConfig(authcfg, cfg, True)
-
     url = cfg.uri()
     username = cfg.config('username')
     password = cfg.config('password')
@@ -45,6 +51,7 @@ def set_mergin_auth(url, username, password):
     authcfg = settings.value('Mergin/authcfg', None)
     cfg = QgsAuthMethodConfig()
     auth_manager = QgsApplication.authManager()
+    auth_manager.setMasterPassword()
     auth_manager.loadAuthenticationConfig(authcfg, cfg, True)
 
     if cfg.id():
@@ -61,6 +68,8 @@ def set_mergin_auth(url, username, password):
         auth_manager.storeAuthenticationConfig(cfg)
         settings.setValue('Mergin/authcfg', cfg.id())
 
+    settings.setValue('Mergin/server', url)
+
 
 def create_mergin_client():
     url, username, password = get_mergin_auth()
@@ -72,6 +81,9 @@ def create_mergin_client():
         delta = mc._auth_session['expire'] - datetime.now(timezone.utc)
         if delta.total_seconds() > 1:
             return mc
+
+    if not (username and password):
+        raise ClientError()
 
     try:
         mc = MerginClient(url, None, username, password)
