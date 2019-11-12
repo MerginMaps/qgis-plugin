@@ -50,6 +50,15 @@ class MerginPlugin:
         # self.iface.browserModel().reload()
 
 
+def pretty_summary(summary):
+    msg = ""
+    for k, v in summary.items():
+        msg += "\nDetails " + k
+        msg += "".join("\n layer name - " + d["table"] + ": inserted: " + str(d["insert"]) + ", modified: " +
+                            str(d["update"]) + ", deleted: " + str(d["delete"]) for d in v['geodiff_summary'] if d["table"] != "gpkg_contents")
+    return msg
+
+
 class MerginProjectItem(QgsDataItem):
     """ Data item to represent a Mergin project. """
 
@@ -138,7 +147,7 @@ class MerginProjectItem(QgsDataItem):
             return
 
         try:
-            pull_changes, push_changes = self.mc.project_status(self.path)
+            pull_changes, push_changes, push_changes_summary = self.mc.project_status(self.path)
             pull_added, pull_removed, pull_updated, pull_renamed = changes_from_metadata(pull_changes)
             push_added, push_removed, push_updated, push_renamed = changes_from_metadata(push_changes)
 
@@ -167,6 +176,7 @@ class MerginProjectItem(QgsDataItem):
                 msg += pull_msg + "\n"
             if sum(len(v) for v in push_changes.values()):
                 msg += push_msg
+                msg += pretty_summary(push_changes_summary)
             if not msg:
                 msg = "Project is already up-to-date"
             QMessageBox.information(None, 'Project status', msg, QMessageBox.Close)
@@ -179,7 +189,7 @@ class MerginProjectItem(QgsDataItem):
             return
 
         try:
-            pull_changes, push_changes = self.mc.project_status(self.path)
+            pull_changes, push_changes, push_changes_summary = self.mc.project_status(self.path)
             if not sum(len(v) for v in list(pull_changes.values())+list(push_changes.values())):
                 QMessageBox.information(None, 'Project sync', 'Project is already up-to-date', QMessageBox.Close)
                 return
