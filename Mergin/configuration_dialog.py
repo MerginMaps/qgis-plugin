@@ -14,7 +14,7 @@ except ImportError:
     sys.path.append(path)
     from mergin.client import MerginClient, ClientError
 
-from .utils import get_mergin_auth, set_mergin_auth, MERGIN_URL, create_mergin_client
+from .utils import get_mergin_auth, set_mergin_auth, MERGIN_URL, create_mergin_client, get_plugin_version
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_config.ui')
 
@@ -80,7 +80,7 @@ class ConfigurationDialog(QDialog):
                 mc = None
         else:
             try:
-                mc = MerginClient(url, None, username, password)
+                mc = MerginClient(url, None, username, password, get_plugin_version())
                 settings.setValue('Mergin/auth_token', mc._auth_session['token'])
                 settings.setValue('Mergin/server', url)
             except (URLError, ClientError):
@@ -94,7 +94,7 @@ class ConfigurationDialog(QDialog):
         username = self.ui.username.text()
         password = self.ui.password.text()
         try:
-            mc = MerginClient(url, None, username, password)
+            mc = MerginClient(url, None, username, password, get_plugin_version())
             msg = "<font color=green> OK </font>"
         except (URLError, ValueError):
             msg = "<font color=red> Connection failed, incorrect URL </font>"
