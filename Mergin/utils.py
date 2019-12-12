@@ -6,6 +6,8 @@ from qgis.core import (
     QgsAuthMethodConfig
 )
 from qgis.PyQt.QtCore import QSettings
+import configparser
+
 
 try:
     from .mergin.client import MerginClient, ClientError, InvalidProject
@@ -102,8 +104,8 @@ def changes_from_metadata(metadata):
 
 
 def get_plugin_version():
-    with open(os.path.join(os.path.dirname(__file__),"metadata.txt"), 'r') as f:
-        for line in f:
-            if "version=" in line:
-                line = line.replace("\n", "")
-                return line.replace("version=", "")
+    with open(os.path.join(os.path.dirname(__file__), "metadata.txt"), 'r') as f:
+        config = configparser.ConfigParser()
+        config.read_file(f)
+        version = config["general"]["version"]
+    return "Plugin/" + version
