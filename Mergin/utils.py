@@ -6,6 +6,8 @@ from qgis.core import (
     QgsAuthMethodConfig
 )
 from qgis.PyQt.QtCore import QSettings
+import configparser
+
 
 try:
     from .mergin.client import MerginClient, ClientError, InvalidProject
@@ -76,7 +78,7 @@ def create_mergin_client():
     settings = QSettings()
     auth_token = settings.value('Mergin/auth_token', None)
     if auth_token:
-        mc = MerginClient(url, auth_token)
+        mc = MerginClient(url, auth_token, None, None, get_plugin_version())
         # check token expiration
         delta = mc._auth_session['expire'] - datetime.now(timezone.utc)
         if delta.total_seconds() > 1:
@@ -86,11 +88,11 @@ def create_mergin_client():
         raise ClientError()
 
     try:
-        mc = MerginClient(url, None, username, password)
+        mc = MerginClient(url, None, username, password, get_plugin_version())
     except (URLError, ClientError):
         raise 
     settings.setValue('Mergin/auth_token', mc._auth_session['token'])
-    return MerginClient(url, mc._auth_session['token'])
+    return MerginClient(url, mc._auth_session['token'], None, None, get_plugin_version())
 
 
 def changes_from_metadata(metadata):
@@ -99,3 +101,11 @@ def changes_from_metadata(metadata):
     updated = ", ".join(f['path'] for f in metadata['updated'])
     renamed = ", ".join(f"{f['path']} -> {f['new_path']}" for f in metadata['renamed'])
     return added, removed, updated, renamed
+
+
+def get_plugin_version():
+    with open(os.path.join(os.path.dirname(__file__), "metadata.txt"), 'r') as f:
+        config = configparser.ConfigParser()
+        config.read_file(f)
+        version = config["general"]["version"]
+    return "Plugin/" + version
