@@ -15,8 +15,8 @@ from qgis.core import (
     QgsErrorItem,
     QgsDataItemProvider,
     QgsDataProvider,
-    QgsProject
-)
+    QgsProject,
+    QgsVectorLayer)
 from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QApplication
 from qgis.PyQt.QtCore import QSettings, Qt
 from urllib.error import URLError
@@ -131,6 +131,34 @@ class MerginProjectItem(QgsDataItem):
         self.path = None
         self.setIcon(QIcon(os.path.join(icon_path, "cloud-solid.svg")))
 
+    def _unsaved_changes_check(self):
+        """Check if current project is same as actually operated mergin project
+        and if there are some unsaved changes.
+        :return: true if previous method should continue, false otherwise
+        :type: boolean
+        """
+        qgis_files = find_qgis_files(self.path)
+        if QgsProject.instance().fileName() in qgis_files:
+            if any([type(layer) is QgsVectorLayer and layer.isModified() for layer in
+                     QgsProject.instance().mapLayers().values()]) or QgsProject.instance().isDirty():
+                msg = "There are some unsaved changes. Do you want save it before continue?"
+                btn_reply = QMessageBox.warning(None, 'Stop editing', msg,
+                                                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+
+                if btn_reply == QMessageBox.Yes:
+                    if QgsProject.instance().isDirty():
+                        QgsProject.instance().write()
+                    for layer in QgsProject.instance().mapLayers().values():
+                        if type(layer) is QgsVectorLayer and layer.isModified():
+                            layer.commitChanges()
+                    return True
+                elif btn_reply == QMessageBox.No:
+                    return True
+                else:
+                    return False
+            return True
+        return True
+
     def open_project(self):
         if not self.path:
             return 
@@ -144,6 +172,9 @@ class MerginProjectItem(QgsDataItem):
 
     def project_status(self):
         if not self.path:
+            return
+
+        if not self._unsaved_changes_check():
             return
 
         try:
@@ -188,6 +219,9 @@ class MerginProjectItem(QgsDataItem):
         if not self.path:
             return
 
+        if not self._unsaved_changes_check():
+            return
+
         try:
             pull_changes, push_changes, push_changes_summary = self.mc.project_status(self.path)
             if not sum(len(v) for v in list(pull_changes.values())+list(push_changes.values())):
@@ -209,6 +243,10 @@ class MerginProjectItem(QgsDataItem):
                     return    
             
             self.mc.push_project(self.path)
+
+            if QgsProject.instance().fileName() in qgis_files:
+                QgsProject.instance().read()
+
             QApplication.restoreOverrideCursor()
             msg = "Mergin project {} synchronized successfully".format(self.project_name)
             QMessageBox.information(None, 'Project sync', msg, QMessageBox.Close)
