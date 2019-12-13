@@ -71,6 +71,7 @@ class ConfigurationDialog(QDialog):
         settings = QSettings()
         settings.setValue('Mergin/auth_token', None)  # reset token
         settings.setValue('Mergin/saveCredentials', str(self.ui.save_credentials.isChecked()))
+        settings.setValue("Mergin/username", username)
 
         if self.ui.save_credentials.isChecked():
             set_mergin_auth(url, username, password)

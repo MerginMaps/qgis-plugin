@@ -41,8 +41,8 @@ class CreateProjectDialog(QDialog):
         mc = create_mergin_client()
         project_name = self.ui.project_name.text()
         project_dir = self.ui.project_dir.text() if self.ui.project_dir_btn.isChecked() else None
-        _, username, _ = get_mergin_auth()
         QApplication.setOverrideCursor(Qt.WaitCursor)
+        username = settings.value("Mergin/username")
 
         if project_dir and '.mergin' in os.listdir(project_dir):
             self._return_failure("Selected directory is already assigned to mergin project.")
