@@ -42,7 +42,11 @@ class CreateProjectDialog(QDialog):
         project_name = self.ui.project_name.text()
         project_dir = self.ui.project_dir.text() if self.ui.project_dir_btn.isChecked() else None
         QApplication.setOverrideCursor(Qt.WaitCursor)
-        username = settings.value("Mergin/username")
+        username = settings.value("Mergin/username", "")
+
+        if username == "":
+            self._return_failure("Username is not stored. Please save configuration again.")
+            return
 
         if project_dir and '.mergin' in os.listdir(project_dir):
             self._return_failure("Selected directory is already assigned to mergin project.")
