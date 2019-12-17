@@ -139,7 +139,7 @@ class MerginProjectItem(QgsDataItem):
         if len(qgis_files) == 1:
             QgsProject.instance().read(qgis_files[0])
         else:
-            msg = "Selected folder doesn't contains any QGIS project file." if len(qgis_files) == 0 else "Plugin can only load project with single QGIS project file but {} found.".format(len(qgis_files))
+            msg = "Selected project does not contain any QGIS project file" if len(qgis_files) == 0 else "Plugin can only load project with single QGIS project file but {} found.".format(len(qgis_files))
             QMessageBox.warning(None, 'Load QGIS project', msg, QMessageBox.Close)
 
     def project_status(self):
