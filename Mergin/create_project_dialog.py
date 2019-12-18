@@ -56,7 +56,7 @@ class CreateProjectDialog(QDialog):
             mc.create_project(project_name, project_dir, self.ui.is_public.isChecked())
             QApplication.restoreOverrideCursor()
             settings.setValue('Mergin/localProjects/{}/path'.format(os.path.join(username, project_name)), project_dir)
-            msg = "Mergin project created successfully"
+            msg = "Mergin project created successfully" if project_dir is not None else "Blank Mergin project was created on Mergin Server"
             QMessageBox.information(None, 'Create Project', msg, QMessageBox.Close)
         except Exception as e:
             settings.remove('Mergin/localProjects/{}/path'.format(project_name))

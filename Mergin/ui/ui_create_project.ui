@@ -74,7 +74,7 @@
      <item>
       <widget class="QRadioButton" name="blank_project_btn">
        <property name="text">
-        <string>Blank project</string>
+        <string>Blank project - Create project on Mergin server</string>
        </property>
        <property name="checked">
         <bool>true</bool>
