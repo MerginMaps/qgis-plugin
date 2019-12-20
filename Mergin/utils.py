@@ -36,7 +36,7 @@ def get_mergin_auth():
     save_credentials = settings.value('Mergin/saveCredentials', 'false').lower() == 'true'
     mergin_url = settings.value('Mergin/server', MERGIN_URL)
     auth_manager = QgsApplication.authManager()
-    if not save_credentials or not auth_manager.masterPasswordIsSet():
+    if not save_credentials or not auth_manager.masterPasswordHashInDatabase():
         return mergin_url, '', ''
 
     authcfg = settings.value('Mergin/authcfg', None)
@@ -90,7 +90,7 @@ def create_mergin_client():
     try:
         mc = MerginClient(url, None, username, password, get_plugin_version())
     except (URLError, ClientError):
-        raise 
+        raise
     settings.setValue('Mergin/auth_token', mc._auth_session['token'])
     return MerginClient(url, mc._auth_session['token'], None, None, get_plugin_version())
 
