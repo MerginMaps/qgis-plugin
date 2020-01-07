@@ -89,7 +89,8 @@ def create_mergin_client():
 
     try:
         mc = MerginClient(url, None, username, password, get_plugin_version())
-    except (URLError, ClientError):
+    except (URLError, ClientError) as e:
+        QgsApplication.messageLog().logMessage(str(e))
         raise
     settings.setValue('Mergin/auth_token', mc._auth_session['token'])
     return MerginClient(url, mc._auth_session['token'], None, None, get_plugin_version())
