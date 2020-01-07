@@ -127,10 +127,11 @@ class MerginProjectItem(QgsDataItem):
         if os.path.exists(self.path):
             try:
                 shutil.rmtree(self.path)
-            except PermissionError as e:
+            except PermissionError:
                 msg = "Failed to delete your project {} because is open.\n" \
                       "Close project and check if it is not open in another application.".format(self.project_name)
                 QMessageBox.critical(None, 'Project delete', msg, QMessageBox.Close)
+                return
 
         settings = QSettings()
         settings.remove('Mergin/localProjects/{}/path'.format(self.project_name))
