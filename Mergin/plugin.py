@@ -103,7 +103,7 @@ class MerginProjectItem(QgsDataItem):
             if btn_reply == QMessageBox.Yes:
                 self.open_project()
         except (URLError, ValueError) as e:
-            QgsApplication.messageLog().logMessage(str(e) )
+            QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
             QApplication.restoreOverrideCursor()
             msg = "Failed to download your project {}.\n" \
                   "Please make sure your Mergin settings are correct".format(self.project_name)
@@ -129,7 +129,7 @@ class MerginProjectItem(QgsDataItem):
             try:
                 shutil.rmtree(self.path)
             except PermissionError as e:
-                QgsApplication.messageLog().logMessage(str(e))
+                QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
                 msg = "Failed to delete your project {} because is open.\n" \
                       "Close project and check if it is not open in another application.".format(self.project_name)
                 QMessageBox.critical(None, 'Project delete', msg, QMessageBox.Close)

@@ -85,7 +85,7 @@ class ConfigurationDialog(QDialog):
                 settings.setValue('Mergin/auth_token', mc._auth_session['token'])
                 settings.setValue('Mergin/server', url)
             except (URLError, ClientError) as e:
-                QgsApplication.messageLog().logMessage(str(e))
+                QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
                 mc = None
 
         return mc
@@ -99,10 +99,10 @@ class ConfigurationDialog(QDialog):
             mc = MerginClient(url, None, username, password, get_plugin_version())
             msg = "<font color=green> OK </font>"
         except (URLError, ValueError) as e:
-            QgsApplication.messageLog().logMessage(str(e))
+            QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
             msg = "<font color=red> Connection failed, incorrect URL </font>"
         except ClientError as e:
-            QgsApplication.messageLog().logMessage(str(e))
+            QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
             msg = "<font color=red> Connection failed, incorrect username/password </font>"
         QApplication.restoreOverrideCursor()
         self.ui.test_status.setText(msg)
