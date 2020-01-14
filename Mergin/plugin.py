@@ -253,6 +253,7 @@ class MerginProjectItem(QgsDataItem):
             
             self.mc.push_project(self.path)
 
+            qgis_files = find_qgis_files(self.path)
             if QgsProject.instance().fileName() in qgis_files:
                 QgsProject.instance().read()
 
