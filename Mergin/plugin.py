@@ -211,12 +211,19 @@ class MerginProjectItem(QgsDataItem):
             if push_renamed:
                 push_msg += f"renamed: {push_renamed} \n"
 
+            files_to_replace = ""
+            for file in push_changes["updated"]:
+                if "diff" not in file and ".gpkg" in file['path']:
+                    files_to_replace += f"{file['path']}, "
+            files_to_replace.rstrip(", ")
+
             msg = ''
             if sum(len(v) for v in pull_changes.values()):
                 msg += pull_msg + "\n"
             if sum(len(v) for v in push_changes.values()):
                 msg += push_msg
                 msg += pretty_summary(push_changes_summary)
+                msg += f"\nNext files will be replaced on server: {files_to_replace}" if files_to_replace else ""
             if not msg:
                 msg = "Project is already up-to-date"
             QMessageBox.information(None, 'Project status', msg, QMessageBox.Close)
