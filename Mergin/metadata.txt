@@ -13,7 +13,7 @@ about=Mergin is a repository for storing and tracking changes to QGIS projects/d
 ; start of optional metadata
 changelog=2020.01
   - Better display of changelog
-  - Severl bug fixes
+  - Several bug fixes
   <p>2019.6
   - View log of changes to layer through Geodiff
   <p>2019.5
