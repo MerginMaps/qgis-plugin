@@ -103,6 +103,6 @@ class ConfigurationDialog(QDialog):
             msg = "<font color=red> Connection failed, incorrect URL </font>"
         except ClientError as e:
             QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
-            msg = "<font color=red> Connection failed, incorrect username/password </font>"
+            msg = f"<font color=red> Connection failed, {str(e)} </font>"
         QApplication.restoreOverrideCursor()
         self.ui.test_status.setText(msg)
