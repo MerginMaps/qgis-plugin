@@ -62,10 +62,15 @@ class CreateProjectDialog(QDialog):
             msg = "Mergin project created successfully" if project_dir is not None else "Blank Mergin project was created on Mergin Server"
             QMessageBox.information(None, 'Create Project', msg, QMessageBox.Close)
         except Exception as e:
-            detail = str(e)
+            detail = ""
             if isinstance(e, SyncError):
-                detail += f"\n{e.detail}"
+                detail = f"{e.detail}\n"
+            detail += f"Reason:{str(e)}"
             settings.remove('Mergin/localProjects/{}/path'.format(project_name))
-            msg = "\n\nCreate project was not successful. Please use web interface to check project state.\n" \
-                           "This should not normally happen. Please report this error to developers and attach the error log"
+            msg = "<br><br>Please:" \
+                  '<ul>' \
+                    '<li>use web interface to check project state.</li>' \
+                    '<li>report this error to developers and attach the error log <a href=https://github.com/lutraconsulting/qgis-mergin-plugin/issues>Click to report</a></li>' \
+                  "</ul>" \
+
             self._return_failure(msg, detail)
