@@ -2,6 +2,9 @@ import os
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QApplication, QMessageBox
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QSettings, Qt
+
+from .collapsible_message_box import CollapsibleBox
+from .mergin.client import SyncError
 from .utils import create_mergin_client, get_mergin_auth
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_create_project.ui')
@@ -31,10 +34,10 @@ class CreateProjectDialog(QDialog):
         else:
             self.ui.project_dir.setText('')
 
-    def _return_failure(self, reason):
+    def _return_failure(self, reason, detail=""):
         QApplication.restoreOverrideCursor()
         msg = "Failed to complete Mergin project creation.\n" + reason
-        QMessageBox.critical(None, 'Create Project', msg, QMessageBox.Close)
+        CollapsibleBox(msg, detail, 'Create Project')
 
     def create_project(self):
         settings = QSettings()
@@ -59,6 +62,15 @@ class CreateProjectDialog(QDialog):
             msg = "Mergin project created successfully" if project_dir is not None else "Blank Mergin project was created on Mergin Server"
             QMessageBox.information(None, 'Create Project', msg, QMessageBox.Close)
         except Exception as e:
+            detail = ""
+            if isinstance(e, SyncError):
+                detail = f"{e.detail}\n"
+            detail += f"Reason:{str(e)}"
             settings.remove('Mergin/localProjects/{}/path'.format(project_name))
-            msg = str(e) + "\n\nThere might be a broken project at server, please use web interface to fix the issue."
-            self._return_failure(msg)
+            msg = "<br><br>Please:" \
+                  '<ul>' \
+                    '<li>use web interface to check project state.</li>' \
+                    '<li>report this error to developers and attach the error log <a href=https://github.com/lutraconsulting/qgis-mergin-plugin/issues>Click to report</a></li>' \
+                  "</ul>" \
+
+            self._return_failure(msg, detail)
