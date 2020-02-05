@@ -23,7 +23,7 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .create_project_dialog import CreateProjectDialog
-from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, changes_from_metadata
+from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, changes_from_metadata, LoginError
 
 icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
 
@@ -80,6 +80,11 @@ class MerginProjectItem(QgsDataItem):
 
         self.mc = self.parent().parent().mc
 
+    def _login_error_message(self, e):
+        QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
+        msg = "<font color=red>Security token has been expired, failed to renew. Check your username and password </font>"
+        QMessageBox.critical(None, 'Login failed', msg, QMessageBox.Close)
+
     def download(self):
         parent_dir = QFileDialog.getExistingDirectory(None, "Open Directory", "", QFileDialog.ShowDirsOnly)
         if not parent_dir:
@@ -108,6 +113,8 @@ class MerginProjectItem(QgsDataItem):
             msg = "Failed to download your project {}.\n" \
                   "Please make sure your Mergin settings are correct".format(self.project_name)
             QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
+        except LoginError as e:
+            self._login_error_message(e)
         except Exception as e:
             QApplication.restoreOverrideCursor()
             msg = "Failed to download your project {}.\n" \
@@ -226,6 +233,8 @@ class MerginProjectItem(QgsDataItem):
         except (URLError, ClientError, InvalidProject) as e:
             msg = f"Failed to get status for project {self.project_name}:\n\n{str(e)}"
             QMessageBox.critical(None, 'Project status', msg, QMessageBox.Close)
+        except LoginError as e:
+            self._login_error_message(e)
 
     def sync_project(self):
         if not self.path:
@@ -263,6 +272,8 @@ class MerginProjectItem(QgsDataItem):
             QApplication.restoreOverrideCursor()
             msg = "Mergin project {} synchronized successfully".format(self.project_name)
             QMessageBox.information(None, 'Project sync', msg, QMessageBox.Close)
+        except LoginError as e:
+            self._login_error_message(e)
         except Exception as e:
             QApplication.restoreOverrideCursor()
             msg = "Failed to synchronize your project {}:\n\n{}".format(self.project_name, str(e))
@@ -285,6 +296,8 @@ class MerginProjectItem(QgsDataItem):
         except (URLError, ClientError) as e:
             msg = "Failed to remove project {}:\n\n{}".format(self.project_name, str(e))
             QMessageBox.critical(None, 'Remove project', msg, QMessageBox.Close)
+        except LoginError as e:
+            self._login_error_message(e)
 
     def actions(self, parent):
         action_download = QAction(QIcon(os.path.join(icon_path, "cloud-download-alt-solid.svg")), "Download", parent)
@@ -325,6 +338,10 @@ class MerginGroupItem(QgsDataCollectionItem):
 
     def createChildren(self):
         mc = self.parent().mc
+        if not mc:
+            error_item = QgsErrorItem(self, "Failed to login please check the configuration", "/Mergin/error")
+            sip.transferto(error_item, self)
+            return [error_item]
         try:
             projects = mc.projects_list(flag=self.filter)
         except URLError:

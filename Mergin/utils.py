@@ -10,13 +10,13 @@ import configparser
 
 
 try:
-    from .mergin.client import MerginClient, ClientError, InvalidProject
+    from .mergin.client import MerginClient, ClientError, InvalidProject, LoginError
 except ImportError:
     import sys
     this_dir = os.path.dirname(os.path.realpath(__file__))
     path = os.path.join(this_dir, 'mergin_client.whl')
     sys.path.append(path)
-    from mergin.client import MerginClient, ClientError, InvalidProject
+    from mergin.client import MerginClient, ClientError, InvalidProject, LoginError
 
 MERGIN_URL = 'https://public.cloudmergin.com'
 
@@ -78,7 +78,7 @@ def create_mergin_client():
     settings = QSettings()
     auth_token = settings.value('Mergin/auth_token', None)
     if auth_token:
-        mc = MerginClient(url, auth_token, None, None, get_plugin_version())
+        mc = MerginClient(url, auth_token, username, password, get_plugin_version())
         # check token expiration
         delta = mc._auth_session['expire'] - datetime.now(timezone.utc)
         if delta.total_seconds() > 1:
@@ -93,7 +93,7 @@ def create_mergin_client():
         QgsApplication.messageLog().logMessage(str(e))
         raise
     settings.setValue('Mergin/auth_token', mc._auth_session['token'])
-    return MerginClient(url, mc._auth_session['token'], None, None, get_plugin_version())
+    return MerginClient(url, mc._auth_session['token'], username, password, get_plugin_version())
 
 
 def changes_from_metadata(metadata):

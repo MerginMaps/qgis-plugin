@@ -6,13 +6,13 @@ from qgis.core import QgsApplication
 from urllib.error import URLError
 
 try:
-    from .mergin.client import MerginClient, ClientError
+    from .mergin.client import MerginClient, ClientError, LoginError
 except ImportError:
     import sys
     this_dir = os.path.dirname(os.path.realpath(__file__))
     path = os.path.join(this_dir, 'mergin_client.whl')
     sys.path.append(path)
-    from mergin.client import MerginClient, ClientError
+    from mergin.client import MerginClient, ClientError, LoginError
 
 from .utils import get_mergin_auth, set_mergin_auth, MERGIN_URL, create_mergin_client, get_plugin_version
 
@@ -77,14 +77,14 @@ class ConfigurationDialog(QDialog):
             set_mergin_auth(url, username, password)
             try:
                 mc = create_mergin_client()
-            except (URLError, ClientError):
+            except (URLError, ClientError, LoginError):
                 mc = None
         else:
             try:
                 mc = MerginClient(url, None, username, password, get_plugin_version())
                 settings.setValue('Mergin/auth_token', mc._auth_session['token'])
                 settings.setValue('Mergin/server', url)
-            except (URLError, ClientError) as e:
+            except (URLError, ClientError, LoginError) as e:
                 QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
                 mc = None
 
@@ -101,7 +101,7 @@ class ConfigurationDialog(QDialog):
         except (URLError, ValueError) as e:
             QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
             msg = "<font color=red> Connection failed, incorrect URL </font>"
-        except ClientError as e:
+        except LoginError as e:
             QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
             msg = f"<font color=red> Connection failed, {str(e)} </font>"
         QApplication.restoreOverrideCursor()
