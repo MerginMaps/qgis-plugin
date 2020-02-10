@@ -62,7 +62,7 @@ def pretty_summary(summary):
 class MerginProjectItem(QgsDataItem):
     """ Data item to represent a Mergin project. """
 
-    def __init__(self, parent, project):
+    def __init__(self, parent, project, mc):
         self.project = project
         self.project_name = posixpath.join(project['namespace'], project['name'])  # we need posix path for server API calls
         QgsDataItem.__init__(self, QgsDataItem.Collection, parent, self.project_name, "/Mergin/" + self.project_name)
@@ -78,7 +78,7 @@ class MerginProjectItem(QgsDataItem):
         else:
             self.setIcon(QIcon(os.path.join(icon_path, "cloud-solid.svg")))
 
-        self.mc = self.parent().parent().mc
+        self.mc = mc
 
     def _login_error_message(self, e):
         QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
@@ -355,7 +355,7 @@ class MerginGroupItem(QgsDataCollectionItem):
 
         items = []
         for project in projects:
-            item = MerginProjectItem(self, project)
+            item = MerginProjectItem(self, project, mc)
             item.setState(QgsDataItem.Populated)  # make it non-expandable
             sip.transferto(item, self)
             items.append(item)
