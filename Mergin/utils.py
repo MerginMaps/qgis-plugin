@@ -10,13 +10,18 @@ import configparser
 
 
 try:
-    from .mergin.client import MerginClient, ClientError, InvalidProject, LoginError
+    from .mergin import InvalidProject
+    from .mergin.client import MerginClient, ClientError, LoginError
+    from .mergin.client_pull import download_project_async, download_project_is_running, \
+                                    download_project_finalize, download_project_cancel
 except ImportError:
     import sys
     this_dir = os.path.dirname(os.path.realpath(__file__))
     path = os.path.join(this_dir, 'mergin_client.whl')
     sys.path.append(path)
     from mergin.client import MerginClient, ClientError, InvalidProject, LoginError
+    from mergin.client_pull import download_project_async, download_project_is_running, \
+                                   download_project_finalize, download_project_cancel
 
 MERGIN_URL = 'https://public.cloudmergin.com'
 

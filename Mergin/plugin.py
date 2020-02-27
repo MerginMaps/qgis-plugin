@@ -23,6 +23,7 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .create_project_dialog import CreateProjectDialog
+from .sync_dialog import SyncDialog
 from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, changes_from_metadata, LoginError
 
 icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
@@ -86,40 +87,42 @@ class MerginProjectItem(QgsDataItem):
         QMessageBox.critical(None, 'Login failed', msg, QMessageBox.Close)
 
     def download(self):
-        parent_dir = QFileDialog.getExistingDirectory(None, "Open Directory", "", QFileDialog.ShowDirsOnly)
+        settings = QSettings()
+
+        last_parent_dir = settings.value('Mergin/lastUsedDownloadDir', '')
+
+        parent_dir = QFileDialog.getExistingDirectory(None, "Open Directory", last_parent_dir, QFileDialog.ShowDirsOnly)
         if not parent_dir:
             return
 
+        settings.setValue('Mergin/lastUsedDownloadDir', parent_dir)
+
         target_dir = os.path.abspath(os.path.join(parent_dir, self.project['name']))
-        settings = QSettings()
 
-        QApplication.setOverrideCursor(Qt.WaitCursor)
-        try:
-            self.mc.download_project(self.project_name, target_dir)
-            settings.setValue('Mergin/localProjects/{}/path'.format(self.project_name), target_dir)
-            self.path = target_dir
-            self.setIcon(QIcon(os.path.join(icon_path, "folder-solid.svg")))
-            QApplication.restoreOverrideCursor()
+        if os.path.exists(target_dir):
+            QMessageBox.warning(None, "Download Project", "The target directory already exists:\n"+target_dir+
+                                      "\n\nPlease select a different directory.")
+            return
 
-            msg = "Your project {} has been successfully downloaded. " \
-                  "Do you want to open project file?".format(self.project_name)
-            btn_reply = QMessageBox.question(None, 'Project download', msg,
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if btn_reply == QMessageBox.Yes:
-                self.open_project()
-        except (URLError, ValueError) as e:
-            QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
-            QApplication.restoreOverrideCursor()
-            msg = "Failed to download your project {}.\n" \
-                  "Please make sure your Mergin settings are correct".format(self.project_name)
-            QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
-        except LoginError as e:
-            self._login_error_message(e)
-        except Exception as e:
-            QApplication.restoreOverrideCursor()
-            msg = "Failed to download your project {}.\n" \
-                  "{}".format(self.project_name, str(e))
-            QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
+        dlg = SyncDialog(SyncDialog.DOWNLOAD, self.mc, target_dir, self.project_name)
+        dlg.show()
+        dlg.start_download()
+        dlg.exec_()
+
+        if not dlg.is_complete:
+            return   # either it has been cancelled or an error has been thrown
+
+        settings.setValue('Mergin/localProjects/{}/path'.format(self.project_name), target_dir)
+        self.path = target_dir
+        self.setIcon(QIcon(os.path.join(icon_path, "folder-solid.svg")))
+        QApplication.restoreOverrideCursor()
+
+        msg = "Your project {} has been successfully downloaded. " \
+              "Do you want to open project file?".format(self.project_name)
+        btn_reply = QMessageBox.question(None, 'Project download', msg,
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        if btn_reply == QMessageBox.Yes:
+            self.open_project()
 
     def remove_local_project(self):
         if not self.path:
