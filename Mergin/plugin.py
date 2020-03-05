@@ -104,10 +104,24 @@ class MerginProjectItem(QgsDataItem):
                                       "\n\nPlease select a different directory.")
             return
 
-        dlg = SyncDialog(SyncDialog.DOWNLOAD, self.mc, target_dir, self.project_name)
-        dlg.show()
-        dlg.start_download()
-        dlg.exec_()
+        dlg = SyncDialog()
+        dlg.download_start(self.mc, target_dir, self.project_name)
+
+        dlg.exec_()  # blocks until completion / failure / cancellation
+
+        if dlg.exception:
+            if isinstance(dlg.exception, (URLError, ValueError)):
+                QgsApplication.messageLog().logMessage("Mergin plugin: " + str(dlg.exception))
+                msg = "Failed to download your project {}.\n" \
+                      "Please make sure your Mergin settings are correct".format(self.project_name)
+                QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
+            elif isinstance(dlg.exception, LoginError):
+                self._login_error_message(dlg.exception)
+            else:
+                msg = "Failed to download your project {}.\n" \
+                      "{}".format(self.project_name, str(dlg.exception))
+                QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
+            return
 
         if not dlg.is_complete:
             return   # either it has been cancelled or an error has been thrown
@@ -246,41 +260,78 @@ class MerginProjectItem(QgsDataItem):
         if not self._unsaved_changes_check():
             return
 
-        try:
-            pull_changes, push_changes, push_changes_summary = self.mc.project_status(self.path)
-            if not sum(len(v) for v in list(pull_changes.values())+list(push_changes.values())):
-                QMessageBox.information(None, 'Project sync', 'Project is already up-to-date', QMessageBox.Close)
+        pull_changes, push_changes, push_changes_summary = self.mc.project_status(self.path)
+        if not sum(len(v) for v in list(pull_changes.values())+list(push_changes.values())):
+            QMessageBox.information(None, 'Project sync', 'Project is already up-to-date', QMessageBox.Close)
+            return
+
+        dlg = SyncDialog()
+        dlg.pull_start(self.mc, self.path, self.project_name)
+
+        dlg.exec_()  # blocks until success, failure or cancellation
+
+        if dlg.exception:
+            # pull failed for some reason
+            if isinstance(dlg.exception, LoginError):
+                self._login_error_message(dlg.exception)
+            elif isinstance(dlg.exception, ClientError):
+                QMessageBox.critical(self, "Project sync", "Client error: " + str(dlg.exception))
+            else:
+                # TODO: this should not happen normally - "known" exceptions should be recognized
+                msg = "Failed to download changes!\n\n{}".format(str(dlg.exception))
+                QMessageBox.critical(None, 'Project sync', msg, QMessageBox.Close)
+            return
+
+        if dlg.pull_conflicts:
+            msg = "Following conflicts between local and server version found: \n\n"
+            for item in dlg.pull_conflicts:
+                msg += item + "\n"
+            msg += "\nYou may want to fix them before upload otherwise they will be uploaded as new files. " \
+                   "Do you wish to proceed?"
+            btn_reply = QMessageBox.question(None, 'Conflicts found', msg,
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if btn_reply == QMessageBox.No:
+                QApplication.restoreOverrideCursor()
                 return
 
-            QApplication.setOverrideCursor(Qt.WaitCursor)
-            conflicts = self.mc.pull_project(self.path)
-            if conflicts:
-                msg = "Following conflicts between local and server version found: \n\n"
-                for item in conflicts:
-                    msg += item + "\n"
-                msg += "\nYou may want to fix them before upload otherwise they will be uploaded as new files. " \
-                       "Do you wish to proceed?"
-                btn_reply = QMessageBox.question(None, 'Conflicts found', msg,
-                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if btn_reply == QMessageBox.No:
-                    QApplication.restoreOverrideCursor()
-                    return    
-            
-            self.mc.push_project(self.path)
+        if not dlg.is_complete:
+            # we were cancelled
+            return
 
-            qgis_files = find_qgis_files(self.path)
-            if QgsProject.instance().fileName() in qgis_files:
-                QgsProject.instance().read()
+        ## pull finished, start push
 
-            QApplication.restoreOverrideCursor()
+        dlg = SyncDialog()
+        dlg.push_start(self.mc, self.path, self.project_name)
+
+        dlg.exec_()  # blocks until success, failure or cancellation
+
+        self._reload_project() # TODO: only reload project if we pulled a newer version
+
+        if dlg.exception:
+            # push failed for some reason
+            if isinstance(dlg.exception, LoginError):
+                self._login_error_message(dlg.exception)
+            elif isinstance(dlg.exception, ClientError):
+                QMessageBox.critical(self, "Project sync", "Client error: " + str(dlg.exception))
+            else:
+                # TODO: this should not happen normally - "known" exceptions should be recognized
+                msg = "Failed to upload changes!\n\n{}".format(str(dlg.exception))
+                QMessageBox.critical(None, 'Project sync', msg, QMessageBox.Close)
+            return
+
+        if dlg.is_complete:
+            # TODO: report success only when we have actually done anything
             msg = "Mergin project {} synchronized successfully".format(self.project_name)
             QMessageBox.information(None, 'Project sync', msg, QMessageBox.Close)
-        except LoginError as e:
-            self._login_error_message(e)
-        except Exception as e:
-            QApplication.restoreOverrideCursor()
-            msg = "Failed to synchronize your project {}:\n\n{}".format(self.project_name, str(e))
-            QMessageBox.critical(None, 'Project sync', msg, QMessageBox.Close)
+        else:
+            # we were cancelled - but no need to show a message box about that...?
+            pass
+
+    def _reload_project(self):
+        """ This will forcefully reload the QGIS project because the project (or its data) may have changed """
+        qgis_files = find_qgis_files(self.path)
+        if QgsProject.instance().fileName() in qgis_files:
+            QgsProject.instance().read()
 
     def remove_remote_project(self):
         msg = "Do you really want to remove project {} from server?".format(self.project_name)

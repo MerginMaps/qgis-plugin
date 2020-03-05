@@ -1,16 +1,12 @@
 import os
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QApplication, QMessageBox
-from qgis.PyQt import uic
-from qgis.PyQt.QtCore import QSettings, Qt, QTimer
+from PyQt5.QtWidgets import QDialog, QApplication
+from PyQt5 import uic
+from PyQt5.QtCore import Qt, QTimer
 
-from qgis.core import QgsApplication
-
-from .utils import ClientError, LoginError
-from urllib.error import URLError
-
-
-from .utils import download_project_async, download_project_is_running, \
-                                    download_project_finalize, download_project_cancel
+from .utils import \
+    download_project_async, download_project_is_running, download_project_finalize, download_project_cancel, \
+    pull_project_async, pull_project_is_running, pull_project_finalize, pull_project_cancel, \
+    push_project_async, push_project_is_running, push_project_finalize, push_project_cancel
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_sync_dialog.ui')
 
@@ -19,17 +15,20 @@ class SyncDialog(QDialog):
 
     # possible operations
     DOWNLOAD = 1   # initial download of a project
-    SYNC = 2       # synchronization (pull followed by push)
+    PUSH = 2       # synchronization - push
+    PULL = 3       # synchronization - pull
 
-    def __init__(self, operation, mergin_client, target_dir, project_name):
-        QDialog.__init__(self)
+    def __init__(self, parent=None):
+        QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
 
-        self.operation = operation
-        self.mergin_client = mergin_client
-        self.target_dir = target_dir
-        self.project_name = project_name
+        self.operation = None
+        self.mergin_client = None
+        self.target_dir = None
+        self.project_name = None
+        self.pull_conflicts = None  # what is returned from pull_project_finalize()
 
+        self.exception = None
         self.is_complete = False
         self.job = None
 
@@ -37,34 +36,69 @@ class SyncDialog(QDialog):
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.timer_timeout)
 
-        self.btnCancel.clicked.connect(self.cancel_download)
+        self.btnCancel.clicked.connect(self.cancel_operation)
 
-    def start_download(self):
+    def timer_timeout(self):
+        if self.operation == self.DOWNLOAD:
+            self.download_timer_tick()
+        elif self.operation == self.PUSH:
+            self.push_timer_tick()
+        elif self.operation == self.PULL:
+            self.pull_timer_tick()
+        else:
+            assert False
+
+    def cancel_operation(self):
+        if self.operation == self.DOWNLOAD:
+            self.download_cancel()
+        elif self.operation == self.PUSH:
+            self.push_cancel()
+        elif self.operation == self.PULL:
+            self.pull_cancel()
+        else:
+            assert False
+
+    def reset_operation(self, success, close, exception=None):
+
+        self.operation = None
+        self.mergin_client = None
+        self.target_dir = None
+        self.project_name = None
+        self.job = None
+        self.exception = exception
+        self.is_complete = success
+        if close:
+            self.close()
+
+    #######################################################
+
+    def download_start(self, mergin_client, target_dir, project_name):
+
+        self.operation = self.DOWNLOAD
+        self.mergin_client = mergin_client
+        self.target_dir = target_dir
+        self.project_name = project_name
 
         self.labelStatus.setText("Querying project...")
+
+        # we would like to get the dialog displayed at least for a bit
+        # with low timeout (or zero) it may not even appear before it is closed
+        QTimer.singleShot(250, self.download_start_internal)
+
+    def download_start_internal(self):
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
         try:
             self.job = download_project_async(self.mergin_client, self.project_name, self.target_dir)
-        except (URLError, ValueError) as e:
-            QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
-            msg = "Failed to download your project {}.\n" \
-                  "Please make sure your Mergin settings are correct".format(self.project_name)
-            QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
-        except LoginError as e:
-            QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
-            msg = "<font color=red>Security token has been expired, failed to renew. Check your username and password </font>"
-            QMessageBox.critical(None, 'Login failed', msg, QMessageBox.Close)
         except Exception as e:
-            msg = "Failed to download your project {}.\n" \
-                  "{}".format(self.project_name, str(e))
-            QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
+            QApplication.restoreOverrideCursor()
+            self.reset_operation(success=False, close=True, exception=e)
+            return
 
         QApplication.restoreOverrideCursor()
 
-        if not self.job:
-            return   # there was an error
+        assert self.job  # if there was no error thrown, we should have a job
 
         self.progress.setMaximum(self.job.total_size)
         self.progress.setValue(0)
@@ -73,22 +107,20 @@ class SyncDialog(QDialog):
 
         self.labelStatus.setText("Downloading project...")
 
-    def timer_timeout(self):
+    def download_timer_tick(self):
 
         self.progress.setValue(self.job.transferred_size)
 
         try:
             is_running = download_project_is_running(self.job)
-        except ClientError as e:
+        except Exception as e:
 
             self.timer.stop()
 
             # also try to cancel the job so that we do not need to wait for other workers
             download_project_cancel(self.job)
-            self.job = None
 
-            QMessageBox.critical(self, "Download Project", "Client error: " + str(e))
-            self.close()
+            self.reset_operation(success=False, close=True, exception=e)
             return
 
         if not is_running:
@@ -97,17 +129,13 @@ class SyncDialog(QDialog):
                 # this should not raise an exception anymore because we were signalled that
                 # all workers have finished successfully. But maybe something in finalization could fail (e.g. disk full?)
                 download_project_finalize(self.job)
-            except ClientError as e:
-                self.job = None
-                QMessageBox.critical(self, "Download Project", "Client error: " + str(e))
-                self.close()
+            except Exception as e:
+                self.reset_operation(success=False, close=True, exception=e)
                 return
 
-            self.job = None
-            self.is_complete = True
-            self.close()
+            self.reset_operation(success=True, close=True)
 
-    def cancel_download(self):
+    def download_cancel(self):
         assert self.job
 
         self.timer.stop()
@@ -120,5 +148,170 @@ class SyncDialog(QDialog):
 
         QApplication.restoreOverrideCursor()
 
-        self.job = None
-        self.close()
+        self.reset_operation(success=False, close=True)
+
+    #######################################################
+
+    def push_start(self, mergin_client, target_dir, project_name):
+
+        self.operation = self.PUSH
+        self.mergin_client = mergin_client
+        self.target_dir = target_dir
+        self.project_name = project_name
+
+        self.labelStatus.setText("Querying project...")
+
+        # we would like to get the dialog displayed at least for a bit
+        # with low timeout (or zero) it may not even appear before it is closed
+        QTimer.singleShot(250, self.push_start_internal)
+
+    def push_start_internal(self):
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        try:
+            self.job = push_project_async(self.mergin_client, self.target_dir)
+        except Exception as e:
+            QApplication.restoreOverrideCursor()
+            self.reset_operation(success=False, close=True, exception=e)
+            return
+
+        QApplication.restoreOverrideCursor()
+
+        if not self.job:
+            # there are no changes (or push required no uploads)
+            self.reset_operation(success=True, close=True)
+            return
+
+        self.progress.setMaximum(self.job.total_size)
+        self.progress.setValue(0)
+
+        self.timer.start()
+
+        self.labelStatus.setText("Uploading project data...")
+
+    def push_timer_tick(self):
+
+        self.progress.setValue(self.job.transferred_size)
+
+        try:
+            is_running = push_project_is_running(self.job)
+        except Exception as e:
+
+            self.timer.stop()
+
+            # also try to cancel the job so that we do not need to wait for other workers
+            push_project_cancel(self.job)
+
+            self.reset_operation(success=False, close=True, exception=e)
+            return
+
+        if not is_running:
+            self.timer.stop()
+            try:
+                # this should not raise an exception anymore because we were signalled that
+                # all workers have finished successfully. But maybe something in finalization could fail (e.g. disk full?)
+                push_project_finalize(self.job)
+            except Exception as e:
+                self.reset_operation(success=False, close=True, exception=e)
+                return
+
+            self.reset_operation(success=True, close=True)
+
+    def push_cancel(self):
+        assert self.job
+
+        self.timer.stop()
+
+        self.labelStatus.setText("Cancelling sync...")
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        push_project_cancel(self.job)
+
+        QApplication.restoreOverrideCursor()
+
+        self.reset_operation(success=False, close=True)
+
+    #######################################################
+
+    def pull_start(self, mergin_client, target_dir, project_name):
+
+        self.operation = self.PULL
+        self.mergin_client = mergin_client
+        self.target_dir = target_dir
+        self.project_name = project_name
+
+        self.labelStatus.setText("Querying project...")
+
+        # we would like to get the dialog displayed at least for a bit
+        # with low timeout (or zero) it may not even appear before it is closed
+        QTimer.singleShot(250, self.pull_start_internal)
+
+    def pull_start_internal(self):
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        try:
+            self.job = pull_project_async(self.mergin_client, self.target_dir)
+        except Exception as e:
+            QApplication.restoreOverrideCursor()
+            self.reset_operation(success=False, close=True, exception=e)
+            return
+
+        QApplication.restoreOverrideCursor()
+
+        if not self.job:
+            # there are no changes
+            self.reset_operation(success=True, close=True)
+            return
+
+        self.progress.setMaximum(self.job.total_size)
+        self.progress.setValue(0)
+
+        self.timer.start()
+
+        self.labelStatus.setText("Downloading project data...")
+
+    def pull_timer_tick(self):
+
+        self.progress.setValue(self.job.transferred_size)
+
+        try:
+            is_running = pull_project_is_running(self.job)
+        except Exception as e:
+
+            self.timer.stop()
+
+            # also try to cancel the job so that we do not need to wait for other workers
+            pull_project_cancel(self.job)
+
+            self.reset_operation(success=False, close=True, exception=e)
+            return
+
+        if not is_running:
+            self.timer.stop()
+            try:
+                # this should not raise an exception anymore because we were signalled that
+                # all workers have finished successfully. But maybe something in finalization could fail (e.g. disk full?)
+                self.pull_conflicts = pull_project_finalize(self.job)
+            except Exception as e:
+                self.reset_operation(success=False, close=True, exception=e)
+                return
+
+            self.reset_operation(success=True, close=True)
+
+    def pull_cancel(self):
+        assert self.job
+
+        self.timer.stop()
+
+        self.labelStatus.setText("Cancelling sync...")
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        pull_project_cancel(self.job)
+
+        QApplication.restoreOverrideCursor()
+
+        self.reset_operation(success=False, close=True)

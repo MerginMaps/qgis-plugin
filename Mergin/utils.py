@@ -14,6 +14,10 @@ try:
     from .mergin.client import MerginClient, ClientError, LoginError
     from .mergin.client_pull import download_project_async, download_project_is_running, \
                                     download_project_finalize, download_project_cancel
+    from .mergin.client_pull import pull_project_async, pull_project_is_running, \
+                                    pull_project_finalize, pull_project_cancel
+    from .mergin.client_push import push_project_async, push_project_is_running, \
+                                    push_project_finalize, push_project_cancel
 except ImportError:
     import sys
     this_dir = os.path.dirname(os.path.realpath(__file__))
@@ -22,6 +26,10 @@ except ImportError:
     from mergin.client import MerginClient, ClientError, InvalidProject, LoginError
     from mergin.client_pull import download_project_async, download_project_is_running, \
                                    download_project_finalize, download_project_cancel
+    from mergin.client_pull import pull_project_async, pull_project_is_running, \
+                                   pull_project_finalize, pull_project_cancel
+    from mergin.client_push import push_project_async, push_project_is_running, \
+                                   push_project_finalize, push_project_cancel
 
 MERGIN_URL = 'https://public.cloudmergin.com'
 
