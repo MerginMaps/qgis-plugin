@@ -312,7 +312,7 @@ class MerginProjectItem(QgsDataItem):
             if isinstance(dlg.exception, LoginError):
                 self._login_error_message(dlg.exception)
             elif isinstance(dlg.exception, ClientError):
-                QMessageBox.critical(self, "Project sync", "Client error: " + str(dlg.exception))
+                QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
             else:
                 # TODO: this should not happen normally - "known" exceptions should be recognized
                 msg = "Failed to upload changes!\n\n{}".format(str(dlg.exception))
