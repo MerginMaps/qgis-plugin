@@ -26,6 +26,8 @@ from .create_project_dialog import CreateProjectDialog
 from .sync_dialog import SyncDialog
 from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, changes_from_metadata, LoginError
 
+from .mergin.merginproject import MerginProject
+
 icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
 
 
@@ -424,7 +426,7 @@ class MerginGroupItem(QgsDataCollectionItem):
                 QIcon(os.path.join(icon_path, "plus-square-solid.svg")),
                 "Create new project",
                 parent)
-            action_create.triggered.connect(self.parent().create_project)
+            action_create.triggered.connect(self.parent().show_create_project_dialog)
             actions.append(action_create)
         return actions
 
@@ -478,18 +480,78 @@ class MerginRootItem(QgsDataCollectionItem):
             self.mc = dlg.writeSettings()
             self.depopulate()
 
-    def create_project(self):
+    def show_create_project_dialog(self):
         dlg = CreateProjectDialog()
-        if dlg.exec_():
-            dlg.create_project()
+        if not dlg.exec_():
+            return  # cancelled
+
+        self.create_project(dlg.project_name, dlg.project_dir, dlg.is_public)
+
+    def create_project(self, project_name, project_dir, is_public):
+        """ After user has selected project name, this function does the communication.
+        If project_dir is None, we are creating empty project without upload.
+        """
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            self.mc.create_project(project_name, is_public)
+        except Exception as e:
+            QApplication.restoreOverrideCursor()
+            QMessageBox.critical(None, 'Create Project', "Failed to create Mergin project.\n" + str(e))
+            return
+
+        QApplication.restoreOverrideCursor()
+
+        if not project_dir:
+            # not going to upload anything so just pop a "success" message and exit
             self.depopulate()
+            QMessageBox.information(None, 'Create Project', "An empty project has been created on the server", QMessageBox.Close)
+            return
+
+        ## let's do initial upload of the project data
+
+        mp = MerginProject(project_dir)
+        full_project_name = "{}/{}".format(self.mc.username(), project_name)
+        mp.metadata = { "name": full_project_name, "version": "v0", "files": [] }
+        if not mp.inspect_files():
+            self.depopulate()
+            QMessageBox.warning(None, "Create Project", "The project directory is empty - nothing to upload.")
+            return
+
+        dlg = SyncDialog()
+        dlg.push_start(self.mc, project_dir, full_project_name)
+
+        dlg.exec_()  # blocks until success, failure or cancellation
+
+        if dlg.exception:
+            # push failed for some reason
+            if isinstance(dlg.exception, LoginError):
+                self._login_error_message(dlg.exception)
+            elif isinstance(dlg.exception, ClientError):
+                QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
+            else:
+                # TODO: this should not happen normally - "known" exceptions should be recognized
+                msg = "Failed to upload changes!\n\n{}".format(str(dlg.exception))
+                QMessageBox.critical(None, 'Project sync', msg, QMessageBox.Close)
+            return
+
+        if not dlg.is_complete:
+            # we were cancelled - but no need to show a message box about that...?
+            return
+
+        settings = QSettings()
+        settings.setValue('Mergin/localProjects/{}/path'.format(full_project_name), project_dir)
+
+        self.depopulate()  # make sure the project item has the link between remote and local project we have just added
+
+        QMessageBox.information(None, 'Create Project', "Mergin project created and uploaded successfully", QMessageBox.Close)
 
     def actions(self, parent):
         action_configure = QAction(QIcon(os.path.join(icon_path, "cog-solid.svg")), "Configure", parent)
         action_configure.triggered.connect(self.configure)
 
         action_create = QAction(QIcon(os.path.join(icon_path, "plus-square-solid.svg")), "Create new project", parent)
-        action_create.triggered.connect(self.create_project)
+        action_create.triggered.connect(self.show_create_project_dialog)
         actions = [action_configure]
         if self.mc:
             actions.append(action_create)
