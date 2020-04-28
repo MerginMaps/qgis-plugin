@@ -4,7 +4,6 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QSettings, Qt
 
 from .collapsible_message_box import CollapsibleBox
-from .mergin.client import SyncError
 from .utils import create_mergin_client, get_mergin_auth
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_create_project.ui')
@@ -15,62 +14,54 @@ class CreateProjectDialog(QDialog):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
-        self.ui.project_name.textChanged.connect(self.text_changed)
-        self.ui.get_project_dir.clicked.connect(self.get_directory)
-        self.ui.project_dir_btn.toggled.connect(self.toggle_select_dir)
+        self.ui.buttonBox.accepted.connect(self.accept_dialog)
+        self.ui.edit_project_name.textChanged.connect(self.text_changed)
+        self.ui.btn_get_project_dir.clicked.connect(self.get_directory)
+        self.ui.rad_project_dir.toggled.connect(self.toggle_select_dir)
         self.toggle_select_dir()
 
+        # these are the variables used by the caller
+        self.project_name = None
+        self.project_dir = None
+        self.is_public = None
+
     def text_changed(self):
-        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(bool(self.ui.project_name.text()))
+        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(bool(self.ui.edit_project_name.text()))
 
     def toggle_select_dir(self):
-        self.ui.get_project_dir.setEnabled(self.ui.project_dir_btn.isChecked())
-        self.ui.project_dir.setEnabled(self.ui.project_dir_btn.isChecked())
+        self.ui.btn_get_project_dir.setEnabled(self.ui.rad_project_dir.isChecked())
+        self.ui.edit_project_dir.setEnabled(self.ui.rad_project_dir.isChecked())
 
     def get_directory(self):
         project_dir = QFileDialog.getExistingDirectory(None, "Open Directory", "", QFileDialog.ShowDirsOnly)
         if project_dir:
-            self.ui.project_dir.setText(project_dir)
+            self.ui.edit_project_dir.setText(project_dir)
         else:
-            self.ui.project_dir.setText('')
+            self.ui.edit_project_dir.setText('')
 
-    def _return_failure(self, reason, detail=""):
-        QApplication.restoreOverrideCursor()
-        msg = "Failed to complete Mergin project creation.\n" + reason
-        CollapsibleBox(msg, detail, 'Create Project')
-
-    def create_project(self):
+    def accept_dialog(self):
+        """ Called when user pressed OK """
         settings = QSettings()
         mc = create_mergin_client()
-        project_name = self.ui.project_name.text()
-        project_dir = self.ui.project_dir.text() if self.ui.project_dir_btn.isChecked() else None
-        QApplication.setOverrideCursor(Qt.WaitCursor)
+        project_name = self.ui.edit_project_name.text()
+        project_dir = self.ui.edit_project_dir.text() if self.ui.rad_project_dir.isChecked() else None
         username = settings.value("Mergin/username", "")
 
         if username == "":
-            self._return_failure("Username is not stored. Please save configuration again.")
+            QMessageBox.warning(self, "Create Project", "Username is not stored. Please save configuration again.")
+            return
+
+        if project_dir and not os.path.exists(project_dir):
+            QMessageBox.warning(self, "Create Project", "Project directory does not exist.")
             return
 
         if project_dir and '.mergin' in os.listdir(project_dir):
-            self._return_failure("Selected directory is already assigned to mergin project.")
+            QMessageBox.warning(self, "Create Project", "The selected directory seems to be already used "
+                                "for a Mergin project.\n\n(There is already .mergin sub-directory.)")
             return
 
-        try:
-            mc.create_project(project_name, project_dir, self.ui.is_public.isChecked())
-            QApplication.restoreOverrideCursor()
-            settings.setValue('Mergin/localProjects/{}/path'.format(os.path.join(username, project_name)), project_dir)
-            msg = "Mergin project created successfully" if project_dir is not None else "Blank Mergin project was created on Mergin Server"
-            QMessageBox.information(None, 'Create Project', msg, QMessageBox.Close)
-        except Exception as e:
-            detail = ""
-            if isinstance(e, SyncError):
-                detail = f"{e.detail}\n"
-            detail += f"Reason:{str(e)}"
-            settings.remove('Mergin/localProjects/{}/path'.format(project_name))
-            msg = "<br><br>Please:" \
-                  '<ul>' \
-                    '<li>use web interface to check project state.</li>' \
-                    '<li>report this error to developers and attach the error log <a href=https://github.com/lutraconsulting/qgis-mergin-plugin/issues>Click to report</a></li>' \
-                  "</ul>" \
+        self.project_name = project_name
+        self.project_dir = project_dir
+        self.is_public = self.ui.chk_is_public.isChecked()
 
-            self._return_failure(msg, detail)
+        self.accept()  # this will close the dialog and dlg.exec_() returns True

@@ -100,7 +100,8 @@ class SyncDialog(QDialog):
 
         assert self.job  # if there was no error thrown, we should have a job
 
-        self.progress.setMaximum(self.job.total_size)
+        # use kilobytes as a unit so we do not need to worry about int overflow with projects of few GB size
+        self.progress.setMaximum(self.job.total_size / 1024)
         self.progress.setValue(0)
 
         self.timer.start()
@@ -109,7 +110,7 @@ class SyncDialog(QDialog):
 
     def download_timer_tick(self):
 
-        self.progress.setValue(self.job.transferred_size)
+        self.progress.setValue(self.job.transferred_size / 1024)
 
         try:
             is_running = download_project_is_running(self.job)
@@ -183,7 +184,8 @@ class SyncDialog(QDialog):
             self.reset_operation(success=True, close=True)
             return
 
-        self.progress.setMaximum(self.job.total_size)
+        # use kilobytes as a unit so we do not need to worry about int overflow with projects of few GB size
+        self.progress.setMaximum(self.job.total_size / 1024)
         self.progress.setValue(0)
 
         self.timer.start()
@@ -192,7 +194,7 @@ class SyncDialog(QDialog):
 
     def push_timer_tick(self):
 
-        self.progress.setValue(self.job.transferred_size)
+        self.progress.setValue(self.job.transferred_size / 1024)
 
         try:
             is_running = push_project_is_running(self.job)
@@ -266,7 +268,8 @@ class SyncDialog(QDialog):
             self.reset_operation(success=True, close=True)
             return
 
-        self.progress.setMaximum(self.job.total_size)
+        # use kilobytes as a unit so we do not need to worry about int overflow with projects of few GB size
+        self.progress.setMaximum(self.job.total_size / 1024)
         self.progress.setValue(0)
 
         self.timer.start()
@@ -275,7 +278,7 @@ class SyncDialog(QDialog):
 
     def pull_timer_tick(self):
 
-        self.progress.setValue(self.job.transferred_size)
+        self.progress.setValue(self.job.transferred_size / 1024)
 
         try:
             is_running = pull_project_is_running(self.job)
