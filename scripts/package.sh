@@ -19,7 +19,7 @@ git checkout $VERSION
 # prepare py-client dependencies
 python3 setup.py sdist bdist_wheel
 mkdir -p mergin/deps
-pip wheel -r mergin_client.egg-info/requires.txt -w mergin/deps
+pip3 wheel -r mergin_client.egg-info/requires.txt -w mergin/deps
 # special care for pygeodiff
 unzip mergin/deps/pygeodiff-*.whl -d mergin/deps
 # remove unncesessary files
