@@ -120,8 +120,11 @@ class MerginProjectItem(QgsDataItem):
             elif isinstance(dlg.exception, LoginError):
                 self._login_error_message(dlg.exception)
             else:
-                msg = "Failed to download your project {}.\n" \
-                      "{}".format(self.project_name, str(dlg.exception))
+                msg = "Failed to download project {} due to an unhandled exception.\n\n" \
+                      "This should not happen, please report the problem here:\n" \
+                      "https://github.com/lutraconsulting/qgis-mergin-plugin/issues/new\n\n" \
+                      .format(self.project_name)
+                msg += dlg.exception_details()
                 QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
             return
 
@@ -279,8 +282,11 @@ class MerginProjectItem(QgsDataItem):
             elif isinstance(dlg.exception, ClientError):
                 QMessageBox.critical(self, "Project sync", "Client error: " + str(dlg.exception))
             else:
-                # TODO: this should not happen normally - "known" exceptions should be recognized
-                msg = "Failed to download changes!\n\n{}".format(str(dlg.exception))
+                msg = "Failed to sync project {} due to an unhandled exception.\n\n" \
+                      "This should not happen, please report the problem here:\n" \
+                      "https://github.com/lutraconsulting/qgis-mergin-plugin/issues/new\n\n" \
+                      .format(self.project_name)
+                msg += dlg.exception_details()
                 QMessageBox.critical(None, 'Project sync', msg, QMessageBox.Close)
             return
 
@@ -316,8 +322,11 @@ class MerginProjectItem(QgsDataItem):
             elif isinstance(dlg.exception, ClientError):
                 QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
             else:
-                # TODO: this should not happen normally - "known" exceptions should be recognized
-                msg = "Failed to upload changes!\n\n{}".format(str(dlg.exception))
+                msg = "Failed to sync project {} due to an unhandled exception.\n\n" \
+                      "This should not happen, please report the problem here:\n" \
+                      "https://github.com/lutraconsulting/qgis-mergin-plugin/issues/new\n\n" \
+                      .format(self.project_name)
+                msg += dlg.exception_details()
                 QMessageBox.critical(None, 'Project sync', msg, QMessageBox.Close)
             return
 
@@ -530,8 +539,11 @@ class MerginRootItem(QgsDataCollectionItem):
             elif isinstance(dlg.exception, ClientError):
                 QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
             else:
-                # TODO: this should not happen normally - "known" exceptions should be recognized
-                msg = "Failed to upload changes!\n\n{}".format(str(dlg.exception))
+                msg = "Failed to sync project {} due to an unhandled exception.\n\n" \
+                      "This should not happen, please report the problem here:\n" \
+                      "https://github.com/lutraconsulting/qgis-mergin-plugin/issues/new\n\n" \
+                      .format(project_name)
+                msg += dlg.exception_details()
                 QMessageBox.critical(None, 'Project sync', msg, QMessageBox.Close)
             return
 
