@@ -1,4 +1,6 @@
 import os
+import sys
+import traceback
 from PyQt5.QtWidgets import QDialog, QApplication
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QTimer
@@ -29,6 +31,8 @@ class SyncDialog(QDialog):
         self.pull_conflicts = None  # what is returned from pull_project_finalize()
 
         self.exception = None
+        self.exception_type = None
+        self.exception_tb = None
         self.is_complete = False
         self.job = None
 
@@ -65,10 +69,16 @@ class SyncDialog(QDialog):
         self.target_dir = None
         self.project_name = None
         self.job = None
-        self.exception = exception
+        if exception is not None:
+            # assuming this is called from exception handler, traceback of the exception
+            self.exception_type, self.exception, self.exception_tb = sys.exc_info()
         self.is_complete = success
         if close:
             self.close()
+
+    def exception_details(self):
+        """ If an exception was set, this returns a formatted string with a traceback """
+        return '\n'.join(traceback.format_exception(self.exception_type, self.exception, self.exception_tb))
 
     #######################################################
 
