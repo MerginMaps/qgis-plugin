@@ -88,6 +88,17 @@ class MerginProjectItem(QgsDataItem):
         msg = "<font color=red>Security token has been expired, failed to renew. Check your username and password </font>"
         QMessageBox.critical(None, 'Login failed', msg, QMessageBox.Close)
 
+    def _unhandled_exception_message(self, error_details, dialog_title, error_text):
+        msg = error_text + "<p>This should not happen, " \
+              "<a href=\"https://github.com/lutraconsulting/qgis-mergin-plugin/issues\">" \
+              "please report the problem</a>."
+        box = QMessageBox()
+        box.setIcon(QMessageBox.Critical)
+        box.setWindowTitle(dialog_title)
+        box.setText(msg)
+        box.setDetailedText(error_details)
+        box.exec_()
+
     def download(self):
         settings = QSettings()
 
@@ -120,12 +131,9 @@ class MerginProjectItem(QgsDataItem):
             elif isinstance(dlg.exception, LoginError):
                 self._login_error_message(dlg.exception)
             else:
-                msg = "Failed to download project {} due to an unhandled exception.\n\n" \
-                      "This should not happen, please report the problem here:\n" \
-                      "https://github.com/lutraconsulting/qgis-mergin-plugin/issues/new\n\n" \
-                      .format(self.project_name)
-                msg += dlg.exception_details()
-                QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
+                self._unhandled_exception_message(
+                    dlg.exception_details(), "Project download",
+                    f"Failed to download project {self.project_name} due to an unhandled exception.")
             return
 
         if not dlg.is_complete:
@@ -282,12 +290,9 @@ class MerginProjectItem(QgsDataItem):
             elif isinstance(dlg.exception, ClientError):
                 QMessageBox.critical(self, "Project sync", "Client error: " + str(dlg.exception))
             else:
-                msg = "Failed to sync project {} due to an unhandled exception.\n\n" \
-                      "This should not happen, please report the problem here:\n" \
-                      "https://github.com/lutraconsulting/qgis-mergin-plugin/issues/new\n\n" \
-                      .format(self.project_name)
-                msg += dlg.exception_details()
-                QMessageBox.critical(None, 'Project sync', msg, QMessageBox.Close)
+                self._unhandled_exception_message(
+                    dlg.exception_details(), "Project sync",
+                    f"Failed to sync project {self.project_name} due to an unhandled exception.")
             return
 
         if dlg.pull_conflicts:
@@ -322,12 +327,9 @@ class MerginProjectItem(QgsDataItem):
             elif isinstance(dlg.exception, ClientError):
                 QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
             else:
-                msg = "Failed to sync project {} due to an unhandled exception.\n\n" \
-                      "This should not happen, please report the problem here:\n" \
-                      "https://github.com/lutraconsulting/qgis-mergin-plugin/issues/new\n\n" \
-                      .format(self.project_name)
-                msg += dlg.exception_details()
-                QMessageBox.critical(None, 'Project sync', msg, QMessageBox.Close)
+                self._unhandled_exception_message(
+                    dlg.exception_details(), "Project sync",
+                    f"Failed to sync project {self.project_name} due to an unhandled exception.")
             return
 
         if dlg.is_complete:
@@ -539,12 +541,9 @@ class MerginRootItem(QgsDataCollectionItem):
             elif isinstance(dlg.exception, ClientError):
                 QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
             else:
-                msg = "Failed to sync project {} due to an unhandled exception.\n\n" \
-                      "This should not happen, please report the problem here:\n" \
-                      "https://github.com/lutraconsulting/qgis-mergin-plugin/issues/new\n\n" \
-                      .format(project_name)
-                msg += dlg.exception_details()
-                QMessageBox.critical(None, 'Project sync', msg, QMessageBox.Close)
+                self._unhandled_exception_message(
+                    dlg.exception_details(), "Project sync",
+                    f"Failed to sync project {project_name} due to an unhandled exception.")
             return
 
         if not dlg.is_complete:
