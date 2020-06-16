@@ -13,12 +13,15 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )"
 rm -f mergin.zip
 rm -rf mergin-py-client
 # get py-client
-git clone git@github.com:lutraconsulting/mergin-py-client.git
+git clone https://github.com/lutraconsulting/mergin-py-client.git
 cd mergin-py-client
 git checkout $VERSION
 # prepare py-client dependencies
 python3 setup.py sdist bdist_wheel
 mkdir -p mergin/deps
+# without __init__.py the deps dir may get recognized as "namespace package" in python
+# and it can break qgis plugin unloading mechanism - see #126
+touch mergin/deps/__init__.py
 pip3 wheel -r mergin_client.egg-info/requires.txt -w mergin/deps
 # special care for pygeodiff
 unzip mergin/deps/pygeodiff-*.whl -d mergin/deps
