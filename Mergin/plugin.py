@@ -288,7 +288,7 @@ class MerginProjectItem(QgsDataItem):
             if isinstance(dlg.exception, LoginError):
                 self._login_error_message(dlg.exception)
             elif isinstance(dlg.exception, ClientError):
-                QMessageBox.critical(self, "Project sync", "Client error: " + str(dlg.exception))
+                QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
             else:
                 self._unhandled_exception_message(
                     dlg.exception_details(), "Project sync",
