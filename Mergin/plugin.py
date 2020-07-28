@@ -24,7 +24,8 @@ from urllib.error import URLError
 from .configuration_dialog import ConfigurationDialog
 from .create_project_dialog import CreateProjectDialog
 from .sync_dialog import SyncDialog
-from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, changes_from_metadata, LoginError
+from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, changes_from_metadata, LoginError, \
+    get_mergin_auth
 
 from .mergin.merginproject import MerginProject
 
@@ -40,6 +41,8 @@ class MerginPlugin:
         self.menu = u'Mergin Plugin'
 
     def initGui(self):
+        get_mergin_auth()
+
         self.data_item_provider = DataItemProvider()
         QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
         # related to https://github.com/lutraconsulting/qgis-mergin-plugin/issues/3
