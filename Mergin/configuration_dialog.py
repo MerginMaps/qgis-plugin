@@ -2,7 +2,7 @@ import os
 from qgis.PyQt.QtWidgets import QDialog, QApplication, QDialogButtonBox
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, QSettings
-from qgis.core import QgsApplication
+from qgis.core import QgsApplication, QgsExpressionContextUtils
 from urllib.error import URLError
 
 try:
@@ -84,6 +84,7 @@ class ConfigurationDialog(QDialog):
                 mc = MerginClient(url, None, username, password, get_plugin_version())
                 settings.setValue('Mergin/auth_token', mc._auth_session['token'])
                 settings.setValue('Mergin/server', url)
+                QgsExpressionContextUtils.setGlobalVariable('mergin_url', url)
             except (URLError, ClientError, LoginError) as e:
                 QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
                 mc = None

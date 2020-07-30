@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 from urllib.error import URLError
 from qgis.core import (
     QgsApplication,
-    QgsAuthMethodConfig
+    QgsAuthMethodConfig,
+    QgsExpressionContextUtils
 )
 from qgis.PyQt.QtCore import QSettings
 import configparser
@@ -84,6 +85,8 @@ def set_mergin_auth(url, username, password):
         settings.setValue('Mergin/authcfg', cfg.id())
 
     settings.setValue('Mergin/server', url)
+    QgsExpressionContextUtils.setGlobalVariable('mergin_username', username)
+    QgsExpressionContextUtils.setGlobalVariable('mergin_url', url)
 
 
 def create_mergin_client():
@@ -123,3 +126,6 @@ def get_plugin_version():
         config.read_file(f)
         version = config["general"]["version"]
     return "Plugin/" + version
+
+def set_global_variable():
+    pass
