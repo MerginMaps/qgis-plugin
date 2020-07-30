@@ -126,6 +126,3 @@ def get_plugin_version():
         config.read_file(f)
         version = config["general"]["version"]
     return "Plugin/" + version
-
-def set_global_variable():
-    pass
