@@ -84,7 +84,6 @@ class ConfigurationDialog(QDialog):
                 mc = MerginClient(url, None, username, password, get_plugin_version())
                 settings.setValue('Mergin/auth_token', mc._auth_session['token'])
                 settings.setValue('Mergin/server', url)
-                QgsExpressionContextUtils.setGlobalVariable('mergin_url', url)
             except (URLError, ClientError, LoginError) as e:
                 QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
                 mc = None
