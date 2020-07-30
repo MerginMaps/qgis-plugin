@@ -89,6 +89,12 @@ class ConfigurationDialog(QDialog):
                 QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
                 mc = None
 
+        QgsExpressionContextUtils.setGlobalVariable('mergin_url', url)
+        if mc:
+            QgsExpressionContextUtils.setGlobalVariable('mergin_username', username)
+        else:
+            QgsExpressionContextUtils.removeGlobalVariable('mergin_username')
+
         return mc
 
     def test_connection(self):

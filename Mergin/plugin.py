@@ -26,8 +26,7 @@ from urllib.error import URLError
 from .configuration_dialog import ConfigurationDialog
 from .create_project_dialog import CreateProjectDialog
 from .sync_dialog import SyncDialog
-from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, changes_from_metadata, LoginError, \
-    get_mergin_auth
+from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, changes_from_metadata, LoginError
 
 from .mergin.merginproject import MerginProject
 from .mergin.utils import int_version
@@ -46,8 +45,6 @@ class MerginPlugin:
         self.iface.projectRead.connect(set_project_variables)
 
     def initGui(self):
-        get_mergin_auth()
-
         self.data_item_provider = DataItemProvider()
         QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
         # related to https://github.com/lutraconsulting/qgis-mergin-plugin/issues/3

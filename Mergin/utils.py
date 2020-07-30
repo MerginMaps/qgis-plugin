@@ -85,8 +85,6 @@ def set_mergin_auth(url, username, password):
         settings.setValue('Mergin/authcfg', cfg.id())
 
     settings.setValue('Mergin/server', url)
-    QgsExpressionContextUtils.setGlobalVariable('mergin_username', username)
-    QgsExpressionContextUtils.setGlobalVariable('mergin_url', url)
 
 
 def create_mergin_client():
