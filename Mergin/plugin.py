@@ -205,6 +205,16 @@ class MerginProjectItem(QgsDataItem):
             return True
         return True
 
+    def _check_writing_permissions(self):
+        """Check if user have writing rights to the project."""
+        info = self.mc.project_info(self.project_name)
+        username = self.mc.username()
+        writersnames = info["access"]["writersnames"]
+        if username not in writersnames:
+            return False
+        else:
+            return True
+
     def open_project(self):
         if not self.path:
             return 
@@ -257,6 +267,10 @@ class MerginProjectItem(QgsDataItem):
                 msg += push_msg
                 msg += pretty_summary(push_changes_summary)
                 msg += f"\nUnable to compare some of the modified local files with their server version - we will have to upload the whole file (history of the files will be lost): {files_to_replace}" if files_to_replace else ""
+                can_write = self._check_writing_permissions()
+                if can_write is False:
+                    msg += f"\n\nWARNING: You don't have writing permissions to this project. Changes won't be synced!"
+
             if not msg:
                 msg = "Project is already up-to-date"
             QMessageBox.information(None, 'Project status', msg, QMessageBox.Close)
@@ -276,6 +290,13 @@ class MerginProjectItem(QgsDataItem):
         pull_changes, push_changes, push_changes_summary = self.mc.project_status(self.path)
         if not sum(len(v) for v in list(pull_changes.values())+list(push_changes.values())):
             QMessageBox.information(None, 'Project sync', 'Project is already up-to-date', QMessageBox.Close)
+            return
+
+        # Check if user have writing rights to the project.
+        can_write = self._check_writing_permissions()
+        if can_write is False:
+            QMessageBox.information(None, "Project sync", "You have no writing rights to this project",
+                                    QMessageBox.Close)
             return
 
         dlg = SyncDialog()
