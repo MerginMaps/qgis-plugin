@@ -41,6 +41,14 @@ class MerginPlugin:
         self.menu = u'Mergin Plugin'
 
     def initGui(self):
+
+        # This is a quick fix for a bad crasher for users that have set up master password for their
+        # storage of authentication configurations. What would happen is that in a worker thread,
+        # QGIS browser model would start populating Mergin data items which would want to query Mergin
+        # server and thus request auth info - but as this would be done in a background thread,
+        # things will get horribly wrong when QGIS tries to display GUI and the app would crash.
+        # Triggering auth request to QGIS auth framework already at this point will make sure that
+        # the dialog asking for master password is started from the main thread -> no crash.
         get_mergin_auth()
 
         self.data_item_provider = DataItemProvider()
