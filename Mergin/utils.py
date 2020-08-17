@@ -6,6 +6,7 @@ from qgis.core import (
     QgsAuthMethodConfig
 )
 from qgis.PyQt.QtCore import QSettings
+from qgis.core import Qgis
 import configparser
 
 
@@ -122,4 +123,4 @@ def get_plugin_version():
         config = configparser.ConfigParser()
         config.read_file(f)
         version = config["general"]["version"]
-    return "Plugin/" + version
+    return "Plugin/" + version + " QGIS/" + Qgis.version()
