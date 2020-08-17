@@ -69,29 +69,26 @@ def set_project_variables():
     settings = QSettings()
     settings.beginGroup('Mergin/localProjects/')
     for key in settings.allKeys():
-        # Expecting [<namespace>, <project_name>, <path>]
+        # Expecting key in the following form: '<namespace>/<project_name>/path' - needs project dir to load metadata
         key_parts = key.split('/')
-        if len(key_parts) > 2 and key_parts[-1] == 'path':
+        if len(key_parts) > 2 and key_parts[2] == 'path':
             path = settings.value(key)
-            if path in QgsProject.instance().absoluteFilePath():
+            if path == QgsProject.instance().absolutePath() or path + '/' in QgsProject.instance().absolutePath():
                 try:
                     mp = MerginProject(path)
                     metadata = mp.metadata
-
-                    if len(key_parts) > 1:
-                        QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_name',
-                                                                     key_parts[1])
-                        QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_owner',
-                                                                     key_parts[0])
-                    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_full_name',
-                                                                 metadata.get("name"))
-                    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_version',
-                                                                 int_version(metadata.get("version")))
-
+                    write_project_variables(key_parts[0], key_parts[1], metadata.get("name"), metadata.get("version"))
                     return
-
                 except InvalidProject:
                     remove_project_variables()
+
+
+def write_project_variables(project_owner, project_name, project_full_name, version):
+    print(project_owner, project_name, project_full_name, version)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_name', project_name)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_owner', project_owner)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_full_name', project_full_name)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_version', int_version(version))
 
 
 def remove_project_variables():
