@@ -597,6 +597,8 @@ class MerginRootItem(QgsDataCollectionItem):
 
         settings = QSettings()
         settings.setValue('Mergin/localProjects/{}/path'.format(full_project_name), project_dir)
+        if project_dir == QgsProject.instance().absolutePath() or project_dir + '/' in QgsProject.instance().absolutePath():
+            write_project_variables(self.mc.username(), project_name, full_project_name, 'v1')
 
         self.depopulate()  # make sure the project item has the link between remote and local project we have just added
 
