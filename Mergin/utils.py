@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 from urllib.error import URLError
 from qgis.core import (
     QgsApplication,
-    QgsAuthMethodConfig
+    QgsAuthMethodConfig,
+    QgsExpressionContextUtils
 )
 from qgis.PyQt.QtCore import QSettings
 from qgis.core import Qgis

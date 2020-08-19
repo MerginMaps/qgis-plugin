@@ -13,10 +13,12 @@ from qgis.core import (
     QgsDataItem,
     QgsDataCollectionItem,
     QgsErrorItem,
+    QgsExpressionContextUtils,
     QgsDataItemProvider,
     QgsDataProvider,
     QgsProject,
     QgsVectorLayer)
+from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QApplication
 from qgis.PyQt.QtCore import QSettings, Qt
 from urllib.error import URLError
@@ -28,6 +30,7 @@ from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidPr
     get_mergin_auth
 
 from .mergin.merginproject import MerginProject
+from .mergin.utils import int_version
 
 icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
 
@@ -39,6 +42,11 @@ class MerginPlugin:
         self.data_item_provider = None
         self.actions = []
         self.menu = u'Mergin Plugin'
+
+        self.iface.projectRead.connect(set_project_variables)
+        settings = QSettings()
+        QgsExpressionContextUtils.setGlobalVariable('mergin_username', settings.value("Mergin/username", ""))
+        QgsExpressionContextUtils.setGlobalVariable('mergin_url', settings.value('Mergin/server', ""))
 
     def initGui(self):
 
@@ -58,10 +66,53 @@ class MerginPlugin:
         #     self.iface.browserModel().reload()
 
     def unload(self):
+        self.iface.projectRead.disconnect(set_project_variables)
+        remove_project_variables()
+        QgsExpressionContextUtils.removeGlobalVariable('mergin_username')
+        QgsExpressionContextUtils.removeGlobalVariable('mergin_url')
+
         QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.data_item_provider)
         self.data_item_provider = None
         # this is crashing qgis on exit
         # self.iface.browserModel().reload()
+
+
+def set_project_variables():
+    """
+    Sets project related mergin variables. Supposed to be called when any QGIS project is (re)loaded.
+    If a loaded project is not a mergin project, it suppose to have custom variables without mergin variables by default.
+    If a loaded project is invalid - doesnt have metadata, mergin variables are removed.
+    """
+    settings = QSettings()
+    settings.beginGroup('Mergin/localProjects/')
+    for key in settings.allKeys():
+        # Expecting key in the following form: '<namespace>/<project_name>/path' - needs project dir to load metadata
+        key_parts = key.split('/')
+        if len(key_parts) > 2 and key_parts[2] == 'path':
+            path = settings.value(key)
+            if path == QgsProject.instance().absolutePath() or path + '/' in QgsProject.instance().absolutePath():
+                try:
+                    mp = MerginProject(path)
+                    metadata = mp.metadata
+                    write_project_variables(key_parts[0], key_parts[1], metadata.get("name"), metadata.get("version"))
+                    return
+                except InvalidProject:
+                    remove_project_variables()
+
+
+def write_project_variables(project_owner, project_name, project_full_name, version):
+    print(project_owner, project_name, project_full_name, version)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_name', project_name)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_owner', project_owner)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_full_name', project_full_name)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_version', int_version(version))
+
+
+def remove_project_variables():
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), 'mergin_project_name')
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), 'mergin_project_full_name')
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), 'mergin_project_version')
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), 'mergin_project_owner')
 
 
 def pretty_summary(summary):
@@ -229,7 +280,7 @@ class MerginProjectItem(QgsDataItem):
 
         qgis_files = find_qgis_files(self.path)
         if len(qgis_files) == 1:
-            QgsProject.instance().read(qgis_files[0])
+            iface.addProject(qgis_files[0])
         else:
             msg = "Selected project does not contain any QGIS project file" if len(qgis_files) == 0 else "Plugin can only load project with single QGIS project file but {} found.".format(len(qgis_files))
             QMessageBox.warning(None, 'Load QGIS project', msg, QMessageBox.Close)
@@ -368,7 +419,7 @@ class MerginProjectItem(QgsDataItem):
         """ This will forcefully reload the QGIS project because the project (or its data) may have changed """
         qgis_files = find_qgis_files(self.path)
         if QgsProject.instance().fileName() in qgis_files:
-            QgsProject.instance().read()
+            iface.addProject(QgsProject.instance().fileName())
 
     def remove_remote_project(self):
         msg = "Do you really want to remove project {} from server?".format(self.project_name)
@@ -576,6 +627,8 @@ class MerginRootItem(QgsDataCollectionItem):
 
         settings = QSettings()
         settings.setValue('Mergin/localProjects/{}/path'.format(full_project_name), project_dir)
+        if project_dir == QgsProject.instance().absolutePath() or project_dir + '/' in QgsProject.instance().absolutePath():
+            write_project_variables(self.mc.username(), project_name, full_project_name, 'v1')
 
         self.depopulate()  # make sure the project item has the link between remote and local project we have just added
 
