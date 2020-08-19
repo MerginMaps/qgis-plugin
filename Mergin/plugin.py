@@ -101,7 +101,6 @@ def set_project_variables():
 
 
 def write_project_variables(project_owner, project_name, project_full_name, version):
-    print(project_owner, project_name, project_full_name, version)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_name', project_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_owner', project_owner)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'mergin_project_full_name', project_full_name)
