@@ -43,6 +43,9 @@ class MerginPlugin:
         self.menu = u'Mergin Plugin'
 
         self.iface.projectRead.connect(set_project_variables)
+        settings = QSettings()
+        QgsExpressionContextUtils.setGlobalVariable('mergin_username', settings.value("Mergin/username", ""))
+        QgsExpressionContextUtils.setGlobalVariable('mergin_url', settings.value('Mergin/server', ""))
 
     def initGui(self):
         self.data_item_provider = DataItemProvider()
@@ -53,6 +56,9 @@ class MerginPlugin:
 
     def unload(self):
         self.iface.projectRead.disconnect(set_project_variables)
+        remove_project_variables()
+        QgsExpressionContextUtils.removeGlobalVariable('mergin_username')
+        QgsExpressionContextUtils.removeGlobalVariable('mergin_url')
 
         QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.data_item_provider)
         self.data_item_provider = None
