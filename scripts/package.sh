@@ -32,7 +32,7 @@ GEODIFF_VER="$(geodiff="$(cat mergin_client.egg-info/requires.txt | grep pygeodi
 echo "Downloading binaries for $GEODIFF_VER ..." 
 cd mergin/deps
 mkdir -p tmp
-platforms=(win32 win_amd64 macosx_10_14_x86_64 manylinux2010_x86_64)
+platforms=(win32 win_amd64 macosx_10_15_x86_64 manylinux2010_x86_64)
 for platform in "${platforms[@]}"
 do
 pip3 download --only-binary=:all: --no-deps --platform ${platform} --python-version 36 --implementation cp --abi cp36m pygeodiff==$GEODIFF_VER
