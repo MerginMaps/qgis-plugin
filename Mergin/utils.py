@@ -119,9 +119,19 @@ def changes_from_metadata(metadata):
     return added, removed, updated, renamed
 
 
+def get_qgis_version_str():
+    """ Returns QGIS verion as 'MAJOR.MINOR.PATCH', for example '3.10.6' """
+    # there's also Qgis.QGIS_VERSION which is string but also includes release name (possibly with unicode characters)
+    qgis_ver_int = Qgis.QGIS_VERSION_INT
+    qgis_ver_major = qgis_ver_int // 10000
+    qgis_ver_minor = (qgis_ver_int % 10000) // 100
+    qgis_ver_patch = (qgis_ver_int % 100)
+    return "{}.{}.{}".format(qgis_ver_major, qgis_ver_minor, qgis_ver_patch)
+
+
 def get_plugin_version():
     with open(os.path.join(os.path.dirname(__file__), "metadata.txt"), 'r') as f:
         config = configparser.ConfigParser()
         config.read_file(f)
         version = config["general"]["version"]
-    return "Plugin/" + version + " QGIS/" + Qgis.version()
+    return "Plugin/" + version + " QGIS/" + get_qgis_version_str()
