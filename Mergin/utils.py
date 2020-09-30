@@ -1,6 +1,8 @@
 import os
 from datetime import datetime, timezone
-from urllib.error import URLError
+import urllib.parse
+import urllib.request
+from urllib.error import URLError, HTTPError
 from qgis.core import (
     QgsApplication,
     QgsAuthMethodConfig,
@@ -9,6 +11,7 @@ from qgis.core import (
 from qgis.PyQt.QtCore import QSettings
 from qgis.core import Qgis
 import configparser
+import platform
 
 
 try:
@@ -34,6 +37,7 @@ except ImportError:
                                    push_project_finalize, push_project_cancel
 
 MERGIN_URL = 'https://public.cloudmergin.com'
+MERGIN_LOGS_URL = 'https://g4pfq226j0.execute-api.eu-west-1.amazonaws.com/mergin_client_log_submit'
 
 
 def find_qgis_files(directory):
@@ -129,9 +133,56 @@ def get_qgis_version_str():
     return "{}.{}.{}".format(qgis_ver_major, qgis_ver_minor, qgis_ver_patch)
 
 
-def get_plugin_version():
+def plugin_version():
     with open(os.path.join(os.path.dirname(__file__), "metadata.txt"), 'r') as f:
         config = configparser.ConfigParser()
         config.read_file(f)
-        version = config["general"]["version"]
+    return config["general"]["version"]
+
+
+def get_plugin_version():
+    version = plugin_version()
     return "Plugin/" + version + " QGIS/" + get_qgis_version_str()
+
+
+def send_logs(username, logfile):
+    """ Send mergin-client logs to dedicated server
+
+    :param logfile: path to logfile
+    :returns: name of submitted file, error message
+    """
+    mergin_url, _, _ = get_mergin_auth()
+    system = platform.system()
+    plugin = plugin_version()
+
+    params = {
+        "app": "plugin-{}-{}".format(plugin, system),
+        "username": username
+    }
+    url = MERGIN_LOGS_URL + "?" + urllib.parse.urlencode(params)
+    header = {"content-type": "text/plain"}
+
+    meta = "Plugin: {} \nQGIS: {} \nSystem: {} \nMergin URL: {} \nMergin user: {} \n--------------------------------\n"\
+        .format(
+            plugin,
+            get_qgis_version_str(),
+            system,
+            mergin_url,
+            username
+        )
+
+    with open(logfile, 'rb') as f:
+        if os.path.getsize(logfile) > 512 * 1024:
+            f.seek(-512 * 1024, os.SEEK_END)
+        logs = f.read()
+
+    payload = meta.encode() + logs
+    try:
+        req = urllib.request.Request(url, data=payload, headers=header)
+        resp = urllib.request.urlopen(req)
+        log_file_name = resp.read().decode()
+        if resp.msg != 'OK':
+            return None, str(resp.reason)
+        return log_file_name, None
+    except (HTTPError, URLError) as e:
+        return None, str(e)
