@@ -26,8 +26,9 @@ from urllib.error import URLError
 from .configuration_dialog import ConfigurationDialog
 from .create_project_dialog import CreateProjectDialog
 from .sync_dialog import SyncDialog
-from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, changes_from_metadata, LoginError, \
-    get_mergin_auth
+from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, changes_from_metadata, \
+    LoginError, \
+    get_mergin_auth, send_logs
 
 from .mergin.merginproject import MerginProject
 from .mergin.utils import int_version
@@ -440,6 +441,16 @@ class MerginProjectItem(QgsDataItem):
         except LoginError as e:
             self._login_error_message(e)
 
+    def submit_logs(self):
+        if not self.path:
+            return
+
+        log_file_name, error = send_logs(self.mc.username(), os.path.join(self.path, '.mergin', 'client-log.txt'))
+        if error:
+            QMessageBox.warning(None, "Submit logs", "Sending of logs failed, reason: {}".format(error))
+            return
+        QMessageBox.information(None, 'Submit logs', "Logs successfully submitted:\n{}".format(log_file_name), QMessageBox.Close)
+
     def actions(self, parent):
         action_download = QAction(QIcon(os.path.join(icon_path, "cloud-download-alt-solid.svg")), "Download", parent)
         action_download.triggered.connect(self.download)
@@ -459,8 +470,11 @@ class MerginProjectItem(QgsDataItem):
         action_status = QAction(QIcon(os.path.join(icon_path, "info-circle-solid.svg")), "Status", parent)
         action_status.triggered.connect(self.project_status)
 
+        action_submit_logs = QAction(QIcon(os.path.join(icon_path, "bars-solid.svg")), "Submit logs", parent)
+        action_submit_logs.triggered.connect(self.submit_logs)
+
         if self.path:
-            actions = [action_open_project, action_status, action_sync_project, action_remove_local]
+            actions = [action_open_project, action_status, action_sync_project, action_remove_local, action_submit_logs]
         else:
             actions = [action_download]
             if self.project['permissions']['delete']:
