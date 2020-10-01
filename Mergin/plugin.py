@@ -445,11 +445,24 @@ class MerginProjectItem(QgsDataItem):
         if not self.path:
             return
 
-        log_file_name, error = send_logs(self.mc.username(), os.path.join(self.path, '.mergin', 'client-log.txt'))
-        if error:
-            QMessageBox.warning(None, "Submit logs", "Sending of logs failed, reason: {}".format(error))
+        logs_path = os.path.join(self.path, '.mergin', 'client-log.txt')
+        msg = "This action will send a diagnostic log to the developers. " \
+              "Use this option when you encounter synchronization issues, as the log is " \
+              "very useful to determine the exact cause of the problem.\n\n" \
+              "The log does not contain any of your data, only file names. It can be found here:\n" \
+              "{}\n\nIt would be useful if you also send a mail to info@lutraconsulting.co.uk " \
+              "and briefly describe the problem to add more context to the diagnostic log.\n\n" \
+              "Please click OK if you want to proceed.".format(logs_path)
+
+        btn_reply = QMessageBox.question(None, 'Submit diagnostic logs', msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        if btn_reply == QMessageBox.No:
             return
-        QMessageBox.information(None, 'Submit logs', "Logs successfully submitted:\n{}".format(log_file_name), QMessageBox.Close)
+
+        log_file_name, error = send_logs(self.mc.username(), logs_path)
+        if error:
+            QMessageBox.warning(None, "Submit diagnostic logs", "Sending of logs failed, reason: {}".format(error))
+            return
+        QMessageBox.information(None, 'Submit diagnostic logs', "Logs successfully submitted:\n{}".format(log_file_name), QMessageBox.Close)
 
     def actions(self, parent):
         action_download = QAction(QIcon(os.path.join(icon_path, "cloud-download-alt-solid.svg")), "Download", parent)
@@ -470,11 +483,11 @@ class MerginProjectItem(QgsDataItem):
         action_status = QAction(QIcon(os.path.join(icon_path, "info-circle-solid.svg")), "Status", parent)
         action_status.triggered.connect(self.project_status)
 
-        action_submit_logs = QAction(QIcon(os.path.join(icon_path, "bars-solid.svg")), "Submit logs", parent)
-        action_submit_logs.triggered.connect(self.submit_logs)
+        action_diagnostic_log = QAction(QIcon(os.path.join(icon_path, "medkit-solid.svg")), "Diagnostic log", parent)
+        action_diagnostic_log.triggered.connect(self.submit_logs)
 
         if self.path:
-            actions = [action_open_project, action_status, action_sync_project, action_remove_local, action_submit_logs]
+            actions = [action_open_project, action_status, action_sync_project, action_remove_local, action_diagnostic_log]
         else:
             actions = [action_download]
             if self.project['permissions']['delete']:
