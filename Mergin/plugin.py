@@ -454,15 +454,18 @@ class MerginProjectItem(QgsDataItem):
               "and briefly describe the problem to add more context to the diagnostic log.\n\n" \
               "Please click OK if you want to proceed.".format(logs_path)
 
-        btn_reply = QMessageBox.question(None, 'Submit diagnostic logs', msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-        if btn_reply == QMessageBox.No:
+        btn_reply = QMessageBox.question(None, 'Submit diagnostic logs', msg, QMessageBox.Ok | QMessageBox.Cancel)
+        if btn_reply != QMessageBox.Ok:
             return
 
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         log_file_name, error = send_logs(self.mc.username(), logs_path)
+        QApplication.restoreOverrideCursor()
+
         if error:
-            QMessageBox.warning(None, "Submit diagnostic logs", "Sending of logs failed, reason: {}".format(error))
+            QMessageBox.warning(None, "Submit diagnostic logs", "Sending of diagnostic logs failed!\n\n{}".format(error))
             return
-        QMessageBox.information(None, 'Submit diagnostic logs', "Logs successfully submitted:\n{}".format(log_file_name), QMessageBox.Close)
+        QMessageBox.information(None, 'Submit diagnostic logs', "Diagnostic logs successfully submitted - thank you!\n\n{}".format(log_file_name), QMessageBox.Close)
 
     def actions(self, parent):
         action_download = QAction(QIcon(os.path.join(icon_path, "cloud-download-alt-solid.svg")), "Download", parent)
