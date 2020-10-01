@@ -152,11 +152,11 @@ def send_logs(username, logfile):
     :returns: name of submitted file, error message
     """
     mergin_url, _, _ = get_mergin_auth()
-    system = platform.system()
-    plugin = plugin_version()
+    system = platform.system().lower()
+    version = plugin_version()
 
     params = {
-        "app": "plugin-{}-{}".format(plugin, system),
+        "app": "{}-plugin-{}".format(system, version),
         "username": username
     }
     url = MERGIN_LOGS_URL + "?" + urllib.parse.urlencode(params)
@@ -164,7 +164,7 @@ def send_logs(username, logfile):
 
     meta = "Plugin: {} \nQGIS: {} \nSystem: {} \nMergin URL: {} \nMergin user: {} \n--------------------------------\n"\
         .format(
-            plugin,
+            version,
             get_qgis_version_str(),
             system,
             mergin_url,
