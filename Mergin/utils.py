@@ -156,7 +156,7 @@ def send_logs(username, logfile):
     version = plugin_version()
 
     params = {
-        "app": "{}-plugin-{}".format(system, version),
+        "app": "plugin-{}-{}".format(system, version),
         "username": username
     }
     url = MERGIN_LOGS_URL + "?" + urllib.parse.urlencode(params)
