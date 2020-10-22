@@ -62,7 +62,7 @@
      <item>
       <widget class="QLabel" name="master_password_status">
        <property name="text">
-        <string>Warning: You may be prompt for QGIS master password</string>
+        <string>Warning: You may be prompted for QGIS master password</string>
        </property>
       </widget>
      </item>

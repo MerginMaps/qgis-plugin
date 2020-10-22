@@ -62,7 +62,7 @@ class ConfigurationDialog(QDialog):
         if QgsApplication.authManager().masterPasswordIsSet():
             self.ui.master_password_status.setText('')
         else:
-            self.ui.master_password_status.setText('<font color=red> Warning: You may be prompt for QGIS master password </font>')
+            self.ui.master_password_status.setText('<font color=red> Warning: You may be prompted for QGIS master password </font>')
 
     def writeSettings(self):
         url = self.server_url()
