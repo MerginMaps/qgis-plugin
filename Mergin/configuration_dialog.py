@@ -14,7 +14,8 @@ except ImportError:
     sys.path.append(path)
     from mergin.client import MerginClient, ClientError, LoginError
 
-from .utils import get_mergin_auth, set_mergin_auth, MERGIN_URL, create_mergin_client, get_plugin_version
+from .utils import get_mergin_auth, set_mergin_auth, MERGIN_URL, create_mergin_client, get_plugin_version, \
+    validate_mergin_url
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_config.ui')
 
@@ -42,6 +43,14 @@ class ConfigurationDialog(QDialog):
         self.ui.username.textChanged.connect(self.check_credentials)
         self.ui.password.textChanged.connect(self.check_credentials)
         self.check_credentials()
+
+    def accept(self):
+        err_msg = validate_mergin_url(self.server_url())
+        if err_msg:
+            msg = f"<font color=red> {err_msg} </font>"
+            self.ui.test_status.setText(msg)
+            return
+        super().accept()
 
     def toggle_custom_url(self):
         self.ui.merginURL.setVisible(self.ui.custom_url.isChecked())
