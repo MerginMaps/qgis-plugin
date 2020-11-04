@@ -1,8 +1,8 @@
 import os
 from PyQt5.QtWidgets import QDialog, QLabel, QTableWidget, QHeaderView, QTableWidgetItem, \
-    QDialogButtonBox, QGridLayout, QTreeView
+    QDialogButtonBox, QGridLayout, QTreeView, QAbstractItemView
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QAbstractItemView, QStandardItemModel, QStandardItem, QIcon
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon
 
 from .utils import is_versioned_file
 
