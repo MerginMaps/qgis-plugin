@@ -26,12 +26,13 @@ from urllib.error import URLError
 from .configuration_dialog import ConfigurationDialog
 from .create_project_dialog import CreateProjectDialog
 from .sync_dialog import SyncDialog
-from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, changes_from_metadata, \
+from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, \
     LoginError, \
     get_mergin_auth, send_logs
 
 from .mergin.merginproject import MerginProject
 from .mergin.utils import int_version
+from .project_status_dialog import ProjectStatusDialog
 
 icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
 
@@ -294,44 +295,12 @@ class MerginProjectItem(QgsDataItem):
 
         try:
             pull_changes, push_changes, push_changes_summary = self.mc.project_status(self.path)
-            pull_added, pull_removed, pull_updated, pull_renamed = changes_from_metadata(pull_changes)
-            push_added, push_removed, push_updated, push_renamed = changes_from_metadata(push_changes)
+            if not sum(len(v) for v in list(pull_changes.values()) + list(push_changes.values())):
+                QMessageBox.information(None, 'Project status', 'Project is already up-to-date', QMessageBox.Close)
+            else:
+                dlg = ProjectStatusDialog(pull_changes, push_changes, push_changes_summary)
+                dlg.exec_()
 
-            pull_msg = "Pending changes from the latest server version: \n"
-            if pull_added:
-                pull_msg += f"added: {pull_added} \n"
-            if pull_removed:
-                pull_msg += f"removed: {pull_removed} \n"
-            if pull_updated:
-                pull_msg += f"updated: {pull_updated} \n"
-            if pull_renamed:
-                pull_msg += f"renamed: {pull_renamed} \n"
-
-            push_msg = "These local changes have been found: \n"
-            if push_added:
-                push_msg += f"added: {push_added} \n"
-            if push_removed:
-                push_msg += f"removed: {push_removed} \n"
-            if push_updated:
-                push_msg += f"updated: {push_updated} \n"
-            if push_renamed:
-                push_msg += f"renamed: {push_renamed} \n"
-
-            files_to_replace = ", ".join([file["path"] for file in push_changes["updated"] if "diff" not in file and ".gpkg" in file['path']])
-
-            msg = ''
-            if sum(len(v) for v in pull_changes.values()):
-                msg += pull_msg + "\n"
-            if sum(len(v) for v in push_changes.values()):
-                msg += push_msg
-                msg += pretty_summary(push_changes_summary)
-                msg += f"\nUnable to compare some of the modified local files with their server version - we will have to upload the whole file (history of the files will be lost): {files_to_replace}" if files_to_replace else ""
-                if not self._have_writing_permissions():
-                    msg += f"\n\nWARNING: You don't have writing permissions to this project. Changes won't be synced!"
-
-            if not msg:
-                msg = "Project is already up-to-date"
-            QMessageBox.information(None, 'Project status', msg, QMessageBox.Close)
         except (URLError, ClientError, InvalidProject) as e:
             msg = f"Failed to get status for project {self.project_name}:\n\n{str(e)}"
             QMessageBox.critical(None, 'Project status', msg, QMessageBox.Close)

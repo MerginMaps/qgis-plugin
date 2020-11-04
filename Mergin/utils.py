@@ -115,14 +115,6 @@ def create_mergin_client():
     return MerginClient(url, mc._auth_session['token'], username, password, get_plugin_version())
 
 
-def changes_from_metadata(metadata):
-    added = ", ".join(f['path'] for f in metadata['added'])
-    removed = ", ".join(f['path'] for f in metadata['removed'])
-    updated = ", ".join(f['path'] for f in metadata['updated'])
-    renamed = ", ".join(f"{f['path']} -> {f['new_path']}" for f in metadata['renamed'])
-    return added, removed, updated, renamed
-
-
 def get_qgis_version_str():
     """ Returns QGIS verion as 'MAJOR.MINOR.PATCH', for example '3.10.6' """
     # there's also Qgis.QGIS_VERSION which is string but also includes release name (possibly with unicode characters)
@@ -143,6 +135,19 @@ def plugin_version():
 def get_plugin_version():
     version = plugin_version()
     return "Plugin/" + version + " QGIS/" + get_qgis_version_str()
+
+
+def is_versioned_file(file):
+    """ Check if file is compatible with geodiff lib and hence suitable for versioning.
+
+    :param file: file path
+    :type file: str
+    :returns: if file is compatible with geodiff lib
+    :rtype: bool
+    """
+    diff_extensions = ['.gpkg', '.sqlite']
+    f_extension = os.path.splitext(file)[1]
+    return f_extension in diff_extensions
 
 
 def send_logs(username, logfile):
