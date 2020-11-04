@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timezone
+import json
 import urllib.parse
 import urllib.request
 from urllib.error import URLError, HTTPError
@@ -186,3 +187,17 @@ def send_logs(username, logfile):
         return log_file_name, None
     except (HTTPError, URLError) as e:
         return None, str(e)
+
+
+def validate_mergin_url(url):
+    url_ping = urllib.parse.urljoin(url, urllib.parse.quote("/ping"))
+    try:
+        with urllib.request.urlopen(url_ping) as f:
+            response = json.load(f)
+            if response.get('service') != 'Mergin':
+                return 'URL is invalid Mergin URl.'
+            if response.get('status') != 'online':
+                return 'Mergin server is offline.'
+    except:
+        return "Invalid URL"
+    return None
