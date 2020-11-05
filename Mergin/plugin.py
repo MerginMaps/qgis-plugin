@@ -596,20 +596,21 @@ class MerginRootItem(QgsDataCollectionItem):
             self.depopulate()
 
     def show_create_project_dialog(self):
-        dlg = CreateProjectDialog()
+        user_info = self.mc.user_info()
+        dlg = CreateProjectDialog(username=user_info['username'], user_organisations=user_info['organisations'])
         if not dlg.exec_():
             return  # cancelled
 
-        self.create_project(dlg.project_name, dlg.project_dir, dlg.is_public)
+        self.create_project(dlg.project_name, dlg.project_dir, dlg.is_public, dlg.project_namespace)
 
-    def create_project(self, project_name, project_dir, is_public):
+    def create_project(self, project_name, project_dir, is_public, namespace):
         """ After user has selected project name, this function does the communication.
         If project_dir is None, we are creating empty project without upload.
         """
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            self.mc.create_project(project_name, is_public)
+            self.mc.create_project(project_name, is_public, namespace)
         except Exception as e:
             QApplication.restoreOverrideCursor()
             QMessageBox.critical(None, 'Create Project', "Failed to create Mergin project.\n" + str(e))
