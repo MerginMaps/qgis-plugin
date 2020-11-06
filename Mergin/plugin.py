@@ -25,6 +25,7 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .create_project_dialog import CreateProjectDialog
+from .project_dialog import ProjectDialog
 from .sync_dialog import SyncDialog
 from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, \
     LoginError, \
@@ -391,6 +392,26 @@ class MerginProjectItem(QgsDataItem):
         if QgsProject.instance().fileName() in qgis_files:
             iface.addProject(QgsProject.instance().fileName())
 
+    def clone_remote_project(self):
+        user_info = self.mc.user_info()
+        dlg = ProjectDialog(username=user_info['username'], user_organisations=user_info.get('organisations', []))
+        if not dlg.exec_():
+            return  # cancelled
+        try:
+            self.mc.clone_project(self.project_name, dlg.project_namespace, dlg.project_name)
+            msg = "Mergin project cloned successfully."
+            QMessageBox.information(None, 'Clone project', msg, QMessageBox.Close)
+
+            root_item = self.parent().parent()
+            groups = root_item.children()
+            for g in groups:
+                g.refresh()
+        except (URLError, ClientError) as e:
+            msg = "Failed to clone project {}:\n\n{}".format(self.project_name, str(e))
+            QMessageBox.critical(None, 'Clone project', msg, QMessageBox.Close)
+        except LoginError as e:
+            self._login_error_message(e)
+
     def remove_remote_project(self):
         msg = "Do you really want to remove project {} from server?".format(self.project_name)
         btn_reply = QMessageBox.question(None, 'Remove project', msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -450,6 +471,10 @@ class MerginProjectItem(QgsDataItem):
         action_sync_project = QAction(QIcon(os.path.join(icon_path, "sync-solid.svg")), "Synchronize", parent)
         action_sync_project.triggered.connect(self.sync_project)
 
+        action_clone_remote = QAction(QIcon(os.path.join(icon_path, "copy-solid.svg")), "Clone",
+                                       parent)
+        action_clone_remote.triggered.connect(self.clone_remote_project)
+
         action_remove_remote = QAction(QIcon(os.path.join(icon_path, "trash-alt-solid.svg")), "Remove from server", parent)
         action_remove_remote.triggered.connect(self.remove_remote_project)
 
@@ -460,9 +485,10 @@ class MerginProjectItem(QgsDataItem):
         action_diagnostic_log.triggered.connect(self.submit_logs)
 
         if self.path:
-            actions = [action_open_project, action_status, action_sync_project, action_remove_local, action_diagnostic_log]
+            actions = [action_open_project, action_status, action_sync_project, action_clone_remote, action_remove_local,
+                       action_diagnostic_log]
         else:
-            actions = [action_download]
+            actions = [action_download, action_clone_remote]
             if self.project['permissions']['delete']:
                 actions.append(action_remove_remote)
         return actions
