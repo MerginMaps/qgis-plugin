@@ -597,7 +597,7 @@ class MerginRootItem(QgsDataCollectionItem):
 
     def show_create_project_dialog(self):
         user_info = self.mc.user_info()
-        dlg = CreateProjectDialog(username=user_info['username'], user_organisations=user_info['organisations'])
+        dlg = CreateProjectDialog(username=user_info['username'], user_organisations=user_info.get('organisations', []))
         if not dlg.exec_():
             return  # cancelled
 
