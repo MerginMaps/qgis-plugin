@@ -298,7 +298,8 @@ class MerginProjectItem(QgsDataItem):
             if not sum(len(v) for v in list(pull_changes.values()) + list(push_changes.values())):
                 QMessageBox.information(None, 'Project status', 'Project is already up-to-date', QMessageBox.Close)
             else:
-                dlg = ProjectStatusDialog(pull_changes, push_changes, push_changes_summary)
+
+                dlg = ProjectStatusDialog(pull_changes, push_changes, push_changes_summary, self._have_writing_permissions())
                 dlg.exec_()
 
         except (URLError, ClientError, InvalidProject) as e:
