@@ -190,14 +190,19 @@ def send_logs(username, logfile):
 
 
 def validate_mergin_url(url):
-    url_ping = urllib.parse.urljoin(url, urllib.parse.quote("/ping"))
+    """
+    Validation of mergin URL by pinging. Checks if URL points at compatible Mergin server.
+    :param url: String Mergin URL to ping.
+    :return: String error message as result of validation. If None, URL is valid.
+    """
     try:
-        with urllib.request.urlopen(url_ping) as f:
-            response = json.load(f)
-            if response.get('service') != 'Mergin':
-                return 'URL is invalid Mergin URl.'
-            if response.get('status') != 'online':
-                return 'Mergin server is offline.'
-    except:
+        mc = MerginClient(url)
+        if not mc.is_server_compatible():
+            return 'Incompatible Mergin server'
+    # Valid but not Mergin URl
+    except ClientError:
+        return "Invalid Mergin URL"
+    # Cannot parse URL
+    except ValueError:
         return "Invalid URL"
     return None
