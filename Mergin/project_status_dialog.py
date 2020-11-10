@@ -27,8 +27,8 @@ class ProjectStatusDialog(QDialog):
         self.model.setHorizontalHeaderLabels(["Status"])
         self.table.setModel(self.model)
 
-        self.add_content(pull_changes, 'Server changes')
-        self.add_content(push_changes, 'Local changes', push_changes_summary)
+        self.add_content(pull_changes, 'Server changes', True)
+        self.add_content(push_changes, 'Local changes', False, push_changes_summary)
         self.table.expandAll()
 
         box = QDialogButtonBox(
@@ -40,7 +40,9 @@ class ProjectStatusDialog(QDialog):
 
         lay = QVBoxLayout(self)
         lay.addWidget(self.table)
-        info_text = self._get_info_text(push_changes, has_write_permissions)
+        has_files_to_replace = any(
+            ["diff" not in file and is_versioned_file(file['path']) for file in push_changes["updated"]])
+        info_text = self._get_info_text(has_files_to_replace, has_write_permissions)
         if info_text:
             text_box = QLabel()
             text_box.setWordWrap(True)
@@ -50,24 +52,22 @@ class ProjectStatusDialog(QDialog):
 
         self.resize(640, 640)
 
-    def _get_info_text(self, push_changes, has_write_permissions):
+    def _get_info_text(self, has_files_to_replace, has_write_permissions):
         msg = ""
         if not has_write_permissions:
             msg += f"WARNING: You don't have writing permissions to this project. Changes won't be synced!\n"
 
-        files_to_replace = ", ".join(
-            [file["path"] for file in push_changes["updated"] if "diff" not in file and ".gpkg" in file['path']])
-        if files_to_replace:
-            msg += f"\nUnable to compare some of the modified local files with their server version - we will have to " \
-               f"upload the whole file (history of the files will be lost): {files_to_replace}"
-
+        if has_files_to_replace:
+            msg += f"\nWARNING: Unable to compare some of the modified files with their server version - " \
+                   f"their history will be lost if uploaded."
         return msg
 
-    def add_content(self, changes, root_text, changes_summary={}):
+    def add_content(self, changes, root_text, is_server, changes_summary={}):
         """
         Adds rows with changes info
         :param changes: Dict of added/removed/updated/renamed changes
         :param root_text: Text for the root item
+        :param is_server: True if changes are related to server file changes
         :param changes_summary: If given and non empty, extra rows are added from geodiff summary.
         :return:
         """
@@ -80,9 +80,12 @@ class ProjectStatusDialog(QDialog):
             for file in changes[category]:
                 path = file['path']
                 item = self._get_icon_item(category, path)
-                if is_versioned_file(path) and path in changes_summary:
-                    for sub_item in self._versioned_file_summary_items(changes_summary[path]['geodiff_summary']):
-                        item.appendRow(sub_item)
+                if is_versioned_file(path):
+                    if path in changes_summary:
+                        for sub_item in self._versioned_file_summary_items(changes_summary[path]['geodiff_summary']):
+                            item.appendRow(sub_item)
+                    elif not is_server:
+                        item.appendRow(QStandardItem("Unable to detect changes"))
                 root_item.appendRow(item)
 
     def _versioned_file_summary_items(self, geodiff_summary):
