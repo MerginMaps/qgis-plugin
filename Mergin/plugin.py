@@ -398,7 +398,7 @@ class MerginProjectItem(QgsDataItem):
         if not dlg.exec_():
             return  # cancelled
         try:
-            self.mc.clone_project(self.project_name, dlg.project_namespace, dlg.project_name)
+            self.mc.clone_project(self.project_name, dlg.project_name, dlg.project_namespace)
             msg = "Mergin project cloned successfully."
             QMessageBox.information(None, 'Clone project', msg, QMessageBox.Close)
 
