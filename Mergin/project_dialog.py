@@ -6,7 +6,7 @@ ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_cr
 
 
 class ProjectDialog(QDialog):
-    def __init__(self, username, user_organisations=None):
+    def __init__(self, title, username, user_organisations=None):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
@@ -17,7 +17,7 @@ class ProjectDialog(QDialog):
                                                if user_organisations[o] in ['admin', 'owner', 'writer']])
         self.ui.edit_project_name.textChanged.connect(self.text_changed)
 
-        # TODO
+        self.ui.setWindowTitle(title)
         self.ui.chk_is_public.setVisible(False)
         self.ui.btn_get_project_dir.setVisible(False)
         self.ui.edit_project_dir.setVisible(False)
