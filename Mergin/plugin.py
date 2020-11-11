@@ -25,7 +25,7 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .create_project_dialog import CreateProjectDialog
-from .project_dialog import ProjectDialog
+from .clone_project_dialog import CloneProjectDialog
 from .sync_dialog import SyncDialog
 from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidProject, \
     LoginError, \
@@ -394,7 +394,7 @@ class MerginProjectItem(QgsDataItem):
 
     def clone_remote_project(self):
         user_info = self.mc.user_info()
-        dlg = ProjectDialog(title="Clone Mergin Project", username=user_info['username'], user_organisations=user_info.get('organisations', []))
+        dlg = CloneProjectDialog(username=user_info['username'], user_organisations=user_info.get('organisations', []))
         if not dlg.exec_():
             return  # cancelled
         try:
