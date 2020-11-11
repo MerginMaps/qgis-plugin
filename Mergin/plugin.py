@@ -394,7 +394,7 @@ class MerginProjectItem(QgsDataItem):
 
     def clone_remote_project(self):
         user_info = self.mc.user_info()
-        dlg = ProjectDialog(username=user_info['username'], user_organisations=user_info.get('organisations', []))
+        dlg = ProjectDialog(title="Clone Mergin Project", username=user_info['username'], user_organisations=user_info.get('organisations', []))
         if not dlg.exec_():
             return  # cancelled
         try:
