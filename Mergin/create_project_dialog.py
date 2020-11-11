@@ -15,9 +15,9 @@ class CreateProjectDialog(QDialog):
         self.ui = uic.loadUi(ui_file, self)
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
         self.ui.buttonBox.accepted.connect(self.accept_dialog)
-        self.ui.projectNamescape.addItem(username)
+        self.ui.projectNamespace.addItem(username)
         if user_organisations:
-            self.ui.projectNamescape.addItems([o for o in user_organisations
+            self.ui.projectNamespace.addItems([o for o in user_organisations
                                                if user_organisations[o] in ['admin', 'owner', 'writer']])
         self.ui.edit_project_name.textChanged.connect(self.text_changed)
         self.ui.btn_get_project_dir.clicked.connect(self.get_directory)
@@ -66,7 +66,7 @@ class CreateProjectDialog(QDialog):
 
         self.project_name = project_name
         self.project_dir = project_dir
-        self.project_namespace = self.ui.projectNamescape.currentText()
+        self.project_namespace = self.ui.projectNamespace.currentText()
         self.is_public = self.ui.chk_is_public.isChecked()
 
         self.accept()  # this will close the dialog and dlg.exec_() returns True
