@@ -18,7 +18,7 @@ class CreateProjectDialog(QDialog):
         self.ui.projectNamespace.addItem(username)
         if user_organisations:
             self.ui.projectNamespace.addItems([o for o in user_organisations
-                                               if user_organisations[o] in ['admin', 'owner', 'writer']])
+                                               if user_organisations[o] in ['admin', 'owner']])
         self.ui.edit_project_name.textChanged.connect(self.text_changed)
         self.ui.btn_get_project_dir.clicked.connect(self.get_directory)
         self.ui.rad_project_dir.toggled.connect(self.toggle_select_dir)
