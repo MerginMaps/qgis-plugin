@@ -126,6 +126,24 @@ def pretty_summary(summary):
     return msg
 
 
+def login_error_message(e):
+    QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
+    msg = "<font color=red>Security token has been expired, failed to renew. Check your username and password </font>"
+    QMessageBox.critical(None, 'Login failed', msg, QMessageBox.Close)
+
+
+def unhandled_exception_message(error_details, dialog_title, error_text):
+    msg = error_text + "<p>This should not happen, " \
+            "<a href=\"https://github.com/lutraconsulting/qgis-mergin-plugin/issues\">" \
+            "please report the problem</a>."
+    box = QMessageBox()
+    box.setIcon(QMessageBox.Critical)
+    box.setWindowTitle(dialog_title)
+    box.setText(msg)
+    box.setDetailedText(error_details)
+    box.exec_()
+
+
 class MerginProjectItem(QgsDataItem):
     """ Data item to represent a Mergin project. """
 
@@ -146,22 +164,6 @@ class MerginProjectItem(QgsDataItem):
             self.setIcon(QIcon(os.path.join(icon_path, "cloud-solid.svg")))
 
         self.mc = mc
-
-    def _login_error_message(self, e):
-        QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
-        msg = "<font color=red>Security token has been expired, failed to renew. Check your username and password </font>"
-        QMessageBox.critical(None, 'Login failed', msg, QMessageBox.Close)
-
-    def _unhandled_exception_message(self, error_details, dialog_title, error_text):
-        msg = error_text + "<p>This should not happen, " \
-              "<a href=\"https://github.com/lutraconsulting/qgis-mergin-plugin/issues\">" \
-              "please report the problem</a>."
-        box = QMessageBox()
-        box.setIcon(QMessageBox.Critical)
-        box.setWindowTitle(dialog_title)
-        box.setText(msg)
-        box.setDetailedText(error_details)
-        box.exec_()
 
     def download(self):
         settings = QSettings()
@@ -193,9 +195,9 @@ class MerginProjectItem(QgsDataItem):
                       "Please make sure your Mergin settings are correct".format(self.project_name)
                 QMessageBox.critical(None, 'Project download', msg, QMessageBox.Close)
             elif isinstance(dlg.exception, LoginError):
-                self._login_error_message(dlg.exception)
+                login_error_message(dlg.exception)
             else:
-                self._unhandled_exception_message(
+                unhandled_exception_message(
                     dlg.exception_details(), "Project download",
                     f"Failed to download project {self.project_name} due to an unhandled exception.")
             return
@@ -307,7 +309,7 @@ class MerginProjectItem(QgsDataItem):
             msg = f"Failed to get status for project {self.project_name}:\n\n{str(e)}"
             QMessageBox.critical(None, 'Project status', msg, QMessageBox.Close)
         except LoginError as e:
-            self._login_error_message(e)
+            login_error_message(e)
 
     def sync_project(self):
         if not self.path:
@@ -329,11 +331,11 @@ class MerginProjectItem(QgsDataItem):
         if dlg.exception:
             # pull failed for some reason
             if isinstance(dlg.exception, LoginError):
-                self._login_error_message(dlg.exception)
+                login_error_message(dlg.exception)
             elif isinstance(dlg.exception, ClientError):
                 QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
             else:
-                self._unhandled_exception_message(
+                unhandled_exception_message(
                     dlg.exception_details(), "Project sync",
                     f"Failed to sync project {self.project_name} due to an unhandled exception.")
             return
@@ -369,11 +371,11 @@ class MerginProjectItem(QgsDataItem):
         if dlg.exception:
             # push failed for some reason
             if isinstance(dlg.exception, LoginError):
-                self._login_error_message(dlg.exception)
+                login_error_message(dlg.exception)
             elif isinstance(dlg.exception, ClientError):
                 QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
             else:
-                self._unhandled_exception_message(
+                unhandled_exception_message(
                     dlg.exception_details(), "Project sync",
                     f"Failed to sync project {self.project_name} due to an unhandled exception.")
             return
@@ -410,7 +412,7 @@ class MerginProjectItem(QgsDataItem):
             msg = "Failed to clone project {}:\n\n{}".format(self.project_name, str(e))
             QMessageBox.critical(None, 'Clone project', msg, QMessageBox.Close)
         except LoginError as e:
-            self._login_error_message(e)
+            login_error_message(e)
 
     def remove_remote_project(self):
         msg = "Do you really want to remove project {} from server?".format(self.project_name)
@@ -430,7 +432,7 @@ class MerginProjectItem(QgsDataItem):
             msg = "Failed to remove project {}:\n\n{}".format(self.project_name, str(e))
             QMessageBox.critical(None, 'Remove project', msg, QMessageBox.Close)
         except LoginError as e:
-            self._login_error_message(e)
+            login_error_message(e)
 
     def submit_logs(self):
         if not self.path:
@@ -623,7 +625,7 @@ class MerginRootItem(QgsDataCollectionItem):
         ## let's do initial upload of the project data
 
         mp = MerginProject(project_dir)
-        full_project_name = "{}/{}".format(self.mc.username(), project_name)
+        full_project_name = "{}/{}".format(namespace, project_name)
         mp.metadata = { "name": full_project_name, "version": "v0", "files": [] }
         if not mp.inspect_files():
             self.depopulate()
@@ -638,11 +640,11 @@ class MerginRootItem(QgsDataCollectionItem):
         if dlg.exception:
             # push failed for some reason
             if isinstance(dlg.exception, LoginError):
-                self._login_error_message(dlg.exception)
+                login_error_message(dlg.exception)
             elif isinstance(dlg.exception, ClientError):
                 QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
             else:
-                self._unhandled_exception_message(
+                unhandled_exception_message(
                     dlg.exception_details(), "Project sync",
                     f"Failed to sync project {project_name} due to an unhandled exception.")
             return
