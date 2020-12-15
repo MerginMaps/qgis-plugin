@@ -160,6 +160,7 @@ class MerginProjectItem(QgsDataItem):
         
         if self.path:
             self.setIcon(QIcon(os.path.join(icon_path, "folder-solid.svg")))
+            self._revise_metadata(self.project_name, self.path)
         else:
             self.setIcon(QIcon(os.path.join(icon_path, "cloud-solid.svg")))
 
@@ -277,6 +278,24 @@ class MerginProjectItem(QgsDataItem):
         username = self.mc.username()
         writersnames = info["access"]["writersnames"]
         return username in writersnames
+
+    def _revise_metadata(self, project_full_name, path):
+        """
+        Validates project name and namespace. If those properties in metadata doesnt match `project_full_name`,
+        metada are updated accordingly. Such case can occur after project transfer, when metadata has not been updated yet.
+        :param project_full_name: project's <namespace>/<name>. This argument suppose to be from server
+        :param path: Absolute location of a project
+        :return bool: True if metadata has been updated.
+        """
+        mp = MerginProject(path)
+        meta_full_name = mp.metadata["name"]
+        if meta_full_name != project_full_name:
+            meta_copy = mp.metadata
+            meta_copy["name"] = project_full_name
+            mp.metadata = meta_copy
+            return True
+
+        return False
 
     def open_project(self):
         if not self.path:
