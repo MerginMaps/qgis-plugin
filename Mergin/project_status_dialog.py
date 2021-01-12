@@ -1,9 +1,9 @@
 import os
 from PyQt5.QtWidgets import QDialog, QLabel, QTableWidget, QHeaderView, QTableWidgetItem, \
-    QDialogButtonBox, QVBoxLayout, QTreeView, QAbstractItemView
+    QDialogButtonBox, QVBoxLayout, QTabWidget, QTreeView, QAbstractItemView, QWidget
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon
-
+from qgis.core import QgsProject
 from .utils import is_versioned_file
 
 
@@ -17,9 +17,10 @@ class ProjectStatusDialog(QDialog):
         'table': 'images/FA_icons/table.svg'
     }
 
-    def __init__(self, pull_changes, push_changes, push_changes_summary, has_write_permissions, parent=None):
+    def __init__(self, pull_changes, push_changes, push_changes_summary,
+                 has_write_permissions, validation_results, parent=None):
         super(ProjectStatusDialog, self).__init__(parent)
-
+        self.validation_results = validation_results
         self.setWindowTitle("Project status")
         self.table = QTreeView()
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -31,15 +32,16 @@ class ProjectStatusDialog(QDialog):
         self.add_content(push_changes, 'Local changes', False, push_changes_summary)
         self.table.expandAll()
 
-        box = QDialogButtonBox(
-            QDialogButtonBox.Ok,
-            centerButtons=True,
-        )
-        box.accepted.connect(self.accept)
-        box.rejected.connect(self.reject)
+        main_lout = QVBoxLayout(self)
+        self.tabs = QTabWidget()
+        main_lout.addWidget(self.tabs)
+        self.status_tab = QWidget()
+        self.valid_tab = QWidget()
+        self.tabs.addTab(self.status_tab, "Status")
+        self.tabs.addTab(self.valid_tab, "Validation results")
 
-        lay = QVBoxLayout(self)
-        lay.addWidget(self.table)
+        status_lay = QVBoxLayout(self.status_tab)
+        status_lay.addWidget(self.table)
         has_files_to_replace = any(
             ["diff" not in file and is_versioned_file(file['path']) for file in push_changes["updated"]])
         info_text = self._get_info_text(has_files_to_replace, has_write_permissions)
@@ -47,8 +49,17 @@ class ProjectStatusDialog(QDialog):
             text_box = QLabel()
             text_box.setWordWrap(True)
             text_box.setText(info_text)
-            lay.addWidget(text_box)
-        lay.addWidget(box, Qt.AlignCenter)
+            status_lay.addWidget(text_box)
+
+        box = QDialogButtonBox(QDialogButtonBox.Ok, centerButtons=True, )
+        box.accepted.connect(self.accept)
+        box.rejected.connect(self.reject)
+        main_lout.addWidget(box, Qt.AlignCenter)
+
+        self.valid_view = QTreeView()
+        self.valid_view.setStyleSheet("QTreeView::item { padding: 5px }")
+        self.valid_model = QStandardItemModel()
+        self.show_validation_results()
 
         self.resize(640, 640)
 
@@ -106,3 +117,24 @@ class ProjectStatusDialog(QDialog):
         item = QStandardItem(text)
         item.setIcon(QIcon(path))
         return item
+
+    def show_validation_results(self):
+        lout = QVBoxLayout(self.valid_tab)
+        lout.addWidget(self.valid_view)
+        self.valid_view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.valid_model.setHorizontalHeaderLabels(["Validation results"])
+        self.valid_view.setModel(self.valid_model)
+
+        map_layers = QgsProject.instance().mapLayers()
+        for issues_data in sorted(self.validation_results):
+            level, issue = issues_data
+            layer_ids = self.validation_results[issues_data]
+            issue_item = QStandardItem(issue)
+            for lid in sorted(layer_ids, key=lambda x: map_layers[x].name()):
+                layer = map_layers[lid]
+                lyr_item = QStandardItem(f"- {layer.name()}")
+                lyr_item.setToolTip(layer.publicSource())
+                issue_item.appendRow(lyr_item)
+            self.valid_model.appendRow(issue_item)
+
+        self.valid_view.expandAll()

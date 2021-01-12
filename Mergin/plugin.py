@@ -34,6 +34,7 @@ from .utils import find_qgis_files, create_mergin_client, ClientError, InvalidPr
 from .mergin.merginproject import MerginProject
 from .mergin.utils import int_version
 from .project_status_dialog import ProjectStatusDialog
+from .validation import MerginProjectValidator
 
 icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
 
@@ -296,13 +297,18 @@ class MerginProjectItem(QgsDataItem):
         if not self._unsaved_changes_check():
             return
 
+        mp = MerginProject(self.path)
+        validator = MerginProjectValidator(mp, self.mc)
+        val_res = validator.run_checks()
         try:
             pull_changes, push_changes, push_changes_summary = self.mc.project_status(self.path)
             if not sum(len(v) for v in list(pull_changes.values()) + list(push_changes.values())):
                 QMessageBox.information(None, 'Project status', 'Project is already up-to-date', QMessageBox.Close)
             else:
 
-                dlg = ProjectStatusDialog(pull_changes, push_changes, push_changes_summary, self._have_writing_permissions())
+                dlg = ProjectStatusDialog(
+                    pull_changes, push_changes, push_changes_summary, self._have_writing_permissions(), val_res
+                )
                 dlg.exec_()
 
         except (URLError, ClientError, InvalidProject) as e:
