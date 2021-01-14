@@ -1,6 +1,14 @@
 import os
-from PyQt5.QtWidgets import QDialog, QLabel, QTableWidget, QHeaderView, QTableWidgetItem, \
-    QDialogButtonBox, QVBoxLayout, QTabWidget, QTreeView, QAbstractItemView, QWidget
+from PyQt5.QtWidgets import (
+    QAbstractItemView,
+    QDialog,
+    QDialogButtonBox,
+    QLabel,
+    QTabWidget,
+    QTreeView,
+    QVBoxLayout,
+    QWidget,
+)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon
 from qgis.core import QgsProject
@@ -10,15 +18,16 @@ from .utils import is_versioned_file
 class ProjectStatusDialog(QDialog):
 
     icons = {
-        'added': 'images/FA_icons/plus.svg',
-        'removed': 'images/FA_icons/trash.svg',
-        'updated': 'images/FA_icons/edit.svg',
-        'renamed': 'images/FA_icons/edit.svg',
-        'table': 'images/FA_icons/table.svg'
+        "added": "images/FA_icons/plus.svg",
+        "removed": "images/FA_icons/trash.svg",
+        "updated": "images/FA_icons/edit.svg",
+        "renamed": "images/FA_icons/edit.svg",
+        "table": "images/FA_icons/table.svg",
     }
 
-    def __init__(self, pull_changes, push_changes, push_changes_summary,
-                 has_write_permissions, validation_results, parent=None):
+    def __init__(
+        self, pull_changes, push_changes, push_changes_summary, has_write_permissions, validation_results, parent=None
+    ):
         super(ProjectStatusDialog, self).__init__(parent)
         self.validation_results = validation_results
         self.setWindowTitle("Project status")
@@ -28,8 +37,8 @@ class ProjectStatusDialog(QDialog):
         self.model.setHorizontalHeaderLabels(["Status"])
         self.table.setModel(self.model)
 
-        self.add_content(pull_changes, 'Server changes', True)
-        self.add_content(push_changes, 'Local changes', False, push_changes_summary)
+        self.add_content(pull_changes, "Server changes", True)
+        self.add_content(push_changes, "Local changes", False, push_changes_summary)
         self.table.expandAll()
 
         main_lout = QVBoxLayout(self)
@@ -43,7 +52,8 @@ class ProjectStatusDialog(QDialog):
         status_lay = QVBoxLayout(self.status_tab)
         status_lay.addWidget(self.table)
         has_files_to_replace = any(
-            ["diff" not in file and is_versioned_file(file['path']) for file in push_changes["updated"]])
+            ["diff" not in file and is_versioned_file(file["path"]) for file in push_changes["updated"]]
+        )
         info_text = self._get_info_text(has_files_to_replace, has_write_permissions)
         if info_text:
             text_box = QLabel()
@@ -51,7 +61,7 @@ class ProjectStatusDialog(QDialog):
             text_box.setText(info_text)
             status_lay.addWidget(text_box)
 
-        box = QDialogButtonBox(QDialogButtonBox.Ok, centerButtons=True, )
+        box = QDialogButtonBox(QDialogButtonBox.Ok, centerButtons=True,)
         box.accepted.connect(self.accept)
         box.rejected.connect(self.reject)
         main_lout.addWidget(box, Qt.AlignCenter)
@@ -69,8 +79,10 @@ class ProjectStatusDialog(QDialog):
             msg += f"WARNING: You don't have writing permissions to this project. Changes won't be synced!\n"
 
         if has_files_to_replace:
-            msg += f"\nWARNING: Unable to compare some of the modified files with their server version - " \
-                   f"their history will be lost if uploaded."
+            msg += (
+                f"\nWARNING: Unable to compare some of the modified files with their server version - "
+                f"their history will be lost if uploaded."
+            )
         return msg
 
     def add_content(self, changes, root_text, is_server, changes_summary={}):
@@ -89,11 +101,11 @@ class ProjectStatusDialog(QDialog):
         self.model.appendRow(root_item)
         for category in changes:
             for file in changes[category]:
-                path = file['path']
+                path = file["path"]
                 item = self._get_icon_item(category, path)
                 if is_versioned_file(path):
                     if path in changes_summary:
-                        for sub_item in self._versioned_file_summary_items(changes_summary[path]['geodiff_summary']):
+                        for sub_item in self._versioned_file_summary_items(changes_summary[path]["geodiff_summary"]):
                             item.appendRow(sub_item)
                     elif not is_server:
                         item.appendRow(QStandardItem("Unable to detect changes"))
@@ -102,7 +114,7 @@ class ProjectStatusDialog(QDialog):
     def _versioned_file_summary_items(self, geodiff_summary):
         items = []
         for s in geodiff_summary:
-            table_name_item = self._get_icon_item('table', s['table'])
+            table_name_item = self._get_icon_item("table", s["table"])
             for row in self._table_summary_items(s):
                 table_name_item.appendRow(row)
             items.append(table_name_item)
@@ -110,7 +122,7 @@ class ProjectStatusDialog(QDialog):
         return items
 
     def _table_summary_items(self, summary):
-        return [QStandardItem("{}: {}".format(k, summary[k])) for k in summary if k!='table']
+        return [QStandardItem("{}: {}".format(k, summary[k])) for k in summary if k != "table"]
 
     def _get_icon_item(self, key, text):
         path = os.path.join(os.path.dirname(os.path.realpath(__file__)), self.icons[key])

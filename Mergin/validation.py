@@ -77,7 +77,7 @@ class MerginProjectValidator(object):
         abs_paths, ok = self.qgis_proj.readEntry("Paths", "/Absolute")
         assert ok
         if not abs_paths == "false":
-            self.issues[self.ABSOLUTE_PATHS] = [None]
+            self.issues[self.ABSOLUTE_PATHS] = []
 
     def get_proj_layers(self):
         """Get project layers and find those editable."""
@@ -88,8 +88,11 @@ class MerginProjectValidator(object):
             self.layers_by_prov[dp.name()].append(lid)
             if layer.type() == QgsMapLayerType.VectorLayer:
                 caps = dp.capabilities()
-                can_edit = True if (caps & QgsVectorDataProvider.AddFeatures or
-                                    caps & QgsVectorDataProvider.ChangeAttributeValues) else False
+                can_edit = (
+                    True
+                    if (caps & QgsVectorDataProvider.AddFeatures or caps & QgsVectorDataProvider.ChangeAttributeValues)
+                    else False
+                )
                 if can_edit:
                     self.editable.append(layer.id())
         if len(self.editable) == 0:
