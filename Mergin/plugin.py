@@ -35,6 +35,7 @@ from .utils import (
     create_mergin_client,
     find_qgis_files,
     get_mergin_auth,
+    proj_local_path,
     send_logs,
 )
 
@@ -52,9 +53,13 @@ class MerginPlugin:
         self.plugin_dir = os.path.dirname(__file__)
         self.data_item_provider = None
         self.actions = []
-        self.menu = "Mergin Plugin"
+        self.menu = u'Mergin Plugin'
+        self.mergin_proj_name = None
+        self.toolbar = self.iface.addToolBar("Mergin Toolbar")
+        self.toolbar.setToolTip("Mergin Toolbar")
 
-        self.iface.projectRead.connect(set_project_variables)
+        self.iface.projectRead.connect(self.set_project_variables)
+        self.iface.newProjectCreated.connect(self.set_project_variables)
         settings = QSettings()
         QgsExpressionContextUtils.setGlobalVariable("mergin_username", settings.value("Mergin/username", ""))
         QgsExpressionContextUtils.setGlobalVariable("mergin_url", settings.value("Mergin/server", ""))
@@ -76,8 +81,68 @@ class MerginPlugin:
         # if self.iface.browserModel().initialized():
         #     self.iface.browserModel().reload()
 
+        self.add_action(
+            "mergin_configure.svg",
+            text="Configure Mergin Plugin",
+            callback=self.configure,
+            add_to_menu=True,
+            add_to_toolbar=self.toolbar,
+        )
+        self.add_action(
+            "mergin_project_status.svg",
+            text="Mergin Project Status",
+            callback=self.cur_project_status,
+            add_to_menu=False,
+            add_to_toolbar=self.toolbar,
+        )
+        self.add_action(
+            "mergin_project_sync.svg",
+            text="Synchronise Mergin Project",
+            callback=self.cur_project_sync,
+            add_to_menu=False,
+            add_to_toolbar=self.toolbar,
+        )
+
+    def add_action(self, icon_name, callback=None, text="", enabled_flag=True, add_to_menu=False, add_to_toolbar=None,
+                   status_tip=None, whats_this=None, checkable=False, checked=False):
+
+        icon = QIcon(os.path.join(icon_path, icon_name))
+        action = QAction(icon, text, self.iface.mainWindow())
+        action.triggered.connect(callback)
+        action.setEnabled(enabled_flag)
+        action.setCheckable(checkable)
+        action.setChecked(checked)
+
+        if status_tip is not None:
+            action.setStatusTip(status_tip)
+        if whats_this is not None:
+            action.setWhatsThis(whats_this)
+        if add_to_toolbar is not None:
+            add_to_toolbar.addAction(action)
+        if add_to_menu:
+            self.iface.addPluginToMenu(self.menu, action)
+
+        self.actions.append(action)
+        return action
+
+    def enable_toolbar_actions(self, enable=True):
+        for action in self.toolbar.actions():
+            if action.text() == "Configure Mergin Plugin":
+                continue
+            action.setEnabled(enable)
+
+    def configure(self):
+        self.data_item_provider.root_item.configure()
+
+    def cur_project_status(self):
+        self.data_item_provider.root_item.manager.status(self.mergin_proj_name)
+
+    def cur_project_sync(self):
+        self.data_item_provider.root_item.manager.synchronise(self.mergin_proj_name)
+
     def unload(self):
-        self.iface.projectRead.disconnect(set_project_variables)
+        self.iface.projectRead.disconnect(self.set_project_variables)
+        self.iface.newProjectCreated.disconnect(self.set_project_variables)
         remove_project_variables()
         QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
         QgsExpressionContextUtils.removeGlobalVariable("mergin_url")
@@ -87,28 +152,35 @@ class MerginPlugin:
         # this is crashing qgis on exit
         # self.iface.browserModel().reload()
 
-
-def set_project_variables():
-    """
-    Sets project related mergin variables. Supposed to be called when any QGIS project is (re)loaded.
-    If a loaded project is not a mergin project, it suppose to have custom variables without mergin variables by default.
-    If a loaded project is invalid - doesnt have metadata, mergin variables are removed.
-    """
-    settings = QSettings()
-    settings.beginGroup("Mergin/localProjects/")
-    for key in settings.allKeys():
-        # Expecting key in the following form: '<namespace>/<project_name>/path' - needs project dir to load metadata
-        key_parts = key.split("/")
-        if len(key_parts) > 2 and key_parts[2] == "path":
-            path = settings.value(key)
-            if path == QgsProject.instance().absolutePath() or path + "/" in QgsProject.instance().absolutePath():
-                try:
-                    mp = MerginProject(path)
-                    metadata = mp.metadata
-                    write_project_variables(key_parts[0], key_parts[1], metadata.get("name"), metadata.get("version"))
-                    return
-                except InvalidProject:
-                    remove_project_variables()
+    def set_project_variables(self):
+        """
+        Sets project related mergin variables. Supposed to be called when any QGIS project is (re)loaded.
+        If a loaded project is not a mergin project, it suppose to have custom variables without mergin variables by
+        default.
+        If a loaded project is invalid - doesnt have metadata, mergin variables are removed.
+        """
+        self.enable_toolbar_actions(enable=False)
+        self.mergin_proj_name = None
+        settings = QSettings()
+        settings.beginGroup('Mergin/localProjects/')
+        for key in settings.allKeys():
+            # Expecting key in the following form: '<namespace>/<project_name>/path'
+            # - needs project dir to load metadata
+            key_parts = key.split('/')
+            if len(key_parts) > 2 and key_parts[2] == 'path':
+                path = settings.value(key)
+                if path == QgsProject.instance().absolutePath() or path + '/' in QgsProject.instance().absolutePath():
+                    try:
+                        mp = MerginProject(path)
+                        metadata = mp.metadata
+                        write_project_variables(
+                            key_parts[0], key_parts[1], metadata.get("name"), metadata.get("version")
+                        )
+                        self.mergin_proj_name = metadata.get("name")
+                        self.enable_toolbar_actions()
+                        return
+                    except InvalidProject:
+                        remove_project_variables()
 
 
 def write_project_variables(project_owner, project_name, project_full_name, version):
@@ -174,17 +246,17 @@ class MerginProjectItem(QgsDataItem):
         )  # we need posix path for server API calls
         QgsDataItem.__init__(self, QgsDataItem.Collection, parent, self.project_name, "/Mergin/" + self.project_name)
         settings = QSettings()
-        self.path = settings.value("Mergin/localProjects/{}/path".format(self.project_name), None)
+        self.path = proj_local_path(self.project_name)
         # check local project dir was not unintentionally removed
         if self.path:
             if not os.path.exists(self.path):
                 self.path = None
 
+        self.path = proj_local_path(self.project_name)
         if self.path:
             self.setIcon(QIcon(os.path.join(icon_path, "folder-solid.svg")))
         else:
             self.setIcon(QIcon(os.path.join(icon_path, "cloud-solid.svg")))
-
         self.mc = mc
 
     def download(self):
@@ -579,11 +651,12 @@ class MerginProjectItem(QgsDataItem):
 class MerginGroupItem(QgsDataCollectionItem):
     """ Mergin group data item. Contains filtered list of Mergin projects. """
 
-    def __init__(self, parent, grp_name, grp_filter, icon, order):
+    def __init__(self, parent, grp_name, grp_filter, icon, order, manager):
         QgsDataCollectionItem.__init__(self, parent, grp_name, "/Mergin" + grp_name)
         self.filter = grp_filter
         self.setIcon(QIcon(os.path.join(icon_path, icon)))
         self.setSortKey(order)
+        self.manager = manager
 
     def createChildren(self):
         mc = self.parent().mc
@@ -608,6 +681,7 @@ class MerginGroupItem(QgsDataCollectionItem):
             item.setState(QgsDataItem.Populated)  # make it non-expandable
             sip.transferto(item, self)
             items.append(item)
+            self.manager.projects[posixpath.join(project['namespace'], project['name'])] = item
         return items
 
     def actions(self, parent):
@@ -623,6 +697,21 @@ class MerginGroupItem(QgsDataCollectionItem):
         return actions
 
 
+class MerginProjectsManager(object):
+    def __init__(self):
+        self.projects = dict()
+
+    def status(self, project_name):
+        if project_name is None:
+            return
+        self.projects[project_name].project_status()
+
+    def synchronise(self, project_name):
+        if project_name is None:
+            return
+        self.projects[project_name].sync_project()
+
+
 class MerginRootItem(QgsDataCollectionItem):
     """ Mergin root data containing project groups item with configuration dialog. """
 
@@ -631,6 +720,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.setIcon(QIcon(os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/icon.png")))
         self.mc = None
         self.error = ""
+        self.manager = MerginProjectsManager()
         try:
             self.mc = create_mergin_client()
         except (URLError, ClientError):
@@ -646,19 +736,19 @@ class MerginRootItem(QgsDataCollectionItem):
             return [error_item]
 
         items = []
-        my_projects = MerginGroupItem(self, "My projects", "created", "user-solid.svg", 1)
+        my_projects = MerginGroupItem(self, "My projects", "created", "user-solid.svg", 1, self.manager)
         my_projects.setState(QgsDataItem.Populated)
         my_projects.refresh()
         sip.transferto(my_projects, self)
         items.append(my_projects)
 
-        shared_projects = MerginGroupItem(self, "Shared with me", "shared", "user-friends-solid.svg", 2)
+        shared_projects = MerginGroupItem(self, "Shared with me", "shared", "user-friends-solid.svg", 2, self.manager)
         shared_projects.setState(QgsDataItem.Populated)
         shared_projects.refresh()
         sip.transferto(shared_projects, self)
         items.append(shared_projects)
 
-        all_projects = MerginGroupItem(self, "Explore", None, "list-solid.svg", 3)
+        all_projects = MerginGroupItem(self, "Explore", None, "list-solid.svg", 3, self.manager)
         all_projects.setState(QgsDataItem.Populated)
         all_projects.refresh()
         sip.transferto(all_projects, self)
@@ -765,6 +855,7 @@ class MerginRootItem(QgsDataCollectionItem):
 class DataItemProvider(QgsDataItemProvider):
     def __init__(self):
         QgsDataItemProvider.__init__(self)
+        self.root_item = None
 
     def name(self):
         return "MerginProvider"
@@ -776,6 +867,7 @@ class DataItemProvider(QgsDataItemProvider):
         if not parentItem:
             ri = MerginRootItem()
             sip.transferto(ri, None)
+            self.root_item = ri
             return ri
         else:
             return None

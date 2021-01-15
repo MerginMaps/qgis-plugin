@@ -1,13 +1,14 @@
 import os
 from datetime import datetime, timezone
-import json
+from functools import wraps
 import urllib.parse
 import urllib.request
 from urllib.error import URLError, HTTPError
 from qgis.core import (
     QgsApplication,
     QgsAuthMethodConfig,
-    QgsExpressionContextUtils
+    QgsExpressionContextUtils,
+    QgsProject,
 )
 from qgis.PyQt.QtCore import QSettings
 from qgis.core import Qgis
@@ -211,3 +212,14 @@ def validate_mergin_url(url):
     except ValueError:
         return "Invalid URL"
     return None
+
+
+def proj_local_path(project_name):
+    """Check if project was downloaded and return its path."""
+    s = QSettings()
+    proj_path = s.value(f"Mergin/localProjects/{project_name}/path", None)
+    # check local project dir was not unintentionally removed
+    if proj_path:
+        if not os.path.exists(proj_path):
+            proj_path = None
+    return proj_path
