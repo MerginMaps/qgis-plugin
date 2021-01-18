@@ -92,14 +92,14 @@ class MerginPlugin:
         self.add_action(
             "mergin_project_status.svg",
             text="Mergin Project Status",
-            callback=self.cur_project_status,
+            callback=self.current_project_status,
             add_to_menu=False,
             add_to_toolbar=self.toolbar,
         )
         self.add_action(
             "mergin_project_sync.svg",
             text="Synchronise Mergin Project",
-            callback=self.cur_project_sync,
+            callback=self.current_project_sync,
             add_to_menu=False,
             add_to_toolbar=self.toolbar,
         )
@@ -135,10 +135,10 @@ class MerginPlugin:
     def configure(self):
         self.data_item_provider.root_item.configure()
 
-    def cur_project_status(self):
+    def current_project_status(self):
         self.data_item_provider.root_item.manager.status(self.mergin_proj_name)
 
-    def cur_project_sync(self):
+    def current_project_sync(self):
         self.data_item_provider.root_item.manager.synchronise(self.mergin_proj_name)
 
     def unload(self):
@@ -704,6 +704,7 @@ class MerginGroupItem(QgsDataCollectionItem):
 
 
 class MerginProjectsManager(object):
+    """Class for managing Mergin projects."""
     def __init__(self):
         self.projects = dict()
 
