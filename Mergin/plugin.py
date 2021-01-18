@@ -152,6 +152,11 @@ class MerginPlugin:
         # this is crashing qgis on exit
         # self.iface.browserModel().reload()
 
+        for action in self.actions:
+            self.iface.removePluginMenu(self.menu, action)
+            self.iface.removeToolBarIcon(action)
+        del self.toolbar
+
     def set_project_variables(self):
         """
         Sets project related mergin variables. Supposed to be called when any QGIS project is (re)loaded.
