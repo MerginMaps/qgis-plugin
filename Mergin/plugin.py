@@ -174,6 +174,7 @@ class MerginPlugin:
             key_parts = key.split('/')
             if len(key_parts) > 2 and key_parts[2] == 'path':
                 path = settings.value(key)
+                path = posixpath.join(*path.split("\\"))
                 if path == QgsProject.instance().absolutePath() or path + '/' in QgsProject.instance().absolutePath():
                     try:
                         mp = MerginProject(path)
