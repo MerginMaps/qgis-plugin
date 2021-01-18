@@ -3,7 +3,7 @@ import os
 
 from qgis.core import QgsMapLayerType, QgsProject, QgsVectorDataProvider
 
-from .utils import find_qgis_files
+from .utils import find_qgis_files, same_dir
 
 
 QGIS_NET_PROVIDERS = ("WFS", "arcgisfeatureserver", "arcgismapserver", "geonode", "ows", "wcs", "wms")
@@ -65,7 +65,7 @@ class MerginProjectValidator(object):
         """Check if the QGIS project is loaded and validate it eventually. If not, no validation is done."""
         self.qgis_proj_path = self.qgis_files[0]
         loaded_proj_path = QgsProject.instance().absoluteFilePath()
-        is_loaded = self.qgis_proj_path == loaded_proj_path
+        is_loaded = same_dir(self.qgis_proj_path, loaded_proj_path)
         if not is_loaded:
             self.issues[self.PROJ_NOT_LOADED] = []
         else:
@@ -113,7 +113,8 @@ class MerginProjectValidator(object):
             if lid not in self.layers_by_prov["gdal"] + self.layers_by_prov["ogr"]:
                 continue
             l_path = layer.publicSource().split("|")[0]
-            if not os.path.dirname(l_path) == self.mp.dir:
+            l_dir = os.path.dirname(l_path)
+            if not same_dir(l_dir, self.mp.dir):
                 self.issues[self.EXTERNAL_SRC].append(lid)
 
     def check_offline(self):

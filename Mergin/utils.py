@@ -1,14 +1,12 @@
 import os
 from datetime import datetime, timezone
-from functools import wraps
+import pathlib
 import urllib.parse
 import urllib.request
 from urllib.error import URLError, HTTPError
 from qgis.core import (
     QgsApplication,
     QgsAuthMethodConfig,
-    QgsExpressionContextUtils,
-    QgsProject,
 )
 from qgis.PyQt.QtCore import QSettings
 from qgis.core import Qgis
@@ -223,3 +221,10 @@ def proj_local_path(project_name):
         if not os.path.exists(proj_path):
             proj_path = None
     return proj_path
+
+
+def same_dir(dir1, dir2):
+    """Check if the two directory are the same."""
+    path1 = pathlib.Path(dir1)
+    path2 = pathlib.Path(dir2)
+    return path1 == path2
