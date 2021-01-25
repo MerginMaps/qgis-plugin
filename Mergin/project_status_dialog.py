@@ -37,6 +37,7 @@ class ProjectStatusDialog(QDialog):
         self.model.setHorizontalHeaderLabels(["Status"])
         self.table.setModel(self.model)
 
+        self.check_any_changes(pull_changes, push_changes)
         self.add_content(pull_changes, "Server changes", True)
         self.add_content(push_changes, "Local changes", False, push_changes_summary)
         self.table.expandAll()
@@ -84,6 +85,11 @@ class ProjectStatusDialog(QDialog):
                 f"their history will be lost if uploaded."
             )
         return msg
+
+    def check_any_changes(self, pull_changes, push_changes):
+        if not sum(len(v) for v in list(pull_changes.values()) + list(push_changes.values())):
+            root_item = QStandardItem("No changes")
+            self.model.appendRow(root_item)
 
     def add_content(self, changes, root_text, is_server, changes_summary={}):
         """

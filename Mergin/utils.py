@@ -1,17 +1,28 @@
-import os
 from datetime import datetime, timezone
+from urllib.error import URLError, HTTPError
+import configparser
+import os
 import pathlib
+import platform
 import urllib.parse
 import urllib.request
-from urllib.error import URLError, HTTPError
+
+from qgis.PyQt.QtCore import QSettings
+from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
+
 from qgis.core import (
+    Qgis,
     QgsApplication,
     QgsAuthMethodConfig,
+    QgsCoordinateReferenceSystem,
+    QgsExpressionContextUtils,
+    QgsProject,
+    QgsRasterLayer,
+    QgsVectorLayer,
 )
-from qgis.PyQt.QtCore import QSettings
-from qgis.core import Qgis
-import configparser
-import platform
+
+from .mergin.utils import int_version
+from .mergin.merginproject import MerginProject
 
 
 try:
@@ -212,19 +223,211 @@ def validate_mergin_url(url):
     return None
 
 
-def proj_local_path(project_name):
-    """Check if project was downloaded and return its path."""
-    s = QSettings()
-    proj_path = s.value(f"Mergin/localProjects/{project_name}/path", None)
-    # check local project dir was not unintentionally removed
-    if proj_path:
-        if not os.path.exists(proj_path):
-            proj_path = None
-    return proj_path
-
-
 def same_dir(dir1, dir2):
     """Check if the two directory are the same."""
     path1 = pathlib.Path(dir1)
     path2 = pathlib.Path(dir2)
     return path1 == path2
+
+
+def get_new_qgis_project_filepath(project_name=None):
+    """
+    Get path for a new QGIS project. If name is not None, only ask for a directory.
+    :name: filename of new project
+    :return: string with file path, or None on cancellation
+    """
+    settings = QSettings()
+    last_dir = settings.value("Mergin/lastUsedDownloadDir", "")
+    if project_name is not None:
+        dest_dir = QFileDialog.getExistingDirectory(None, "Destination directory", last_dir, QFileDialog.ShowDirsOnly)
+        project_file = os.path.abspath(os.path.join(dest_dir, project_name))
+    else:
+        project_file, filters = QFileDialog.getSaveFileName(
+            None, "Save QGIS project", "", "QGIS projects (*.qgz *.qgs)")
+    if project_file:
+        if not (project_file.endswith(".qgs") or project_file.endswith(".qgz")):
+            project_file += ".qgz"
+        return project_file
+    return None
+
+
+def unsaved_project_check():
+    """
+    Check if current QGIS project has some unsaved changes.
+    Let the user decide if the changes are to be saved before continuing.
+    :return: True if previous method should continue, False otherwise
+    :type: boolean
+    """
+    if (
+        any(
+            [
+                type(layer) is QgsVectorLayer and layer.isModified()
+                for layer in QgsProject.instance().mapLayers().values()
+            ]
+        )
+        or QgsProject.instance().isDirty()
+    ):
+        msg = "There are some unsaved changes. Do you want save it before continue?"
+        btn_reply = QMessageBox.warning(
+            None, "Stop editing", msg, QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
+        )
+        if btn_reply == QMessageBox.Yes:
+            for layer in QgsProject.instance().mapLayers().values():
+                if type(layer) is QgsVectorLayer and layer.isModified():
+                    layer.commitChanges()
+            if QgsProject.instance().isDirty():
+                if QgsProject.instance().fileName():
+                    QgsProject.instance().write()
+                else:
+                    project_file = get_new_qgis_project_filepath()
+                    if project_file:
+                        QgsProject.instance().setFileName(project_file)
+                        write_ok = QgsProject.instance().write()
+                        if not write_ok:
+                            QMessageBox.warning(None, "Error Saving Project",
+                                                "QGIS project was not saved properly. Cancelling...")
+                            return False
+                    else:
+                        return False
+            return True
+        elif btn_reply == QMessageBox.No:
+            return True
+        else:
+            return False
+    return True
+
+
+def create_basic_qgis_project(project_name=None):
+    """
+    Create a basic QGIS project with OSM background.
+    :return: Project file path on successful creation of a new project, None otherwise
+    """
+    project_file = get_new_qgis_project_filepath(project_name=project_name)
+    if project_file is None:
+        return False
+    new_project = QgsProject()
+    crs = QgsCoordinateReferenceSystem()
+    crs.createFromString("EPSG:3857")
+    new_project.setCrs(crs)
+    new_project.setFileName(project_file)
+    osm_url = "crs=EPSG:3857&type=xyz&zmin=0&zmax=19&url=http://tile.openstreetmap.org/{z}/{x}/{y}.png"
+    osm_layer = QgsRasterLayer(osm_url, "OSM", "wms")
+    new_project.addMapLayer(osm_layer)
+    write_success = new_project.write()
+    if not write_success:
+        QMessageBox.warning(None, "Error Creating New Project", f"Couldn't create new project:\n{project_file}")
+        return None
+    return project_file
+
+
+def login_error_message(e):
+    QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
+    msg = "<font color=red>Security token has been expired, failed to renew. Check your username and password </font>"
+    QMessageBox.critical(None, "Login failed", msg, QMessageBox.Close)
+
+
+def unhandled_exception_message(error_details, dialog_title, error_text):
+    msg = (
+        error_text + "<p>This should not happen, "
+        '<a href="https://github.com/lutraconsulting/qgis-mergin-plugin/issues">'
+        "please report the problem</a>."
+    )
+    box = QMessageBox()
+    box.setIcon(QMessageBox.Critical)
+    box.setWindowTitle(dialog_title)
+    box.setText(msg)
+    box.setDetailedText(error_details)
+    box.exec_()
+
+
+def write_project_variables(project_owner, project_name, project_full_name, version):
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_name", project_name)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_owner", project_owner)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_full_name", project_full_name)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_version", int_version(version))
+
+
+def remove_project_variables():
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_name")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_full_name")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_version")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_owner")
+
+
+def pretty_summary(summary):
+    msg = ""
+    for k, v in summary.items():
+        msg += "\nDetails " + k
+        msg += "".join(
+            "\n layer name - "
+            + d["table"]
+            + ": inserted: "
+            + str(d["insert"])
+            + ", modified: "
+            + str(d["update"])
+            + ", deleted: "
+            + str(d["delete"])
+            for d in v["geodiff_summary"]
+            if d["table"] != "gpkg_contents"
+        )
+    return msg
+
+
+def get_local_mergin_projects_info():
+    """Get a list of local Mergin projects info from QSettings."""
+    local_projects_info = []
+    settings = QSettings()
+    settings.beginGroup("Mergin/localProjects/")
+    for key in settings.allKeys():
+        # Expecting key in the following form: '<namespace>/<project_name>/path'
+        # - needs project dir to load metadata
+        key_parts = key.split("/")
+        if len(key_parts) > 2 and key_parts[2] == "path":
+            local_path = settings.value(key)
+            local_projects_info.append((local_path, key_parts[0], key_parts[1]))  # (path, project owner, project name)
+    return local_projects_info
+
+
+def set_qgis_project_mergin_variables():
+    """Check if current QGIS project is a local Mergin project and set QGIS project variables for Mergin."""
+    qgis_project_path = QgsProject.instance().absolutePath()
+    if not qgis_project_path:
+        return None
+    for local_path, owner, name in get_local_mergin_projects_info():
+        if same_dir(path, qgis_project_path):
+            try:
+                mp = MerginProject(path)
+                metadata = mp.metadata
+                write_project_variables(
+                    owner, name, metadata.get("name"), metadata.get("version")
+                )
+                return metadata.get("name")
+            except InvalidProject:
+                remove_project_variables()
+    return None
+
+
+def mergin_project_local_path(project_name=None):
+    """
+    Try to get local Mergin project path. If project_name is specified, look for this specific project, otherwise
+    check if current QGIS project directory is listed in QSettings Mergin local projects list.
+    :return: Mergin project local path if project was already downloaded, None otherwise.
+    """
+    settings = QSettings()
+    if project_name is not None:
+        proj_path = settings.value(f"Mergin/localProjects/{project_name}/path", None)
+        # check local project dir was not unintentionally removed
+        if proj_path:
+            if not os.path.exists(proj_path):
+                proj_path = None
+        return proj_path
+
+    qgis_project_path = QgsProject.instance().absolutePath()
+    if not qgis_project_path:
+        return None
+
+    for local_path, _, _ in get_local_mergin_projects_info():
+        if same_dir(local_path, qgis_project_path):
+            return qgis_project_path
+
+    return None
