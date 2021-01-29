@@ -1,42 +1,18 @@
-# GPLv3 license
-# Copyright Lutra Consulting Limited
-
-import sip
 import os
-import shutil
-import posixpath
-from qgis.PyQt.QtCore import pyqtSignal, QObject
-from qgis.PyQt.QtGui import QIcon
-from qgis.core import (
-    QgsApplication,
-    QgsDataItem,
-    QgsDataCollectionItem,
-    QgsErrorItem,
-    QgsExpressionContextUtils,
-    QgsDataItemProvider,
-    QgsDataProvider,
-    QgsProject,
-    QgsVectorLayer,
-)
+
+from qgis.core import QgsProject
 from qgis.utils import iface
-from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QApplication
+from qgis.PyQt.QtWidgets import QMessageBox, QApplication
 from qgis.PyQt.QtCore import QSettings, Qt
 from urllib.error import URLError
 
-from .configuration_dialog import ConfigurationDialog
-from .clone_project_dialog import CloneProjectDialog
 from .sync_dialog import SyncDialog
 from .utils import (
     ClientError,
     InvalidProject,
     LoginError,
-    create_mergin_client,
     find_qgis_files,
-    get_mergin_auth,
     login_error_message,
-    mergin_project_local_path,
-    same_dir,
-    send_logs,
     unhandled_exception_message,
     unsaved_project_check,
     write_project_variables,
@@ -59,7 +35,8 @@ class MerginProjectsManager(object):
     def set_current_project(self):
         """Find out if current QGIS project is a Mergin project and set it as current, eventually."""
 
-    def unsaved_changes_check(self, project_dir):
+    @staticmethod
+    def unsaved_changes_check(project_dir):
         """
         Check if current project is the same as actually operated Mergin project and has some unsaved changes.
         """
@@ -74,7 +51,8 @@ class MerginProjectsManager(object):
         writersnames = info["access"]["writersnames"]
         return username in writersnames
 
-    def open_project(self, project_dir):
+    @staticmethod
+    def open_project(project_dir):
         if not project_dir:
             return
 
@@ -112,7 +90,7 @@ class MerginProjectsManager(object):
             )
             return True
 
-        ## let's do initial upload of the project data
+        # let's do initial upload of the project data
 
         mp = MerginProject(project_dir)
         full_project_name = "{}/{}".format(namespace, project_name)
@@ -165,7 +143,12 @@ class MerginProjectsManager(object):
             return
 
         mp = MerginProject(project_dir)
-        project_name = mp.metadata["name"]
+        try:
+            project_name = mp.metadata["name"]
+        except InvalidProject as e:
+            msg = f"Failed to get project status:\n\n{str(e)}"
+            QMessageBox.critical(None, "Project status", msg, QMessageBox.Close)
+            return
         validator = MerginProjectValidator(mp, self.mc)
         validation_results = validator.run_checks()
         try:
@@ -195,7 +178,12 @@ class MerginProjectsManager(object):
             return
         if project_name is None:
             mp = MerginProject(project_dir)
-            project_name = mp.metadata["name"]
+            try:
+                project_name = mp.metadata["name"]
+            except InvalidProject as e:
+                msg = f"Failed to sync project:\n\n{str(e)}"
+                QMessageBox.critical(None, "Project syncing", msg, QMessageBox.Close)
+                return
 
         pull_changes, push_changes, push_changes_summary = self.mc.project_status(project_dir)
         if not sum(len(v) for v in list(pull_changes.values()) + list(push_changes.values())):

@@ -25,7 +25,7 @@ from qgis.PyQt.QtCore import QSettings, Qt
 from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
-from .create_project_dialog import CreateProjectDialog
+from .create_project_wizard import NewMerginProjectWizard
 from .clone_project_dialog import CloneProjectDialog
 from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
@@ -40,11 +40,8 @@ from .utils import (
     send_logs,
     unhandled_exception_message,
     unsaved_project_check,
-    write_project_variables,
     remove_project_variables,
 )
-
-from .mergin.merginproject import MerginProject
 
 icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
 
@@ -639,7 +636,10 @@ class MerginRootItem(QgsDataCollectionItem):
         if not unsaved_project_check():
             return
         user_info = self.mc.user_info()
-        dlg = CreateProjectDialog(username=user_info["username"], user_organisations=user_info.get("organisations", []))
+        # dlg = CreateProjectDialog(username=user_info["username"], user_organisations=user_info.get("organisations", []))
+        dlg = NewMerginProjectWizard(
+            username=user_info["username"], user_organisations=user_info.get("organisations", [])
+        )
         if not dlg.exec_():
             return  # cancelled
 

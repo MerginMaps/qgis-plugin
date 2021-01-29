@@ -297,27 +297,28 @@ def unsaved_project_check():
     return True
 
 
-def create_basic_qgis_project(project_name=None):
+def create_basic_qgis_project(project_path=None, project_name=None):
     """
     Create a basic QGIS project with OSM background.
     :return: Project file path on successful creation of a new project, None otherwise
     """
-    project_file = get_new_qgis_project_filepath(project_name=project_name)
-    if project_file is None:
+    if project_path is None:
+        project_path = get_new_qgis_project_filepath(project_name=project_name)
+    if project_path is None:
         return False
     new_project = QgsProject()
     crs = QgsCoordinateReferenceSystem()
     crs.createFromString("EPSG:3857")
     new_project.setCrs(crs)
-    new_project.setFileName(project_file)
+    new_project.setFileName(project_path)
     osm_url = "crs=EPSG:3857&type=xyz&zmin=0&zmax=19&url=http://tile.openstreetmap.org/{z}/{x}/{y}.png"
     osm_layer = QgsRasterLayer(osm_url, "OSM", "wms")
     new_project.addMapLayer(osm_layer)
     write_success = new_project.write()
     if not write_success:
-        QMessageBox.warning(None, "Error Creating New Project", f"Couldn't create new project:\n{project_file}")
+        QMessageBox.warning(None, "Error Creating New Project", f"Couldn't create new project:\n{project_path}")
         return None
-    return project_file
+    return project_path
 
 
 def login_error_message(e):
