@@ -225,6 +225,8 @@ def validate_mergin_url(url):
 
 def same_dir(dir1, dir2):
     """Check if the two directory are the same."""
+    if not dir1 or not dir2:
+        return False
     path1 = pathlib.Path(dir1)
     path2 = pathlib.Path(dir2)
     return path1 == path2
@@ -385,6 +387,9 @@ def get_local_mergin_projects_info():
         key_parts = key.split("/")
         if len(key_parts) > 2 and key_parts[2] == "path":
             local_path = settings.value(key)
+            # double check if the path exists - it might get deleted manually
+            if not os.path.exists(local_path):
+                continue
             local_projects_info.append((local_path, key_parts[0], key_parts[1]))  # (path, project owner, project name)
     return local_projects_info
 
