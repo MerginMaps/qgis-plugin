@@ -432,7 +432,7 @@ def mergin_project_local_path(project_name=None):
     if not qgis_project_path:
         return None
 
-    for local_path, _, _ in get_local_mergin_projects_info():
+    for local_path, owner, name in get_local_mergin_projects_info():
         if same_dir(local_path, qgis_project_path):
             return qgis_project_path
 

@@ -20,6 +20,8 @@ LOCATE_PAGE = 2
 SETTINGS_PAGE = 3
 PACK_PAGE = 4
 
+MIN_MERGIN_PROJ_PATH_LEN = 4
+
 
 class InitPage(uicls_init_page, basecls_init_page):
     """Initial wizard page with Mergin project sources to choose."""
@@ -63,7 +65,7 @@ class ChoosePathPage(uicls_local_path_page, basecls_local_path_page):
         super().__init__(parent)
         self.setupUi(self)
         self.parent = parent
-        self.file_filter = "QGIS projects (*.qgz *.qgs)" if file_filter is None else file_filter
+        self.file_filter = "QGIS projects (*.qgz *.qgs *.QGZ *.QGS)" if file_filter is None else file_filter
         self.registerField("project_path*", self.path_ledit)
         self.file_path = existing
         self.dir_path = None
@@ -127,6 +129,9 @@ class ChoosePathPage(uicls_local_path_page, basecls_local_path_page):
             return
         warn = ""
         cur_dir = cur_text if os.path.isdir(cur_text) else os.path.dirname(cur_text)
+        if len(cur_dir) < MIN_MERGIN_PROJ_PATH_LEN:
+            return
+
         if not os.path.exists(cur_dir):
             self.warning_edit.document().setPlainText("The path does not exist")
             return
@@ -140,7 +145,7 @@ class ChoosePathPage(uicls_local_path_page, basecls_local_path_page):
         qgis_files_nr = len(qgis_files)
         if self.file_path not in qgis_files:
             qgis_files_nr += 1
-        if len(cur_dir) > 5 and ".mergin" in os.listdir(cur_dir):
+        if ".mergin" in os.listdir(cur_dir):
             warn = "Warning: The selected directory seems to be already used for a Mergin project."
         if not warn and qgis_files_nr > 1:
             warn = "Warning: Chosen directory would contain more that one QGIS project."
