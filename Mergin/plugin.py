@@ -18,6 +18,7 @@ from qgis.core import (
     QgsDataItemProvider,
     QgsDataProvider,
     QgsProject,
+    QgsProviderRegistry,
 )
 from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QApplication
@@ -34,16 +35,18 @@ from .utils import (
     LoginError,
     create_mergin_client,
     find_qgis_files,
+    icon_path,
     get_mergin_auth,
     login_error_message,
     mergin_project_local_path,
+    same_dir,
     send_logs,
     unhandled_exception_message,
     unsaved_project_check,
     remove_project_variables,
 )
 
-icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
+from .mergin.merginproject import MerginProject
 
 
 class MerginPlugin:
@@ -135,7 +138,7 @@ class MerginPlugin:
         always_on=True,
     ):
 
-        icon = QIcon(os.path.join(icon_path, icon_name))
+        icon = QIcon(icon_path(icon_name))
         action = QAction(icon, text, self.iface.mainWindow())
         action.triggered.connect(callback)
         action.setCheckable(checkable)
@@ -259,9 +262,9 @@ class MerginProjectItem(QgsDataItem):
             if not os.path.exists(self.path):
                 self.path = None
         if self.path:
-            self.setIcon(QIcon(os.path.join(icon_path, "folder-solid.svg")))
+            self.setIcon(QIcon(icon_path("folder-solid.svg")))
         else:
-            self.setIcon(QIcon(os.path.join(icon_path, "cloud-solid.svg")))
+            self.setIcon(QIcon(icon_path("cloud-solid.svg")))
         self.mc = mc
         self.mpm = project_manager
 
@@ -314,7 +317,7 @@ class MerginProjectItem(QgsDataItem):
 
         settings.setValue("Mergin/localProjects/{}/path".format(self.project_name), target_dir)
         self.path = target_dir
-        self.setIcon(QIcon(os.path.join(icon_path, "folder-solid.svg")))
+        self.setIcon(QIcon(icon_path("folder-solid.svg")))
         QApplication.restoreOverrideCursor()
 
         msg = "Your project {} has been successfully downloaded. " "Do you want to open project file?".format(
@@ -329,7 +332,8 @@ class MerginProjectItem(QgsDataItem):
     def remove_local_project(self):
         if not self.path:
             return
-
+        cur_proj = QgsProject.instance()
+        cur_proj_path = cur_proj.absolutePath()
         msg = (
             "Your local changes will be lost. Make sure your project is synchronised with server. \n\n"
             "Do you want to proceed?".format(self.project_name)
@@ -342,12 +346,31 @@ class MerginProjectItem(QgsDataItem):
 
         if os.path.exists(self.path):
             try:
+                if same_dir(cur_proj_path, self.path):
+                    msg = (
+                        "The project is currently open. It will get cleared if you proceed.\n\n"
+                        "Proceed anyway?".format(self.project_name)
+                    )
+                    btn_reply = QMessageBox.question(
+                        None, "Remove local project", msg, QMessageBox.No | QMessageBox.No, QMessageBox.Yes
+                    )
+                    if btn_reply == QMessageBox.No:
+                        return
+
+                    cur_proj.clear()
+                    registry = QgsProviderRegistry.instance()
+                    registry.setLibraryDirectory(registry.libraryDirectory())
+
+                    # remove logging handlers
+                    mp = MerginProject(cur_proj_path)
+                    mp.log.removeHandler(mp.log.handlers[0])
+
                 shutil.rmtree(self.path)
             except PermissionError as e:
                 QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
                 msg = (
-                    "Failed to delete your project {} because is open.\n"
-                    "Close project and check if it is not open in another application.".format(self.project_name)
+                    f"Failed to delete your project {self.project_name} because it is open.\n"
+                    "You might need to close project or QGIS to remove its files."
                 )
                 QMessageBox.critical(None, "Project delete", msg, QMessageBox.Close)
                 return
@@ -355,7 +378,7 @@ class MerginProjectItem(QgsDataItem):
         settings = QSettings()
         settings.remove("Mergin/localProjects/{}/path".format(self.project_name))
         self.path = None
-        self.setIcon(QIcon(os.path.join(icon_path, "cloud-solid.svg")))
+        self.setIcon(QIcon(icon_path("cloud-solid.svg")))
 
     def _unsaved_changes_check(self):
         """Check if current project is same as actually operated mergin project
@@ -488,30 +511,30 @@ class MerginProjectItem(QgsDataItem):
         )
 
     def actions(self, parent):
-        action_download = QAction(QIcon(os.path.join(icon_path, "cloud-download-alt-solid.svg")), "Download", parent)
+        action_download = QAction(QIcon(icon_path("cloud-download-alt-solid.svg")), "Download", parent)
         action_download.triggered.connect(self.download)
 
-        action_remove_local = QAction(QIcon(os.path.join(icon_path, "trash-solid.svg")), "Remove locally", parent)
+        action_remove_local = QAction(QIcon(icon_path("trash-solid.svg")), "Remove locally", parent)
         action_remove_local.triggered.connect(self.remove_local_project)
 
         action_open_project = QAction("Open QGIS project", parent)
         action_open_project.triggered.connect(self.open_project)
 
-        action_sync_project = QAction(QIcon(os.path.join(icon_path, "sync-solid.svg")), "Synchronize", parent)
+        action_sync_project = QAction(QIcon(icon_path("sync-solid.svg")), "Synchronize", parent)
         action_sync_project.triggered.connect(self.sync_project)
 
-        action_clone_remote = QAction(QIcon(os.path.join(icon_path, "copy-solid.svg")), "Clone", parent)
+        action_clone_remote = QAction(QIcon(icon_path("copy-solid.svg")), "Clone", parent)
         action_clone_remote.triggered.connect(self.clone_remote_project)
 
         action_remove_remote = QAction(
-            QIcon(os.path.join(icon_path, "trash-alt-solid.svg")), "Remove from server", parent
+            QIcon(icon_path("trash-alt-solid.svg")), "Remove from server", parent
         )
         action_remove_remote.triggered.connect(self.remove_remote_project)
 
-        action_status = QAction(QIcon(os.path.join(icon_path, "info-circle-solid.svg")), "Status", parent)
+        action_status = QAction(QIcon(icon_path("info-circle-solid.svg")), "Status", parent)
         action_status.triggered.connect(self.project_status)
 
-        action_diagnostic_log = QAction(QIcon(os.path.join(icon_path, "medkit-solid.svg")), "Diagnostic log", parent)
+        action_diagnostic_log = QAction(QIcon(icon_path("medkit-solid.svg")), "Diagnostic log", parent)
         action_diagnostic_log.triggered.connect(self.submit_logs)
 
         if self.path:
@@ -536,7 +559,7 @@ class MerginGroupItem(QgsDataCollectionItem):
     def __init__(self, parent, grp_name, grp_filter, icon, order, project_manager):
         QgsDataCollectionItem.__init__(self, parent, grp_name, "/Mergin" + grp_name)
         self.filter = grp_filter
-        self.setIcon(QIcon(os.path.join(icon_path, icon)))
+        self.setIcon(QIcon(icon_path(icon)))
         self.setSortKey(order)
         self.project_manager = project_manager
 
@@ -566,12 +589,12 @@ class MerginGroupItem(QgsDataCollectionItem):
         return items
 
     def actions(self, parent):
-        action_refresh = QAction(QIcon(os.path.join(icon_path, "redo-solid.svg")), "Reload", parent)
+        action_refresh = QAction(QIcon(icon_path("redo-solid.svg")), "Reload", parent)
         action_refresh.triggered.connect(self.refresh)
         actions = [action_refresh]
         if self.name() == "My projects":
             action_create = QAction(
-                QIcon(os.path.join(icon_path, "plus-square-solid.svg")), "Create new project", parent
+                QIcon(icon_path("add.svg", fa_icon=False)), "Create new project", parent
             )
             action_create.triggered.connect(self.parent().show_create_project_dialog)
             actions.append(action_create)
@@ -589,6 +612,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.mc = None
         self.error = ""
         self.project_manager = None
+        self.wizard = None
         try:
             self.mc = create_mergin_client()
             self.project_manager = MerginProjectsManager(self.mc)
@@ -600,7 +624,7 @@ class MerginRootItem(QgsDataCollectionItem):
     def createChildren(self):
         if not self.mc and self.error:
             error_item = QgsErrorItem(self, self.error, "/Mergin/error")
-            error_item.setIcon(QIcon(os.path.join(icon_path, "exclamation-triangle-solid.svg")))
+            error_item.setIcon(QIcon(icon_path("exclamation-triangle-solid.svg")))
             sip.transferto(error_item, self)
             return [error_item]
 
@@ -636,28 +660,22 @@ class MerginRootItem(QgsDataCollectionItem):
         if not unsaved_project_check():
             return
         user_info = self.mc.user_info()
-        # dlg = CreateProjectDialog(username=user_info["username"], user_organisations=user_info.get("organisations", []))
-        dlg = NewMerginProjectWizard(
-            username=user_info["username"], user_organisations=user_info.get("organisations", [])
+        self.wizard = NewMerginProjectWizard(
+            self.project_manager,
+            username=user_info["username"],
+            user_organisations=user_info.get("organisations", [])
         )
-        if not dlg.exec_():
+        if not self.wizard.exec_():
+            self.wizard = None
             return  # cancelled
-
-        self.create_project(dlg.project_name, dlg.project_dir, dlg.is_public, dlg.project_namespace)
-
-    def create_project(self, project_name, project_dir, is_public, namespace):
-        """ After user has selected project name and local directory, this function does the communication.
-        If project_dir is None, we are creating empty project without upload.
-        """
-        if self.project_manager.create_project(project_name, project_dir, is_public, namespace):
-            self.depopulate()  # make sure the item has the link between remote and local project we have just added
-            self.project_manager.open_project(project_dir)
+        self.depopulate()  # make sure the item has the link between remote and local project we have just added
+        self.wizard = None
 
     def actions(self, parent):
-        action_configure = QAction(QIcon(os.path.join(icon_path, "cog-solid.svg")), "Configure", parent)
+        action_configure = QAction(QIcon(icon_path("cog-solid.svg")), "Configure", parent)
         action_configure.triggered.connect(self.configure)
 
-        action_create = QAction(QIcon(os.path.join(icon_path, "plus-square-solid.svg")), "Create new project", parent)
+        action_create = QAction(QIcon(icon_path("plus-square-solid.svg")), "Create new project", parent)
         action_create.triggered.connect(self.show_create_project_dialog)
         actions = [action_configure]
         if self.mc:

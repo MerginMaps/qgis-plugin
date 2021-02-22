@@ -15,9 +15,18 @@ from qgis.core import (
     QgsApplication,
     QgsAuthMethodConfig,
     QgsCoordinateReferenceSystem,
+    QgsDataProvider,
     QgsExpressionContextUtils,
+    QgsMapLayerType,
+    QgsMeshDataProvider,
     QgsProject,
+    QgsRasterDataProvider,
+    QgsRasterFileWriter,
     QgsRasterLayer,
+    QgsRasterPipe,
+    QgsRasterProjector,
+    QgsVectorDataProvider,
+    QgsVectorFileWriter,
     QgsVectorLayer,
 )
 
@@ -49,6 +58,12 @@ except ImportError:
 
 MERGIN_URL = 'https://public.cloudmergin.com'
 MERGIN_LOGS_URL = 'https://g4pfq226j0.execute-api.eu-west-1.amazonaws.com/mergin_client_log_submit'
+
+QGIS_NET_PROVIDERS = ("WFS", "arcgisfeatureserver", "arcgismapserver", "geonode", "ows", "wcs", "wms", "vectortile")
+QGIS_DB_PROVIDERS = ("postgres", "mssql", "oracle", "hana", "postgresraster", "DB2")
+QGIS_MESH_PROVIDERS = ("mdal", "mesh_memory")
+QGIS_FILE_BASED_PROVIDERS = ("ogr", "gdal", "spatialite", "delimitedtext", "gpx", "mdal", "grass", "grassraster")
+PACKABLE_PROVIDERS = ("ogr", "gdal", "delimitedtext", "gpx", "postgres", "memory")
 
 
 def find_qgis_files(directory):
@@ -323,6 +338,153 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     return project_path
 
 
+def save_current_project(project_path, warn=False):
+    """Save current QGIS project to project_path."""
+    cur_project = QgsProject.instance()
+    cur_project.setFileName(project_path)
+    write_success = cur_project.write()
+    if not write_success and warn:
+        QMessageBox.warning(None, "Error Creating Project", f"Couldn't save project to:\n{project_path}")
+        return False
+    return True
+
+
+def get_unique_filename(filename):
+    """Check if the filename exists. Try to append a number to the name until it does not exists."""
+    if not os.path.exists(filename) and os.path.exists(os.path.dirname(filename)):
+        return filename
+    file_path_name, ext = os.path.splitext(filename)
+    i = 0
+    new_filename = f"{file_path_name}_{{}}{ext}"
+    while os.path.isfile(new_filename.format(i)):
+        i += 1
+    return new_filename.format(i)
+
+
+def datasource_filepath(layer):
+    """Check if layer datasource is file-based and return the path, or None otherwise."""
+    dp = layer.dataProvider()
+    if dp.name() not in QGIS_FILE_BASED_PROVIDERS:
+        return None
+    if isinstance(dp, (QgsRasterDataProvider, QgsMeshDataProvider,)):
+        ds_uri = dp.dataSourceUri()
+    elif isinstance(dp, QgsVectorDataProvider):
+        if dp.storageType() in ("GPKG", "GPX", "GeoJSON"):
+            ds_uri = dp.dataSourceUri().split("|")[0]
+        elif dp.storageType() == "Delimited text file":
+            ds_uri = dp.dataSourceUri().split("?")[0].replace("file://", "")
+        else:
+            ds_uri = dp.dataSourceUri()
+    else:
+        ds_uri = None
+    return ds_uri if os.path.isfile(ds_uri) else None
+
+
+def is_layer_packable(layer):
+    """Check if layer can be packaged for a Mergin project."""
+    dp = layer.dataProvider()
+    provider_name = dp.name()
+    if provider_name in QGIS_DB_PROVIDERS:
+        return layer.type() == QgsMapLayerType.VectorLayer
+    else:
+        return provider_name in PACKABLE_PROVIDERS
+
+
+def find_packable_layers(qgis_project=None):
+    """Find layers that can be packaged for Mergin."""
+    packable = []
+    if qgis_project is None:
+        qgis_project = QgsProject.instance()
+    layers = qgis_project.mapLayers()
+    for lid, layer in layers.items():
+        if is_layer_packable(layer):
+            packable.append(lid)
+    return packable
+
+
+def package_layer(layer, project_dir):
+    """
+    Save layer to project_dir as a single layer GPKG, unless it is already there as a GPKG layer.
+    Raster layers are saved in project_dir using the original provider, if possible.
+    """
+    if not layer.isValid():
+        QMessageBox.warning(None, "Error Packaging Layer", f"{layer.name()} is not a valid QGIS layer.")
+        return False
+
+    dp = layer.dataProvider()
+    src_filepath = datasource_filepath(layer)
+    if src_filepath and same_dir(os.path.dirname(src_filepath), project_dir):
+        # layer already stored in the target project dir
+        if layer.type() in (QgsMapLayerType.RasterLayer, QgsMapLayerType.MeshLayer):
+            return True
+        if layer.type() == QgsMapLayerType.VectorLayer:
+            # if it is a GPKG we do not need to rewrite it
+            if dp.storageType == "GPKG":
+                return True
+
+    layer_name = "_".join(layer.name().split())
+    layer_filename = get_unique_filename(os.path.join(project_dir, layer_name))
+    transform_context = QgsProject.instance().transformContext()
+    provider_opts = QgsDataProvider.ProviderOptions()
+
+    if layer.type() == QgsMapLayerType.VectorLayer:
+
+        writer_opts = QgsVectorFileWriter.SaveVectorOptions()
+        writer_opts.fileEncoding = "UTF-8"
+        writer_opts.layerName = layer_name
+        writer_opts.driverName = "GPKG"
+        write_filename = f"{layer_filename}.gpkg"
+        res, err = QgsVectorFileWriter.writeAsVectorFormatV2(layer, write_filename, transform_context, writer_opts)
+        if res != QgsVectorFileWriter.NoError:
+            QMessageBox.warning(
+                None, "Error Packaging Layer", f"Couldn't properly save layer: {layer_filename}. \n{err}"
+            )
+            return False
+        provider_opts.fileEncoding = "UTF-8"
+        provider_opts.layerName = layer_name
+        provider_opts.driverName = "GPKG"
+        datasource = f"{write_filename}|layername={layer_name}"
+        layer.setDataSource(datasource, layer_name, "ogr", provider_opts)
+
+    elif layer.type() == QgsMapLayerType.RasterLayer:
+
+        dp_uri = dp.dataSourceUri() if os.path.isfile(dp.dataSourceUri()) else None
+        if dp_uri is None:
+            warn = f"Couldn't properly save layer: {layer_filename}\nIs it a file based layer?"
+            QMessageBox.warning(None, "Error Packaging Layer", warn)
+            return False
+
+        layer_filename = os.path.join(project_dir, os.path.basename(dp_uri))
+        raster_writer = QgsRasterFileWriter(layer_filename)
+        pipe = QgsRasterPipe()
+        if not pipe.set(dp.clone()):
+            warn = f"Couldn't set raster pipe projector for layer: {layer_filename}\nSkipping..."
+            QMessageBox.warning(None, "Error Packaging Layer", warn)
+            return False
+
+        projector = QgsRasterProjector()
+        projector.setCrs(dp.crs(), dp.crs())
+        if not pipe.insert(2, projector):
+            warn = f"Couldn't set raster pipe provider for layer: {layer_filename}\nSkipping..."
+            QMessageBox.warning(None, "Error Packaging Layer", warn)
+            return False
+
+        res = raster_writer.writeRaster(pipe, dp.xSize(), dp.ySize(), dp.extent(), dp.crs())
+        if not res == QgsRasterFileWriter.NoError:
+            warn = f"Couldn't save raster: {layer_filename}\nWrite error: {res}"
+            QMessageBox.warning(None, "Error Packaging Layer", warn)
+            return False
+
+        provider_opts.layerName = layer_name
+        datasource = layer_filename
+        layer.setDataSource(datasource, layer_name, "gdal", provider_opts)
+
+    else:
+        # meshes and anything else
+        return False
+    return True
+
+
 def login_error_message(e):
     QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
     msg = "<font color=red>Security token has been expired, failed to renew. Check your username and password </font>"
@@ -437,3 +599,11 @@ def mergin_project_local_path(project_name=None):
             return qgis_project_path
 
     return None
+
+
+def icon_path(icon_filename, fa_icon=True):
+    if fa_icon:
+        ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", "FA_icons", icon_filename)
+    else:
+        ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_filename)
+    return ipath

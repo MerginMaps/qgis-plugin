@@ -51,20 +51,14 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPlainTextEdit" name="warning_edit">
-       <property name="verticalScrollBarPolicy">
-        <enum>Qt::ScrollBarAlwaysOff</enum>
-       </property>
-       <property name="undoRedoEnabled">
-        <bool>false</bool>
-       </property>
-       <property name="readOnly">
-        <bool>true</bool>
-       </property>
-       <property name="plainText">
-        <string>Use [...] button to browse for path</string>
+      <widget class="QLabel" name="info_label">
+       <property name="text">
+        <string/>
        </property>
       </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="path_ok_ledit"/>
      </item>
     </layout>
    </item>
