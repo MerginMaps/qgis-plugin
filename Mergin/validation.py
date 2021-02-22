@@ -3,11 +3,7 @@ import os
 
 from qgis.core import QgsMapLayerType, QgsProject, QgsVectorDataProvider
 
-from .utils import find_qgis_files, same_dir
-
-
-QGIS_NET_PROVIDERS = ("WFS", "arcgisfeatureserver", "arcgismapserver", "geonode", "ows", "wcs", "wms")
-QGIS_DB_PROVIDERS = ("postgres", "mssql", "oracle")
+from .utils import find_qgis_files, same_dir, QGIS_DB_PROVIDERS, QGIS_NET_PROVIDERS
 
 
 class MerginProjectValidator(object):
@@ -23,20 +19,24 @@ class MerginProjectValidator(object):
     NOT_FOR_OFFLINE = 5, "Layer might not be available when offline"
     NO_EDITABLE_LAYER = 7, "No editable layer in the project"
 
-    def __init__(self, mergin_project, mergin_client):
+    def __init__(self, mergin_project=None):
         self.mp = mergin_project
-        self.mc = mergin_client
-        self.qgis_proj = None
         self.layers = None  # {layer_id: map layer}
         self.editable = None  # list of editable layers ids
         self.layers_by_prov = defaultdict(list)  # {provider_name: [layers]}
         self.issues = defaultdict(list)  # {problem type: optional list of problematic data sources, or None}
         self.qgis_files = None
-        self.qgis_proj_path = None
         self.qgis_proj = None
+        self.qgis_proj_path = None
+        self.qgis_proj_dir = None
 
     def run_checks(self):
-        if not self.check_single_proj():
+        if self.mp is None:
+            # preliminary check for current QGIS project, no Mergin project created yet
+            self.qgis_proj_dir = QgsProject.instance().absolutePath()
+        else:
+            self.qgis_proj_dir = self.mp.dir
+        if not self.check_single_proj(self.qgis_proj_dir):
             return self.issues
         if not self.check_proj_loaded():
             return self.issues
@@ -49,9 +49,9 @@ class MerginProjectValidator(object):
             self.issues[self.NO_PROBLEMS] = []
         return self.issues
 
-    def check_single_proj(self):
+    def check_single_proj(self, project_dir):
         """Check if there is one and only one QGIS project in the directory."""
-        self.qgis_files = find_qgis_files(self.mp.dir)
+        self.qgis_files = find_qgis_files(project_dir)
         if len(self.qgis_files) > 1:
             self.issues[self.MULTIPLE_PROJS] = []
             return False
@@ -114,7 +114,7 @@ class MerginProjectValidator(object):
                 continue
             l_path = layer.publicSource().split("|")[0]
             l_dir = os.path.dirname(l_path)
-            if not same_dir(l_dir, self.mp.dir):
+            if not same_dir(l_dir, self.qgis_proj_dir):
                 self.issues[self.EXTERNAL_SRC].append(lid)
 
     def check_offline(self):
@@ -123,9 +123,3 @@ class MerginProjectValidator(object):
             dp_name = layer.dataProvider().name()
             if dp_name in QGIS_NET_PROVIDERS + QGIS_DB_PROVIDERS:
                 self.issues[self.NOT_FOR_OFFLINE].append(lid)
-
-    def fix_project(self):
-        """Try to fix typical issues."""
-        # TODO
-        # save external GDAL/OGR layers into project directory - single GPKG?
-        # save memory layers - single GPKG for memory layers?

@@ -32,9 +32,6 @@ class MerginProjectsManager(object):
         self.mc = mergin_client
         self.iface = iface
 
-    def set_current_project(self):
-        """Find out if current QGIS project is a Mergin project and set it as current, eventually."""
-
     @staticmethod
     def unsaved_changes_check(project_dir):
         """
@@ -149,7 +146,7 @@ class MerginProjectsManager(object):
             msg = f"Failed to get project status:\n\n{str(e)}"
             QMessageBox.critical(None, "Project status", msg, QMessageBox.Close)
             return
-        validator = MerginProjectValidator(mp, self.mc)
+        validator = MerginProjectValidator(mp)
         validation_results = validator.run_checks()
         try:
             pull_changes, push_changes, push_changes_summary = self.mc.project_status(project_dir)
