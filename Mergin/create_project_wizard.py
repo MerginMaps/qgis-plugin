@@ -3,17 +3,17 @@ import os
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QSettings, Qt, QVariant, QSortFilterProxyModel
 from qgis.PyQt.QtWidgets import (
+    QAbstractItemView,
     QApplication,
+    QComboBox,
     QFileDialog,
+    QHeaderView,
+    QMessageBox,
     QTreeView,
     QWizard,
-    QAbstractItemView,
-    QHeaderView,
-    QComboBox,
-    QMessageBox,
 )
 
-from qgis.core import QgsProject, QgsLayerTreeNode, QgsLayerTreeModel, QgsDataProvider
+from qgis.core import QgsProject, QgsLayerTreeNode, QgsLayerTreeModel
 from qgis.utils import iface
 
 from .utils import (
@@ -63,7 +63,11 @@ class InitPage(ui_init_page, base_init_page):
         self.registerField("create_from*", self.hidden_ledit)
 
     def selection_changed(self):
+        for btn in self.btns_page.keys():
+            if btn != self.sender():
+                btn.setChecked(False)
         self.hidden_ledit.setText("Selection done!")
+        self.parent.next()
 
     def nextId(self):
         """Decide about the next page based on checkable buttons."""
@@ -481,6 +485,7 @@ class NewMerginProjectWizard(QWizard):
             self.iface.addProject(self.project_file)
             # workaround to set proper extent
             self.iface.mapCanvas().zoomToFullExtent()
+            QgsProject.instance().write()
             reload_project = True
 
         elif self.init_page.cur_proj_no_pack_btn.isChecked():
@@ -532,7 +537,7 @@ class NewMerginProjectWizard(QWizard):
             warn = "Failed to package following layers:\n"
             for failed in failed_packaging:
                 warn += f"\n  * {failed}"
-                QMessageBox.warning(None, "Error Packaging Layers", warn)
+            QMessageBox.warning(None, "Error Packaging Layers", warn)
 
     def cancel_wizard(self):
         self.save_geometry()
