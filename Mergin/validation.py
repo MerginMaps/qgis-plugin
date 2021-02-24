@@ -85,6 +85,8 @@ class MerginProjectValidator(object):
         self.editable = []
         for lid, layer in self.layers.items():
             dp = layer.dataProvider()
+            if dp is None:
+                continue
             self.layers_by_prov[dp.name()].append(lid)
             if layer.type() == QgsMapLayerType.VectorLayer:
                 caps = dp.capabilities()

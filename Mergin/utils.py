@@ -11,11 +11,13 @@ from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
 
 from qgis.core import (
+    NULL,
     Qgis,
     QgsApplication,
     QgsAuthMethodConfig,
     QgsCoordinateReferenceSystem,
     QgsDataProvider,
+    QgsEditorWidgetSetup,
     QgsExpressionContextUtils,
     QgsField,
     QgsMapLayerType,
@@ -370,6 +372,19 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     vector_layer = QgsVectorLayer(vector_fname, "Survey", "ogr")
     symbol = QgsMarkerSymbol.createSimple({'name': 'circle', 'color': '#d73027', 'size': '3'})
     vector_layer.renderer().setSymbol(symbol)
+    datetime_config = {
+        'allow_null': True, 'calendar_popup': True, 'display_format': 'yyyy-MM-dd HH:mm:ss',
+        'field_format': 'yyyy-MM-dd HH:mm:ss', 'field_iso_format': False
+    }
+    datetime_ws = QgsEditorWidgetSetup("DateTime", datetime_config)
+    vector_layer.setEditorWidgetSetup(1, datetime_ws)
+    photo_config = {
+        'DocumentViewer': 1, 'DocumentViewerHeight': 0, 'DocumentViewerWidth': 0, 'FileWidget': True,
+        'FileWidgetButton': True, 'FileWidgetFilter': '', 'RelativeStorage': 0, 'StorageMode': 0,
+        'PropertyCollection': {'name': NULL, 'properties': {}, 'type': 'collection'},
+    }
+    photo_ws = QgsEditorWidgetSetup("ExternalResource", photo_config)
+    vector_layer.setEditorWidgetSetup(3, photo_ws)
     new_project.addMapLayer(vector_layer)
 
     write_success = new_project.write()
