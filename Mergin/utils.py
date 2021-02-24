@@ -370,7 +370,10 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     if err:
         QMessageBox.warning(None, "Error Creating New Project", f"Couldn't save vector layer to:\n{vector_fname}")
     vector_layer = QgsVectorLayer(vector_fname, "Survey", "ogr")
-    symbol = QgsMarkerSymbol.createSimple({'name': 'circle', 'color': '#d73027', 'size': '3'})
+    symbol = QgsMarkerSymbol.createSimple({
+        'name': 'circle', 'color': '#d73027', 'size': '3', "outline_color": '#e8e8e8', 'outline_style': 'solid',
+        'outline_width': '0.4'
+    })
     vector_layer.renderer().setSymbol(symbol)
     datetime_config = {
         'allow_null': True, 'calendar_popup': True, 'display_format': 'yyyy-MM-dd HH:mm:ss',
@@ -380,7 +383,7 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     vector_layer.setEditorWidgetSetup(1, datetime_ws)
     photo_config = {
         'DocumentViewer': 1, 'DocumentViewerHeight': 0, 'DocumentViewerWidth': 0, 'FileWidget': True,
-        'FileWidgetButton': True, 'FileWidgetFilter': '', 'RelativeStorage': 0, 'StorageMode': 0,
+        'FileWidgetButton': True, 'FileWidgetFilter': '', 'RelativeStorage': 1, 'StorageMode': 0,
         'PropertyCollection': {'name': NULL, 'properties': {}, 'type': 'collection'},
     }
     photo_ws = QgsEditorWidgetSetup("ExternalResource", photo_config)
