@@ -7,7 +7,7 @@ import platform
 import urllib.parse
 import urllib.request
 
-from qgis.PyQt.QtCore import QSettings
+from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
 
 from qgis.core import (
@@ -17,7 +17,9 @@ from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsDataProvider,
     QgsExpressionContextUtils,
+    QgsField,
     QgsMapLayerType,
+    QgsMarkerSymbol,
     QgsMeshDataProvider,
     QgsProject,
     QgsRasterDataProvider,
@@ -314,9 +316,31 @@ def unsaved_project_check():
     return True
 
 
+def save_vector_layer_as_gpkg(layer, target_dir, update_datasource=False):
+    """Save layer as a single table GeoPackage in the target_dir. Update the original layer datasource if needed."""
+    layer_name = remove_forbidden_chars("_".join(layer.name().split()))
+    layer_filename = get_unique_filename(os.path.join(target_dir, f"{layer_name}.gpkg"))
+    transform_context = QgsProject.instance().transformContext()
+    writer_opts = QgsVectorFileWriter.SaveVectorOptions()
+    writer_opts.fileEncoding = "UTF-8"
+    writer_opts.layerName = layer_name
+    writer_opts.driverName = "GPKG"
+    res, err = QgsVectorFileWriter.writeAsVectorFormatV2(layer, layer_filename, transform_context, writer_opts)
+    if res != QgsVectorFileWriter.NoError:
+        return layer_filename, f"Couldn't properly save layer: {layer_filename}. \n{err}"
+    if update_datasource:
+        provider_opts = QgsDataProvider.ProviderOptions()
+        provider_opts.fileEncoding = "UTF-8"
+        provider_opts.layerName = layer_name
+        provider_opts.driverName = "GPKG"
+        datasource = f"{layer_filename}|layername={layer_name}"
+        layer.setDataSource(datasource, layer_name, "ogr", provider_opts)
+    return layer_filename, None
+
+
 def create_basic_qgis_project(project_path=None, project_name=None):
     """
-    Create a basic QGIS project with OSM background.
+    Create a basic QGIS project with OSM background and a simple vector layer.
     :return: Project file path on successful creation of a new project, None otherwise
     """
     if project_path is None:
@@ -331,6 +355,23 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     osm_url = "crs=EPSG:3857&type=xyz&zmin=0&zmax=19&url=http://tile.openstreetmap.org/{z}/{x}/{y}.png"
     osm_layer = QgsRasterLayer(osm_url, "OSM", "wms")
     new_project.addMapLayer(osm_layer)
+
+    mem_uri = "Point?crs=epsg:3857"
+    mem_layer = QgsVectorLayer(mem_uri, "Survey points", "memory")
+    res = mem_layer.dataProvider().addAttributes([
+        QgsField("date", QVariant.DateTime),
+        QgsField("notes", QVariant.String),
+        QgsField("photo", QVariant.String),
+    ])
+    mem_layer.updateFields()
+    vector_fname, err = save_vector_layer_as_gpkg(mem_layer, os.path.dirname(project_path))
+    if err:
+        QMessageBox.warning(None, "Error Creating New Project", f"Couldn't save vector layer to:\n{vector_fname}")
+    vector_layer = QgsVectorLayer(vector_fname, "Survey", "ogr")
+    symbol = QgsMarkerSymbol.createSimple({'name': 'circle', 'color': '#d73027', 'size': '3'})
+    vector_layer.renderer().setSymbol(symbol)
+    new_project.addMapLayer(vector_layer)
+
     write_success = new_project.write()
     if not write_success:
         QMessageBox.warning(None, "Error Creating New Project", f"Couldn't create new project:\n{project_path}")
@@ -349,12 +390,19 @@ def save_current_project(project_path, warn=False):
     return True
 
 
+def remove_forbidden_chars(text, forbidden="\\/:*?\"'<>|()"):
+    """Remove forbidden characters from the text."""
+    for c in forbidden:
+        text = text.replace(c, "")
+    return text
+
+
 def get_unique_filename(filename):
-    """Check if the filename exists. Try to append a number to the name until it does not exists."""
+    """Check if the filename exists. Try append a number to get a unique filename."""
     if not os.path.exists(filename) and os.path.exists(os.path.dirname(filename)):
         return filename
     file_path_name, ext = os.path.splitext(filename)
-    i = 0
+    i = 1
     new_filename = f"{file_path_name}_{{}}{ext}"
     while os.path.isfile(new_filename.format(i)):
         i += 1
@@ -383,6 +431,9 @@ def datasource_filepath(layer):
 def is_layer_packable(layer):
     """Check if layer can be packaged for a Mergin project."""
     dp = layer.dataProvider()
+    if dp is None:
+        # Vector tile layers have no provider
+        return False
     provider_name = dp.name()
     if provider_name in QGIS_DB_PROVIDERS:
         return layer.type() == QgsMapLayerType.VectorLayer
@@ -422,35 +473,18 @@ def package_layer(layer, project_dir):
             if dp.storageType == "GPKG":
                 return True
 
-    layer_name = "_".join(layer.name().split())
-    layer_filename = get_unique_filename(os.path.join(project_dir, layer_name))
-    transform_context = QgsProject.instance().transformContext()
-    provider_opts = QgsDataProvider.ProviderOptions()
-
     if layer.type() == QgsMapLayerType.VectorLayer:
 
-        writer_opts = QgsVectorFileWriter.SaveVectorOptions()
-        writer_opts.fileEncoding = "UTF-8"
-        writer_opts.layerName = layer_name
-        writer_opts.driverName = "GPKG"
-        write_filename = f"{layer_filename}.gpkg"
-        res, err = QgsVectorFileWriter.writeAsVectorFormatV2(layer, write_filename, transform_context, writer_opts)
-        if res != QgsVectorFileWriter.NoError:
-            QMessageBox.warning(
-                None, "Error Packaging Layer", f"Couldn't properly save layer: {layer_filename}. \n{err}"
-            )
-            return False
-        provider_opts.fileEncoding = "UTF-8"
-        provider_opts.layerName = layer_name
-        provider_opts.driverName = "GPKG"
-        datasource = f"{write_filename}|layername={layer_name}"
-        layer.setDataSource(datasource, layer_name, "ogr", provider_opts)
+        fname, err = save_vector_layer_as_gpkg(layer, project_dir, update_datasource=True)
+        if err:
+            warn = f"Couldn't properly save layer: {layer.name()}\n{err}"
+            QMessageBox.warning(None, "Error Packaging Layer", warn)
 
     elif layer.type() == QgsMapLayerType.RasterLayer:
 
         dp_uri = dp.dataSourceUri() if os.path.isfile(dp.dataSourceUri()) else None
         if dp_uri is None:
-            warn = f"Couldn't properly save layer: {layer_filename}\nIs it a file based layer?"
+            warn = f"Couldn't properly save layer: {layer.name()}\nIs it a file based layer?"
             QMessageBox.warning(None, "Error Packaging Layer", warn)
             return False
 
@@ -475,9 +509,10 @@ def package_layer(layer, project_dir):
             QMessageBox.warning(None, "Error Packaging Layer", warn)
             return False
 
-        provider_opts.layerName = layer_name
+        provider_opts = QgsDataProvider.ProviderOptions()
+        provider_opts.layerName = layer.name()
         datasource = layer_filename
-        layer.setDataSource(datasource, layer_name, "gdal", provider_opts)
+        layer.setDataSource(datasource, layer.name(), "gdal", provider_opts)
 
     else:
         # meshes and anything else
