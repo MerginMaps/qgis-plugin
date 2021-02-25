@@ -162,7 +162,6 @@ class MerginPlugin:
     def on_config_changed(self):
         """Called when plugin config (connection settings) were changed."""
         self.enable_toolbar_actions()
-        self.manager.set_current_project()
 
     def connect_provider_root_item(self):
         """Set the connection for Mergin config changes."""
@@ -590,7 +589,7 @@ class MerginGroupItem(QgsDataCollectionItem):
 
     def actions(self, parent):
         action_refresh = QAction(QIcon(icon_path("redo-solid.svg")), "Reload", parent)
-        action_refresh.triggered.connect(self.refresh)
+        action_refresh.triggered.connect(self.depopulate)
         actions = [action_refresh]
         if self.name() == "My projects":
             action_create = QAction(
