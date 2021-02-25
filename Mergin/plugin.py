@@ -360,9 +360,12 @@ class MerginProjectItem(QgsDataItem):
                     registry = QgsProviderRegistry.instance()
                     registry.setLibraryDirectory(registry.libraryDirectory())
 
-                    # remove logging handlers
-                    mp = MerginProject(cur_proj_path)
-                    mp.log.removeHandler(mp.log.handlers[0])
+                # remove logging file handler
+                mp = MerginProject(self.path)
+                log_file_handler = mp.log.handlers[0]
+                log_file_handler.close()
+                mp.log.removeHandler(log_file_handler)
+                del mp
 
                 shutil.rmtree(self.path)
             except PermissionError as e:
