@@ -150,9 +150,6 @@ class MerginProjectsManager(object):
         validation_results = validator.run_checks()
         try:
             pull_changes, push_changes, push_changes_summary = self.mc.project_status(project_dir)
-            # if not sum(len(v) for v in list(pull_changes.values()) + list(push_changes.values())):
-            #     QMessageBox.information(None, "Project status", "Project is already up-to-date", QMessageBox.Close)
-            # else:
             dlg = ProjectStatusDialog(
                 pull_changes,
                 push_changes,

@@ -640,6 +640,8 @@ def mergin_project_local_path(project_name=None):
         # check local project dir was not unintentionally removed
         if proj_path:
             if not os.path.exists(proj_path):
+                # project dir does not exist, let's remove it from settings too
+                settings.remove(f"Mergin/localProjects/{project_name}/path")
                 proj_path = None
         return proj_path
 
