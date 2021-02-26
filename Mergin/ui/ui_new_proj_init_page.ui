@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>552</width>
-    <height>370</height>
+    <width>526</width>
+    <height>405</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -98,6 +98,9 @@
          <property name="text">
           <string>The easiest way to start from scratch, not requiring and existing QGIS project. This option will create and upload a project with a basemap and a survey layer will be created, ready for further customization.</string>
          </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+         </property>
          <property name="wordWrap">
           <bool>true</bool>
          </property>
@@ -178,6 +181,9 @@
          <property name="text">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use this option if you have an existing QGIS project which has not yet been updated to be used offline or in the cloud. We will mare a copy of your project and take care of packaging of map layers so that all data are contained in a single folder.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+         </property>
          <property name="wordWrap">
           <bool>true</bool>
          </property>
@@ -254,6 +260,9 @@
          </property>
          <property name="text">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use this option if you already have a QGIS project ready for offline or cloud use (i.e. QGIS project file and all data sources are contained in a single folder). Data are uploaded without any extra packaging steps.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
