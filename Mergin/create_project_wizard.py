@@ -161,8 +161,7 @@ class ChoosePathPage(ui_local_path_page, base_local_path_page):
         self.info_label.setText(info)
 
     def check_directory(self):
-        """Check if the path is not already a mergin project and has at most a single QGIS project file."""
-
+        """Check if entered path is not already a Mergin project dir and has at most a single QGIS project file."""
         cur_text = self.path_ledit.text()
         if not cur_text:
             return
@@ -454,6 +453,9 @@ class NewMerginProjectWizard(QWizard):
         geom = self.settings.value('Mergin/NewProjWizard/geometry', None)
         if geom is not None:
             self.restoreGeometry(geom)
+        else:
+            self.setMinimumHeight(400)
+            self.setGeometry(200, 200, 600, 450)
 
     def page_change(self):
         """Run when page has changed."""

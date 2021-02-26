@@ -179,7 +179,13 @@ class MerginProjectsManager(object):
                 QMessageBox.critical(None, "Project syncing", msg, QMessageBox.Close)
                 return
 
-        pull_changes, push_changes, push_changes_summary = self.mc.project_status(project_dir)
+        try:
+            pull_changes, push_changes, push_changes_summary = self.mc.project_status(project_dir)
+        except InvalidProject as e:
+            msg = f"Project is invalid:\n\n{str(e)}"
+            QMessageBox.critical(None, "Project syncing", msg, QMessageBox.Close)
+            return
+
         if not sum(len(v) for v in list(pull_changes.values()) + list(push_changes.values())):
             QMessageBox.information(None, "Project sync", "Project is already up-to-date", QMessageBox.Close)
             return
