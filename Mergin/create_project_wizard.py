@@ -47,6 +47,8 @@ class InitPage(ui_init_page, base_init_page):
         self.setupUi(self)
         self.parent = parent
         cur_proj_saved = QgsProject.instance().absoluteFilePath()
+        self.hidden_ledit.hide()
+        self.registerField("create_from*", self.hidden_ledit)
         self.btns_page = {
             self.basic_proj_btn: SAVE_PAGE,
             self.cur_proj_no_pack_btn: CUR_PROJ_PAGE,
@@ -59,13 +61,8 @@ class InitPage(ui_init_page, base_init_page):
             btn.setEnabled(bool(cur_proj_saved))
             tip = f"QGIS project:\n{cur_proj_saved}" if cur_proj_saved else "Current QGIS project not saved!"
             btn.setToolTip(tip)
-        self.hidden_ledit.hide()
-        self.registerField("create_from*", self.hidden_ledit)
 
     def selection_changed(self):
-        for btn in self.btns_page.keys():
-            if btn != self.sender():
-                btn.setChecked(False)
         self.hidden_ledit.setText("Selection done!")
         self.parent.next()
 
@@ -93,15 +90,17 @@ class ChoosePathPage(ui_local_path_page, base_local_path_page):
         self.file_filter = "QGIS projects (*.qgz *.qgs *.QGZ *.QGS)"
         self.file_path = None
         self.dir_path = None
-        self.for_current_proj = False
+        self.current_proj = None
 
     def nextId(self):
         return SETTINGS_PAGE
 
     def initializePage(self):
-        self.path_ledit.setReadOnly(True)
         self.path_ok_ledit.setHidden(True)
-        self.check_directory()
+        self.path_ledit.setReadOnly(True)
+        if self.current_proj:
+            self.path_ledit.setText(self.current_proj)
+            self.check_directory()
 
     def setup_browsing(self, question=None, current_proj=None, field=None):
         """This will setup label and signals for browse button."""
@@ -112,8 +111,7 @@ class ChoosePathPage(ui_local_path_page, base_local_path_page):
             self.registerField(field, self.path_ok_ledit)
 
         if current_proj is not None:
-            self.for_current_proj = True
-            self.path_ledit.setText(current_proj)
+            self.current_proj = current_proj
             self.browse_btn.setDisabled(True)
         else:
             self.browse_btn.setEnabled(True)
@@ -174,17 +172,13 @@ class ChoosePathPage(ui_local_path_page, base_local_path_page):
             self.create_warning("The path does not exist")
             return
 
-        QApplication.setOverrideCursor(Qt.WaitCursor)
         qgis_files = find_qgis_files(cur_dir)
-        QApplication.processEvents()
-        QApplication.restoreOverrideCursor()
-
         qgis_files_nr = len(qgis_files)
         if self.file_path not in qgis_files:
             qgis_files_nr += 1
         if ".mergin" in os.listdir(cur_dir):
             warn = "Selected directory is already used for a Mergin project."
-        if not warn and not self.for_current_proj and qgis_files_nr > 1:
+        if not warn and not self.current_proj and qgis_files_nr > 1:
             warn = "Selected directory already contains a QGIS project."
         if warn:
             warn += "\nConsider another directory for saving the project."
@@ -205,7 +199,7 @@ class ChoosePathPage(ui_local_path_page, base_local_path_page):
         self.path_ledit.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.path_ledit.setToolTip(info)
         self.set_info(info)
-        self.path_ok_ledit.setText("")
+        self.path_ok_ledit.setText("")  # We need to first clear the widget to get the change
         self.path_ok_ledit.setText(self.path_ledit.text())
 
 
