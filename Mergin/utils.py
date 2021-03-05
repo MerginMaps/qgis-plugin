@@ -375,6 +375,8 @@ def create_basic_qgis_project(project_path=None, project_name=None):
         'outline_width': '0.4'
     })
     vector_layer.renderer().setSymbol(symbol)
+    fid_ws = QgsEditorWidgetSetup("Hidden", {})
+    vector_layer.setEditorWidgetSetup(0, fid_ws)
     datetime_config = {
         'allow_null': True, 'calendar_popup': True, 'display_format': 'yyyy-MM-dd HH:mm:ss',
         'field_format': 'yyyy-MM-dd HH:mm:ss', 'field_iso_format': False

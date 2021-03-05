@@ -85,8 +85,11 @@ class MerginPlugin:
         # related to https://github.com/lutraconsulting/qgis-mergin-plugin/issues/3
         # if self.iface.browserModel().initialized():
         #     self.iface.browserModel().reload()
-        mc = create_mergin_client()
-        self.manager = MerginProjectsManager(mc)
+        try:
+            mc = create_mergin_client()
+            self.manager = MerginProjectsManager(mc)
+        except ClientError:
+            pass
 
         self.add_action(
             "mergin_configure.svg",

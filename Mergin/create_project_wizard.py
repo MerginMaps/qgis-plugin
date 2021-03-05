@@ -26,17 +26,12 @@ from .utils import (
 
 base_dir = os.path.dirname(__file__)
 ui_init_page, base_init_page = uic.loadUiType(os.path.join(base_dir, "ui", "ui_new_proj_init_page.ui"))
-ui_local_path_page, base_local_path_page = uic.loadUiType(os.path.join(base_dir, "ui", "ui_get_path_page.ui"))
 ui_proj_settings, base_proj_settings = uic.loadUiType(os.path.join(base_dir, "ui", "ui_project_settings_page.ui"))
 ui_pack_page, base_pack_page = uic.loadUiType(os.path.join(base_dir, "ui", "ui_packaging_page.ui"))
 
 INIT_PAGE = 0
-SAVE_PAGE = 1
-CUR_PROJ_PAGE = 2
-SETTINGS_PAGE = 3
-PACK_PAGE = 4
-
-MIN_MERGIN_PROJ_PATH_LEN = 4
+PACK_PAGE = 1
+SETTINGS_PAGE = 2
 
 
 class InitPage(ui_init_page, base_init_page):
@@ -50,8 +45,8 @@ class InitPage(ui_init_page, base_init_page):
         self.hidden_ledit.hide()
         self.registerField("create_from*", self.hidden_ledit)
         self.btns_page = {
-            self.basic_proj_btn: SAVE_PAGE,
-            self.cur_proj_no_pack_btn: CUR_PROJ_PAGE,
+            self.basic_proj_btn: SETTINGS_PAGE,
+            self.cur_proj_no_pack_btn: SETTINGS_PAGE,
             self.cur_proj_pack_btn: PACK_PAGE,
         }
         for btn in self.btns_page.keys():
@@ -61,6 +56,10 @@ class InitPage(ui_init_page, base_init_page):
             btn.setEnabled(bool(cur_proj_saved))
             tip = f"QGIS project:\n{cur_proj_saved}" if cur_proj_saved else "Current QGIS project not saved!"
             btn.setToolTip(tip)
+        if cur_proj_saved:
+            if ".mergin" in os.listdir(QgsProject.instance().absolutePath()):
+                self.cur_proj_no_pack_btn.setDisabled(True)
+                self.cur_proj_no_pack_btn.setToolTip("Current project is already a Mergin project.")
 
     def selection_changed(self):
         self.hidden_ledit.setText("Selection done!")
@@ -71,136 +70,8 @@ class InitPage(ui_init_page, base_init_page):
         next_id = INIT_PAGE
         for btn in self.btns_page.keys():
             if btn.isChecked():
-                next_id = self.btns_page[btn]
-                break
-        # make sure current project is saved, if not, open save page instead of locate
-        proj_path = QgsProject.instance().absoluteFilePath()
-        if next_id == CUR_PROJ_PAGE and not proj_path:
-            next_id = SAVE_PAGE
+                return self.btns_page[btn]
         return next_id
-
-
-class ChoosePathPage(ui_local_path_page, base_local_path_page):
-    """Page for getting local path for saving new Mergin project."""
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setupUi(self)
-        self.parent = parent
-        self.file_filter = "QGIS projects (*.qgz *.qgs *.QGZ *.QGS)"
-        self.file_path = None
-        self.dir_path = None
-        self.current_proj = None
-
-    def nextId(self):
-        return SETTINGS_PAGE
-
-    def initializePage(self):
-        self.path_ok_ledit.setHidden(True)
-        self.path_ledit.setReadOnly(True)
-        if self.current_proj:
-            self.path_ledit.setText(self.current_proj)
-            self.check_directory()
-
-    def setup_browsing(self, question=None, current_proj=None, field=None):
-        """This will setup label and signals for browse button."""
-        if question is None:
-            question = "Choose path"
-        self.question_label.setText(question)
-        if field:
-            self.registerField(field, self.path_ok_ledit)
-
-        if current_proj is not None:
-            self.current_proj = current_proj
-            self.browse_btn.setDisabled(True)
-        else:
-            self.browse_btn.setEnabled(True)
-            self.browse_btn.clicked.connect(self.browse_save)
-
-        self.path_ledit.textChanged.connect(self.check_directory)
-
-    def browse(self, existing=True):
-        """Browse for new or existing QGIS project files."""
-        settings = QSettings()
-        last_dir = settings.value("Mergin/lastProjectDir", "")
-        user_path = self.path_ledit.text()
-        last_dir = user_path if user_path else last_dir
-        if existing:
-            self.file_path, filters = QFileDialog.getOpenFileName(
-                None, "Choose your project file", last_dir, self.file_filter
-            )
-        else:
-            self.file_path, filters = QFileDialog.getSaveFileName(
-                None, "Save project as", last_dir, self.file_filter
-            )
-            if self.file_path and not (self.file_path.endswith(".qgs") or self.file_path.endswith(".qgz")):
-                self.file_path += ".qgz"
-
-        if self.file_path:
-            self.path_ledit.setText(self.file_path)
-            self.dir_path = os.path.dirname(self.file_path)
-            settings = QSettings()
-            settings.setValue("Mergin/lastProjectDir", self.dir_path)
-        else:
-            self.dir_path = None
-        self.check_directory()
-
-    def browse_save(self):
-        """Browse for file path where to save project."""
-        self.browse(existing=False)
-
-    def browse_locate(self):
-        """Browse for existing QGIS project file."""
-        self.browse()
-
-    def set_info(self, info=None):
-        """Set info label text at the bottom of the page. It gets cleared if info is None."""
-        info = "" if info is None else info
-        self.info_label.setText(info)
-
-    def check_directory(self):
-        """Check if entered path is not already a Mergin project dir and has at most a single QGIS project file."""
-        cur_text = self.path_ledit.text()
-        if not cur_text:
-            return
-        warn = ""
-        cur_dir = cur_text if os.path.isdir(cur_text) else os.path.dirname(cur_text)
-        if len(cur_dir) < MIN_MERGIN_PROJ_PATH_LEN:
-            return
-
-        if not os.path.exists(cur_dir):
-            self.create_warning("The path does not exist")
-            return
-
-        qgis_files = find_qgis_files(cur_dir)
-        qgis_files_nr = len(qgis_files)
-        if self.file_path not in qgis_files:
-            qgis_files_nr += 1
-        if ".mergin" in os.listdir(cur_dir):
-            warn = "Selected directory is already used for a Mergin project."
-        if not warn and not self.current_proj and qgis_files_nr > 1:
-            warn = "Selected directory already contains a QGIS project."
-        if warn:
-            warn += "\nConsider another directory for saving the project."
-            self.create_warning(warn)
-        else:
-            info = "Selected path is a good candidate for a new Mergin project."
-            self.no_warning(info)
-
-    def create_warning(self, problem_info):
-        """Make the path editor background red and set the problem description."""
-        self.path_ledit.setStyleSheet("background-color: rgb(240, 200, 200);")
-        self.path_ledit.setToolTip(problem_info)
-        self.set_info(problem_info)
-        self.path_ok_ledit.setText("")
-
-    def no_warning(self, info=None):
-        """Make the path editor background white and set the info, if specified."""
-        self.path_ledit.setStyleSheet("background-color: rgb(255, 255, 255);")
-        self.path_ledit.setToolTip(info)
-        self.set_info(info)
-        self.path_ok_ledit.setText("")  # We need to first clear the widget to get the change
-        self.path_ok_ledit.setText(self.path_ledit.text())
 
 
 class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
@@ -210,18 +81,29 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         super().__init__(parent)
         self.setupUi(self)
         self.parent = parent
+        self.file_filter = "QGIS projects (*.qgz *.qgs *.QGZ *.QGS)"
+        self.file_path = None
+        self.dir_path = None
+        self.for_current_dir = None
         self.registerField("project_name*", self.project_name_ledit)
         self.registerField("project_owner", self.project_owner_cbo)
         self.registerField("is_public", self.public_chbox)
         self.populate_namespace_cbo()
+        self.path_ok_ledit.setHidden(True)
+        self.path_ledit.setReadOnly(True)
+        self.path_ledit.textChanged.connect(self.check_input)
+        self.project_name_ledit.textChanged.connect(self.check_input)
 
     def nextId(self):
         return -1
 
     def initializePage(self):
-        self.parent.get_project_paths()
-        proj_name, ext = os.path.splitext(os.path.basename(self.parent.project_file))
-        self.project_name_ledit.setText(proj_name)
+        if self.parent.init_page.cur_proj_no_pack_btn.isChecked():
+            self.setup_browsing(current_dir=True, field="project_dir*")
+            self.for_current_dir = True
+        else:
+            self.setup_browsing(field="project_dir*")
+            self.for_current_dir = False
 
     def populate_namespace_cbo(self):
         self.project_owner_cbo.addItem(self.parent.username)
@@ -229,6 +111,101 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
             self.project_owner_cbo.addItems(
                 [o for o in self.parent.user_organisations if self.parent.user_organisations[o] in ["admin", "owner"]]
             )
+
+    def setup_browsing(self, question=None, current_dir=False, field=None):
+        """This will setup label and signals for browse button."""
+        if question is None:
+            question = "Project path:" if current_dir else "Created in:"
+        self.question_label.setText(question)
+        if field:
+            self.registerField(field, self.path_ok_ledit)
+        if current_dir:
+            self.path_ledit.setText(QgsProject.instance().absoluteFilePath())
+            self.browse_btn.setDisabled(True)
+        else:
+            settings = QSettings()
+            last_dir = settings.value("Mergin/lastProjectDir", "")
+            self.path_ledit.setText(last_dir)
+            self.browse_btn.setEnabled(True)
+            self.browse_btn.clicked.connect(self.browse)
+
+    def browse(self):
+        """Browse for new or existing QGIS project files."""
+        settings = QSettings()
+        last_dir = settings.value("Mergin/lastProjectDir", "")
+        user_path = self.path_ledit.text()
+        last_dir = user_path if user_path else last_dir
+        self.dir_path = QFileDialog.getExistingDirectory(None, "Choose project parent directory", last_dir)
+        if self.dir_path:
+            self.path_ledit.setText(self.dir_path)
+            settings = QSettings()
+            settings.setValue("Mergin/lastProjectDir", self.dir_path)
+        else:
+            self.dir_path = None
+        self.check_input()
+
+    def set_info(self, info=None):
+        """Set info label text at the bottom of the page. It gets cleared if info is None."""
+        info = "" if info is None else info
+        self.info_label.setText(info)
+
+    def check_input(self):
+        """Check if entered path is not already a Mergin project dir and has at most a single QGIS project file."""
+        # TODO: check if the project exists on the server
+        proj_name = self.project_name_ledit.text()
+        if not proj_name:
+            self.create_warning("Project name missing!")
+            return
+        if "\\" in proj_name or os.sep in proj_name:
+            self.create_warning("Incorrect project name!")
+            return
+
+        path_text = self.path_ledit.text()
+        if not path_text:
+            return
+        warn = ""
+        if not os.path.exists(path_text):
+            self.create_warning("The path does not exist")
+            return
+
+        if self.for_current_dir:
+            proj_dir = os.path.dirname(path_text)
+        else:
+            proj_dir = os.path.join(path_text, proj_name)
+
+        qgis_files = find_qgis_files(proj_dir)
+        if os.path.exists(proj_dir):
+            is_mergin = ".mergin" in os.listdir(proj_dir)
+        else:
+            is_mergin = False
+
+        if not self.for_current_dir:
+            if not os.path.isabs(proj_dir):
+                warn = "Incorrect project name!"
+            if not warn and is_mergin:
+                warn = "Selected directory is already a Mergin project."
+            if not warn and os.path.exists(proj_dir):
+                warn = f"Selected directory:\n{proj_dir}\nalready exists."
+
+        if warn:
+            warn += "\nConsider another directory for saving the project."
+            self.create_warning(warn)
+        else:
+            qgis_file = qgis_files[0] if self.for_current_dir else \
+                os.path.join(proj_dir, proj_name + ".qgz")
+            info = f"QGIS project path:\n{qgis_file}"
+            self.no_warning(info)
+
+    def create_warning(self, problem_info):
+        """Make the path editor background red and set the problem description."""
+        self.set_info(problem_info)
+        self.path_ok_ledit.setText("")
+
+    def no_warning(self, info=None):
+        """Make the path editor background white and set the info, if specified."""
+        self.set_info(info)
+        self.path_ok_ledit.setText("")  # We need to first clear the widget to get the change
+        self.path_ok_ledit.setText(self.path_ledit.text())
 
 
 class LayerTreeProxyModel(QSortFilterProxyModel):
@@ -394,7 +371,7 @@ class PackagingPage(ui_pack_page, base_pack_page):
         self.layer_tree_lout.addWidget(self.layers_view)
 
     def nextId(self):
-        return SAVE_PAGE
+        return SETTINGS_PAGE
 
 
 class NewMerginProjectWizard(QWizard):
@@ -414,17 +391,6 @@ class NewMerginProjectWizard(QWizard):
         self.init_page = InitPage(self)
         self.setPage(INIT_PAGE, self.init_page)
 
-        where_save = "Where to save the project on your computer?"
-        self.save_proj_path_page = ChoosePathPage()
-        self.save_proj_path_page.setup_browsing(question=where_save, field="new_project_path*")
-        self.setPage(SAVE_PAGE, self.save_proj_path_page)
-
-        cur_loc = "Current QGIS project location"
-        cur_proj_path = QgsProject.instance().absoluteFilePath()
-        self.cur_proj_page = ChoosePathPage()
-        self.cur_proj_page.setup_browsing(question=cur_loc, current_proj=cur_proj_path, field="cur_project_path*")
-        self.setPage(CUR_PROJ_PAGE, self.cur_proj_page)
-
         self.settings_page = ProjectSettingsPage(parent=self)
         self.setPage(SETTINGS_PAGE, self.settings_page)
 
@@ -433,8 +399,6 @@ class NewMerginProjectWizard(QWizard):
 
         self.cancel_btn = self.button(QWizard.CancelButton)
         self.cancel_btn.clicked.connect(self.cancel_wizard)
-
-        self.currentIdChanged.connect(self.page_change)
 
         # these are the variables used by the caller
         self.project_namespace = None
@@ -451,21 +415,8 @@ class NewMerginProjectWizard(QWizard):
             self.setMinimumHeight(400)
             self.setGeometry(200, 200, 600, 450)
 
-    def page_change(self):
-        """Run when page has changed."""
-
-    def get_project_paths(self):
-        """Get QGIS project path and dir variables."""
-        if self.init_page.basic_proj_btn.isChecked() or self.init_page.cur_proj_pack_btn.isChecked():
-            self.project_file = self.field("new_project_path")
-        elif self.init_page.cur_proj_no_pack_btn.isChecked():
-            self.project_file = self.field("cur_project_path")
-        else:
-            raise  # should not happen
-        self.project_dir = os.path.dirname(self.project_file)
-
     def accept(self):
-        self.get_project_paths()
+        self.project_dir = self.field("project_dir")
         self.project_namespace = self.field("project_owner")
         self.project_name = self.field("project_name")
         self.is_public = self.field("is_public")
@@ -475,9 +426,23 @@ class NewMerginProjectWizard(QWizard):
         QApplication.setOverrideCursor(Qt.WaitCursor)
         QApplication.processEvents()
 
+        if not self.init_page.cur_proj_no_pack_btn.isChecked():
+            self.project_dir = os.path.join(self.project_dir, self.project_name)
+            if not os.path.exists(self.project_dir):
+                try:
+                    os.mkdir(self.project_dir)
+                except OSError as e:
+                    msg = f"Couldn't create project directory:\n{self.project_dir}\n\n{repr(e)}"
+                    QMessageBox.critical(None, "Create New Project", msg)
+                    QApplication.restoreOverrideCursor()
+                    return
+            self.project_file = os.path.join(self.project_dir, self.project_name + ".qgz")
+        else:
+            self.project_file = self.project_dir
+            self.project_dir = os.path.dirname(self.project_file)
+
         if self.init_page.basic_proj_btn.isChecked():
-            self.project_file = create_basic_qgis_project(
-                project_path=self.project_file, project_name=self.project_name)
+            self.project_file = create_basic_qgis_project(project_path=self.project_file)
             self.iface.addProject(self.project_file)
             # workaround to set proper extent
             self.iface.mapCanvas().zoomToFullExtent()
