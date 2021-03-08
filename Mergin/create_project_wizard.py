@@ -1,5 +1,5 @@
 import os
-
+from pathlib import Path
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QSettings, Qt, QVariant, QSortFilterProxyModel
 from qgis.PyQt.QtWidgets import (
@@ -126,7 +126,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
             self.path_ledit.setText(QgsProject.instance().absolutePath())
         else:
             settings = QSettings()
-            last_dir = settings.value("Mergin/lastProjectDir", "")
+            last_dir = settings.value("Mergin/lastProjectDir", str(Path.home()))
             self.path_ledit.setText(last_dir)
 
         self.browse_btn.setEnabled(True)
@@ -135,7 +135,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
     def browse(self):
         """Browse for new or existing QGIS project files."""
         settings = QSettings()
-        last_dir = settings.value("Mergin/lastProjectDir", "")
+        last_dir = settings.value("Mergin/lastProjectDir", str(Path.home()))
         user_path = self.path_ledit.text()
         last_dir = user_path if user_path else last_dir
         self.dir_path = QFileDialog.getExistingDirectory(None, "Choose project parent directory", last_dir)

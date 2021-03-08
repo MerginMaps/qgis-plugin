@@ -6,6 +6,7 @@
 import sip
 import os
 import shutil
+from pathlib import Path
 import posixpath
 from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtGui import QIcon
@@ -275,15 +276,12 @@ class MerginProjectItem(QgsDataItem):
 
     def download(self):
         settings = QSettings()
-
-        last_parent_dir = settings.value("Mergin/lastUsedDownloadDir", "")
-
+        last_parent_dir = settings.value("Mergin/lastUsedDownloadDir", str(Path.home()))
         parent_dir = QFileDialog.getExistingDirectory(None, "Open Directory", last_parent_dir, QFileDialog.ShowDirsOnly)
         if not parent_dir:
             return
 
         settings.setValue("Mergin/lastUsedDownloadDir", parent_dir)
-
         target_dir = os.path.abspath(os.path.join(parent_dir, self.project["name"]))
 
         if os.path.exists(target_dir):
@@ -296,7 +294,6 @@ class MerginProjectItem(QgsDataItem):
 
         dlg = SyncDialog()
         dlg.download_start(self.mc, target_dir, self.project_name)
-
         dlg.exec_()  # blocks until completion / failure / cancellation
 
         if dlg.exception:
