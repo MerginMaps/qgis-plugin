@@ -17,6 +17,7 @@ from qgis.core import QgsProject, QgsLayerTreeNode, QgsLayerTreeModel
 from qgis.utils import iface
 
 from .utils import (
+    check_mergin_subdirs,
     create_basic_qgis_project,
     find_packable_layers,
     find_qgis_files,
@@ -57,9 +58,11 @@ class InitPage(ui_init_page, base_init_page):
             tip = f"QGIS project:\n{cur_proj_saved}" if cur_proj_saved else "Current QGIS project not saved!"
             btn.setToolTip(tip)
         if cur_proj_saved:
-            if ".mergin" in os.listdir(QgsProject.instance().absolutePath()):
+            mergin_dir = check_mergin_subdirs(QgsProject.instance().absolutePath())
+            if mergin_dir:
                 self.cur_proj_no_pack_btn.setDisabled(True)
-                self.cur_proj_no_pack_btn.setToolTip("Current project is already a Mergin project.")
+                self.cur_proj_no_pack_btn.setToolTip(
+                    f"Current project directory is already a Mergin project.\nSee {mergin_dir}")
 
     def selection_changed(self):
         self.hidden_ledit.setText("Selection done!")
@@ -115,19 +118,19 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
     def setup_browsing(self, question=None, current_dir=False, field=None):
         """This will setup label and signals for browse button."""
         if question is None:
-            question = "Project path:" if current_dir else "Created in:"
+            question = "Project path:" if current_dir else "Create in:"
         self.question_label.setText(question)
         if field:
             self.registerField(field, self.path_ok_ledit)
         if current_dir:
-            self.path_ledit.setText(QgsProject.instance().absoluteFilePath())
-            self.browse_btn.setDisabled(True)
+            self.path_ledit.setText(QgsProject.instance().absolutePath())
         else:
             settings = QSettings()
             last_dir = settings.value("Mergin/lastProjectDir", "")
             self.path_ledit.setText(last_dir)
-            self.browse_btn.setEnabled(True)
-            self.browse_btn.clicked.connect(self.browse)
+
+        self.browse_btn.setEnabled(True)
+        self.browse_btn.clicked.connect(self.browse)
 
     def browse(self):
         """Browse for new or existing QGIS project files."""
@@ -188,13 +191,15 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
                 warn = f"Selected directory:\n{proj_dir}\nalready exists."
 
         if warn:
+            self.path_ledit.setToolTip("")
             warn += "\nConsider another directory for saving the project."
             self.create_warning(warn)
         else:
             qgis_file = qgis_files[0] if self.for_current_dir else \
                 os.path.join(proj_dir, proj_name + ".qgz")
             info = f"QGIS project path:\n{qgis_file}"
-            self.no_warning(info)
+            self.path_ledit.setToolTip(info)
+            self.no_warning()
 
     def create_warning(self, problem_info):
         """Make the path editor background red and set the problem description."""
@@ -437,9 +442,9 @@ class NewMerginProjectWizard(QWizard):
                     QApplication.restoreOverrideCursor()
                     return
             self.project_file = os.path.join(self.project_dir, self.project_name + ".qgz")
-        else:
-            self.project_file = self.project_dir
-            self.project_dir = os.path.dirname(self.project_file)
+
+        self.save_geometry()
+        super().accept()
 
         if self.init_page.basic_proj_btn.isChecked():
             self.project_file = create_basic_qgis_project(project_path=self.project_file)
@@ -447,11 +452,6 @@ class NewMerginProjectWizard(QWizard):
             # workaround to set proper extent
             self.iface.mapCanvas().zoomToFullExtent()
             QgsProject.instance().write()
-            reload_project = True
-
-        elif self.init_page.cur_proj_no_pack_btn.isChecked():
-            cur_proj = QgsProject.instance()
-            cur_proj.write()
             reload_project = True
 
         elif self.init_page.cur_proj_pack_btn.isChecked():
@@ -477,7 +477,10 @@ class NewMerginProjectWizard(QWizard):
             new_proj.write()
             reload_project = True
 
-        self.project_dir = QgsProject.instance().absolutePath()
+        elif self.init_page.cur_proj_no_pack_btn.isChecked():
+            cur_proj = QgsProject.instance()
+            cur_proj.write()
+            reload_project = True
 
         QApplication.processEvents()
         QApplication.restoreOverrideCursor()
@@ -490,9 +493,6 @@ class NewMerginProjectWizard(QWizard):
         )
         if reload_project:
             self.project_manager.open_project(self.project_dir)
-
-        self.save_geometry()
-        super().accept()
 
         if failed_packaging:
             warn = "Failed to package following layers:\n"

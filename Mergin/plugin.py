@@ -172,10 +172,12 @@ class MerginPlugin:
             # first try to disconnect the root item signal
             self.disconnect_provider_root_item()
             self.data_item_provider.root_item.config_changed.connect(self.on_config_changed)
+            self.data_item_provider.root_item.local_project_removed.connect(self.on_config_changed)
 
     def disconnect_provider_root_item(self):
         try:
             self.data_item_provider.root_item.config_changed.disconnect(self.on_config_changed)
+            self.data_item_provider.root_item.local_project_removed.disconnect(self.on_config_changed)
         except (TypeError, AttributeError):
             pass
 
@@ -189,7 +191,8 @@ class MerginPlugin:
             if action.text() in self.actions_always_on:
                 action.setEnabled(True)
             elif action.text() == "Create Mergin Project":
-                action.setEnabled(self.data_item_provider.root_item.mc is not None)  # TODO: is that enough?
+                can_create = self.data_item_provider.root_item.mc is not None and self.manager is not None
+                action.setEnabled(can_create)
             else:
                 action.setEnabled(enable)
 
@@ -384,6 +387,8 @@ class MerginProjectItem(QgsDataItem):
         settings.remove("Mergin/localProjects/{}/path".format(self.project_name))
         self.path = None
         self.setIcon(QIcon(icon_path("cloud-solid.svg")))
+        root_item = self.parent().parent()
+        root_item.local_project_removed.emit()
 
     def _unsaved_changes_check(self):
         """Check if current project is same as actually operated mergin project
@@ -610,6 +615,7 @@ class MerginRootItem(QgsDataCollectionItem):
     """ Mergin root data containing project groups item with configuration dialog. """
 
     config_changed = pyqtSignal()
+    local_project_removed = pyqtSignal()
 
     def __init__(self):
         QgsDataCollectionItem.__init__(self, None, "Mergin", "/Mergin")
@@ -663,6 +669,10 @@ class MerginRootItem(QgsDataCollectionItem):
 
     def show_create_project_dialog(self):
         if not unsaved_project_check():
+            return
+        if not self.project_manager:
+            QMessageBox.warning(None, "Mergin Plugin Config Error",
+                                "Mergin plugin configuration is invalid - project manager couldn't be created.")
             return
         user_info = self.mc.user_info()
         self.wizard = NewMerginProjectWizard(
