@@ -664,3 +664,12 @@ def icon_path(icon_filename, fa_icon=True):
     else:
         ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_filename)
     return ipath
+
+
+def check_mergin_subdirs(directory):
+    """Check if the directory has a Mergin project subdir (.mergin)."""
+    for root, dirs, files in os.walk(directory):
+        for name in dirs:
+            if name == ".mergin":
+                return os.path.join(root, name)
+    return False

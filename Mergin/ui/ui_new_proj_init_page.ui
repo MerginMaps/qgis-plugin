@@ -179,7 +179,7 @@
           <string notr="true">QLabel {font-size: 10pt}</string>
          </property>
          <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use this option if you have an existing QGIS project which has not yet been updated to be used offline or in the cloud. We will mare a copy of your project and take care of packaging of map layers so that all data are contained in a single folder.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use this option if you have an existing QGIS project which has not yet been updated to be used offline or in the cloud. We will make a copy of your project and take care of packaging of map layers so that all data are contained in a single folder.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
