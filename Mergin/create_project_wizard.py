@@ -87,7 +87,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         self.file_filter = "QGIS projects (*.qgz *.qgs *.QGZ *.QGS)"
         self.file_path = None
         self.dir_path = None
-        self.for_current_dir = None
+        self.for_current_proj = None
         self.registerField("project_name*", self.project_name_ledit)
         self.registerField("project_owner", self.project_owner_cbo)
         self.registerField("is_public", self.public_chbox)
@@ -102,11 +102,11 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
 
     def initializePage(self):
         if self.parent.init_page.cur_proj_no_pack_btn.isChecked():
-            self.setup_browsing(current_dir=True, field="project_dir*")
-            self.for_current_dir = True
+            self.setup_browsing(current_proj=True, field="project_dir*")
+            self.for_current_proj = True
         else:
             self.setup_browsing(field="project_dir*")
-            self.for_current_dir = False
+            self.for_current_proj = False
 
     def populate_namespace_cbo(self):
         self.project_owner_cbo.addItem(self.parent.username)
@@ -115,14 +115,14 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
                 [o for o in self.parent.user_organisations if self.parent.user_organisations[o] in ["admin", "owner"]]
             )
 
-    def setup_browsing(self, question=None, current_dir=False, field=None):
+    def setup_browsing(self, question=None, current_proj=False, field=None):
         """This will setup label and signals for browse button."""
         if question is None:
-            question = "Project path:" if current_dir else "Create in:"
+            question = "Create in:"
         self.question_label.setText(question)
         if field:
             self.registerField(field, self.path_ok_ledit)
-        if current_dir:
+        if current_proj:
             self.path_ledit.setText(QgsProject.instance().absolutePath())
         else:
             settings = QSettings()
@@ -171,35 +171,33 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
             self.create_warning("The path does not exist")
             return
 
-        if self.for_current_dir:
-            proj_dir = os.path.dirname(path_text)
+        if self.for_current_proj:
+            proj_dir = path_text
         else:
             proj_dir = os.path.join(path_text, proj_name)
 
-        qgis_files = find_qgis_files(proj_dir)
         if os.path.exists(proj_dir):
-            is_mergin = ".mergin" in os.listdir(proj_dir)
+            is_mergin = check_mergin_subdirs(proj_dir)
         else:
             is_mergin = False
 
-        if not self.for_current_dir:
-            if not os.path.isabs(proj_dir):
-                warn = "Incorrect project name!"
-            if not warn and is_mergin:
-                warn = "Selected directory is already a Mergin project."
-            if not warn and os.path.exists(proj_dir):
+        if not self.for_current_proj:
+            if os.path.exists(proj_dir):
                 warn = f"Selected directory:\n{proj_dir}\nalready exists."
+        if not warn and not os.path.isabs(proj_dir):
+            warn = "Incorrect project name!"
+        if not warn and is_mergin:
+            warn = "Selected directory is already a Mergin project."
 
         if warn:
             self.path_ledit.setToolTip("")
             warn += "\nConsider another directory for saving the project."
             self.create_warning(warn)
         else:
-            qgis_file = qgis_files[0] if self.for_current_dir else \
+            qgis_file = QgsProject.instance().absoluteFilePath() if self.for_current_proj else \
                 os.path.join(proj_dir, proj_name + ".qgz")
             info = f"QGIS project path:\n{qgis_file}"
-            self.path_ledit.setToolTip(info)
-            self.no_warning()
+            self.no_warning(info)
 
     def create_warning(self, problem_info):
         """Make the path editor background red and set the problem description."""

@@ -639,10 +639,10 @@ def mergin_project_local_path(project_name=None):
     settings = QSettings()
     if project_name is not None:
         proj_path = settings.value(f"Mergin/localProjects/{project_name}/path", None)
-        # check local project dir was not unintentionally removed
+        # check local project dir was not unintentionally removed, or .mergin dir was removed
         if proj_path:
-            if not os.path.exists(proj_path):
-                # project dir does not exist, let's remove it from settings too
+            if not os.path.exists(proj_path) or not check_mergin_subdirs(proj_path):
+                # project dir does not exist or is not a Mergin project anymore, let's remove it from settings
                 settings.remove(f"Mergin/localProjects/{project_name}/path")
                 proj_path = None
         return proj_path
