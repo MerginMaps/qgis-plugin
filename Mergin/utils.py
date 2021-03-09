@@ -258,7 +258,7 @@ def get_new_qgis_project_filepath(project_name=None):
     :return: string with file path, or None on cancellation
     """
     settings = QSettings()
-    last_dir = settings.value("Mergin/lastProjectDir", str(pathlib.Path.home()))
+    last_dir = settings.value("Mergin/lastUsedDownloadDir", str(pathlib.Path.home()))
     if project_name is not None:
         dest_dir = QFileDialog.getExistingDirectory(None, "Destination directory", last_dir, QFileDialog.ShowDirsOnly)
         project_file = os.path.abspath(os.path.join(dest_dir, project_name))

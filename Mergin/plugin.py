@@ -282,12 +282,12 @@ class MerginProjectItem(QgsDataItem):
 
     def download(self):
         settings = QSettings()
-        last_parent_dir = settings.value("Mergin/lastProjectDir", str(Path.home()))
+        last_parent_dir = settings.value("Mergin/lastUsedDownloadDir", str(Path.home()))
         parent_dir = QFileDialog.getExistingDirectory(None, "Open Directory", last_parent_dir, QFileDialog.ShowDirsOnly)
         if not parent_dir:
             return
 
-        settings.setValue("Mergin/lastProjectDir", parent_dir)
+        settings.setValue("Mergin/lastUsedDownloadDir", parent_dir)
         target_dir = os.path.abspath(os.path.join(parent_dir, self.project["name"]))
 
         if os.path.exists(target_dir):
