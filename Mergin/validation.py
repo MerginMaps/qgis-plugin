@@ -114,7 +114,12 @@ class MerginProjectValidator(object):
         for lid, layer in self.layers.items():
             if lid not in self.layers_by_prov["gdal"] + self.layers_by_prov["ogr"]:
                 continue
-            l_path = layer.publicSource().split("|")[0]
+            pub_src = layer.publicSource()
+            if pub_src.startswith("GPKG:"):
+                pub_src = pub_src[5:]
+                l_path = pub_src.split(":")[0]
+            else:
+                l_path = layer.publicSource().split("|")[0]
             l_dir = os.path.dirname(l_path)
             if not same_dir(l_dir, self.qgis_proj_dir):
                 self.issues[self.EXTERNAL_SRC].append(lid)
