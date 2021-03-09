@@ -504,7 +504,9 @@ def package_layer(layer, project_dir):
     elif layer.type() == QgsMapLayerType.RasterLayer:
 
         if dp.dataSourceUri().startswith("GPKG:"):
-            dp_uri, gpkg_table_name = dp.dataSourceUri()[5:].split(":")
+            uri = dp.dataSourceUri()[5:]
+            dp_uri = uri[:uri.rfind(":")]
+            gpkg_table_name = uri[uri.rfind(":"):]
         else:
             dp_uri = dp.dataSourceUri() if os.path.isfile(dp.dataSourceUri()) else None
             if dp_uri is None:
