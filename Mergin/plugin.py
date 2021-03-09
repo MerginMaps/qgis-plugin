@@ -86,11 +86,8 @@ class MerginPlugin:
         # related to https://github.com/lutraconsulting/qgis-mergin-plugin/issues/3
         # if self.iface.browserModel().initialized():
         #     self.iface.browserModel().reload()
-        try:
-            mc = create_mergin_client()
-            self.manager = MerginProjectsManager(mc)
-        except ClientError:
-            pass
+
+        self.create_manager()
 
         self.add_action(
             "mergin_configure.svg",
@@ -163,9 +160,18 @@ class MerginPlugin:
             self.actions_always_on.append(text)
         return action
 
+    def create_manager(self):
+        """Create Mergin projects manager."""
+        try:
+            mc = create_mergin_client()
+            self.manager = MerginProjectsManager(mc)
+        except (ClientError, LoginError):
+            pass
+
     def on_config_changed(self):
         """Called when plugin config (connection settings) were changed."""
         self.enable_toolbar_actions()
+        self.create_manager()
 
     def connect_provider_root_item(self):
         """Set the connection for Mergin config changes."""
@@ -276,12 +282,12 @@ class MerginProjectItem(QgsDataItem):
 
     def download(self):
         settings = QSettings()
-        last_parent_dir = settings.value("Mergin/lastUsedDownloadDir", str(Path.home()))
+        last_parent_dir = settings.value("Mergin/lastProjectDir", str(Path.home()))
         parent_dir = QFileDialog.getExistingDirectory(None, "Open Directory", last_parent_dir, QFileDialog.ShowDirsOnly)
         if not parent_dir:
             return
 
-        settings.setValue("Mergin/lastUsedDownloadDir", parent_dir)
+        settings.setValue("Mergin/lastProjectDir", parent_dir)
         target_dir = os.path.abspath(os.path.join(parent_dir, self.project["name"]))
 
         if os.path.exists(target_dir):
