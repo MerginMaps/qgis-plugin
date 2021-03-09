@@ -170,6 +170,7 @@ class MerginPlugin:
 
     def on_config_changed(self):
         """Called when plugin config (connection settings) were changed."""
+        self.create_manager()
         self.enable_toolbar_actions()
         self.create_manager()
 
@@ -674,8 +675,9 @@ class MerginRootItem(QgsDataCollectionItem):
         if not unsaved_project_check():
             return
         if not self.project_manager:
-            QMessageBox.warning(None, "Mergin Plugin Config Error",
-                                "Mergin plugin configuration is invalid - project manager couldn't be created.")
+            warn = "Mergin plugin has not been configured yet or the configuration is not valid.\n"
+            warn += "Please go to the configuration dialog and set up your Mergin credentials."
+            QMessageBox.warning(None, "Mergin Plugin Config Error", warn)
             return
         user_info = self.mc.user_info()
         self.wizard = NewMerginProjectWizard(

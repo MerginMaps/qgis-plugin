@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from urllib.error import URLError, HTTPError
 import configparser
 import os
+from osgeo import gdal
 import pathlib
 import platform
 import urllib.parse
@@ -288,9 +289,9 @@ def unsaved_project_check():
         )
         or QgsProject.instance().isDirty()
     ):
-        msg = "There are some unsaved changes. Do you want save it before continue?"
+        msg = "There are some unsaved changes. Do you want save them before continue?"
         btn_reply = QMessageBox.warning(
-            None, "Stop editing", msg, QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
+            None, "Unsaved changes", msg, QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
         )
         if btn_reply == QMessageBox.Yes:
             for layer in QgsProject.instance().mapLayers().values():
@@ -502,14 +503,26 @@ def package_layer(layer, project_dir):
 
     elif layer.type() == QgsMapLayerType.RasterLayer:
 
-        dp_uri = dp.dataSourceUri() if os.path.isfile(dp.dataSourceUri()) else None
-        if dp_uri is None:
-            warn = f"Couldn't properly save layer: {layer.name()}\nIs it a file based layer?"
-            QMessageBox.warning(None, "Error Packaging Layer", warn)
-            return False
+        if dp.dataSourceUri().startswith("GPKG:"):
+            uri = dp.dataSourceUri()[5:]
+            dp_uri = uri[:uri.rfind(":")]
+            gpkg_table_name = uri[uri.rfind(":"):]
+        else:
+            dp_uri = dp.dataSourceUri() if os.path.isfile(dp.dataSourceUri()) else None
+            if dp_uri is None:
+                warn = f"Couldn't properly save layer: {layer.name()}\nIs it a file based layer?"
+                QMessageBox.warning(None, "Error Packaging Layer", warn)
+                return False
 
         layer_filename = os.path.join(project_dir, os.path.basename(dp_uri))
+
         raster_writer = QgsRasterFileWriter(layer_filename)
+
+        if dp.dataSourceUri().startswith("GPKG:"):
+            gdal.GetDriverByName("GPKG").Create(layer_filename, 1, 1, 1)
+            raster_writer.setOutputFormat("gpkg")
+            raster_writer.setCreateOptions([f"RASTER_TABLE={gpkg_table_name}", "APPEND_SUBDATASET=YES"])
+
         pipe = QgsRasterPipe()
         if not pipe.set(dp.clone()):
             warn = f"Couldn't set raster pipe projector for layer: {layer_filename}\nSkipping..."

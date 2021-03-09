@@ -102,10 +102,10 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
 
     def initializePage(self):
         if self.parent.init_page.cur_proj_no_pack_btn.isChecked():
-            self.setup_browsing(current_proj=True, field="project_dir*")
+            self.setup_browsing(current_proj=True, question="Mergin project folder:", field="project_dir*")
             self.for_current_proj = True
         else:
-            self.setup_browsing(field="project_dir*")
+            self.setup_browsing(question="Create Mergin project in:", field="project_dir*")
             self.for_current_proj = False
 
     def populate_namespace_cbo(self):
@@ -118,7 +118,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
     def setup_browsing(self, question=None, current_proj=False, field=None):
         """This will setup label and signals for browse button."""
         if question is None:
-            question = "Create in:"
+            question = "Create Mergin project in:"
         self.question_label.setText(question)
         if field:
             self.registerField(field, self.path_ok_ledit)
