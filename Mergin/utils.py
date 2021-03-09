@@ -356,7 +356,7 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     new_project.setCrs(crs)
     new_project.setFileName(project_path)
     osm_url = "crs=EPSG:3857&type=xyz&zmin=0&zmax=19&url=http://tile.openstreetmap.org/{z}/{x}/{y}.png"
-    osm_layer = QgsRasterLayer(osm_url, "OSM", "wms")
+    osm_layer = QgsRasterLayer(osm_url, "OpenStreetMap", "wms")
     new_project.addMapLayer(osm_layer)
 
     mem_uri = "Point?crs=epsg:3857"
