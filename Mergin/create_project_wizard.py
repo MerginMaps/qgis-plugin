@@ -126,7 +126,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
             self.path_ledit.setText(QgsProject.instance().absolutePath())
         else:
             settings = QSettings()
-            last_dir = settings.value("Mergin/lastProjectDir", str(Path.home()))
+            last_dir = settings.value("Mergin/lastUsedDownloadDir", str(Path.home()))
             self.path_ledit.setText(last_dir)
 
         self.browse_btn.setEnabled(True)
@@ -135,14 +135,14 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
     def browse(self):
         """Browse for new or existing QGIS project files."""
         settings = QSettings()
-        last_dir = settings.value("Mergin/lastProjectDir", str(Path.home()))
+        last_dir = settings.value("Mergin/lastUsedDownloadDir", str(Path.home()))
         user_path = self.path_ledit.text()
         last_dir = user_path if user_path else last_dir
         self.dir_path = QFileDialog.getExistingDirectory(None, "Choose project parent directory", last_dir)
         if self.dir_path:
             self.path_ledit.setText(self.dir_path)
             settings = QSettings()
-            settings.setValue("Mergin/lastProjectDir", self.dir_path)
+            settings.setValue("Mergin/lastUsedDownloadDir", self.dir_path)
         else:
             self.dir_path = None
         self.check_input()
