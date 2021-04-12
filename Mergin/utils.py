@@ -70,6 +70,8 @@ QGIS_MESH_PROVIDERS = ("mdal", "mesh_memory")
 QGIS_FILE_BASED_PROVIDERS = ("ogr", "gdal", "spatialite", "delimitedtext", "gpx", "mdal", "grass", "grassraster")
 PACKABLE_PROVIDERS = ("ogr", "gdal", "delimitedtext", "gpx", "postgres", "memory")
 
+PROJS_PER_PAGE = 50
+
 
 def find_qgis_files(directory):
     qgis_files = []
@@ -686,3 +688,13 @@ def check_mergin_subdirs(directory):
             if name == ".mergin":
                 return os.path.join(root, name)
     return False
+
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+    except TypeError:
+        return False

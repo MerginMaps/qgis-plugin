@@ -3,6 +3,7 @@
 # GPLv3 license
 # Copyright Lutra Consulting Limited
 
+from math import floor
 import sip
 import os
 import shutil
@@ -22,7 +23,7 @@ from qgis.core import (
     QgsProviderRegistry,
 )
 from qgis.utils import iface
-from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QApplication
+from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QApplication, QDockWidget
 from qgis.PyQt.QtCore import QSettings, Qt
 from urllib.error import URLError
 
@@ -36,15 +37,17 @@ from .utils import (
     LoginError,
     create_mergin_client,
     find_qgis_files,
-    icon_path,
     get_mergin_auth,
+    icon_path,
+    is_number,
     login_error_message,
     mergin_project_local_path,
+    PROJS_PER_PAGE,
+    remove_project_variables,
     same_dir,
     send_logs,
     unhandled_exception_message,
     unsaved_project_check,
-    remove_project_variables,
 )
 
 from .mergin.merginproject import MerginProject
@@ -59,7 +62,10 @@ class MerginPlugin:
         self.actions_always_on = []
         self.menu = "Mergin Plugin"
         self.mergin_proj_dir = None
+        self.mc = None
         self.manager = None
+        self.wizard = None
+        self.error = None
         self.toolbar = self.iface.addToolBar("Mergin Toolbar")
         self.toolbar.setToolTip("Mergin Toolbar")
 
@@ -80,12 +86,6 @@ class MerginPlugin:
         # Triggering auth request to QGIS auth framework already at this point will make sure that
         # the dialog asking for master password is started from the main thread -> no crash.
         get_mergin_auth()
-
-        self.data_item_provider = DataItemProvider()
-        QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
-        # related to https://github.com/lutraconsulting/qgis-mergin-plugin/issues/3
-        # if self.iface.browserModel().initialized():
-        #     self.iface.browserModel().reload()
 
         self.create_manager()
 
@@ -123,6 +123,14 @@ class MerginPlugin:
             enabled=False,
             always_on=False,
         )
+
+        self.enable_toolbar_actions()
+
+        self.data_item_provider = DataItemProvider(self)
+        QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
+        # related to https://github.com/lutraconsulting/qgis-mergin-plugin/issues/3
+        # if self.iface.browserModel().initialized():
+        #     self.iface.browserModel().reload()
 
     def add_action(
         self,
@@ -162,61 +170,87 @@ class MerginPlugin:
 
     def create_manager(self):
         """Create Mergin projects manager."""
+        self.error = ""
         try:
-            mc = create_mergin_client()
-            self.manager = MerginProjectsManager(mc)
-        except (ClientError, LoginError):
-            pass
+            if self.mc is None:
+                self.mc = create_mergin_client()
+            self.manager = MerginProjectsManager(self.mc)
+        except (URLError, ClientError, LoginError):
+            self.error = "Plugin not configured or \nQGIS master password not set up"
+        except Exception as err:
+            self.error = "Error: {}".format(str(err))
+        if self.error:
+            self.mc = None
+            self.manager = None
+        if self.has_browser_item():
+            self.data_item_provider.root_item.update_client_and_manager(
+                mc=self.mc, manager=self.manager, err=self.error)
+
+    def has_browser_item(self):
+        """Check if the Mergin provider Browser item exists and has the root item defined."""
+        if self.data_item_provider is not None:
+            if self.data_item_provider.root_item is not None:
+                return True
+        return False
 
     def on_config_changed(self):
         """Called when plugin config (connection settings) were changed."""
         self.create_manager()
         self.enable_toolbar_actions()
 
-    def connect_provider_root_item(self):
-        """Set the connection for Mergin config changes."""
-        if self.data_item_provider.root_item is not None:
-            # first try to disconnect the root item signal
-            self.disconnect_provider_root_item()
-            self.data_item_provider.root_item.config_changed.connect(self.on_config_changed)
-            self.data_item_provider.root_item.local_project_removed.connect(self.on_config_changed)
-
-    def disconnect_provider_root_item(self):
-        try:
-            self.data_item_provider.root_item.config_changed.disconnect(self.on_config_changed)
-            self.data_item_provider.root_item.local_project_removed.disconnect(self.on_config_changed)
-        except (TypeError, AttributeError):
-            pass
-
     def enable_toolbar_actions(self, enable=None):
         """Check current project and set Mergin Toolbar icons enabled accordingly."""
         if enable is None:
             enable = mergin_project_local_path() is not None
-        if self.data_item_provider.root_item.mc is None:
+        if self.manager is None:
             enable = False
         for action in self.toolbar.actions():
             if action.text() in self.actions_always_on:
                 action.setEnabled(True)
             elif action.text() == "Create Mergin Project":
-                can_create = self.data_item_provider.root_item.mc is not None and self.manager is not None
-                action.setEnabled(can_create)
+                action.setEnabled(self.mc is not None and self.manager is not None)
             else:
                 action.setEnabled(enable)
 
+    def show_browser_panel(self):
+        """Check if QGIS Browser panel is open. If not, ask and eventually make it visible to users."""
+        browser = [w for w in self.iface.mainWindow().findChildren(QDockWidget) if w.objectName() == "Browser"][0]
+        q = "QGIS Browser panel is currently off. The panel is used for Mergin projects management.\n"
+        q += "Would you like to open it and see your Mergin projects?"
+        res = QMessageBox.question(None, "Mergin - QGIS Browser Panel", q)
+        if not browser.isVisible() and res == QMessageBox.Yes:
+            self.iface.addDockWidget(Qt.LeftDockWidgetArea, browser)
+
     def configure(self):
         """Open plugin configuration dialog."""
-        if self.data_item_provider.root_item is None:
-            QMessageBox.warning(
-                None,
-                "Mergin Plugin",
-                "Mergin plugin first use requires QGIS restart.",
-            )
-            return
-        self.data_item_provider.root_item.configure()
+        self.show_browser_panel()
+        dlg = ConfigurationDialog()
+        if dlg.exec_():
+            self.mc = dlg.writeSettings()
+            self.on_config_changed()
 
     def create_new_project(self):
         """Open new Mergin project creation dialog."""
-        self.data_item_provider.root_item.show_create_project_dialog()
+
+        if not unsaved_project_check():
+            return
+        if not self.manager:
+            QMessageBox.warning(None, "Create Mergin Project", "Plugin not configured!")
+            return
+
+        user_info = self.mc.user_info()
+        self.wizard = NewMerginProjectWizard(
+            self.manager,
+            username=user_info["username"],
+            user_organisations=user_info.get("organisations", [])
+        )
+        if not self.wizard.exec_():
+            self.wizard = None
+            return  # cancelled
+        if self.has_browser_item():
+            # make sure the item has the link between remote and local project we have just added
+            self.data_item_provider.root_item.depopulate()
+        self.wizard = None
 
     def current_project_status(self):
         """Show Mergin project status/validation dialog."""
@@ -232,7 +266,6 @@ class MerginPlugin:
         If a loaded project is not a Mergin project, there are no Mergin variables by default.
         If a loaded project is invalid - doesnt have metadata, Mergin variables are removed.
         """
-        self.connect_provider_root_item()
         self.enable_toolbar_actions(enable=False)
         self.mergin_proj_dir = mergin_project_local_path()
         if self.mergin_proj_dir is not None:
@@ -243,7 +276,6 @@ class MerginPlugin:
         self.iface.projectRead.disconnect(self.on_qgis_project_changed)
         self.iface.newProjectCreated.disconnect(self.on_qgis_project_changed)
         QgsProject.instance().projectSaved.disconnect(self.on_qgis_project_changed)
-        self.disconnect_provider_root_item()
 
         remove_project_variables()
         QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
@@ -262,13 +294,14 @@ class MerginPlugin:
 class MerginProjectItem(QgsDataItem):
     """Data item to represent a Mergin project."""
 
-    def __init__(self, parent, project, mc, project_manager):
+    def __init__(self, parent, project, project_manager):
         self.project = project
         self.project_name = posixpath.join(
             project["namespace"], project["name"]
         )  # we need posix path for server API calls
         QgsDataItem.__init__(self, QgsDataItem.Collection, parent, self.project_name, "/Mergin/" + self.project_name)
         self.path = mergin_project_local_path(self.project_name)
+        self.setSortKey(f"1 {self.name()}")
         # check local project dir was not unintentionally removed
         if self.path:
             if not os.path.exists(self.path):
@@ -277,8 +310,11 @@ class MerginProjectItem(QgsDataItem):
             self.setIcon(QIcon(icon_path("folder-solid.svg")))
         else:
             self.setIcon(QIcon(icon_path("cloud-solid.svg")))
-        self.mc = mc
-        self.mpm = project_manager
+        self.project_manager = project_manager
+        if self.project_manager is not None:
+            self.mc = self.project_manager.mc
+        else:
+            self.mc = None
 
     def download(self):
         settings = QSettings()
@@ -431,12 +467,12 @@ class MerginProjectItem(QgsDataItem):
             return
         if not self._unsaved_changes_check():
             return
-        self.mpm.project_status(self.path)
+        self.project_manager.project_status(self.path)
 
     def sync_project(self):
         if not self.path:
             return
-        self.mpm.sync_project(self.path, self.project_name)
+        self.project_manager.sync_project(self.path, self.project_name)
 
     def _reload_project(self):
         """ This will forcefully reload the QGIS project because the project (or its data) may have changed """
@@ -566,6 +602,20 @@ class MerginProjectItem(QgsDataItem):
         return actions
 
 
+class FetchMoreItem(QgsDataItem):
+    """Data item to represent an action to fetch more projects from paginated endpoint."""
+
+    def __init__(self, parent):
+        self.parent = parent
+        QgsDataItem.__init__(self, QgsDataItem.Collection, parent, "Double-click for more...", "")
+        self.setIcon(QIcon(icon_path("plus-square-solid.svg")))
+        self.setSortKey("2")  # the item should appear at the bottom of the list
+
+    def handleDoubleClick(self):
+        self.parent.fetch_more()
+        return True
+
+
 class MerginGroupItem(QgsDataCollectionItem):
     """ Mergin group data item. Contains filtered list of Mergin projects. """
 
@@ -575,15 +625,21 @@ class MerginGroupItem(QgsDataCollectionItem):
         self.setIcon(QIcon(icon_path(icon)))
         self.setSortKey(order)
         self.project_manager = project_manager
+        self.projects = []
+        self.group_name = grp_name
+        self.total_projects_count = None
+        self.fetch_more_item = None
 
-    def createChildren(self):
-        mc = self.parent().mc
-        if not mc:
+    def fetch_projects(self, page=1, per_page=PROJS_PER_PAGE):
+        """Get paginated projects list from Mergin service and an error message list."""
+        if self.project_manager is None:
             error_item = QgsErrorItem(self, "Failed to login please check the configuration", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
         try:
-            projects = mc.projects_list(flag=self.filter)
+            resp = self.project_manager.mc.projects_list(flag=self.filter, page=page, per_page=per_page)
+            self.projects += resp["projects"]
+            self.total_projects_count = int(resp["count"]) if is_number(resp["count"]) else 0
         except URLError:
             error_item = QgsErrorItem(self, "Failed to get projects from server", "/Mergin/error")
             sip.transferto(error_item, self)
@@ -591,25 +647,65 @@ class MerginGroupItem(QgsDataCollectionItem):
         except Exception as err:
             error_item = QgsErrorItem(self, "Error: {}".format(str(err)), "/Mergin/error")
             sip.transferto(error_item, self)
-            return [error_item]
+            return None, [error_item]
+        return None
 
+    def createChildren(self):
+        if not self.projects:
+            error = self.fetch_projects()
+            if error:
+                return error
         items = []
-        for project in projects:
-            item = MerginProjectItem(self, project, mc, self.project_manager)
+        for project in self.projects:
+            item = MerginProjectItem(self, project, self.project_manager)
             item.setState(QgsDataItem.Populated)  # make it non-expandable
             sip.transferto(item, self)
             items.append(item)
+        self.set_fetch_more_item()
+        if self.fetch_more_item is not None:
+            items.append(self.fetch_more_item)
         return items
+
+    def set_fetch_more_item(self):
+        """Check if there are more projects to be fetched from Mergin service and set the fetch-more item."""
+        if self.fetch_more_item is not None:
+            try:
+                self.removeChildItem(self.fetch_more_item)
+            except RuntimeError:
+                pass
+            self.fetch_more_item = None
+        fetched_count = self.rowCount() + len(self.projects)
+        if fetched_count < self.total_projects_count:
+            self.fetch_more_item = FetchMoreItem(self)
+            self.fetch_more_item.setState(QgsDataItem.Populated)
+            sip.transferto(self.fetch_more_item, self)
+        group_name = f"{self.group_name} ({fetched_count}/{self.total_projects_count})"
+        self.setName(group_name)
+
+    def fetch_more(self):
+        """Fetch another page of projects and add them to the group item."""
+        if self.total_projects_count - self.rowCount() <= 0:
+            QMessageBox.information(None, "Fetch Mergin Projects", "All projects already listed.")
+            return
+        page_to_get = floor(self.rowCount() / PROJS_PER_PAGE) + 1
+        dummy = self.fetch_projects(page=page_to_get)
+        self.depopulate()
+
+    def reload(self):
+        self.projects = []
+        self.depopulate()
 
     def actions(self, parent):
         action_refresh = QAction(QIcon(icon_path("redo-solid.svg")), "Reload", parent)
-        action_refresh.triggered.connect(self.depopulate)
-        actions = [action_refresh]
+        action_refresh.triggered.connect(self.reload)
+        action_fetch_more = QAction(QIcon(icon_path("fetch_more.svg")), "Fetch more", parent)
+        action_fetch_more.triggered.connect(self.fetch_more)
+        actions = [action_refresh, action_fetch_more]
         if self.name() == "My projects":
             action_create = QAction(
-                QIcon(icon_path("add.svg", fa_icon=False)), "Create new project", parent
+                QIcon(icon_path("plus-square-solid.svg")), "Create new project", parent
             )
-            action_create.triggered.connect(self.parent().show_create_project_dialog)
+            action_create.triggered.connect(self.plugin.create_new_project)
             actions.append(action_create)
         return actions
 
@@ -617,29 +713,27 @@ class MerginGroupItem(QgsDataCollectionItem):
 class MerginRootItem(QgsDataCollectionItem):
     """ Mergin root data containing project groups item with configuration dialog. """
 
-    config_changed = pyqtSignal()
     local_project_removed = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, plugin=None):
         QgsDataCollectionItem.__init__(self, None, "Mergin", "/Mergin")
         self.setIcon(QIcon(os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/icon.png")))
-        self.mc = None
+        self.plugin = plugin
+        self.project_manager = plugin.manager
+        self.mc = self.project_manager.mc if self.project_manager is not None else None
         self.error = ""
-        self.project_manager = None
         self.wizard = None
-        self.create_client_and_manager()
 
-    def create_client_and_manager(self):
-        try:
-            self.mc = create_mergin_client()
-            self.project_manager = MerginProjectsManager(self.mc)
-        except (URLError, ClientError):
-            self.error = "Plugin not configured or \n QGIS master password not set up"
-        except Exception as err:
-            self.error = "Error: {}".format(str(err))
+    def update_client_and_manager(self, mc=None, manager=None, err=None):
+        """Update Mergin client and project manager - used when starting or after a config change."""
+        self.mc = mc
+        self.project_manager = manager
+        self.error = err
+        self.depopulate()
 
     def createChildren(self):
-        if not self.mc and self.error:
+        if self.error or self.mc is None:
+            self.error = self.error if self.error else "Not configured!"
             error_item = QgsErrorItem(self, self.error, "/Mergin/error")
             error_item.setIcon(QIcon(icon_path("exclamation-triangle-solid.svg")))
             sip.transferto(error_item, self)
@@ -666,36 +760,12 @@ class MerginRootItem(QgsDataCollectionItem):
 
         return items
 
-    def configure(self):
-        dlg = ConfigurationDialog()
-        if dlg.exec_():
-            self.mc = dlg.writeSettings()
-            self.depopulate()
-            self.config_changed.emit()
-
-    def show_create_project_dialog(self):
-        if not unsaved_project_check():
-            return
-        if not self.project_manager:
-            self.create_client_and_manager()
-        user_info = self.mc.user_info()
-        self.wizard = NewMerginProjectWizard(
-            self.project_manager,
-            username=user_info["username"],
-            user_organisations=user_info.get("organisations", [])
-        )
-        if not self.wizard.exec_():
-            self.wizard = None
-            return  # cancelled
-        self.depopulate()  # make sure the item has the link between remote and local project we have just added
-        self.wizard = None
-
     def actions(self, parent):
         action_configure = QAction(QIcon(icon_path("cog-solid.svg")), "Configure", parent)
-        action_configure.triggered.connect(self.configure)
+        action_configure.triggered.connect(self.plugin.configure)
 
         action_create = QAction(QIcon(icon_path("plus-square-solid.svg")), "Create new project", parent)
-        action_create.triggered.connect(self.show_create_project_dialog)
+        action_create.triggered.connect(self.plugin.create_new_project)
         actions = [action_configure]
         if self.mc:
             actions.append(action_create)
@@ -703,9 +773,10 @@ class MerginRootItem(QgsDataCollectionItem):
 
 
 class DataItemProvider(QgsDataItemProvider):
-    def __init__(self):
+    def __init__(self, plugin):
         QgsDataItemProvider.__init__(self)
         self.root_item = None
+        self.plugin = plugin
 
     def name(self):
         return "MerginProvider"
@@ -715,7 +786,7 @@ class DataItemProvider(QgsDataItemProvider):
 
     def createDataItem(self, path, parentItem):
         if not parentItem:
-            ri = MerginRootItem()
+            ri = MerginRootItem(self.plugin)
             sip.transferto(ri, None)
             self.root_item = ri
             return ri
