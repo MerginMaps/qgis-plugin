@@ -608,7 +608,7 @@ class FetchMoreItem(QgsDataItem):
     def __init__(self, parent):
         self.parent = parent
         QgsDataItem.__init__(self, QgsDataItem.Collection, parent, "Double-click for more...", "")
-        self.setIcon(QIcon(icon_path("plus-square-solid.svg")))
+        self.setIcon(QIcon(icon_path("fetch_more.svg")))
         self.setSortKey("2")  # the item should appear at the bottom of the list
 
     def handleDoubleClick(self):
@@ -637,7 +637,8 @@ class MerginGroupItem(QgsDataCollectionItem):
             sip.transferto(error_item, self)
             return [error_item]
         try:
-            resp = self.project_manager.mc.projects_list(flag=self.filter, page=page, per_page=per_page)
+            resp = self.project_manager.mc.paginated_projects_list(
+                flag=self.filter, page=page, per_page=per_page, order_by="namespace")
             self.projects += resp["projects"]
             self.total_projects_count = int(resp["count"]) if is_number(resp["count"]) else 0
         except URLError:
