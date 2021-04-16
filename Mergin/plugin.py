@@ -677,12 +677,8 @@ class MerginGroupItem(QgsDataCollectionItem):
             self.fetch_more_item = FetchMoreItem(self)
             self.fetch_more_item.setState(QgsDataItem.Populated)
             sip.transferto(self.fetch_more_item, self)
-            count_info = f"{fetched_count} fetched / {self.total_projects_count} total"
-        else:
-            count_info = "All projects fetched"
         group_name = f"{self.group_name} ({self.total_projects_count})"
         self.setName(group_name)
-        self.setToolTip(count_info)
 
     def fetch_more(self):
         """Fetch another page of projects and add them to the group item."""
