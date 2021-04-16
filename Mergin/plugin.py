@@ -64,8 +64,6 @@ class MerginPlugin:
         self.mergin_proj_dir = None
         self.mc = None
         self.manager = None
-        self.wizard = None
-        self.error = None
         self.toolbar = self.iface.addToolBar("Mergin Toolbar")
         self.toolbar.setToolTip("Mergin Toolbar")
 
@@ -170,21 +168,21 @@ class MerginPlugin:
 
     def create_manager(self):
         """Create Mergin projects manager."""
-        self.error = ""
+        error = ""
         try:
             if self.mc is None:
                 self.mc = create_mergin_client()
             self.manager = MerginProjectsManager(self.mc)
         except (URLError, ClientError, LoginError):
-            self.error = "Plugin not configured or \nQGIS master password not set up"
+            error = "Plugin not configured or \nQGIS master password not set up"
         except Exception as err:
-            self.error = "Error: {}".format(str(err))
-        if self.error:
+            error = "Error: {}".format(str(err))
+        if error:
             self.mc = None
             self.manager = None
         if self.has_browser_item():
             self.data_item_provider.root_item.update_client_and_manager(
-                mc=self.mc, manager=self.manager, err=self.error)
+                mc=self.mc, manager=self.manager, err=error)
 
     def has_browser_item(self):
         """Check if the Mergin provider Browser item exists and has the root item defined."""
@@ -217,17 +215,18 @@ class MerginPlugin:
         browser = [w for w in self.iface.mainWindow().findChildren(QDockWidget) if w.objectName() == "Browser"][0]
         q = "QGIS Browser panel is currently off. The panel is used for Mergin projects management.\n"
         q += "Would you like to open it and see your Mergin projects?"
-        res = QMessageBox.question(None, "Mergin - QGIS Browser Panel", q)
-        if not browser.isVisible() and res == QMessageBox.Yes:
-            self.iface.addDockWidget(Qt.LeftDockWidgetArea, browser)
+        if not browser.isVisible():
+            res = QMessageBox.question(None, "Mergin - QGIS Browser Panel", q)
+            if res == QMessageBox.Yes:
+                self.iface.addDockWidget(Qt.LeftDockWidgetArea, browser)
 
     def configure(self):
         """Open plugin configuration dialog."""
-        self.show_browser_panel()
         dlg = ConfigurationDialog()
         if dlg.exec_():
             self.mc = dlg.writeSettings()
             self.on_config_changed()
+            self.show_browser_panel()
 
     def create_new_project(self):
         """Open new Mergin project creation dialog."""
@@ -239,18 +238,16 @@ class MerginPlugin:
             return
 
         user_info = self.mc.user_info()
-        self.wizard = NewMerginProjectWizard(
+        wizard = NewMerginProjectWizard(
             self.manager,
             username=user_info["username"],
             user_organisations=user_info.get("organisations", [])
         )
-        if not self.wizard.exec_():
-            self.wizard = None
+        if not wizard.exec_():
             return  # cancelled
         if self.has_browser_item():
             # make sure the item has the link between remote and local project we have just added
             self.data_item_provider.root_item.depopulate()
-        self.wizard = None
 
     def current_project_status(self):
         """Show Mergin project status/validation dialog."""
@@ -301,7 +298,7 @@ class MerginProjectItem(QgsDataItem):
         )  # we need posix path for server API calls
         QgsDataItem.__init__(self, QgsDataItem.Collection, parent, self.project_name, "/Mergin/" + self.project_name)
         self.path = mergin_project_local_path(self.project_name)
-        self.setSortKey(f"1 {self.name()}")
+        self.setSortKey(f"1 {self.name()}")  #
         # check local project dir was not unintentionally removed
         if self.path:
             if not os.path.exists(self.path):
@@ -631,7 +628,7 @@ class MerginGroupItem(QgsDataCollectionItem):
         self.fetch_more_item = None
 
     def fetch_projects(self, page=1, per_page=PROJS_PER_PAGE):
-        """Get paginated projects list from Mergin service and an error message list."""
+        """Get paginated projects list from Mergin service. If anything goes wrong, return an error item."""
         if self.project_manager is None:
             error_item = QgsErrorItem(self, "Failed to login please check the configuration", "/Mergin/error")
             sip.transferto(error_item, self)
@@ -648,13 +645,13 @@ class MerginGroupItem(QgsDataCollectionItem):
         except Exception as err:
             error_item = QgsErrorItem(self, "Error: {}".format(str(err)), "/Mergin/error")
             sip.transferto(error_item, self)
-            return None, [error_item]
+            return [error_item]
         return None
 
     def createChildren(self):
         if not self.projects:
             error = self.fetch_projects()
-            if error:
+            if error is not None:
                 return error
         items = []
         for project in self.projects:
@@ -680,12 +677,16 @@ class MerginGroupItem(QgsDataCollectionItem):
             self.fetch_more_item = FetchMoreItem(self)
             self.fetch_more_item.setState(QgsDataItem.Populated)
             sip.transferto(self.fetch_more_item, self)
-        group_name = f"{self.group_name} ({fetched_count}/{self.total_projects_count})"
+            count_info = f"{fetched_count} fetched / {self.total_projects_count} total"
+        else:
+            count_info = "All projects fetched"
+        group_name = f"{self.group_name} ({self.total_projects_count})"
         self.setName(group_name)
+        self.setToolTip(count_info)
 
     def fetch_more(self):
         """Fetch another page of projects and add them to the group item."""
-        if self.total_projects_count - self.rowCount() <= 0:
+        if self.fetch_more_item is None:
             QMessageBox.information(None, "Fetch Mergin Projects", "All projects already listed.")
             return
         page_to_get = floor(self.rowCount() / PROJS_PER_PAGE) + 1
