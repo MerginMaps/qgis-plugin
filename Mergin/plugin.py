@@ -635,7 +635,7 @@ class MerginGroupItem(QgsDataCollectionItem):
             return [error_item]
         try:
             resp = self.project_manager.mc.paginated_projects_list(
-                flag=self.filter, page=page, per_page=per_page, order_by="namespace")
+                flag=self.filter, page=page, per_page=per_page, order_params="namespace_asc,name_asc")
             self.projects += resp["projects"]
             self.total_projects_count = int(resp["count"]) if is_number(resp["count"]) else 0
         except URLError:
