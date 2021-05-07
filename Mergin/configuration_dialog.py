@@ -116,7 +116,7 @@ class ConfigurationDialog(QDialog):
         except (URLError, ValueError) as e:
             QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
             msg = "<font color=red> Connection failed, incorrect URL </font>"
-        except LoginError as e:
+        except (LoginError, ClientError) as e:
             QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
             msg = f"<font color=red> Connection failed, {str(e)} </font>"
         QApplication.restoreOverrideCursor()
