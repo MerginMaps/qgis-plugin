@@ -326,7 +326,7 @@ class LayerTreeProxyModel(QSortFilterProxyModel):
             layer = node.layer()
             if not layer:
                 return False
-            return layer.isSpatial()
+            return True
 
     def flags(self, idx):
         if idx.column() == self.LAYER_COL:
