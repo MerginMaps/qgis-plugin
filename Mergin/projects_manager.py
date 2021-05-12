@@ -10,9 +10,11 @@ from .sync_dialog import SyncDialog
 from .utils import (
     ClientError,
     InvalidProject,
+    get_local_mergin_projects_info,
     LoginError,
     find_qgis_files,
     login_error_message,
+    same_dir,
     unhandled_exception_message,
     unsaved_project_check,
     write_project_variables,
@@ -120,12 +122,14 @@ class MerginProjectsManager(object):
             return True
 
         settings = QSettings()
-        settings.setValue("Mergin/localProjects/{}/path".format(full_project_name), project_dir)
+        server_url = self.mc.url.rstrip("/")
+        settings.setValue(f"Mergin/localProjects/{full_project_name}/path", project_dir)
+        settings.setValue(f"Mergin/localProjects/{full_project_name}/server", server_url)
         if (
             project_dir == QgsProject.instance().absolutePath()
             or project_dir + "/" in QgsProject.instance().absolutePath()
         ):
-            write_project_variables(self.mc.username(), project_name, full_project_name, "v1")
+            write_project_variables(self.mc.username(), project_name, full_project_name, "v1", server_url)
 
         QMessageBox.information(
             None, "Create Project", "Mergin project created and uploaded successfully", QMessageBox.Close
@@ -146,6 +150,8 @@ class MerginProjectsManager(object):
             msg = f"Failed to get project status:\n\n{str(e)}"
             QMessageBox.critical(None, "Project status", msg, QMessageBox.Close)
             return
+        if not self.check_project_server(project_dir):
+            return
         validator = MerginProjectValidator(mp)
         validation_results = validator.run_checks()
         try:
@@ -165,6 +171,22 @@ class MerginProjectsManager(object):
         except LoginError as e:
             login_error_message(e)
 
+    def check_project_server(self, project_dir, inform_user=True):
+        """Check if the project was created for current plugin Mergin server."""
+        proj_server = None
+        for path, owner, name, server in get_local_mergin_projects_info():
+            if not same_dir(path, project_dir):
+                continue
+            proj_server = server
+            break
+        if proj_server is not None and proj_server == self.mc.url.rstrip("/"):
+            return True
+        if inform_user:
+            info = f"Current project was created for another Mergin server:\n{proj_server}\n\n"
+            info += "You need to reconfigure Mergin plugin to synchronise the project."
+            QMessageBox.critical(None, "Mergin", info)
+        return False
+
     def sync_project(self, project_dir, project_name=None):
         if not project_dir:
             return
@@ -178,7 +200,8 @@ class MerginProjectsManager(object):
                 msg = f"Failed to sync project:\n\n{str(e)}"
                 QMessageBox.critical(None, "Project syncing", msg, QMessageBox.Close)
                 return
-
+        if not self.check_project_server(project_dir):
+            return
         try:
             pull_changes, push_changes, push_changes_summary = self.mc.project_status(project_dir)
         except InvalidProject as e:
