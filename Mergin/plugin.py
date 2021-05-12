@@ -420,7 +420,7 @@ class MerginProjectItem(QgsDataItem):
                 return
 
         settings = QSettings()
-        settings.remove("Mergin/localProjects/{}/path".format(self.project_name))
+        settings.remove(f"Mergin/localProjects/{self.project_name}")
         self.path = None
         self.setIcon(QIcon(icon_path("cloud-solid.svg")))
         root_item = self.parent().parent()

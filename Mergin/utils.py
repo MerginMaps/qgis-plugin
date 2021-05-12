@@ -575,11 +575,12 @@ def unhandled_exception_message(error_details, dialog_title, error_text):
     box.exec_()
 
 
-def write_project_variables(project_owner, project_name, project_full_name, version):
+def write_project_variables(project_owner, project_name, project_full_name, version, server):
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_name", project_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_owner", project_owner)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_full_name", project_full_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_version", int_version(version))
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_server", server)
 
 
 def remove_project_variables():
@@ -587,6 +588,7 @@ def remove_project_variables():
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_full_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_version")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_owner")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_server")
 
 
 def pretty_summary(summary):
@@ -612,6 +614,9 @@ def get_local_mergin_projects_info():
     """Get a list of local Mergin projects info from QSettings."""
     local_projects_info = []
     settings = QSettings()
+    config_server = settings.value("Mergin/server", None)
+    if config_server is None:
+        return local_projects_info
     settings.beginGroup("Mergin/localProjects/")
     for key in settings.allKeys():
         # Expecting key in the following form: '<namespace>/<project_name>/path'
@@ -622,7 +627,16 @@ def get_local_mergin_projects_info():
             # double check if the path exists - it might get deleted manually
             if not os.path.exists(local_path):
                 continue
-            local_projects_info.append((local_path, key_parts[0], key_parts[1]))  # (path, project owner, project name)
+            # We also need the server the project was created for, but users may already have some projects created
+            # without the server specified. In that case, let's assume it is currently defined server and also store
+            # the info for later, when user will be able to change server config actively.
+            server_key = f"{key_parts[0]}/{key_parts[1]}/server"
+            proj_server = settings.value(server_key, None)
+            if proj_server is None:
+                proj_server = config_server
+                settings.setValue(server_key, config_server)
+            # project info = (path, project owner, project name, server)
+            local_projects_info.append((local_path, key_parts[0], key_parts[1], proj_server))
     return local_projects_info
 
 
@@ -631,13 +645,13 @@ def set_qgis_project_mergin_variables():
     qgis_project_path = QgsProject.instance().absolutePath()
     if not qgis_project_path:
         return None
-    for local_path, owner, name in get_local_mergin_projects_info():
+    for local_path, owner, name, server in get_local_mergin_projects_info():
         if same_dir(path, qgis_project_path):
             try:
                 mp = MerginProject(path)
                 metadata = mp.metadata
                 write_project_variables(
-                    owner, name, metadata.get("name"), metadata.get("version")
+                    owner, name, metadata.get("name"), metadata.get("version"), server
                 )
                 return metadata.get("name")
             except InvalidProject:
@@ -666,7 +680,7 @@ def mergin_project_local_path(project_name=None):
     if not qgis_project_path:
         return None
 
-    for local_path, owner, name in get_local_mergin_projects_info():
+    for local_path, owner, name, server in get_local_mergin_projects_info():
         if same_dir(local_path, qgis_project_path):
             return qgis_project_path
 
