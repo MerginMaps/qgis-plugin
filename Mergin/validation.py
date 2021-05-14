@@ -127,6 +127,10 @@ class MerginProjectValidator(object):
     def check_offline(self):
         """Check if there are layers that might not be available when offline"""
         for lid, layer in self.layers.items():
-            dp_name = layer.dataProvider().name()
+            try:
+                dp_name = layer.dataProvider().name()
+            except AttributeError:
+                # might be vector tiles - no provider name
+                continue
             if dp_name in QGIS_NET_PROVIDERS + QGIS_DB_PROVIDERS:
                 self.issues[self.NOT_FOR_OFFLINE].append(lid)
