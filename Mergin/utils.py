@@ -402,9 +402,23 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     return project_path
 
 
+def set_qgis_project_relative_paths(qgis_project, warn=False):
+    """Check if given QGIS project is set up for relative paths. If not, try to change this setting."""
+    abs_paths, ok = qgis_project.readEntry("Paths", "/Absolute")
+    if ok and abs_paths == "true":
+        res = qgis_project.writeEntry("Paths", "/Absolute", "false")
+        if not res and warn:
+            warn_msg = "The project uses absolute paths.\nGo to Project > Properties > General > Save paths = relative"
+            QMessageBox.warning(None, "Error Creating Project", warn_msg)
+            return False
+    return True
+
+
 def save_current_project(project_path, warn=False):
     """Save current QGIS project to project_path."""
     cur_project = QgsProject.instance()
+    if not set_qgis_project_relative_paths(cur_project, warn):
+        return False
     cur_project.setFileName(project_path)
     write_success = cur_project.write()
     if not write_success and warn:
