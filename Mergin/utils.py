@@ -125,12 +125,43 @@ def set_mergin_auth(url, username, password):
     settings.setValue('Mergin/server', url)
 
 
+def get_qgis_proxy_config(url=None):
+    """Check if a proxy is enabled and needed for the given url. Return the settings and additional info."""
+    proxy_config = None
+    s = QSettings()
+    proxy_enabled = s.value("proxy/proxyEnabled", False)
+    proxy_type = s.value("proxy/proxyType")
+    if proxy_type not in ("HttpProxy", "HttpCachingProxy"):
+        raise ClientError(f"Not supported proxy server type ({proxy_type})")
+    if proxy_enabled:
+        excluded = [e.rstrip("/") for e in s.value("proxy/proxyExcludedUrls", "").split("|")]
+        if url is not None and url.rstrip("/") in excluded:
+            return proxy_config
+        proxy_config = dict()
+        proxy_config["url"] = s.value("proxy/proxyHost", None)
+        if proxy_config["url"] is None:
+            raise ClientError("No URL given for proxy server")
+        proxy_config["port"] = s.value("proxy/proxyPort", 3128)
+        auth_conf_id = s.value("proxy/authcfg", None)
+        if auth_conf_id:
+            auth_manager = QgsApplication.authManager()
+            auth_conf = QgsAuthMethodConfig()
+            auth_manager.loadAuthenticationConfig(auth_conf_id, auth_conf, True)
+            proxy_config["user"] = auth_conf.configMap()["username"]
+            proxy_config["password"] = auth_conf.configMap()["password"]
+        else:
+            proxy_config["user"] = s.value("proxy/proxyUser", None)
+            proxy_config["password"] = s.value("proxy/proxyPassword", None)
+    return proxy_config
+
+
 def create_mergin_client():
     url, username, password = get_mergin_auth()
     settings = QSettings()
     auth_token = settings.value('Mergin/auth_token', None)
+    proxy_config = get_qgis_proxy_config(url)
     if auth_token:
-        mc = MerginClient(url, auth_token, username, password, get_plugin_version())
+        mc = MerginClient(url, auth_token, username, password, get_plugin_version(), proxy_config)
         # check token expiration
         delta = mc._auth_session['expire'] - datetime.now(timezone.utc)
         if delta.total_seconds() > 1:
@@ -140,12 +171,12 @@ def create_mergin_client():
         raise ClientError()
 
     try:
-        mc = MerginClient(url, None, username, password, get_plugin_version())
+        mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
     except (URLError, ClientError) as e:
         QgsApplication.messageLog().logMessage(str(e))
         raise
     settings.setValue('Mergin/auth_token', mc._auth_session['token'])
-    return MerginClient(url, mc._auth_session['token'], username, password, get_plugin_version())
+    return MerginClient(url, mc._auth_session['token'], username, password, get_plugin_version(), proxy_config)
 
 
 def get_qgis_version_str():
@@ -233,7 +264,7 @@ def validate_mergin_url(url):
     :return: String error message as result of validation. If None, URL is valid.
     """
     try:
-        mc = MerginClient(url)
+        mc = MerginClient(url, proxy_config=get_qgis_proxy_config(url))
         if not mc.is_server_compatible():
             return 'Incompatible Mergin server'
     # Valid but not Mergin URl

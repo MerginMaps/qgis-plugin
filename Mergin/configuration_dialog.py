@@ -1,5 +1,5 @@
 import os
-from qgis.PyQt.QtWidgets import QDialog, QApplication, QDialogButtonBox
+from qgis.PyQt.QtWidgets import QDialog, QApplication, QDialogButtonBox, QMessageBox
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, QSettings
 from qgis.core import QgsApplication, QgsExpressionContextUtils
@@ -15,7 +15,7 @@ except ImportError:
     from mergin.client import MerginClient, ClientError, LoginError
 
 from .utils import get_mergin_auth, set_mergin_auth, MERGIN_URL, create_mergin_client, get_plugin_version, \
-    validate_mergin_url
+    validate_mergin_url, get_qgis_proxy_config
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_config.ui')
 
@@ -90,7 +90,8 @@ class ConfigurationDialog(QDialog):
                 mc = None
         else:
             try:
-                mc = MerginClient(url, None, username, password, get_plugin_version())
+                proxy_config = get_qgis_proxy_config(url)
+                mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
                 settings.setValue('Mergin/auth_token', mc._auth_session['token'])
                 settings.setValue('Mergin/server', url)
             except (URLError, ClientError, LoginError) as e:
@@ -111,7 +112,8 @@ class ConfigurationDialog(QDialog):
         username = self.ui.username.text()
         password = self.ui.password.text()
         try:
-            mc = MerginClient(url, None, username, password, get_plugin_version())
+            proxy_config = get_qgis_proxy_config(url)
+            mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
             msg = "<font color=green> OK </font>"
         except (URLError, ValueError) as e:
             QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
