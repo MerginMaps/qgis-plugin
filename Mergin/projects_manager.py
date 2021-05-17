@@ -162,6 +162,7 @@ class MerginProjectsManager(object):
                 push_changes_summary,
                 self.have_writing_permissions(project_name),
                 validation_results,
+                mp
             )
             dlg.exec_()
 

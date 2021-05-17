@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon
-from qgis.core import QgsProject
+from qgis.core import QgsApplication, QgsProject
 from .utils import is_versioned_file
 
 
@@ -26,7 +26,8 @@ class ProjectStatusDialog(QDialog):
     }
 
     def __init__(
-        self, pull_changes, push_changes, push_changes_summary, has_write_permissions, validation_results, parent=None
+        self, pull_changes, push_changes, push_changes_summary, has_write_permissions, validation_results,
+            mergin_project=None, parent=None
     ):
         super(ProjectStatusDialog, self).__init__(parent)
         self.validation_results = validation_results
@@ -36,6 +37,7 @@ class ProjectStatusDialog(QDialog):
         self.model = QStandardItemModel()
         self.model.setHorizontalHeaderLabels(["Status"])
         self.table.setModel(self.model)
+        self.mp = mergin_project
 
         self.check_any_changes(pull_changes, push_changes)
         self.add_content(pull_changes, "Server changes", True)
@@ -113,8 +115,12 @@ class ProjectStatusDialog(QDialog):
                     if path in changes_summary:
                         for sub_item in self._versioned_file_summary_items(changes_summary[path]["geodiff_summary"]):
                             item.appendRow(sub_item)
-                    elif not is_server:
+                    elif not is_server and category != "added":
                         item.appendRow(QStandardItem("Unable to detect changes"))
+                        msg = f"Mergin plugin: Unable to detect changes for {path}"
+                        QgsApplication.messageLog().logMessage(msg)
+                        if self.mp is not None:
+                            self.mp.log.warning(msg)
                 root_item.appendRow(item)
 
     def _versioned_file_summary_items(self, geodiff_summary):
