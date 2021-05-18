@@ -73,6 +73,54 @@ PACKABLE_PROVIDERS = ("ogr", "gdal", "delimitedtext", "gpx", "postgres", "memory
 PROJS_PER_PAGE = 50
 
 
+class FieldConverter(QgsVectorFileWriter.FieldValueConverter):
+    """
+    Custom field value converter renaming fid attribute if it has non-unique values preventing the column to be a
+    proper unique FID attribute.
+    """
+    def __init__(self, layer):
+        QgsVectorFileWriter.FieldValueConverter.__init__(self)
+        self.layer = layer
+        self.fid_idx = None
+        self.fid_unique = False
+        self.check_fid_unique()
+
+    def check_has_fid_field(self):
+        fid_idx = self.layer.fields().lookupField("fid")
+        if fid_idx >= 0:
+            self.fid_idx = fid_idx
+            return True
+        else:
+            self.fid_idx = None
+            return False
+
+    def check_fid_unique(self):
+        if not self.check_has_fid_field():
+            self.fid_unique = True
+            return
+        self.fid_unique = len(self.layer.uniqueValues(self.fid_idx)) == self.layer.featureCount()
+
+    def get_fid_replacement(self):
+        suff = 1
+        while True:
+            replacement = f"fid_{suff}"
+            if self.layer.fields().lookupField(replacement) < 0:
+                return replacement
+            suff += 1
+
+    def fieldDefinition(self, field):
+        """If the original FID column has non-unique values, rename it."""
+        idx = self.layer.fields().indexOf(field.name())
+        if self.fid_unique or idx != self.fid_idx:
+            return self.layer.fields()[idx]
+        fid_repl = self.get_fid_replacement()
+        return QgsField(fid_repl, QVariant.Int)
+
+    def convert(self, idx, value):
+        """Leave value as is."""
+        return value
+
+
 def find_qgis_files(directory):
     qgis_files = []
     for root, dirs, files in os.walk(directory):
@@ -353,7 +401,9 @@ def unsaved_project_check():
 
 
 def save_vector_layer_as_gpkg(layer, target_dir, update_datasource=False):
-    """Save layer as a single table GeoPackage in the target_dir. Update the original layer datasource if needed."""
+    """Save layer as a single table GeoPackage in the target_dir. Update the original layer datasource if needed.
+    If the original layer has already a fid column with non-unique values, it will be renamed to first free fid_x.
+    """
     layer_name = remove_forbidden_chars("_".join(layer.name().split()))
     layer_filename = get_unique_filename(os.path.join(target_dir, f"{layer_name}.gpkg"))
     transform_context = QgsProject.instance().transformContext()
@@ -361,6 +411,9 @@ def save_vector_layer_as_gpkg(layer, target_dir, update_datasource=False):
     writer_opts.fileEncoding = "UTF-8"
     writer_opts.layerName = layer_name
     writer_opts.driverName = "GPKG"
+    if layer.fields().lookupField("fid") >= 0:
+        converter = FieldConverter(layer)
+        writer_opts.fieldValueConverter = converter
     res, err = QgsVectorFileWriter.writeAsVectorFormatV2(layer, layer_filename, transform_context, writer_opts)
     if res != QgsVectorFileWriter.NoError:
         return layer_filename, f"Couldn't properly save layer: {layer_filename}. \n{err}"
@@ -663,9 +716,9 @@ def get_local_mergin_projects_info():
         # - needs project dir to load metadata
         key_parts = key.split("/")
         if len(key_parts) > 2 and key_parts[2] == "path":
-            local_path = settings.value(key)
+            local_path = settings.value(key, None)
             # double check if the path exists - it might get deleted manually
-            if not os.path.exists(local_path):
+            if local_path is None or not os.path.exists(local_path):
                 continue
             # We also need the server the project was created for, but users may already have some projects created
             # without the server specified. In that case, let's assume it is currently defined server and also store
