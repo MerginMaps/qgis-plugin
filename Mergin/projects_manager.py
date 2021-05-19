@@ -15,6 +15,7 @@ from .utils import (
     find_qgis_files,
     login_error_message,
     same_dir,
+    send_logs,
     unhandled_exception_message,
     unsaved_project_check,
     write_project_variables,
@@ -260,10 +261,10 @@ class MerginProjectsManager(object):
             return
         dlg = SyncDialog()
         dlg.push_start(self.mc, project_dir, project_name)
-
         dlg.exec_()  # blocks until success, failure or cancellation
 
-        self.open_project(project_dir)  # TODO: only reload project if we pulled a newer version
+        if QgsProject.instance().fileName() in find_qgis_files(project_dir):
+            self.open_project(project_dir)
 
         if dlg.exception:
             # push failed for some reason
@@ -287,3 +288,43 @@ class MerginProjectsManager(object):
             # we were cancelled - but no need to show a message box about that...?
             pass
 
+    def submit_logs(self, project_dir):
+        logs_path = os.path.join(project_dir, ".mergin", "client-log.txt")
+        msg = (
+            "This action will send a diagnostic log to the developers. "
+            "Use this option when you encounter synchronization issues, as the log is "
+            "very useful to determine the exact cause of the problem.\n\n"
+            "The log does not contain any of your data, only file names. It can be found here:\n"
+            "{}\n\nIt would be useful if you also send a mail to info@lutraconsulting.co.uk "
+            "and briefly describe the problem to add more context to the diagnostic log.\n\n"
+            "Please click OK if you want to proceed.".format(logs_path)
+        )
+
+        btn_reply = QMessageBox.question(None, "Submit diagnostic logs", msg, QMessageBox.Ok | QMessageBox.Cancel)
+        if btn_reply != QMessageBox.Ok:
+            return
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        log_file_name, error = send_logs(self.mc.username(), logs_path)
+        QApplication.restoreOverrideCursor()
+
+        if error:
+            QMessageBox.warning(
+                None, "Submit diagnostic logs", "Sending of diagnostic logs failed!\n\n{}".format(error)
+            )
+            return
+        QMessageBox.information(
+            None,
+            "Submit diagnostic logs",
+            "Diagnostic logs successfully submitted - thank you!\n\n{}".format(log_file_name),
+            QMessageBox.Close,
+        )
+
+    def get_mergin_browser_groups(self):
+        browser_model = self.iface.browserModel()
+        root_idx = browser_model.findPath("Mergin")
+        if not root_idx.isValid():
+            return {}
+        # get 3 children items for root index - these should be Mergin group items
+        group_items = [browser_model.dataItem(browser_model.index(i, 0, parent=root_idx)) for i in range(3)]
+        return {i.path().replace("/Mergin", ""): i for i in group_items}
