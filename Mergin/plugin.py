@@ -52,6 +52,9 @@ from .utils import (
 
 from .mergin.merginproject import MerginProject
 
+MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
+os.environ['MERGIN_CLIENT_LOG'] = MERGIN_CLIENT_LOG
+
 
 class MerginPlugin:
     def __init__(self, iface):
