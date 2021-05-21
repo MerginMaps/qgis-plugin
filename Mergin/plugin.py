@@ -672,7 +672,7 @@ class MerginGroupItem(QgsDataCollectionItem):
             except RuntimeError:
                 pass
             self.fetch_more_item = None
-        fetched_count = self.rowCount() + len(self.projects)
+        fetched_count = len(self.projects)
         if fetched_count < self.total_projects_count:
             self.fetch_more_item = FetchMoreItem(self)
             self.fetch_more_item.setState(QgsDataItem.Populated)
