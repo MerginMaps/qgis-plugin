@@ -306,9 +306,6 @@ class MerginRemoteProjectItem(QgsDataItem):
         else:
             self.mc = None
 
-    def open_project(self):
-        self.project_manager.open_project(self.path)
-
     def download(self):
         settings = QSettings()
         last_parent_dir = settings.value("Mergin/lastUsedDownloadDir", str(Path.home()))
@@ -367,18 +364,18 @@ class MerginRemoteProjectItem(QgsDataItem):
             return  # cancelled
         try:
             self.mc.clone_project(self.project_name, dlg.project_name, dlg.project_namespace)
-            msg = "Mergin project cloned successfully."
-            QMessageBox.information(None, "Clone project", msg, QMessageBox.Close)
-            self.parent().reload()
-            # we also need to reload My projects group as the cloned project could appear there
-            group_items = self.project_manager.get_mergin_browser_groups()
-            if "My projects" in group_items:
-                group_items["My projects"].reload()
         except (URLError, ClientError) as e:
             msg = "Failed to clone project {}:\n\n{}".format(self.project_name, str(e))
             QMessageBox.critical(None, "Clone project", msg, QMessageBox.Close)
         except LoginError as e:
             login_error_message(e)
+        msg = "Mergin project cloned successfully."
+        QMessageBox.information(None, "Clone project", msg, QMessageBox.Close)
+        self.parent().reload()
+        # we also need to reload My projects group as the cloned project could appear there
+        group_items = self.project_manager.get_mergin_browser_groups()
+        if "My projects" in group_items:
+            group_items["My projects"].reload()
 
     def remove_remote_project(self):
         msg = "Do you really want to remove project {} from server?".format(self.project_name)
