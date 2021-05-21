@@ -357,6 +357,9 @@ class MerginRemoteProjectItem(QgsDataItem):
             self.open_project()
         self.parent().reload()
 
+    def open_project(self):
+        self.project_manager.open_project(self.path)
+
     def clone_remote_project(self):
         user_info = self.mc.user_info()
         dlg = CloneProjectDialog(username=user_info["username"], user_organisations=user_info.get("organisations", []))
