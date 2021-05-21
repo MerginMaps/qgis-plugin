@@ -245,7 +245,7 @@ def send_logs(username, logfile):
     global_logs = b""
     if global_log_file and os.path.exists(global_log_file):
         with open(global_log_file, 'rb') as f:
-            if os.path.getsize(logfile) > 512 * 1024:
+            if os.path.getsize(logfile) > 100 * 1024:
                 f.seek(-100 * 1024, os.SEEK_END)
             global_logs = f.read() + b"\n--------------------------------\n\n"
 
