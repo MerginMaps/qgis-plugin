@@ -263,7 +263,14 @@ class MerginProjectsManager(object):
         dlg.push_start(self.mc, project_dir, project_name)
         dlg.exec_()  # blocks until success, failure or cancellation
 
-        if QgsProject.instance().fileName() in find_qgis_files(project_dir):
+        qgis_proj_filename = QgsProject.instance().fileName()
+        qgis_proj_basename = os.path.basename(qgis_proj_filename)
+        qgis_proj_changed = False
+        for updated in pull_changes["updated"]:
+            if updated["path"] == qgis_proj_basename:
+                qgis_proj_changed = True
+                break
+        if qgis_proj_filename in find_qgis_files(project_dir) and qgis_proj_changed:
             self.open_project(project_dir)
 
         if dlg.exception:
@@ -321,10 +328,13 @@ class MerginProjectsManager(object):
         )
 
     def get_mergin_browser_groups(self):
+        """
+        Return browser tree items of Mergin provider. These should be the 3 projects groups, or Error item, if
+        the plugin is not properly configured.
+        """
         browser_model = self.iface.browserModel()
         root_idx = browser_model.findPath("Mergin")
         if not root_idx.isValid():
             return {}
-        # get 3 children items for root index - these should be Mergin group items
         group_items = [browser_model.dataItem(browser_model.index(i, 0, parent=root_idx)) for i in range(3)]
         return {i.path().replace("/Mergin", ""): i for i in group_items}
