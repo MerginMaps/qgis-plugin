@@ -297,7 +297,7 @@ class MerginRemoteProjectItem(QgsDataItem):
             project["namespace"], project["name"]
         )  # we need posix path for server API calls
         QgsDataItem.__init__(self, QgsDataItem.Collection, parent, self.project_name, "/Mergin/" + self.project_name)
-        self.path = mergin_project_local_path(self.project_name)
+        self.path = None
         self.setSortKey(f"1 {self.name()}")
         self.setIcon(QIcon(icon_path("cloud-solid.svg")))
         self.project_manager = project_manager
@@ -367,8 +367,10 @@ class MerginRemoteProjectItem(QgsDataItem):
         except (URLError, ClientError) as e:
             msg = "Failed to clone project {}:\n\n{}".format(self.project_name, str(e))
             QMessageBox.critical(None, "Clone project", msg, QMessageBox.Close)
+            return
         except LoginError as e:
             login_error_message(e)
+            return
         msg = "Mergin project cloned successfully."
         QMessageBox.information(None, "Clone project", msg, QMessageBox.Close)
         self.parent().reload()
