@@ -129,11 +129,11 @@ def get_qgis_proxy_config(url=None):
     """Check if a proxy is enabled and needed for the given url. Return the settings and additional info."""
     proxy_config = None
     s = QSettings()
-    proxy_enabled = s.value("proxy/proxyEnabled", False)
-    proxy_type = s.value("proxy/proxyType")
-    if proxy_type not in ("HttpProxy", "HttpCachingProxy"):
-        raise ClientError(f"Not supported proxy server type ({proxy_type})")
+    proxy_enabled = s.value("proxy/proxyEnabled", False, type=bool)
     if proxy_enabled:
+        proxy_type = s.value("proxy/proxyType")
+        if proxy_type not in ("HttpProxy", "HttpCachingProxy"):
+            raise ClientError(f"Not supported proxy server type ({proxy_type})")
         excluded = [e.rstrip("/") for e in s.value("proxy/proxyExcludedUrls", "").split("|")]
         if url is not None and url.rstrip("/") in excluded:
             return proxy_config
