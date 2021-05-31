@@ -271,6 +271,8 @@ def send_logs(username, logfile):
     mergin_url, _, _ = get_mergin_auth()
     system = platform.system().lower()
     version = plugin_version()
+    # also read global mergin client log
+    global_log_file = os.environ.get('MERGIN_CLIENT_LOG', None)
 
     params = {
         "app": "plugin-{}-{}".format(system, version),
@@ -279,7 +281,7 @@ def send_logs(username, logfile):
     url = MERGIN_LOGS_URL + "?" + urllib.parse.urlencode(params)
     header = {"content-type": "text/plain"}
 
-    meta = "Plugin: {} \nQGIS: {} \nSystem: {} \nMergin URL: {} \nMergin user: {} \n--------------------------------\n"\
+    meta = "Plugin: {} \nQGIS: {} \nSystem: {} \nMergin URL: {} \nMergin user: {} \n--------------------------------\n\n"\
         .format(
             version,
             get_qgis_version_str(),
@@ -288,12 +290,19 @@ def send_logs(username, logfile):
             username
         )
 
+    global_logs = b""
+    if global_log_file and os.path.exists(global_log_file):
+        with open(global_log_file, 'rb') as f:
+            if os.path.getsize(logfile) > 100 * 1024:
+                f.seek(-100 * 1024, os.SEEK_END)
+            global_logs = f.read() + b"\n--------------------------------\n\n"
+
     with open(logfile, 'rb') as f:
         if os.path.getsize(logfile) > 512 * 1024:
             f.seek(-512 * 1024, os.SEEK_END)
         logs = f.read()
 
-    payload = meta.encode() + logs
+    payload = meta.encode() + global_logs + logs
     try:
         req = urllib.request.Request(url, data=payload, headers=header)
         resp = urllib.request.urlopen(req)
