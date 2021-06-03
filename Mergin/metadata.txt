@@ -4,14 +4,33 @@ name=Mergin
 qgisMinimumVersion=3.10
 qgisMaximumVersion=3.99
 description=Handle Mergin projects
-version=2021.2
+version=2021.3
 author=Lutra Consulting
 email=info@lutraconsulting.co.uk
 about=Mergin is a repository for storing and tracking changes to QGIS projects/data. It is linked with Input (a QGIS mobile app). With this plugin, users can upload and sync their data to Mergin service.
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2021.2
+changelog=2021.3
+  - Projects that are available locally can be expanded in browser to see files (#28)
+  - Only reload QGIS project after sync when it is active and it was modified (#236)
+  - Make sure that projects packaged in the wizard use relative paths (#239)
+  - Fixed issue when a file was deleted both locally and on the server (#232)
+  - Fixed packaging of layers that already contain "fid" column (#213)
+  - Fixed support for proxy servers (#123)
+  - Fixed broken sync after it was canceled (#231)
+  - Fixed python error when testing Mergin connection and unstable internet (#229)
+  - Fixed non-spatial layers not being visible in packaging wizard (#208)
+  - Fixed error with sync when Mergin server URL has changed (#221)
+  - Fixed misleading "Unable to detect changes" in status dialog (#181)
+  - Diagnostic logs include global log for dealing with auth issues (#249)
+  - Increased minimum QGIS version to 3.10 (#230)
+  - Updated Mergin client to 0.5.12 and geodiff 0.8.8
+  <p>2021.2.1
+  - Fixed issue with Unicode output filenames in listChanges() and listChangesSummary() (#227)
+  - Improved error messages in diagnostic logs
+  - Updated Mergin client to 0.5.11 and geodiff 0.8.8
+  <p>2021.2
   - List projects using pagination - after 50 projects it offers to load more (#218)
   - Fixed sync error that have happened when moving to version >= 10 (#219)
   - Improved diagnostic logging of errors
