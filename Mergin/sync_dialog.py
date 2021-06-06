@@ -49,8 +49,6 @@ class SyncDialog(QDialog):
             self.push_timer_tick()
         elif self.operation == self.PULL:
             self.pull_timer_tick()
-        else:
-            assert False
 
     def cancel_operation(self):
         if self.operation == self.DOWNLOAD:
@@ -59,8 +57,6 @@ class SyncDialog(QDialog):
             self.push_cancel()
         elif self.operation == self.PULL:
             self.pull_cancel()
-        else:
-            assert False
 
     def reset_operation(self, success, close, exception=None):
 
