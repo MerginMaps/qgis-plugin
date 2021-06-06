@@ -590,7 +590,7 @@ class MerginGroupItem(QgsDataCollectionItem):
     def fetch_projects(self, page=1, per_page=PROJS_PER_PAGE):
         """Get paginated projects list from Mergin service. If anything goes wrong, return an error item."""
         if self.project_manager is None:
-            error_item = QgsErrorItem(self, "Failed to login please check the configuration", "/Mergin/error")
+            error_item = QgsErrorItem(self, "Failed to log in. Please check the configuration", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
         try:
@@ -661,9 +661,11 @@ class MerginGroupItem(QgsDataCollectionItem):
     def actions(self, parent):
         action_refresh = QAction(QIcon(icon_path("redo-solid.svg")), "Reload", parent)
         action_refresh.triggered.connect(self.reload)
-        action_fetch_more = QAction(QIcon(icon_path("fetch_more.svg")), "Fetch more", parent)
-        action_fetch_more.triggered.connect(self.fetch_more)
-        actions = [action_refresh, action_fetch_more]
+        actions = [action_refresh]
+        if self.fetch_more_item is not None:
+            action_fetch_more = QAction(QIcon(icon_path("fetch_more.svg")), "Fetch more", parent)
+            action_fetch_more.triggered.connect(self.fetch_more)
+            actions.append(action_fetch_more)
         if self.name().startswith("My projects"):
             action_create = QAction(
                 QIcon(icon_path("plus-square-solid.svg")), "Create new project", parent
