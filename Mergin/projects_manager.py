@@ -266,10 +266,11 @@ class MerginProjectsManager(object):
         qgis_proj_filename = QgsProject.instance().fileName()
         qgis_proj_basename = os.path.basename(qgis_proj_filename)
         qgis_proj_changed = False
+        updated_sources = []
         for updated in pull_changes["updated"]:
+            updated_sources.append(updated["path"])
             if updated["path"] == qgis_proj_basename:
                 qgis_proj_changed = True
-                break
         if qgis_proj_filename in find_qgis_files(project_dir) and qgis_proj_changed:
             self.open_project(project_dir)
 
@@ -291,6 +292,10 @@ class MerginProjectsManager(object):
             # TODO: report success only when we have actually done anything
             msg = "Mergin project {} synchronized successfully".format(project_name)
             QMessageBox.information(None, "Project sync", msg, QMessageBox.Close)
+            # reload updated layers
+            for layer in QgsProject.instance().mapLayers().values():
+                if os.path.basename(layer.source()) in updated_sources:
+                    layer.reload()
         else:
             # we were cancelled - but no need to show a message box about that...?
             pass
