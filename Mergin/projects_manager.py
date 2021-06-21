@@ -292,13 +292,9 @@ class MerginProjectsManager(object):
             # TODO: report success only when we have actually done anything
             msg = "Mergin project {} synchronized successfully".format(project_name)
             QMessageBox.information(None, "Project sync", msg, QMessageBox.Close)
-            # reload updated layers
-            for layer in QgsProject.instance().mapLayers().values():
-                layer_src = os.path.basename(layer.source())
-                if "|layername=" in layer_src:
-                    layer_src = layer_src.split("|")[0]
-                if layer_src in updated_sources:
-                    layer.reload()
+            # clear canvas cache so any changes become immediately visible to users
+            self.iface.mapCanvas().clearCache()
+            self.iface.mapCanvas().refresh()
         else:
             # we were cancelled - but no need to show a message box about that...?
             pass
