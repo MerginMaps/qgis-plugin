@@ -294,7 +294,10 @@ class MerginProjectsManager(object):
             QMessageBox.information(None, "Project sync", msg, QMessageBox.Close)
             # reload updated layers
             for layer in QgsProject.instance().mapLayers().values():
-                if os.path.basename(layer.source()) in updated_sources:
+                layer_src = os.path.basename(layer.source())
+                if "|layername=" in layer_src:
+                    layer_src = layer_src.split("|")[0]
+                if layer_src in updated_sources:
                     layer.reload()
         else:
             # we were cancelled - but no need to show a message box about that...?
