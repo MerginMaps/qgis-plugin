@@ -1,6 +1,8 @@
 # Mergin QGIS plugin
 <img src="Mergin/images/icon.png">
 
+[![.github/workflows/packages.yml](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/packages.yml/badge.svg)](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/packages.yml)
+
 ## Quick start
 QGIS plugin aims to simplify handling of [Mergin](https://public.cloudmergin.com/) projects.
 
