@@ -28,7 +28,8 @@ jobs:
 
       - name: Patching pygeodiff binaries
         run: |
-          echo "no-op !! Here is the place to patch linkage !!"
+          patchelf --replace-needed libsqlite3-d9e27dab.so.0.8.6 libsqlite3.so.0.8.6 ./pygeodiff-binaries/libpygeodiff-1.0.0-python.so \
+          patchelf --remove-rpath ./pygeodiff-binaries/libpygeodiff-1.0.0-python.so
 
       - uses: actions/upload-artifact@v2
         with:
