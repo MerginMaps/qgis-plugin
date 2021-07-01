@@ -58,10 +58,6 @@ jobs:
           unzip -o pygeodiff-$env:GEODIFF_VER-cp$env:PYTHON_VER-cp$env:PYTHON_VER'm'-win_amd64.whl -d tmp64
           copy tmp64\pygeodiff\*.pyd pygeodiff-binaries\
 
-      - name: Patching pygeodiff binaries
-        run: |
-          echo "no-op !! Here is the place to patch linkage !!"
-
       - uses: actions/upload-artifact@v2
         with:
           path: ./pygeodiff-binaries/*.pyd
