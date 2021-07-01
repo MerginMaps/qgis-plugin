@@ -30,7 +30,7 @@ jobs:
         run: |
           SQLITE_LINE=$(ldd ./pygeodiff-binaries/libpygeodiff-${GEODIFF_VER}-python.so | grep libsqlite3)
           echo ${SQLITE_LINE}
-          echo ${SQLITE_LINE} | sed -E s/.*(libsqlite3-[a-z0-9]+.so[\\.0-9]+).*/\\1/
+          echo ${SQLITE_LINE} | sed -E "s/.*(libsqlite3-[a-z0-9]+.so[\\.0-9]+).*/\\1/"
           SQLITE_LIB=libsqlite3-d9e27dab.so.0.8.6
           patchelf --replace-needed ${SQLITE_LIB} libsqlite3.so ./pygeodiff-binaries/libpygeodiff-${GEODIFF_VER}-python.so
           patchelf --remove-rpath ./pygeodiff-binaries/libpygeodiff-${GEODIFF_VER}-python.so
