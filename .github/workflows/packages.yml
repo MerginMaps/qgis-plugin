@@ -88,7 +88,13 @@ jobs:
 
       - name: Patching pygeodiff binaries
         run: |
-          echo "no-op !! Here is the place to patch linkage !!"
+          install_name_tool -change @loader_path/.dylibs/libsqlite3.0.dylib @rpath/libsqlite3.dylib ./pygeodiff-binaries/libpygeodiff-$GEODIFF_VER-python.dylib
+          OTOOL_L=$(otool -L ./pygeodiff-binaries/libpygeodiff-$GEODIFF_VER-python.dylib)
+          if echo "${OTOOL_L}" | grep -q loader_path
+          then
+            echo "libpygeodiff-$GEODIFF_VER-python.dylib was not patched correctly, maybe sqlite version changed??"
+            exit 1
+          fi
 
       - uses: actions/upload-artifact@v2
         with:
