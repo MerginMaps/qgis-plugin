@@ -17,7 +17,7 @@ changelog=2021.4
   - Fixed possible crashes and data corruption on macOS (#225)
   - Fixed sync issue that misses changes in GeoPackage in some cases (mergin-py-client#96)
   - Fixed possible corruption of the internal ".mergin" directory (mergin-py-client#30)
-  - Updated Mergin client to 0.6.1 and geodiff 1.0.1
+  - Updated Mergin client to 0.6.2 and geodiff 1.0.1
   <p>2021.3
   - Projects that are available locally can be expanded in browser to see files (#28)
   - Only reload QGIS project after sync when it is active and it was modified (#236)
