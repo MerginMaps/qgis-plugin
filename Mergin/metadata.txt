@@ -15,6 +15,7 @@ changelog=2021.4
   - Fixed missing map canvas refresh after sync (#267)
   - Fixed sync issue when database schema changes and doing a rebase (#246)
   - Fixed possible crashes and data corruption on macOS (#225)
+  - Fixed a warning in QGIS console (#264)
   - Fixed sync issue that misses changes in GeoPackage in some cases (mergin-py-client#96)
   - Fixed possible corruption of the internal ".mergin" directory (mergin-py-client#30)
   - Updated Mergin client to 0.6.2 and geodiff 1.0.1

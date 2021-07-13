@@ -69,6 +69,7 @@ class MerginPlugin:
         self.manager = None
         self.toolbar = self.iface.addToolBar("Mergin Toolbar")
         self.toolbar.setToolTip("Mergin Toolbar")
+        self.toolbar.setObjectName("MerginToolbar")
 
         self.iface.projectRead.connect(self.on_qgis_project_changed)
         self.iface.newProjectCreated.connect(self.on_qgis_project_changed)
