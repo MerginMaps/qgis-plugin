@@ -3,10 +3,13 @@
 
 [![.github/workflows/packages.yml](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/packages.yml/badge.svg)](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/packages.yml)
 
-## Quick start
 QGIS plugin aims to simplify handling of [Mergin](https://public.cloudmergin.com/) projects.
 
 [Mergin](https://public.cloudmergin.com/) is a service to store, synchronise and manage GIS data and QGIS projects. Currently, [Mergin](https://public.cloudmergin.com/) is used as the back-end of [Input](https://inputapp.io/), an [open source](https://github.com/lutraconsulting/input) mobile application to collect data in field.
+
+<div><img align="left" width="45" height="45" src="https://raw.githubusercontent.com/MerginMaps/docs/main/src/.vuepress/public/slack.svg"><a href="https://merginmaps.com/community/join">Join our community chat</a><br/>and ask questions!</div>
+
+## Quick start
 
 A typical workflow for setting up a project for field survey:
 1. User sets up the project in QGIS desktop
