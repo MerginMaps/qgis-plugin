@@ -22,6 +22,7 @@ from .utils import (
     find_packable_layers,
     find_qgis_files,
     package_layer,
+    PackagingError,
     save_current_project,
 )
 
@@ -466,8 +467,10 @@ class NewMerginProjectWizard(QWizard):
                 layer = tree_layer.layer()
                 layer_state = proxy_model.layers_state[layer.id()]
                 if layer_state == proxy_model.PACK_COL:
-                    if not package_layer(layer, self.project_dir):
-                        failed_packaging.append(layer.name())
+                    try:
+                        package_layer(layer, self.project_dir)
+                    except PackagingError as e:
+                        failed_packaging.append((layer.name(), repr(e)))
                 elif layer_state == proxy_model.IGNORE_COL:
                     layers_to_remove.append(layer.id())
 
@@ -494,8 +497,8 @@ class NewMerginProjectWizard(QWizard):
 
         if failed_packaging:
             warn = "Failed to package following layers:\n"
-            for failed in failed_packaging:
-                warn += f"\n  * {failed}"
+            for layer, reason in failed_packaging:
+                warn += f"\n  * {layer} - {reason}"
             QMessageBox.warning(None, "Error Packaging Layers", warn)
 
     def cancel_wizard(self):

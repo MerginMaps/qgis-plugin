@@ -1,3 +1,4 @@
+import shutil
 from datetime import datetime, timezone
 from urllib.error import URLError, HTTPError
 import configparser
@@ -25,6 +26,7 @@ from qgis.core import (
     QgsMarkerSymbol,
     QgsMeshDataProvider,
     QgsProject,
+    QgsRaster,
     QgsRasterDataProvider,
     QgsRasterFileWriter,
     QgsRasterLayer,
@@ -71,6 +73,10 @@ QGIS_FILE_BASED_PROVIDERS = ("ogr", "gdal", "spatialite", "delimitedtext", "gpx"
 PACKABLE_PROVIDERS = ("ogr", "gdal", "delimitedtext", "gpx", "postgres", "memory")
 
 PROJS_PER_PAGE = 50
+
+
+class PackagingError(Exception):
+    pass
 
 
 class FieldConverter(QgsVectorFileWriter.FieldValueConverter):
@@ -581,11 +587,10 @@ def find_packable_layers(qgis_project=None):
 def package_layer(layer, project_dir):
     """
     Save layer to project_dir as a single layer GPKG, unless it is already there as a GPKG layer.
-    Raster layers are saved in project_dir using the original provider, if possible.
+    Raster layers are copied/rewritten to the project_dir depending on the their provider.
     """
     if not layer.isValid():
-        QMessageBox.warning(None, "Error Packaging Layer", f"{layer.name()} is not a valid QGIS layer.")
-        return False
+        raise PackagingError(f"{layer.name()} is not a valid QGIS layer")
 
     dp = layer.dataProvider()
     src_filepath = datasource_filepath(layer)
@@ -602,59 +607,112 @@ def package_layer(layer, project_dir):
 
         fname, err = save_vector_layer_as_gpkg(layer, project_dir, update_datasource=True)
         if err:
-            warn = f"Couldn't properly save layer: {layer.name()}\n{err}"
-            QMessageBox.warning(None, "Error Packaging Layer", warn)
+            raise PackagingError(f"Couldn't properly save layer {layer.name()}: {err}")
 
     elif layer.type() == QgsMapLayerType.RasterLayer:
 
-        if dp.dataSourceUri().startswith("GPKG:"):
-            uri = dp.dataSourceUri()[5:]
-            dp_uri = uri[:uri.rfind(":")]
-            gpkg_table_name = uri[uri.rfind(":"):]
-        else:
-            dp_uri = dp.dataSourceUri() if os.path.isfile(dp.dataSourceUri()) else None
-            if dp_uri is None:
-                warn = f"Couldn't properly save layer: {layer.name()}\nIs it a file based layer?"
-                QMessageBox.warning(None, "Error Packaging Layer", warn)
-                return False
-
-        layer_filename = os.path.join(project_dir, os.path.basename(dp_uri))
-
-        raster_writer = QgsRasterFileWriter(layer_filename)
-
-        if dp.dataSourceUri().startswith("GPKG:"):
-            gdal.GetDriverByName("GPKG").Create(layer_filename, 1, 1, 1)
-            raster_writer.setOutputFormat("gpkg")
-            raster_writer.setCreateOptions([f"RASTER_TABLE={gpkg_table_name}", "APPEND_SUBDATASET=YES"])
-
-        pipe = QgsRasterPipe()
-        if not pipe.set(dp.clone()):
-            warn = f"Couldn't set raster pipe projector for layer: {layer_filename}\nSkipping..."
-            QMessageBox.warning(None, "Error Packaging Layer", warn)
-            return False
-
-        projector = QgsRasterProjector()
-        projector.setCrs(dp.crs(), dp.crs())
-        if not pipe.insert(2, projector):
-            warn = f"Couldn't set raster pipe provider for layer: {layer_filename}\nSkipping..."
-            QMessageBox.warning(None, "Error Packaging Layer", warn)
-            return False
-
-        res = raster_writer.writeRaster(pipe, dp.xSize(), dp.ySize(), dp.extent(), dp.crs())
-        if not res == QgsRasterFileWriter.NoError:
-            warn = f"Couldn't save raster: {layer_filename}\nWrite error: {res}"
-            QMessageBox.warning(None, "Error Packaging Layer", warn)
-            return False
-
-        provider_opts = QgsDataProvider.ProviderOptions()
-        provider_opts.layerName = layer.name()
-        datasource = layer_filename
-        layer.setDataSource(datasource, layer.name(), "gdal", provider_opts)
+        save_raster_layer(layer, project_dir)
 
     else:
         # meshes and anything else
-        return False
-    return True
+        raise PackagingError("Layer type not supported")
+
+
+def save_raster_layer(raster_layer, project_dir):
+    """
+    Save raster layer to the project directory.
+    If the source raster is a GeoTiff, create a copy of the original file in the project directory.
+    If it is a GeoPackage raster, save it also as a GeoPackage table.
+    Otherwise, save the raster as GeoTiff using Qgs with some optimisations.
+    """
+
+    driver_name = get_raster_driver_name(raster_layer)
+
+    if driver_name == "GTiff":
+        copy_tif_raster(raster_layer, project_dir)
+    elif driver_name == "GPKG":
+        save_raster_to_geopackage(raster_layer, project_dir)
+    else:
+        save_raster_as_geotif(raster_layer, project_dir)
+
+
+def copy_tif_raster(raster_layer, project_dir):
+    """Create a copy of raster layer file(s) without rewriting."""
+    dp = raster_layer.dataProvider()
+    src_filepath = dp.dataSourceUri() if os.path.isfile(dp.dataSourceUri()) else None
+    if src_filepath is None:
+        raise PackagingError(f"Can't find the source file for {raster_layer.name()}")
+
+    # Make sure the destination path is unique and create a copy including any external pyramids
+    new_raster_filename = get_unique_filename(os.path.join(project_dir, os.path.basename(src_filepath)))
+    shutil.copy(src_filepath, new_raster_filename)
+    # External pyramids
+    if os.path.exists(src_filepath + ".ovr"):
+        shutil.copy(src_filepath + ".ovr", new_raster_filename + ".ovr")
+    # Erdas external pyramids
+    src_filepath_no_ext = os.path.splitext(src_filepath)[0]
+    if os.path.exists(src_filepath_no_ext + ".aux"):
+        shutil.copy(src_filepath_no_ext + ".aux", os.path.splitext(new_raster_filename)[0] + ".aux")
+
+
+def save_raster_to_geopackage(raster_layer, project_dir):
+    """Save a GeoPackage raster to GeoPackage table in the project directory."""
+    layer_filename = get_unique_filename(os.path.join(project_dir, raster_layer.name() + ".gpkg"))
+
+    raster_writer = QgsRasterFileWriter(layer_filename)
+    raster_writer.setOutputFormat("gpkg")
+    raster_writer.setCreateOptions([f"RASTER_TABLE={raster_layer.name()}", "APPEND_SUBDATASET=YES"])
+
+    write_raster(raster_layer, raster_writer, layer_filename)
+
+
+def save_raster_as_geotif(raster_layer, project_dir):
+    """Save raster layer as GeoTiff in the project directory."""
+    new_raster_filename = get_unique_filename(raster_layer.name() + ".tif")
+    layer_filename = os.path.join(project_dir, os.path.basename(new_raster_filename))
+    # Get data type info to set a proper compression type
+    dp = raster_layer.dataProvider()
+    is_byte_data = [dp.dataType(i) <= Qgis.Byte for i in range(raster_layer.bandCount())]
+    compression = "JPEG" if all(is_byte_data) else "LZW"
+
+    raster_writer = QgsRasterFileWriter(layer_filename)
+    raster_writer.setCreateOptions([f"COMPRESS={compression}"])
+    raster_writer.setBuildPyramidsFlag(QgsRaster.PyramidsFlagYes)
+    raster_writer.setPyramidsFormat(QgsRaster.PyramidsInternal)
+    raster_writer.setPyramidsList([2, 4, 8, 16, 32, 64, 128])
+    write_raster(raster_layer, raster_writer, layer_filename)
+
+
+def get_raster_driver_name(raster_layer):
+    """Use GDAL module to get the raster driver short name."""
+    ds = gdal.Open(raster_layer.dataProvider().dataSourceUri(), gdal.GA_ReadOnly)
+    try:
+        driver_name = ds.GetDriver().ShortName
+    except AttributeError:
+        driver_name = "Unknown"
+    del ds
+    return driver_name
+
+
+def write_raster(raster_layer, raster_writer, write_path):
+    """Write raster to specified file and update the layer's data source."""
+    dp = raster_layer.dataProvider()
+    pipe = QgsRasterPipe()
+    if not pipe.set(dp.clone()):
+        raise PackagingError(f"Couldn't set raster pipe projector for layer {write_path}")
+
+    projector = QgsRasterProjector()
+    projector.setCrs(raster_layer.crs(), raster_layer.crs())
+    if not pipe.insert(2, projector):
+        raise PackagingError(f"Couldn't set raster pipe provider for layer {write_path}")
+
+    res = raster_writer.writeRaster(pipe, dp.xSize(), dp.ySize(), dp.extent(), raster_layer.crs())
+    if not res == QgsRasterFileWriter.NoError:
+        raise PackagingError(f"Couldn't save raster {write_path} - write error: {res}")
+
+    provider_opts = QgsDataProvider.ProviderOptions()
+    provider_opts.layerName = raster_layer.name()
+    raster_layer.setDataSource(write_path, raster_layer.name(), "gdal", provider_opts)
 
 
 def login_error_message(e):
