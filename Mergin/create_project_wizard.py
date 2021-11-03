@@ -228,8 +228,13 @@ class LayerTreeProxyModel(QSortFilterProxyModel):
         self.layers_state = dict()
         self.packable = find_packable_layers()
         for tree_layer in root.findLayers():
-            lid = tree_layer.layer().id()
-            check_col = self.PACK_COL if lid in self.packable else self.KEEP_COL
+            if tree_layer.layer() is None:
+                # it is an invalid layer but let's keep it - it might be a valid layer elsewhere
+                lid = tree_layer.layerId()
+                check_col = self.KEEP_COL
+            else:
+                lid = tree_layer.layer().id()
+                check_col = self.PACK_COL if (lid in self.packable and tree_layer.layer().isValid()) else self.KEEP_COL
             self.layers_state[lid] = check_col
 
     def columnCount(self, parent):
@@ -465,14 +470,18 @@ class NewMerginProjectWizard(QWizard):
             layers_to_remove = []
             for tree_layer in new_root.findLayers():
                 layer = tree_layer.layer()
-                layer_state = proxy_model.layers_state[layer.id()]
+                lid = tree_layer.layerId()
+                if layer is None:
+                    # this is an invalid tree node layer - let's keep it as is
+                    continue
+                layer_state = proxy_model.layers_state[lid]
                 if layer_state == proxy_model.PACK_COL:
                     try:
                         package_layer(layer, self.project_dir)
                     except PackagingError as e:
                         failed_packaging.append((layer.name(), repr(e)))
                 elif layer_state == proxy_model.IGNORE_COL:
-                    layers_to_remove.append(layer.id())
+                    layers_to_remove.append(lid)
 
             new_proj.removeMapLayers(layers_to_remove)
             new_proj.write()
