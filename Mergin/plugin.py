@@ -22,9 +22,11 @@ from qgis.core import (
     QgsExpressionContextUtils,
     QgsProject,
     QgsProviderRegistry,
+    QgsMessageLog,
+    Qgis
 )
 from qgis.utils import iface
-from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QDockWidget
+from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QDockWidget, QPushButton
 from qgis.PyQt.QtCore import QSettings, Qt
 from urllib.error import URLError
 
@@ -128,6 +130,8 @@ class MerginPlugin:
 
         self.enable_toolbar_actions()
 
+        self.post_login()
+
         self.data_item_provider = DataItemProvider(self)
         QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
         # related to https://github.com/lutraconsulting/qgis-mergin-plugin/issues/3
@@ -199,6 +203,7 @@ class MerginPlugin:
         """Called when plugin config (connection settings) were changed."""
         self.create_manager()
         self.enable_toolbar_actions()
+        self.post_login()
 
     def enable_toolbar_actions(self, enable=None):
         """Check current project and set Mergin Toolbar icons enabled accordingly."""
@@ -231,6 +236,24 @@ class MerginPlugin:
             self.mc = dlg.writeSettings()
             self.on_config_changed()
             self.show_browser_panel()
+
+    def post_login(self):
+        """Groups actions that needs to be done when auth information changes"""
+        if not self.mc:
+            return
+
+        # check action required flag
+        service_response = self.mc.user_service()
+
+        if service_response and type(service_response) is dict:
+            requires_action = service_response.get("action_required", False)
+
+            if requires_action:
+                iface.messageBar().pushMessage(
+                    "Mergin",
+                    f"Your attention is required.&nbsp;Please visit the <a href={self.mc.url}>Mergin dashboard</a>",
+                    level=Qgis.Critical
+                )
 
     def create_new_project(self):
         """Open new Mergin project creation dialog."""
