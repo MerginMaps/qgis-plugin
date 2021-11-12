@@ -251,7 +251,9 @@ class MerginPlugin:
             if requires_action:
                 iface.messageBar().pushMessage(
                     "Mergin",
-                    f"Your attention is required.&nbsp;Please visit the <a href={self.mc.url}>Mergin dashboard</a>",
+                    "Your attention is required.&nbsp;Please visit the "
+                    f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required'>"
+                    "Mergin dashboard</a>",
                     level=Qgis.Critical
                 )
 
