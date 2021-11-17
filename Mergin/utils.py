@@ -569,6 +569,9 @@ def is_layer_packable(layer):
     if provider_name in QGIS_DB_PROVIDERS:
         return layer.type() == QgsMapLayerType.VectorLayer
     else:
+        if provider_name == "gdal":
+            # for GDAL rasters check it is a local file
+            return os.path.isfile(layer.dataProvider().dataSourceUri())
         return provider_name in PACKABLE_PROVIDERS
 
 
@@ -614,14 +617,15 @@ def package_layer(layer, project_dir):
         save_raster_layer(layer, project_dir)
 
     else:
-        # meshes and anything else
+        # everything else (meshes)
         raise PackagingError("Layer type not supported")
 
 
 def save_raster_layer(raster_layer, project_dir):
     """
     Save raster layer to the project directory.
-    If the source raster is a GeoTiff, create a copy of the original file in the project directory.
+    If the source raster is a local GeoTiff, create a copy of the original file in the project directory.
+    Remote COG rasters are kept as they are.
     If it is a GeoPackage raster, save it also as a GeoPackage table.
     Otherwise, save the raster as GeoTiff using Qgs with some optimisations.
     """
@@ -629,7 +633,10 @@ def save_raster_layer(raster_layer, project_dir):
     driver_name = get_raster_driver_name(raster_layer)
 
     if driver_name == "GTiff":
-        copy_tif_raster(raster_layer, project_dir)
+        # check if it is a local file
+        is_local = os.path.isfile(raster_layer.dataProvider().dataSourceUri())
+        if is_local:
+            copy_tif_raster(raster_layer, project_dir)
     elif driver_name == "GPKG":
         save_raster_to_geopackage(raster_layer, project_dir)
     else:
@@ -674,9 +681,10 @@ def save_raster_as_geotif(raster_layer, project_dir):
     dp = raster_layer.dataProvider()
     is_byte_data = [dp.dataType(i) <= Qgis.Byte for i in range(raster_layer.bandCount())]
     compression = "JPEG" if all(is_byte_data) else "LZW"
+    writer_options = [f"COMPRESS={compression}", "TILED=YES"]
 
     raster_writer = QgsRasterFileWriter(layer_filename)
-    raster_writer.setCreateOptions([f"COMPRESS={compression}"])
+    raster_writer.setCreateOptions(writer_options)
     raster_writer.setBuildPyramidsFlag(QgsRaster.PyramidsFlagYes)
     raster_writer.setPyramidsFormat(QgsRaster.PyramidsInternal)
     raster_writer.setPyramidsList([2, 4, 8, 16, 32, 64, 128])
