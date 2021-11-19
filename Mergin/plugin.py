@@ -254,7 +254,8 @@ class MerginPlugin:
                     "Your attention is required.&nbsp;Please visit the "
                     f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required'>"
                     "Mergin dashboard</a>",
-                    level=Qgis.Critical
+                    level=Qgis.Critical,
+                    duration=0
                 )
 
     def create_new_project(self):
