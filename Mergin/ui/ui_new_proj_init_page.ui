@@ -96,7 +96,7 @@
           <string notr="true">QLabel {font-size: 10pt}</string>
          </property>
          <property name="text">
-          <string>The easiest way to start from scratch, not requiring and existing QGIS project. This option will create and upload a project with a basemap and a survey layer will be created, ready for further customization.</string>
+          <string>The easiest way to start from scratch, not requiring an existing QGIS project. This option will create and upload a project with a basemap and a survey layer will be created, ready for further customization.</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
