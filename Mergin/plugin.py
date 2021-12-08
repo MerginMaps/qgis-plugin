@@ -33,6 +33,7 @@ from urllib.error import URLError
 from .configuration_dialog import ConfigurationDialog
 from .create_project_wizard import NewMerginProjectWizard
 from .clone_project_dialog import CloneProjectDialog
+from .project_settings_widget import MerginProjectConfigFactory
 from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
 from .utils import (
@@ -137,6 +138,10 @@ class MerginPlugin:
         # related to https://github.com/lutraconsulting/qgis-mergin-plugin/issues/3
         # if self.iface.browserModel().initialized():
         #     self.iface.browserModel().reload()
+
+        # register custom mergin widget in project properties
+        self.mergin_project_config_factory = MerginProjectConfigFactory()
+        self.iface.registerProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
 
     def add_action(
         self,
@@ -316,6 +321,8 @@ class MerginPlugin:
             self.iface.removePluginMenu(self.menu, action)
             self.iface.removeToolBarIcon(action)
         del self.toolbar
+
+        self.iface.unregisterProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
 
 
 class MerginRemoteProjectItem(QgsDataItem):
