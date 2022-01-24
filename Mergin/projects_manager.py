@@ -181,7 +181,7 @@ class MerginProjectsManager(object):
                 continue
             proj_server = server
             break
-        if proj_server is not None and proj_server == self.mc.url.rstrip("/"):
+        if proj_server is not None and proj_server.rstrip("/") == self.mc.url.rstrip("/"):
             return True
         if inform_user:
             info = f"Current project was created for another Mergin server:\n{proj_server}\n\n"
