@@ -235,19 +235,23 @@ class MerginProjectsManager(object):
             return
 
         if dlg.pull_conflicts:
-            msg = "Following conflicts between local and server version found: \n\n"
+            msg = "Sync aborted as there are conflicting changes in local and server versions.\n" +
+                  "Following conflict files were created:\n\n"
             for item in dlg.pull_conflicts:
                 msg += item + "\n"
             msg += (
-                "\nYou may want to fix them before upload otherwise they will be uploaded as new files. "
-                "Do you wish to proceed?"
+                "\nTo learn what are the conflicts about and how to avoid them please check our"
+                "<a href='https://merginmaps.com/docs/manage/plugin-sync-project/'>documentation</a>.\n\n"
             )
-            btn_reply = QMessageBox.question(
-                None, "Conflicts found", msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-            )
-            if btn_reply == QMessageBox.No:
-                QApplication.restoreOverrideCursor()
-                return
+            msg_box = QMessageBox()
+            msgBox.setWindowTitle("Conflicts found")
+            msgBox.setIcon(QMessageBox.Warning)
+            msgBox.setTextFormat(Qt.RichText)
+            msgBox.setStandardButtons(QMessageBox.Ok)
+            msgBox.setText(msg)
+            msgBox.exec_()
+            QApplication.restoreOverrideCursor()
+            return
 
         if not dlg.is_complete:
             # we were cancelled
