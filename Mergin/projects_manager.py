@@ -241,7 +241,7 @@ class MerginProjectsManager(object):
                 msg += item + "\n"
             msg += (
                 "\nTo learn what are the conflicts about and how to avoid them please check our"
-                "<a href='https://merginmaps.com/docs/manage/plugin-sync-project/'>documentation</a>.\n\n"
+                "<a href='https://merginmaps.com/docs/manage/missing-data/#there-are-conflict-files-in-the-folder'>documentation</a>.\n\n"
             )
             msg_box = QMessageBox()
             msgBox.setWindowTitle("Conflicts found")
