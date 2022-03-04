@@ -235,10 +235,10 @@ class MerginProjectsManager(object):
             return
 
         if dlg.pull_conflicts:
-            msg = "We have detected conflicting changes between your local copy and " +
-                  "the server that could not be resolved automatically. It is recommended " +
-                  "to manually reconcile your local changes (which have been moved to " +
-                  "conflicted copies) before running sync again.\n" +
+            msg = "We have detected conflicting changes between your local copy and " + \
+                  "the server that could not be resolved automatically. It is recommended " + \
+                  "to manually reconcile your local changes (which have been moved to " + \
+                  "conflicted copies) before running sync again.\n" + \
                   "Following conflicted copies were created:\n\n"
             for item in dlg.pull_conflicts:
                 msg += item + "\n"
