@@ -204,6 +204,18 @@ class MerginProjectsManager(object):
                 return
         if not self.check_project_server(project_dir):
             return
+
+        # check whether project is in the unfinished pull state and if
+        # this is the case, try to resolve it before running sync.
+        if self.mc.has_unfinished_pull(project_dir):
+            try:
+                conflicts = self.mc.resolve_unfinished_pull(project_dir)
+                if conflicts:
+                    self.report_conflicts(conflicts)
+            except ClientError as e:
+                QMessageBox.critical(None, "Project sync", "Client error: " + str(e))
+            return
+
         try:
             pull_changes, push_changes, push_changes_summary = self.mc.project_status(project_dir)
         except InvalidProject as e:
@@ -235,26 +247,7 @@ class MerginProjectsManager(object):
             return
 
         if dlg.pull_conflicts:
-            msg = "We have detected conflicting changes between your local copy and " + \
-                  "the server that could not be resolved automatically. It is recommended " + \
-                  "to manually reconcile your local changes (which have been moved to " + \
-                  "conflicted copies) before running sync again.\n" + \
-                  "Following conflicted copies were created:\n\n"
-            for item in dlg.pull_conflicts:
-                msg += item + "\n"
-            msg += (
-                "\nTo learn what are the conflicts about and how to avoid them please check our"
-                "<a href='https://merginmaps.com/docs/manage/missing-data/#there-are-conflict-files-in-the-folder'>documentation</a>.\n\n"
-            )
-            msg_box = QMessageBox()
-            msgBox.setWindowTitle("Conflicts found")
-            msgBox.setIcon(QMessageBox.Warning)
-            msgBox.setTextFormat(Qt.RichText)
-            msgBox.setStandardButtons(QMessageBox.Ok)
-            msgBox.setText(msg)
-            msgBox.exec_()
-            QApplication.restoreOverrideCursor()
-            return
+            self.report_conflicts(dlg.pull_conflicts)
 
         if not dlg.is_complete:
             # we were cancelled
@@ -348,3 +341,26 @@ class MerginProjectsManager(object):
             return {}
         group_items = [browser_model.dataItem(browser_model.index(i, 0, parent=root_idx)) for i in range(3)]
         return {i.path().replace("/Mergin", ""): i for i in group_items}
+
+    def report_conflicts(self, conflicts):
+        """
+        Show a dialog with the list of conflicted copies.
+        """
+        msg = "We have detected conflicting changes between your local copy and " + \
+              "the server that could not be resolved automatically. It is recommended " + \
+              "to manually reconcile your local changes (which have been moved to " + \
+              "conflicted copies) before running sync again.\n" + \
+              "Following conflicted copies were created:\n\n"
+        for item in conflicts:
+            msg += item + "\n"
+        msg += (
+            "\nTo learn what are the conflicts about and how to avoid them please check our"
+            "<a href='https://merginmaps.com/docs/manage/missing-data/#there-are-conflict-files-in-the-folder'>documentation</a>.\n\n"
+        )
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle("Conflicts found")
+        msg_box.setIcon(QMessageBox.Warning)
+        msg_box.setTextFormat(Qt.RichText)
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.setText(msg)
+        msg_box.exec_()
