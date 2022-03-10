@@ -54,6 +54,7 @@ from .utils import (
 )
 
 from .mergin.merginproject import MerginProject
+from .processing.provider import MerginProvider
 
 MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
 os.environ['MERGIN_CLIENT_LOG'] = MERGIN_CLIENT_LOG
@@ -70,6 +71,7 @@ class MerginPlugin:
         self.mergin_proj_dir = None
         self.mc = None
         self.manager = None
+        self.provider = MerginProvider()
         self.toolbar = self.iface.addToolBar("Mergin Toolbar")
         self.toolbar.setToolTip("Mergin Toolbar")
         self.toolbar.setObjectName("MerginToolbar")
@@ -82,6 +84,9 @@ class MerginPlugin:
         QgsExpressionContextUtils.setGlobalVariable("mergin_username", settings.value("Mergin/username", ""))
         QgsExpressionContextUtils.setGlobalVariable("mergin_url", settings.value("Mergin/server", ""))
 
+    def initProcessing(self):
+        QgsApplication.processingRegistry().addProvider(self.provider)
+
     def initGui(self):
         # This is a quick fix for a bad crasher for users that have set up master password for their
         # storage of authentication configurations. What would happen is that in a worker thread,
@@ -91,6 +96,8 @@ class MerginPlugin:
         # Triggering auth request to QGIS auth framework already at this point will make sure that
         # the dialog asking for master password is started from the main thread -> no crash.
         get_mergin_auth()
+
+        self.initProcessing()
 
         self.create_manager()
 
@@ -323,6 +330,7 @@ class MerginPlugin:
         del self.toolbar
 
         self.iface.unregisterProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
+        QgsApplication.processingRegistry().removeProvider(self.provider)
 
 
 class MerginRemoteProjectItem(QgsDataItem):

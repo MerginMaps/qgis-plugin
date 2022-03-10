@@ -50,6 +50,7 @@ try:
                                     pull_project_finalize, pull_project_cancel
     from .mergin.client_push import push_project_async, push_project_is_running, \
                                     push_project_finalize, push_project_cancel
+    from .mergin.report import create_report
 except ImportError:
     import sys
     this_dir = os.path.dirname(os.path.realpath(__file__))
@@ -62,6 +63,7 @@ except ImportError:
                                    pull_project_finalize, pull_project_cancel
     from mergin.client_push import push_project_async, push_project_is_running, \
                                    push_project_finalize, push_project_cancel
+    from .mergin.report import create_report
 
 MERGIN_URL = 'https://public.cloudmergin.com'
 MERGIN_LOGS_URL = 'https://g4pfq226j0.execute-api.eu-west-1.amazonaws.com/mergin_client_log_submit'
@@ -133,7 +135,7 @@ def find_qgis_files(directory):
         for f in files:
             _, ext = os.path.splitext(f)
             if ext in ['.qgs', '.qgz']:
-                qgis_files.append(os.path.join(root, f))           
+                qgis_files.append(os.path.join(root, f))
     return qgis_files
 
 
