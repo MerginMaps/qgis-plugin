@@ -226,7 +226,14 @@ class MerginProjectsManager(object):
         # pull we create conflicted copies which should be examined by the user
         # to avoid data loss.
         if self.mc.has_unfinished_pull(project_dir):
-            self.resolve_unfinished_pull(project_dir)
+            delay = 0
+            current_project_path = os.path.normpath(QgsProject.instance().absolutePath())
+            if current_project_path == os.path.normpath(project_dir):
+                QgsProject.instance().clear()
+                delay = 2500
+            # we have to wait a bit to let the OS (Windows) release lock on the GPKG files
+            # otherwise attempt to resolve unfinished pull will fail
+            QTimer.singleShot(delay, lambda: self.resolve_unfinished_pull(project_dir, True))
             return
 
         try:
@@ -265,12 +272,14 @@ class MerginProjectsManager(object):
         # we stop and ask user to examine them.
         if self.mc.has_unfinished_pull(project_dir):
             current_project_path = os.path.normpath(QgsProject.instance().absolutePath())
+            delay = 0
             if current_project_path == os.path.normpath(project_dir):
                 QgsProject.instance().clear()
-                # we have to wait a bit to let the OS (Windows) release lock on the GPKG files
-                # otherwise attempt to resolve unfinished pull will fail
-                QTimer.singleShot(2500, lambda: self.resolve_unfinished_pull(project_dir, True))
-                return
+                delay = 2500
+            # we have to wait a bit to let the OS (Windows) release lock on the GPKG files
+            # otherwise attempt to resolve unfinished pull will fail
+            QTimer.singleShot(delay, lambda: self.resolve_unfinished_pull(project_dir, True))
+            return
 
         if dlg.pull_conflicts:
             self.report_conflicts(dlg.pull_conflicts)
