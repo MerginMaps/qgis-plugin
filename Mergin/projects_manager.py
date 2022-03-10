@@ -3,7 +3,7 @@ import os
 from qgis.core import QgsProject
 from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QMessageBox, QApplication
-from qgis.PyQt.QtCore import QSettings, Qt
+from qgis.PyQt.QtCore import QSettings, Qt, QTimer
 from urllib.error import URLError
 
 from .sync_dialog import SyncDialog
@@ -207,13 +207,11 @@ class MerginProjectsManager(object):
 
         # check whether project is in the unfinished pull state and if
         # this is the case, try to resolve it before running sync.
+        # Sync will be stopped anyway, as in the process of fixing unfinished
+        # pull we create conflicted copies which should be examined by the user
+        # to avoid data loss.
         if self.mc.has_unfinished_pull(project_dir):
-            try:
-                conflicts = self.mc.resolve_unfinished_pull(project_dir)
-                if conflicts:
-                    self.report_conflicts(conflicts)
-            except ClientError as e:
-                QMessageBox.critical(None, "Project sync", "Client error: " + str(e))
+            self.resolve_unfinished_pull(project_dir)
             return
 
         try:
@@ -246,8 +244,22 @@ class MerginProjectsManager(object):
                 )
             return
 
+        # after pull project might be in the unfinished pull state. So we
+        # have to check and if this is the case, try to close project and
+        # finish pull. As in the result we will have conflicted copies created
+        # we stop and ask user to examine them.
+        if self.mc.has_unfinished_pull(project_dir):
+            current_project_path = os.path.normpath(QgsProject.instance().absolutePath())
+            if current_project_path == os.path.normpath(project_dir):
+                QgsProject.instance().clear()
+                # we have to wait a bit to let the OS (Windows) release lock on the GPKG files
+                # otherwise attempt to resolve unfinished pull will fail
+                QTimer.singleShot(2500, lambda: self.resolve_unfinished_pull(project_dir, True))
+                return
+
         if dlg.pull_conflicts:
             self.report_conflicts(dlg.pull_conflicts)
+            return
 
         if not dlg.is_complete:
             # we were cancelled
@@ -259,6 +271,7 @@ class MerginProjectsManager(object):
                 None, "Project sync", "You have no writing rights to this project", QMessageBox.Close
             )
             return
+
         dlg = SyncDialog()
         dlg.push_start(self.mc, project_dir, project_name)
         dlg.exec_()  # blocks until success, failure or cancellation
@@ -344,18 +357,20 @@ class MerginProjectsManager(object):
 
     def report_conflicts(self, conflicts):
         """
-        Show a dialog with the list of conflicted copies.
+        Shows a dialog with the list of conflicted copies.
         """
-        msg = "We have detected conflicting changes between your local copy and " + \
-              "the server that could not be resolved automatically. It is recommended " + \
-              "to manually reconcile your local changes (which have been moved to " + \
-              "conflicted copies) before running sync again.\n" + \
-              "Following conflicted copies were created:\n\n"
+        msg = (
+            "We have detected conflicting changes between your local copy and "
+            "the server that could not be resolved automatically. It is recommended "
+            "to manually reconcile your local changes (which have been moved to "
+            "conflicted copies) before running sync again.<br>"
+            "Following conflicted copies were created:<br><br>"
+        )
         for item in conflicts:
-            msg += item + "\n"
+            msg += item + "<br>"
         msg += (
-            "\nTo learn what are the conflicts about and how to avoid them please check our"
-            "<a href='https://merginmaps.com/docs/manage/missing-data/#there-are-conflict-files-in-the-folder'>documentation</a>.\n\n"
+            "<br>To learn what are the conflicts about and how to avoid them please check our "
+            "<a href='https://merginmaps.com/docs/manage/missing-data/#there-are-conflict-files-in-the-folder'>documentation</a>."
         )
         msg_box = QMessageBox()
         msg_box.setWindowTitle("Conflicts found")
@@ -364,3 +379,17 @@ class MerginProjectsManager(object):
         msg_box.setStandardButtons(QMessageBox.Ok)
         msg_box.setText(msg)
         msg_box.exec_()
+
+    def resolve_unfinished_pull(self, project_dir, reopen_project=False):
+        """
+        Try to resolve unfinished pull. Shows a dialog with the list of created
+        conflict copies on success and an error message on failure.
+        """
+        try:
+            conflicts = self.mc.resolve_unfinished_pull(project_dir)
+            self.report_conflicts(conflicts)
+        except ClientError as e:
+            QMessageBox.critical(None, "Project sync", "Client error: " + str(e))
+
+        if reopen_project:
+            self.open_project(project_dir)
