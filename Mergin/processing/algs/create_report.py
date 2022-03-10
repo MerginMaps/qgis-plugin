@@ -66,7 +66,10 @@ class CreateReport(QgsProcessingAlgorithm):
         output_file = self.parameterAsFileOutput(parameters, self.REPORT, context)
 
         mc = create_mergin_client()
-        create_report(mc, project_dir, f"v{start}", f"v{end}", output_file)
+        warnings = create_report(mc, project_dir, f"v{start}", f"v{end}", output_file)
+        if warnings:
+            for w in warnings:
+                feedback.pushWarning(w)
 
         context.addLayerToLoadOnCompletion(output_file, QgsProcessingContext.LayerDetails('Report', context.project()))
 
