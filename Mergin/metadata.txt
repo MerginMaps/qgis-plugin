@@ -17,8 +17,8 @@ changelog=2021.5.1
   - Fix packaging bugs (#273, #277)
   - Fix sending diagnostics logs
   - Add attention banner notification
-  - Fix handling of null/not-null values of datetime type (geodiff#154) 
-  - Fix handling of rebase when editors change the same value (geodiff#152) 
+  - Fix handling of null/not-null values of datetime type (geodiff#154)
+  - Fix handling of rebase when editors change the same value (geodiff#152)
   - Updated Mergin client to 0.6.6 and geodiff 1.0.5
   <p>2021.4.2
   - Fixed creation of conflict files on rebase in some cases (geodiff#146)
@@ -114,7 +114,7 @@ changelog=2021.5.1
   - Bug fixes
   <p>2020.1
   - Better display of changelog
-  - Several bug fixes  
+  - Several bug fixes
   <p>2019.6
   - View log of changes to layer through Geodiff
   <p>2019.5
@@ -142,6 +142,8 @@ homepage=https://public.cloudmergin.com
 tracker=https://github.com/lutraconsulting/qgis-mergin-plugin/issues
 repository=https://github.com/lutraconsulting/qgis-mergin-plugin
 icon=images/icon.png
+
+hasProcessingProvider=yes
 
 ; experimental flag
 experimental=False
