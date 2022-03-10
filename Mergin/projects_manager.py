@@ -1,8 +1,8 @@
 import os
 
-from qgis.core import QgsProject
+from qgis.core import QgsProject, Qgis
 from qgis.utils import iface
-from qgis.PyQt.QtWidgets import QMessageBox, QApplication
+from qgis.PyQt.QtWidgets import QMessageBox, QApplication, QPushButton
 from qgis.PyQt.QtCore import QSettings, Qt, QTimer
 from urllib.error import URLError
 
@@ -51,7 +51,6 @@ class MerginProjectsManager(object):
         writersnames = info["access"]["writersnames"]
         return username in writersnames
 
-    @staticmethod
     def open_project(project_dir):
         if not project_dir:
             return
@@ -59,6 +58,22 @@ class MerginProjectsManager(object):
         qgis_files = find_qgis_files(project_dir)
         if len(qgis_files) == 1:
             iface.addProject(qgis_files[0])
+            if self.mc.has_unfinished_pull(project_dir):
+                widget = iface.messageBar().createMessage(
+                    "Unfinished pull",
+                    "The previous pull has not finished completely, status of some files may be reported incorrectly."
+                )
+                button = QPushButton(widget)
+                button.setText("Finish pull")
+
+                def fix_pull():
+                    QgsProject.instance().clear()
+                    QTimer.singleShot(2500, lambda: self.resolve_unfinished_pull(project_dir, True))
+                    iface.messageBar().clearWidgets()
+
+                button.pressed.connect(fix_pull)
+                widget.layout().addWidget(button)
+                iface.messageBar().pushWidget(widget, Qgis.Warning)
         else:
             msg = (
                 "Selected project does not contain any QGIS project file"
