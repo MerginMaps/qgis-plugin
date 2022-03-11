@@ -7,7 +7,10 @@ from PyQt5.QtWidgets import (
     QTabWidget,
     QTreeView,
     QVBoxLayout,
+    QHBoxLayout,
     QWidget,
+    QStyle,
+    QSizePolicy
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon
@@ -53,6 +56,23 @@ class ProjectStatusDialog(QDialog):
         self.tabs.addTab(self.valid_tab, "Validation results")
 
         status_lay = QVBoxLayout(self.status_tab)
+        if self.mp.has_unfinished_pull():
+            warn_lay = QHBoxLayout()
+            lbl_warn_icon = QLabel()
+            lbl_warn_icon.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+            icon = self.style().standardIcon(QStyle.SP_MessageBoxWarning)
+            lbl_warn_icon.setPixmap(icon.pixmap(icon.availableSizes()[0]))
+            warn_lay.addWidget(lbl_warn_icon)
+            lbl_unfinished = QLabel()
+            lbl_unfinished.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            lbl_unfinished.setWordWrap(True)
+            lbl_unfinished.setText(
+                "The previous pull has not finished completely: status "
+                "of some files may be reported incorrectly."
+            )
+            warn_lay.addWidget(lbl_unfinished)
+            status_lay.addLayout(warn_lay)
+
         status_lay.addWidget(self.table)
         has_files_to_replace = any(
             ["diff" not in file and is_versioned_file(file["path"]) for file in push_changes["updated"]]
