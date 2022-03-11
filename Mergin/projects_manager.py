@@ -67,8 +67,7 @@ class MerginProjectsManager(object):
                 button.setText("Finish pull")
 
                 def fix_pull():
-                    QgsProject.instance().clear()
-                    QTimer.singleShot(2500, lambda: self.resolve_unfinished_pull(project_dir, True))
+                    self.close_project_and_fix_pull(project_dir)
                     iface.messageBar().clearWidgets()
 
                 button.pressed.connect(fix_pull)
@@ -226,14 +225,7 @@ class MerginProjectsManager(object):
         # pull we create conflicted copies which should be examined by the user
         # to avoid data loss.
         if self.mc.has_unfinished_pull(project_dir):
-            delay = 0
-            current_project_path = os.path.normpath(QgsProject.instance().absolutePath())
-            if current_project_path == os.path.normpath(project_dir):
-                QgsProject.instance().clear()
-                delay = 2500
-            # we have to wait a bit to let the OS (Windows) release lock on the GPKG files
-            # otherwise attempt to resolve unfinished pull will fail
-            QTimer.singleShot(delay, lambda: self.resolve_unfinished_pull(project_dir, True))
+            self.close_project_and_fix_pull(project_dir)
             return
 
         try:
@@ -271,14 +263,7 @@ class MerginProjectsManager(object):
         # finish pull. As in the result we will have conflicted copies created
         # we stop and ask user to examine them.
         if self.mc.has_unfinished_pull(project_dir):
-            current_project_path = os.path.normpath(QgsProject.instance().absolutePath())
-            delay = 0
-            if current_project_path == os.path.normpath(project_dir):
-                QgsProject.instance().clear()
-                delay = 2500
-            # we have to wait a bit to let the OS (Windows) release lock on the GPKG files
-            # otherwise attempt to resolve unfinished pull will fail
-            QTimer.singleShot(delay, lambda: self.resolve_unfinished_pull(project_dir, True))
+            self.close_project_and_fix_pull(project_dir)
             return
 
         if dlg.pull_conflicts:
@@ -417,3 +402,17 @@ class MerginProjectsManager(object):
 
         if reopen_project:
             self.open_project(project_dir)
+
+    def close_project_and_fix_pull(self, project_dir):
+        """
+        Close current Mergin project if it is opened in QGIS and try to fix
+        unfinished pull.
+        """
+        delay = 0
+        current_project_path = os.path.normpath(QgsProject.instance().absolutePath())
+        if current_project_path == os.path.normpath(project_dir):
+            QgsProject.instance().clear()
+            delay = 2500
+        # we have to wait a bit to let the OS (Windows) release lock on the GPKG files
+        # otherwise attempt to resolve unfinished pull will fail
+        QTimer.singleShot(delay, lambda: self.resolve_unfinished_pull(project_dir, True))
