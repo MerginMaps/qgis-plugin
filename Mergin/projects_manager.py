@@ -60,7 +60,7 @@ class MerginProjectsManager(object):
             iface.addProject(qgis_files[0])
             if self.mc.has_unfinished_pull(project_dir):
                 widget = iface.messageBar().createMessage(
-                    "Unfinished pull",
+                    "Mergin",
                     "The previous pull has not finished completely, status of some files may be reported incorrectly."
                 )
                 button = QPushButton(widget)
