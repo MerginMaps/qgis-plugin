@@ -51,7 +51,7 @@ class MerginProjectsManager(object):
         writersnames = info["access"]["writersnames"]
         return username in writersnames
 
-    def open_project(project_dir):
+    def open_project(self, project_dir):
         if not project_dir:
             return
 
