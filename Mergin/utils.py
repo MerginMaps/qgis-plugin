@@ -43,7 +43,7 @@ from .mergin.merginproject import MerginProject
 
 try:
     from .mergin import InvalidProject
-    from .mergin.client import MerginClient, ClientError, LoginError
+    from .mergin.client import MerginClient, ClientError, LoginError, InvalidProject
     from .mergin.client_pull import download_project_async, download_project_is_running, \
                                     download_project_finalize, download_project_cancel
     from .mergin.client_pull import pull_project_async, pull_project_is_running, \
