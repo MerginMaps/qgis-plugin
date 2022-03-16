@@ -9,7 +9,7 @@ import os
 import shutil
 from pathlib import Path
 import posixpath
-from qgis.PyQt.QtCore import pyqtSignal
+from qgis.PyQt.QtCore import pyqtSignal, QTimer
 from qgis.PyQt.QtGui import QIcon
 from qgis.core import (
     QgsApplication,
@@ -535,7 +535,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
                 mp.log.removeHandler(log_file_handler)
                 del mp
 
-                shutil.rmtree(self.path)
+                QTimer.singleShot(250, lambda: shutil.rmtree(self.path))
             except PermissionError as e:
                 QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
                 msg = (
