@@ -1,9 +1,20 @@
 from collections import defaultdict
 import os
 
-from qgis.core import QgsMapLayerType, QgsProject, QgsVectorDataProvider, QgsExpression
+from qgis.core import (
+    QgsMapLayerType,
+    QgsProject,
+    QgsVectorDataProvider,
+    QgsExpression
+)
 
-from .utils import find_qgis_files, same_dir, QGIS_DB_PROVIDERS, QGIS_NET_PROVIDERS
+from .utils import (
+    find_qgis_files,
+    same_dir,
+    has_schema_change,
+    QGIS_DB_PROVIDERS,
+    QGIS_NET_PROVIDERS
+)
 
 
 class MerginProjectValidator(object):
@@ -21,6 +32,7 @@ class MerginProjectValidator(object):
     ATTACHMENT_ABSOLUTE_PATH = 8, "Attachment widget uses absolute paths"
     ATTACHMENT_LOCAL_PATH = 9, "Attachment widget uses local path"
     ATTACHMENT_EXPRESSION_PATH = 10, "Attachment widget incorrectly uses expression-based path"
+    DATABASE_SCHEMA_CHANGE = 11, "Database schema was changed"
 
     def __init__(self, mergin_project=None):
         self.mp = mergin_project
@@ -49,6 +61,7 @@ class MerginProjectValidator(object):
         self.check_editable_vectors_format()
         self.check_offline()
         self.check_attachment_widget()
+        self.check_db_schema()
         if not self.issues:
             self.issues[self.NO_PROBLEMS] = []
         return self.issues
@@ -144,7 +157,6 @@ class MerginProjectValidator(object):
         for lid, layer in self.layers.items():
             if lid not in self.editable:
                 continue
-
             fields = layer.fields()
             for i in range(fields.count()):
                 ws = layer.editorWidgetSetup(i)
@@ -162,3 +174,11 @@ class MerginProjectValidator(object):
                         expr = QgsExpression(cfg["DefaultRoot"])
                         if expr.isValid():
                             self.issues[self.ATTACHMENT_EXPRESSION_PATH].append(lid)
+
+    def check_db_schema(self):
+        for lid, layer in self.layers.items():
+            if lid not in self.editable:
+                continue
+            dp = layer.dataProvider()
+            if dp.storageType() == "GPKG" and has_schema_change(self.mp, layer):
+                self.issues[self.DATABASE_SCHEMA_CHANGE].append(lid)

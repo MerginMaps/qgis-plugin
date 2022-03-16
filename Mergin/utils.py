@@ -882,3 +882,19 @@ def is_number(s):
         return False
     except TypeError:
         return False
+
+
+def has_schema_change(mp, layer):
+    """Check if the layer has schema (attribute table) changes.
+    """
+    local_fields = layer.fields()
+
+    file_path = os.path.split(layer.publicSource().split("|")[0])[1]
+    meta_path = mp.fpath_meta(file_path)
+    meta_layer = QgsVectorLayer(meta_path, '', 'ogr')
+    meta_fields = meta_layer.fields()
+
+    if local_fields != meta_fields:
+        return True
+
+    return False
