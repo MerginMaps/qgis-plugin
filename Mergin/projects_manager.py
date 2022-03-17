@@ -49,7 +49,12 @@ class MerginProjectsManager(object):
         info = self.mc.project_info(project_name)
         username = self.mc.username()
         writersnames = info["access"]["writersnames"]
-        return username in writersnames
+        permissions = info["permissions"]
+        # permissions field contains information about update, delete and upload
+        # privileges of the user on a specific project. This is more accurate
+        # information then "writernames" field, as it takes into account
+        # namespace privileges. So we have to check both "writersnames" and "permissions"
+        return (username in writersnames) or all(permissions.values())
 
     def open_project(self, project_dir):
         if not project_dir:
