@@ -15,7 +15,9 @@ from qgis.core import (
 from ...utils import (
     icon_path,
     create_mergin_client,
-    create_report
+    create_report,
+    ClientError,
+    InvalidProject
 )
 
 
@@ -66,7 +68,14 @@ class CreateReport(QgsProcessingAlgorithm):
         output_file = self.parameterAsFileOutput(parameters, self.REPORT, context)
 
         mc = create_mergin_client()
-        warnings = create_report(mc, project_dir, f"v{start}", f"v{end}", output_file)
+        warnings = None
+        try:
+            warnings = create_report(mc, project_dir, f"v{start}", f"v{end}", output_file)
+        except InvalidProject as e:
+            raise QgsProcessingException('Invalid Mergin project: ' + str(e))
+        except ClientError as e:
+            raise QgsProcessingException('Unable to create report: ' + str(e))
+
         if warnings:
             for w in warnings:
                 feedback.pushWarning(w)
