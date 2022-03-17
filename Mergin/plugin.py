@@ -535,6 +535,9 @@ class MerginLocalProjectItem(QgsDirectoryItem):
                 mp.log.removeHandler(log_file_handler)
                 del mp
 
+                # as releasing lock on previously open files takes some time
+                # we have to wait a bit before removing them, otherwise rmtree
+                # will fail and removal of the local rpoject will fail as well
                 QTimer.singleShot(250, lambda: shutil.rmtree(self.path))
             except PermissionError as e:
                 QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
