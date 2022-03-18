@@ -44,18 +44,6 @@ class MerginProjectsManager(object):
             return True if unsaved_project_check() else False
         return True  # not a Mergin project
 
-    def have_writing_permissions(self, project_name):
-        """Check if user have writing rights to the project."""
-        info = self.mc.project_info(project_name)
-        username = self.mc.username()
-        writersnames = info["access"]["writersnames"]
-        permissions = info["permissions"]
-        # permissions field contains information about update, delete and upload
-        # privileges of the user on a specific project. This is more accurate
-        # information then "writernames" field, as it takes into account
-        # namespace privileges. So we have to check "upload" field from "permissions"
-        return permissions["upload"]
-
     def open_project(self, project_dir):
         if not project_dir:
             return
@@ -180,7 +168,7 @@ class MerginProjectsManager(object):
                 pull_changes,
                 push_changes,
                 push_changes_summary,
-                self.have_writing_permissions(project_name),
+                self.mc.have_writing_permissions(project_dir),
                 validation_results,
                 mp
             )
@@ -280,7 +268,7 @@ class MerginProjectsManager(object):
             return
 
         # pull finished, start push
-        if any(push_changes.values()) and not self.have_writing_permissions(project_name):
+        if any(push_changes.values()) and not self.mc.have_writing_permissions(project_dir):
             QMessageBox.information(
                 None, "Project sync", "You have no writing rights to this project", QMessageBox.Close
             )
