@@ -168,7 +168,7 @@ class MerginProjectsManager(object):
                 pull_changes,
                 push_changes,
                 push_changes_summary,
-                self.mc.have_writing_permissions(project_dir),
+                self.mc.has_writing_permissions(project_name),
                 validation_results,
                 mp
             )
@@ -268,7 +268,7 @@ class MerginProjectsManager(object):
             return
 
         # pull finished, start push
-        if any(push_changes.values()) and not self.mc.have_writing_permissions(project_dir):
+        if any(push_changes.values()) and not self.mc.has_writing_permissions(project_name):
             QMessageBox.information(
                 None, "Project sync", "You have no writing rights to this project", QMessageBox.Close
             )
