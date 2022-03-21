@@ -525,6 +525,9 @@ class MerginLocalProjectItem(QgsDirectoryItem):
                         return
 
                     cur_proj.clear()
+                    # clearing project does not trigger toggling toolbar buttons state
+                    # change, so we need to fire the singnal manually
+                    iface.newProjectCreated.emit()
                     registry = QgsProviderRegistry.instance()
                     registry.setLibraryDirectory(registry.libraryDirectory())
 
