@@ -186,5 +186,7 @@ class MerginProjectValidator(object):
             if lid not in self.editable:
                 continue
             dp = layer.dataProvider()
-            if dp.storageType() == "GPKG" and has_schema_change(self.mp, layer):
-                self.issues[self.DATABASE_SCHEMA_CHANGE].append(lid)
+            if dp.storageType() == "GPKG":
+                has_change, msg = has_schema_change(self.mp, layer)
+                if not has_change:
+                    self.issues[self.DATABASE_SCHEMA_CHANGE].append(lid)
