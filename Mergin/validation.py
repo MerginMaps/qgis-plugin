@@ -32,7 +32,8 @@ class MerginProjectValidator(object):
     ATTACHMENT_ABSOLUTE_PATH = 8, "Attachment widget uses absolute paths"
     ATTACHMENT_LOCAL_PATH = 9, "Attachment widget uses local path"
     ATTACHMENT_EXPRESSION_PATH = 10, "Attachment widget incorrectly uses expression-based path"
-    DATABASE_SCHEMA_CHANGE = 11, "Database schema was changed"
+    ATTACHMENT_HYPERLINK = 11, "Attachment widget uses hyperlink"
+    DATABASE_SCHEMA_CHANGE = 12, "Database schema was changed"
 
     def __init__(self, mergin_project=None):
         self.mp = mergin_project
@@ -174,6 +175,11 @@ class MerginProjectValidator(object):
                         expr = QgsExpression(cfg["DefaultRoot"])
                         if expr.isValid():
                             self.issues[self.ATTACHMENT_EXPRESSION_PATH].append(lid)
+
+                        # using hyperlinks for document path is not allowed when
+                        if "UseLink" in cfg:
+                            self.issues[self.ATTACHMENT_HYPERLINK].append(lid)
+
 
     def check_db_schema(self):
         for lid, layer in self.layers.items():
