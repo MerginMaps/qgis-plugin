@@ -4,7 +4,6 @@ env:
   GEODIFF_VER: "1.0.5"
   PYTHON_VER: "36"
   PLUGIN_NAME: Mergin
-  DOCKER_IMAGE: qgis/qgis
 
 on: [push]
 jobs:
@@ -156,25 +155,6 @@ jobs:
           cd qgis-mergin-plugin/
           find .
           zip -r mergin.zip Mergin/ -x Mergin/__pycache__/\*
-
-      - name: Docker pull and create qgis-testing-environment
-        run: |
-          docker pull "$DOCKER_IMAGE"
-          docker run -d --name qgis-testing-environment -v "$GITHUB_WORKSPACE"/qgis-mergin-plugin/:/tests_directory -e DISPLAY=:99 "$DOCKER_IMAGE"
-          # Wait for xvfb to finish starting
-          printf "Waiting for the docker...🐳..."
-          sleep 10
-          echo " done 🥩"
-
-      - name: Docker set up QGIS
-        run: |
-          docker exec qgis-testing-environment sh -c "qgis_setup.sh $PLUGIN_NAME"
-          docker exec qgis-testing-environment sh -c "rm -f /root/.local/share/QGIS/QGIS3/profiles/default/python/plugins/$PLUGIN_NAME"
-          docker exec qgis-testing-environment sh -c "ln -s /tests_directory/qgis-mergin-plugin/$PLUGIN_NAME /root/.local/share/QGIS/QGIS3/profiles/default/python/plugins/$PLUGIN_NAME"
-
-      - name: Docker run plugin tests
-        run: |
-          docker exec qgis-testing-environment sh -c "cd /tests_directory && qgis_testrunner.sh test.suite.test_all"
 
       - uses: actions/upload-artifact@v2
         with:
