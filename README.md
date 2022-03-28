@@ -2,6 +2,7 @@
 <img src="Mergin/images/icon.png">
 
 [![.github/workflows/packages.yml](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/packages.yml/badge.svg)](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/packages.yml)
+[![Mergin Plugin Tests](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/run-test.yml/badge.svg)](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/run-test.yml)
 
 QGIS plugin aims to simplify handling of [Mergin](https://public.cloudmergin.com/) projects.
 
