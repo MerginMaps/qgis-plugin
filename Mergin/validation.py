@@ -1,9 +1,20 @@
 from collections import defaultdict
 import os
 
-from qgis.core import QgsMapLayerType, QgsProject, QgsVectorDataProvider
+from qgis.core import (
+    QgsMapLayerType,
+    QgsProject,
+    QgsVectorDataProvider,
+    QgsExpression
+)
 
-from .utils import find_qgis_files, same_dir, QGIS_DB_PROVIDERS, QGIS_NET_PROVIDERS
+from .utils import (
+    find_qgis_files,
+    same_dir,
+    has_schema_change,
+    QGIS_DB_PROVIDERS,
+    QGIS_NET_PROVIDERS
+)
 
 
 class MerginProjectValidator(object):
@@ -18,6 +29,11 @@ class MerginProjectValidator(object):
     EXTERNAL_SRC = 3, "Layer stored out of the project directory"
     NOT_FOR_OFFLINE = 5, "Layer might not be available when offline"
     NO_EDITABLE_LAYER = 7, "No editable layer in the project"
+    ATTACHMENT_ABSOLUTE_PATH = 8, "Attachment widget uses absolute paths"
+    ATTACHMENT_LOCAL_PATH = 9, "Attachment widget uses local path"
+    ATTACHMENT_EXPRESSION_PATH = 10, "Attachment widget incorrectly uses expression-based path"
+    ATTACHMENT_HYPERLINK = 11, "Attachment widget uses hyperlink"
+    DATABASE_SCHEMA_CHANGE = 12, "Database schema was changed"
 
     def __init__(self, mergin_project=None):
         self.mp = mergin_project
@@ -45,6 +61,8 @@ class MerginProjectValidator(object):
         self.check_saved_in_proj_dir()
         self.check_editable_vectors_format()
         self.check_offline()
+        self.check_attachment_widget()
+        self.check_db_schema()
         if not self.issues:
             self.issues[self.NO_PROBLEMS] = []
         return self.issues
@@ -134,3 +152,41 @@ class MerginProjectValidator(object):
                 continue
             if dp_name in QGIS_NET_PROVIDERS + QGIS_DB_PROVIDERS:
                 self.issues[self.NOT_FOR_OFFLINE].append(lid)
+
+    def check_attachment_widget(self):
+        """Check if attachment widget uses relative path."""
+        for lid, layer in self.layers.items():
+            if lid not in self.editable:
+                continue
+            fields = layer.fields()
+            for i in range(fields.count()):
+                ws = layer.editorWidgetSetup(i)
+                if ws and ws.type() == "ExternalResource":
+                    cfg = ws.config()
+                    # check for relative paths
+                    if cfg["RelativeStorage"] == 0:
+                        self.issues[self.ATTACHMENT_ABSOLUTE_PATH].append(lid)
+                    if "DefaultRoot" in cfg:
+                        # default root should not be set to the local path
+                        if os.path.isabs(cfg["DefaultRoot"]):
+                            self.issues[self.ATTACHMENT_LOCAL_PATH].append(lid)
+
+                        # expression-based path should be set with the data-defined overrride
+                        expr = QgsExpression(cfg["DefaultRoot"])
+                        if expr.isValid():
+                            self.issues[self.ATTACHMENT_EXPRESSION_PATH].append(lid)
+
+                        # using hyperlinks for document path is not allowed when
+                        if "UseLink" in cfg:
+                            self.issues[self.ATTACHMENT_HYPERLINK].append(lid)
+
+
+    def check_db_schema(self):
+        for lid, layer in self.layers.items():
+            if lid not in self.editable:
+                continue
+            dp = layer.dataProvider()
+            if dp.storageType() == "GPKG":
+                has_change, msg = has_schema_change(self.mp, layer)
+                if not has_change:
+                    self.issues[self.DATABASE_SCHEMA_CHANGE].append(lid)

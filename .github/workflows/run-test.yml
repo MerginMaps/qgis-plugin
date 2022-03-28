@@ -1,0 +1,68 @@
+name: Run Mergin Plugin Tests
+
+on: [push]
+
+env:
+  MERGIN_CLIENT_VER: "0.7.1"
+  PLUGIN_NAME: Mergin
+  TEST_FUNCTION: suite.test_all
+  DOCKER_IMAGE: qgis/qgis
+
+jobs:
+
+  run-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        docker_tags: [release-3_22, latest]
+
+    steps:
+
+      - name: Checkout client code
+        uses: actions/checkout@v3
+        with:
+          repository: lutraconsulting/mergin-py-client
+          ref: ${{ env.MERGIN_CLIENT_VER }}
+          path: client
+
+      - name: Install mergin-py-client dependencies
+        run: |
+          pip3 install python-dateutil pytz wheel
+          cd client
+          mkdir -p mergin/deps
+          pip3 install pygeodiff --target=mergin/deps
+          python3 setup.py sdist bdist_wheel
+          # without __init__.py the deps dir may get recognized as "namespace package" in python
+          # and it can break qgis plugin unloading mechanism - see #126
+          touch mergin/deps/__init__.py
+          pip3 wheel -r mergin_client.egg-info/requires.txt -w mergin/deps
+          unzip -o mergin/deps/pygeodiff-*.whl -d mergin/deps
+
+      - name: Checkout plugin code
+        uses: actions/checkout@v3
+        with:
+          path: plugin
+
+      - name: Copy client files to the plugin directory
+        run: |
+          cp -r client/mergin plugin/Mergin
+
+      - name: Docker pull and create qgis-testing-environment
+        run: |
+          docker pull "$DOCKER_IMAGE":${{ matrix.docker_tags }}
+          docker run -d --name qgis-testing-environment -v "$GITHUB_WORKSPACE"/plugin:/tests_directory -e DISPLAY=:99 "$DOCKER_IMAGE":${{ matrix.docker_tags }}
+          # Wait for xvfb to finish starting
+          printf "Waiting for the docker...🐳..."
+          sleep 10
+          echo " done 🥩"
+
+      - name: Docker set up QGIS
+        run: |
+          docker exec qgis-testing-environment sh -c "qgis_setup.sh $PLUGIN_NAME"
+          docker exec qgis-testing-environment sh -c "rm -f /root/.local/share/QGIS/QGIS3/profiles/default/python/plugins/$PLUGIN_NAME"
+          docker exec qgis-testing-environment sh -c "ln -s /tests_directory/$PLUGIN_NAME /root/.local/share/QGIS/QGIS3/profiles/default/python/plugins/$PLUGIN_NAME"
+
+      - name: Docker run plugin tests
+        run: |
+          docker exec qgis-testing-environment sh -c "cd /tests_directory/$PLUGIN_NAME/test && qgis_testrunner.sh $TEST_FUNCTION"
