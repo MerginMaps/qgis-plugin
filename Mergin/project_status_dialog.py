@@ -7,13 +7,14 @@ from qgis.PyQt.QtWidgets import (
     QDialogButtonBox,
     QStyle,
     QSizePolicy,
-    QPushButton
+    QPushButton,
+    QLabel
 )
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem, QIcon
 
 from qgis.gui import QgsGui
-from qgis.core import QgsApplication, QgsProject
+from qgis.core import Qgis, QgsApplication, QgsProject
 from .utils import is_versioned_file
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_status_dialog.ui')
@@ -67,7 +68,10 @@ class ProjectStatusDialog(QDialog):
         )
         info_text = self._get_info_text(has_files_to_replace, has_write_permissions, self.mp.has_unfinished_pull())
         for msg in info_text:
-            self.ui.messageBar.pushWarning("WARNING", msg)
+            lbl = QLabel(msg)
+            lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            lbl.setWordWrap(True)
+            self.ui.messageBar.pushWidget(lbl, Qgis.Warning)
 
     def _get_info_text(self, has_files_to_replace, has_write_permissions, has_unfinished_pull):
         msg = []
