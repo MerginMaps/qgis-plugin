@@ -2,15 +2,12 @@ import os
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import (
-    QAbstractItemView,
     QDialog,
     QDialogButtonBox,
-    QStyle,
     QSizePolicy,
     QPushButton,
     QLabel
 )
-from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem, QIcon
 
 from qgis.gui import QgsGui
