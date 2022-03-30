@@ -40,8 +40,9 @@ class ProjectStatusDialog(QDialog):
 
         if show_sync_button:
             self.btn_sync = QPushButton("Sync")
-            self.btn_sync.clicked.connect(self.sync_project)
-            self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.ActionRole)
+            # add sync button with AcceptRole. If dialog accepted we will start
+            # sync, otherwise just close status dialog
+            self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.AcceptRole)
 
         self.validation_results = validation_results
         self.mp = mergin_project
@@ -155,6 +156,3 @@ class ProjectStatusDialog(QDialog):
             html.append(f"<ul>{''.join(items)}</ul>")
 
         self.txtWarnings.setHtml(''.join(html))
-
-    def sync_project(self):
-        pass
