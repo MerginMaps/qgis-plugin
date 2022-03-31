@@ -9,6 +9,7 @@ from qgis.core import (
     QgsExpression
 )
 
+from .help import MerginHelp
 from .utils import (
     find_qgis_files,
     same_dir,
@@ -220,6 +221,7 @@ class MerginProjectValidator(object):
 def warning_display_string(warning_id):
     """Returns a display string for a corresponing warning
     """
+    help_mgr = MerginHelp()
     if warning_id == Warning.PROJ_NOT_LOADED:
         return "The QGIS project is not loaded. Open it to allow validation"
     elif warning_id == Warning.PROJ_NOT_FOUND:
@@ -233,11 +235,11 @@ def warning_display_string(warning_id):
     elif warning_id == Warning.EXTERNAL_SRC:
         return "Layer stored out of the project directory"
     elif warning_id == Warning.NOT_FOR_OFFLINE:
-        return "Layer might not be available when offline"
+        return f"Layer might not be available when offline. <a href='{help_mgr.howto_background_maps()}'>Read more.</a>"
     elif warning_id == Warning.NO_EDITABLE_LAYERS:
         return "No editable layers in the project"
     elif warning_id == Warning.ATTACHMENT_ABSOLUTE_PATH:
-        return "Attachment widget uses absolute paths"
+        return f"Attachment widget uses absolute paths. <a href='{help_mgr.howto_attachment_widget()}'>Read more.</a>"
     elif warning_id == Warning.ATTACHMENT_LOCAL_PATH:
         return "Attachment widget uses local path"
     elif warning_id == Warning.ATTACHMENT_EXPRESSION_PATH:

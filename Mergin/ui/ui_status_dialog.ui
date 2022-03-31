@@ -42,8 +42,14 @@
     </widget>
    </item>
    <item>
-    <widget class="QTextEdit" name="txtWarnings">
+    <widget class="QTextBrowser" name="txtWarnings">
      <property name="readOnly">
+      <bool>true</bool>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::TextBrowserInteraction</set>
+     </property>
+     <property name="openExternalLinks">
       <bool>true</bool>
      </property>
     </widget>
