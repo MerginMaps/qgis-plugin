@@ -1,4 +1,5 @@
 import os
+from itertools import groupby
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import (
@@ -12,6 +13,8 @@ from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem, QIcon
 
 from qgis.gui import QgsGui
 from qgis.core import Qgis, QgsApplication, QgsProject
+
+from .validation import MultipleLayersWarning, warning_display_string
 from .utils import is_versioned_file
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_status_dialog.ui')
@@ -144,16 +147,40 @@ class ProjectStatusDialog(QDialog):
         return item
 
     def show_validation_results(self):
-        html = []
         map_layers = QgsProject.instance().mapLayers()
-        for issues_data in sorted(self.validation_results):
-            level, issue = issues_data
-            layer_ids = self.validation_results[issues_data]
-            html.append(f"<h3>{issue}</h3>")
-            items = []
-            for lid in sorted(layer_ids, key=lambda x: map_layers[x].name()):
-                layer = map_layers[lid]
-                items.append(f"<li>{layer.name()}</li>")
-            html.append(f"<ul>{''.join(items)}</ul>")
+
+        html = []
+
+        # separate MultipleLayersWarning and SingleLayerWarning items
+        groups = dict()
+        for k, v in groupby(self.validation_results, key=lambda x: "multi" if isinstance(x, MultipleLayersWarning) else "single"):
+            groups[k] = list(v)
+
+        # first add MultipleLayersWarnings. They are displayed using warning
+        # string as a title and list of affected layers
+        if "multi" in groups:
+            for w in groups["multi"]:
+                issue = warning_display_string(w.id)
+                html.append(f"<h3>{issue}</h3>")
+                if w.layers:
+                    items = []
+                    for lid in sorted(w.layers, key=lambda x: map_layers[x].name()):
+                        layer = map_layers[lid]
+                        items.append(f"<li>{layer.name()}</li>")
+                    html.append(f"<ul>{''.join(items)}</ul>")
+
+        if "single" in groups:
+            # group SingleLayerWarning items by layer in order to display
+            # each layer entry with all warnings, related to it
+            layers = dict()
+            for k, v in groupby(groups["single"], key=lambda x: x.layer_id):
+                layers[k] = list(v)
+
+            for lid in sorted(layers):
+                html.append(f"<h3>{map_layers[lid].name()}</h3>")
+                items = []
+                for w in layers[lid]:
+                    items.append(f"<li>{warning_display_string(w.warning)}</li>")
+                html.append(f"<ul>{''.join(items)}</ul>")
 
         self.txtWarnings.setHtml(''.join(html))
