@@ -145,7 +145,7 @@ class MerginProjectsManager(object):
 
         return True
 
-    def project_status(self, project_dir, show_sync_button=False):
+    def project_status(self, project_dir):
         if project_dir is None:
             return
         if not unsaved_project_check():
@@ -170,8 +170,7 @@ class MerginProjectsManager(object):
                 push_changes_summary,
                 self.mc.has_writing_permissions(project_name),
                 validation_results,
-                mp,
-                show_sync_button=show_sync_button
+                mp
             )
             # Sync button in the status dialog returns QDialog.Accepted
             # and Close button retuns QDialog::Rejected, so it dialog was

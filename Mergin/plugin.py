@@ -297,7 +297,7 @@ class MerginPlugin:
 
     def current_project_sync(self):
         """Synchronise current Mergin project."""
-        self.manager.project_status(self.mergin_proj_dir, show_sync_button=True)
+        self.manager.project_status(self.mergin_proj_dir)
 
     def on_qgis_project_changed(self):
         """
@@ -488,7 +488,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
     def sync_project(self):
         if not self.path:
             return
-        self.project_manager.project_status(self.path, show_sync_button=True)
+        self.project_manager.project_status(self.path)
 
     def _reload_project(self):
         """ This will forcefully reload the QGIS project because the project (or its data) may have changed """

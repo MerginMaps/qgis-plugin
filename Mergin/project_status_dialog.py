@@ -32,18 +32,17 @@ class ProjectStatusDialog(QDialog):
 
     def __init__(
         self, pull_changes, push_changes, push_changes_summary, has_write_permissions, validation_results,
-            mergin_project=None, parent=None, show_sync_button=False
+            mergin_project=None, parent=None
     ):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
 
         QgsGui.instance().enableAutoGeometryRestore(self)
 
-        if show_sync_button:
-            self.btn_sync = QPushButton("Sync")
-            # add sync button with AcceptRole. If dialog accepted we will start
-            # sync, otherwise just close status dialog
-            self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.AcceptRole)
+        self.btn_sync = QPushButton("Sync")
+        # add sync button with AcceptRole. If dialog accepted we will start
+        # sync, otherwise just close status dialog
+        self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.AcceptRole)
 
         self.validation_results = validation_results
         self.mp = mergin_project
