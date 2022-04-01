@@ -7,15 +7,16 @@ from qgis.PyQt.QtWidgets import (
     QDialogButtonBox,
     QSizePolicy,
     QPushButton,
-    QLabel
+    QLabel,
 )
+from qgis.PyQt.QtCore import QSize
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem, QIcon
 
 from qgis.gui import QgsGui
 from qgis.core import Qgis, QgsApplication, QgsProject
 
 from .validation import MultipleLayersWarning, warning_display_string
-from .utils import is_versioned_file
+from .utils import is_versioned_file, icon_path
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_status_dialog.ui')
 
@@ -39,7 +40,9 @@ class ProjectStatusDialog(QDialog):
 
         QgsGui.instance().enableAutoGeometryRestore(self)
 
-        self.btn_sync = QPushButton("Sync")
+        self.btn_sync = QPushButton(" Sync")
+        self.btn_sync.setIcon(QIcon(icon_path("sync-solid.svg")))
+        self.btn_sync.setIconSize(QSize(12, 12))
         # add sync button with AcceptRole. If dialog accepted we will start
         # sync, otherwise just close status dialog
         self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.AcceptRole)
@@ -59,8 +62,10 @@ class ProjectStatusDialog(QDialog):
         if not self.validation_results:
             self.ui.lblWarnings.hide()
             self.ui.txtWarnings.hide()
+            self.btn_sync.setStyleSheet("background-color: #90ee90")
         else:
             self.show_validation_results()
+            self.btn_sync.setStyleSheet("background-color: #ffc800")
 
         has_files_to_replace = any(
             ["diff" not in file and is_versioned_file(file["path"]) for file in push_changes["updated"]]
