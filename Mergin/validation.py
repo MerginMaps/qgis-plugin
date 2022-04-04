@@ -1,5 +1,6 @@
-from collections import defaultdict
 import os
+from enum import Enum
+from collections import defaultdict
 
 from qgis.core import (
     QgsMapLayerType,
@@ -8,6 +9,7 @@ from qgis.core import (
     QgsExpression
 )
 
+from .help import MerginHelp
 from .utils import (
     find_qgis_files,
     same_dir,
@@ -17,30 +19,51 @@ from .utils import (
 )
 
 
+class Warning(Enum):
+    PROJ_NOT_LOADED = 1
+    PROJ_NOT_FOUND = 2
+    MULTIPLE_PROJS = 3
+    ABSOLUTE_PATHS = 4
+    EDITABLE_NON_GPKG = 5
+    EXTERNAL_SRC = 6
+    NOT_FOR_OFFLINE = 7
+    NO_EDITABLE_LAYERS = 8
+    ATTACHMENT_ABSOLUTE_PATH = 9
+    ATTACHMENT_LOCAL_PATH = 10
+    ATTACHMENT_EXPRESSION_PATH = 11
+    ATTACHMENT_HYPERLINK = 12
+    DATABASE_SCHEMA_CHANGE = 13
+
+
+class MultipleLayersWarning:
+    """Class for warning which is associated with multiple layers.
+
+    Some warnings, e.g. "layer not suitable for offline use" should be
+    displayed only once in the validation results and list all matching
+    layers.
+    """
+    def __init__(self, warning_id):
+        self.id = warning_id
+        self.layers = list()
+
+
+class SingleLayerWarning:
+    """Class for warning which is associated with single layer.
+    """
+    def __init__(self, layer_id, warning):
+        self.layer_id = layer_id
+        self.warning = warning
+
+
 class MerginProjectValidator(object):
     """Class for checking Mergin project validity and fixing the problems, if possible."""
-
-    NO_PROBLEMS = 0, "No problems found!"  # level, description
-    MULTIPLE_PROJS = 0, "Multiple QGIS project files found in the directory"
-    PROJ_NOT_LOADED = 0, "The QGIS project is not loaded. Open it to allow validation"
-    PROJ_NOT_FOUND = 0, "No QGIS project found in the directory"
-    ABSOLUTE_PATHS = 1, "QGIS project saves layers using absolute paths"
-    EDITABLE_NON_GPKG = 2, "Editable layer stored in a format other than GeoPackage"
-    EXTERNAL_SRC = 3, "Layer stored out of the project directory"
-    NOT_FOR_OFFLINE = 5, "Layer might not be available when offline"
-    NO_EDITABLE_LAYER = 7, "No editable layer in the project"
-    ATTACHMENT_ABSOLUTE_PATH = 8, "Attachment widget uses absolute paths"
-    ATTACHMENT_LOCAL_PATH = 9, "Attachment widget uses local path"
-    ATTACHMENT_EXPRESSION_PATH = 10, "Attachment widget incorrectly uses expression-based path"
-    ATTACHMENT_HYPERLINK = 11, "Attachment widget uses hyperlink"
-    DATABASE_SCHEMA_CHANGE = 12, "Database schema was changed"
 
     def __init__(self, mergin_project=None):
         self.mp = mergin_project
         self.layers = None  # {layer_id: map layer}
         self.editable = None  # list of editable layers ids
         self.layers_by_prov = defaultdict(list)  # {provider_name: [layers]}
-        self.issues = defaultdict(list)  # {problem type: optional list of problematic data sources, or None}
+        self.issues = list()
         self.qgis_files = None
         self.qgis_proj = None
         self.qgis_proj_path = None
@@ -63,19 +86,18 @@ class MerginProjectValidator(object):
         self.check_offline()
         self.check_attachment_widget()
         self.check_db_schema()
-        if not self.issues:
-            self.issues[self.NO_PROBLEMS] = []
+
         return self.issues
 
     def check_single_proj(self, project_dir):
         """Check if there is one and only one QGIS project in the directory."""
         self.qgis_files = find_qgis_files(project_dir)
         if len(self.qgis_files) > 1:
-            self.issues[self.MULTIPLE_PROJS] = []
+            self.issues.append(MultipleLayersWarning(Warning.MULTIPLE_PROJS))
             return False
         elif len(self.qgis_files) == 0:
             # might be deleted after opening in QGIS
-            self.issues[self.PROJ_NOT_FOUND] = []
+            self.issues.append(MultipleLayersWarning(Warning.PROJ_NOT_FOUND))
             return False
         return True
 
@@ -85,7 +107,7 @@ class MerginProjectValidator(object):
         loaded_proj_path = QgsProject.instance().absoluteFilePath()
         is_loaded = same_dir(self.qgis_proj_path, loaded_proj_path)
         if not is_loaded:
-            self.issues[self.PROJ_NOT_LOADED] = []
+            self.issues.append(MultipleLayersWarning(Warning.PROJ_NOT_LOADED))
         else:
             self.qgis_proj = QgsProject.instance()
         return is_loaded
@@ -95,7 +117,7 @@ class MerginProjectValidator(object):
         abs_paths, ok = self.qgis_proj.readEntry("Paths", "/Absolute")
         assert ok
         if not abs_paths == "false":
-            self.issues[self.ABSOLUTE_PATHS] = []
+            self.issues.append(MultipleLayersWarning(Warning.ABSOLUTE_PATHS))
 
     def get_proj_layers(self):
         """Get project layers and find those editable."""
@@ -116,7 +138,7 @@ class MerginProjectValidator(object):
                 if can_edit:
                     self.editable.append(layer.id())
         if len(self.editable) == 0:
-            self.issues[self.NO_EDITABLE_LAYER] = []
+            self.issues.append(MultipleLayersWarning(Warning.NO_EDITABLE_LAYERS))
 
     def check_editable_vectors_format(self):
         """Check if editable vector layers are GPKGs."""
@@ -125,7 +147,7 @@ class MerginProjectValidator(object):
                 continue
             dp = layer.dataProvider()
             if not dp.storageType() == "GPKG":
-                self.issues[self.EDITABLE_NON_GPKG].append(lid)
+                self.issues.append(SingleLayerWarning(lid, Warning.EDITABLE_NON_GPKG))
 
     def check_saved_in_proj_dir(self):
         """Check if layers saved in project"s directory."""
@@ -140,10 +162,11 @@ class MerginProjectValidator(object):
                 l_path = layer.publicSource().split("|")[0]
             l_dir = os.path.dirname(l_path)
             if not same_dir(l_dir, self.qgis_proj_dir):
-                self.issues[self.EXTERNAL_SRC].append(lid)
+                self.issues.append(SingleLayerWarning(lid, Warning.EXTERNAL_SRC))
 
     def check_offline(self):
         """Check if there are layers that might not be available when offline"""
+        w = MultipleLayersWarning(Warning.NOT_FOR_OFFLINE)
         for lid, layer in self.layers.items():
             try:
                 dp_name = layer.dataProvider().name()
@@ -151,7 +174,10 @@ class MerginProjectValidator(object):
                 # might be vector tiles - no provider name
                 continue
             if dp_name in QGIS_NET_PROVIDERS + QGIS_DB_PROVIDERS:
-                self.issues[self.NOT_FOR_OFFLINE].append(lid)
+                w.layers.append(lid)
+
+        if w.layers:
+            self.issues.append(w)
 
     def check_attachment_widget(self):
         """Check if attachment widget uses relative path."""
@@ -165,20 +191,20 @@ class MerginProjectValidator(object):
                     cfg = ws.config()
                     # check for relative paths
                     if cfg["RelativeStorage"] == 0:
-                        self.issues[self.ATTACHMENT_ABSOLUTE_PATH].append(lid)
+                        self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH))
                     if "DefaultRoot" in cfg:
                         # default root should not be set to the local path
                         if os.path.isabs(cfg["DefaultRoot"]):
-                            self.issues[self.ATTACHMENT_LOCAL_PATH].append(lid)
+                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH))
 
                         # expression-based path should be set with the data-defined overrride
                         expr = QgsExpression(cfg["DefaultRoot"])
                         if expr.isValid():
-                            self.issues[self.ATTACHMENT_EXPRESSION_PATH].append(lid)
+                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_EXPRESSION_PATH))
 
                         # using hyperlinks for document path is not allowed when
                         if "UseLink" in cfg:
-                            self.issues[self.ATTACHMENT_HYPERLINK].append(lid)
+                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_HYPERLINK))
 
 
     def check_db_schema(self):
@@ -189,4 +215,36 @@ class MerginProjectValidator(object):
             if dp.storageType() == "GPKG":
                 has_change, msg = has_schema_change(self.mp, layer)
                 if not has_change:
-                    self.issues[self.DATABASE_SCHEMA_CHANGE].append(lid)
+                    self.issues.append(SingleLayerWarning(lid, Warning.DATABASE_SCHEMA_CHANGE))
+
+
+def warning_display_string(warning_id):
+    """Returns a display string for a corresponing warning
+    """
+    help_mgr = MerginHelp()
+    if warning_id == Warning.PROJ_NOT_LOADED:
+        return "The QGIS project is not loaded. Open it to allow validation"
+    elif warning_id == Warning.PROJ_NOT_FOUND:
+        return "No QGIS project found in the directory"
+    elif warning_id == Warning.MULTIPLE_PROJS:
+        return "Multiple QGIS project files found in the directory"
+    elif warning_id == Warning.ABSOLUTE_PATHS:
+        return "QGIS project saves layers using absolute paths"
+    elif warning_id == Warning.EDITABLE_NON_GPKG:
+        return "Editable layer stored in a format other than GeoPackage"
+    elif warning_id == Warning.EXTERNAL_SRC:
+        return "Layer stored out of the project directory"
+    elif warning_id == Warning.NOT_FOR_OFFLINE:
+        return f"Layer might not be available when offline. <a href='{help_mgr.howto_background_maps()}'>Read more.</a>"
+    elif warning_id == Warning.NO_EDITABLE_LAYERS:
+        return "No editable layers in the project"
+    elif warning_id == Warning.ATTACHMENT_ABSOLUTE_PATH:
+        return f"Attachment widget uses absolute paths. <a href='{help_mgr.howto_attachment_widget()}'>Read more.</a>"
+    elif warning_id == Warning.ATTACHMENT_LOCAL_PATH:
+        return "Attachment widget uses local path"
+    elif warning_id == Warning.ATTACHMENT_EXPRESSION_PATH:
+        return "Attachment widget incorrectly uses expression-based path"
+    elif warning_id == Warning.ATTACHMENT_HYPERLINK:
+        return "Attachment widget uses hyperlink"
+    elif warning_id == Warning.DATABASE_SCHEMA_CHANGE:
+        return "Database schema was changed"

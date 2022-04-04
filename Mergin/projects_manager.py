@@ -172,7 +172,11 @@ class MerginProjectsManager(object):
                 validation_results,
                 mp
             )
-            dlg.exec_()
+            # Sync button in the status dialog returns QDialog.Accepted
+            # and Close button retuns QDialog::Rejected, so it dialog was
+            # accepted we start sync
+            if dlg.exec_():
+                self.sync_project(project_dir)
 
         except (URLError, ClientError, InvalidProject) as e:
             msg = f"Failed to get status for project {project_name}:\n\n{str(e)}"
