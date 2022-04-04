@@ -58,19 +58,22 @@ class CreateReport(QgsProcessingAlgorithm):
     def initAlgorithm(self, config=None):
         self.addParameter(QgsProcessingParameterFile(self.PROJECT_DIR, 'Project directory', QgsProcessingParameterFile.Folder))
         self.addParameter(QgsProcessingParameterNumber(self.START_VERSION, 'Start version', QgsProcessingParameterNumber.Integer, 1, False, 1))
-        self.addParameter(QgsProcessingParameterNumber(self.END_VERSION, 'End version', QgsProcessingParameterNumber.Integer, 1, False, 1))
+        self.addParameter(QgsProcessingParameterNumber(self.END_VERSION, 'End version', QgsProcessingParameterNumber.Integer, None, True, 1))
         self.addParameter(QgsProcessingParameterFileDestination(self.REPORT, 'Report', 'CSV files (*.csv *.CSV)'))
 
     def processAlgorithm(self, parameters, context, feedback):
         project_dir = self.parameterAsString(parameters, self.PROJECT_DIR, context)
         start = self.parameterAsInt(parameters, self.START_VERSION, context)
-        end = self.parameterAsInt(parameters, self.END_VERSION, context)
+        if self.END_VERSION in parameters and parameters[self.END_VERSION] is not None:
+            end = self.parameterAsInt(parameters, self.END_VERSION, context)
+        else:
+            end = ''
         output_file = self.parameterAsFileOutput(parameters, self.REPORT, context)
 
         mc = create_mergin_client()
         warnings = None
         try:
-            warnings = create_report(mc, project_dir, f"v{start}", f"v{end}", output_file)
+            warnings = create_report(mc, project_dir, f"v{start}", f"v{end}" if end else "", output_file)
         except InvalidProject as e:
             raise QgsProcessingException('Invalid Mergin project: ' + str(e))
         except ClientError as e:
