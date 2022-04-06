@@ -45,11 +45,24 @@ class ConfigurationDialog(QDialog):
         self.check_credentials()
 
     def accept(self):
+        # first check whether url is a corrent Mergin URL
         err_msg = validate_mergin_url(self.server_url())
         if err_msg:
-            msg = f"<font color=red> {err_msg} </font>"
+            msg = f"<font color=red>{err_msg}</font>"
             self.ui.test_status.setText(msg)
             return
+
+        # then try to login with the given credentials
+        username = self.ui.username.text()
+        password = self.ui.password.text()
+        proxy_config = get_qgis_proxy_config(self.server_url())
+        try:
+            mc = MerginClient(self.server_url(), None, username, password, get_plugin_version(), proxy_config)
+        except (URLError, LoginError, ClientError) as e:
+            msg = f"<font color=red>{e}</font>"
+            self.ui.test_status.setText(msg)
+            return
+
         super().accept()
 
     def toggle_custom_url(self):
