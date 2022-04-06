@@ -193,7 +193,10 @@ def get_qgis_proxy_config(url=None):
         proxy_type = s.value("proxy/proxyType")
         if proxy_type not in ("HttpProxy", "HttpCachingProxy"):
             raise ClientError(f"Not supported proxy server type ({proxy_type})")
-        excluded = [e.rstrip("/") for e in s.value("proxy/proxyExcludedUrls", "").split("|")]
+        excludedUrlList = s.value("proxy/proxyExcludedUrls", "")
+        excluded = []
+        if excludedUrlList:
+            excluded = [e.rstrip("/") for e in excludedUrlList.split("|")]
         if url is not None and url.rstrip("/") in excluded:
             return proxy_config
         proxy_config = dict()
