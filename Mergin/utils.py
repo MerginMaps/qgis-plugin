@@ -191,7 +191,7 @@ def get_qgis_proxy_config(url=None):
     proxy_enabled = s.value("proxy/proxyEnabled", False, type=bool)
     if proxy_enabled:
         proxy_type = s.value("proxy/proxyType")
-        if proxy_type not in ("HttpProxy", "HttpCachingProxy"):
+        if proxy_type not in ("DefaultProxy", "HttpProxy", "HttpCachingProxy"):
             raise ClientError(f"Not supported proxy server type ({proxy_type})")
         excludedUrlList = s.value("proxy/proxyExcludedUrls", "")
         excluded = []
@@ -200,6 +200,17 @@ def get_qgis_proxy_config(url=None):
         if url is not None and url.rstrip("/") in excluded:
             return proxy_config
         proxy_config = dict()
+        # for default proxy we try to get system proxy
+        if proxy_type == "DefaultProxy":
+            sys_proxy = urllib.request.getproxies()
+            if sys_proxy and "http" in sys_proxy:
+                parsed = urllib.parse.urlparse(sys_proxy["http"])
+                proxy_config["url"] = parsed.host
+                proxy_config["port"] = parsed.port
+                return proxy_config
+            else:
+                raise ClientError("Failed to detect default proxy.")
+        # otherwise look for QGIS proxy settings
         proxy_config["url"] = s.value("proxy/proxyHost", None)
         if proxy_config["url"] is None:
             raise ClientError("No URL given for proxy server")
