@@ -899,6 +899,9 @@ def has_schema_change(mp, layer):
     f_name = os.path.split(local_path)[1]
     base_path = mp.fpath_meta(f_name)
 
+    if not os.path.exists(base_path):
+        return True, "No schema changes"
+
     tmp_file = tempfile.NamedTemporaryFile(delete=False)
     tmp_file.close()
     geodiff.schema('sqlite', '', local_path, tmp_file.name)
