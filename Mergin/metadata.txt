@@ -4,14 +4,16 @@ name=Mergin
 qgisMinimumVersion=3.16
 qgisMaximumVersion=3.99
 description=Handle Mergin projects
-version=2022.2
+version=2022.2.1
 author=Lutra Consulting
 email=info@lutraconsulting.co.uk
 about=Mergin is a repository for storing and tracking changes to QGIS projects/data. It is linked with Input (a QGIS mobile app). With this plugin, users can upload and sync their data to Mergin service.
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2022.2
+changelog=2022.2.1
+  - Fixed an issue with status/sync when a new GeoPackage got added (#376)
+  <p>2022.2
   - Project status dialog always shows up when syncing (#288)
   - Improvements to how validation warnings are displayed when syncing
   - New validation rules to ensure the project is configured correctly (#254, #289, #356)
