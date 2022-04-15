@@ -1016,7 +1016,8 @@ def get_primary_keys(layer):
     tmp_file.close()
     geodiff.schema('sqlite', '', file_path, tmp_file.name)
     with open(tmp_file.name, encoding="utf-8") as f:
-        schema = json.load(f).get('geodiff_schema')
+        data = f.read()
+        schema = json.loads(data.replace("\n", "")).get("geodiff_schema")
     os.unlink(tmp_file.name)
 
     table = next((t for t in schema if t["table"] == table_name), None)
