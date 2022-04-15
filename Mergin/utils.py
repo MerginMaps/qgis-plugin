@@ -920,11 +920,13 @@ def has_schema_change(mp, layer):
     tmp_file.close()
     geodiff.schema('sqlite', '', local_path, tmp_file.name)
     with open(tmp_file.name, encoding="utf-8") as f:
-        base_schema = json.load(f).get('geodiff_schema')
+        data = f.read()
+        base_schema = json.loads(data.replace("\n", "")).get('geodiff_schema')
 
     geodiff.schema('sqlite', '', base_path, tmp_file.name)
     with open(tmp_file.name, encoding="utf-8") as f:
-        local_schema = json.load(f).get('geodiff_schema')
+        data = f.read()
+        local_schema = json.loads(data.replace("\n", "")).get('geodiff_schema')
 
     os.unlink(tmp_file.name)
 
