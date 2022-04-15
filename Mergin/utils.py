@@ -929,11 +929,17 @@ def has_schema_change(mp, layer):
     f_name = os.path.split(local_path)[1]
     base_path = mp.fpath_meta(f_name)
 
+    if not os.path.exists(base_path):
+        return False, "No schema changes"
+
     base_schema = get_schema(base_path)
     local_schema = get_schema(local_path)
 
 
-    return same_schema(local_schema, base_schema)
+    # need to invert bool as same_schema returns True if there are no
+    # chnages, while has_schema_change should return False in this case
+    is_same, msg = same_schema(local_schema, base_schema)
+    return not is_same, msg
 
 
 def same_schema(schema_a, schema_b):

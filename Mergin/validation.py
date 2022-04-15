@@ -219,7 +219,7 @@ class MerginProjectValidator(object):
             dp = layer.dataProvider()
             if dp.storageType() == "GPKG":
                 has_change, msg = has_schema_change(self.mp, layer)
-                if not has_change:
+                if has_change:
                     self.issues.append(SingleLayerWarning(lid, Warning.DATABASE_SCHEMA_CHANGE))
 
     def check_field_names(self):
