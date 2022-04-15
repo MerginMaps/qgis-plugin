@@ -1000,6 +1000,30 @@ def same_schema(schema_a, schema_b):
     return True, "No schema changes"
 
 
+def get_primary_keys(layer):
+    """
+    Returns list of column names which are used as a primary key
+    """
+    geodiff = pygeodiff.GeoDiff()
+
+    file_path = layer.publicSource().split("|")[0]
+    table_name = os.path.splitext(os.path.split(file_path)[1])[0]
+
+    if "|" in layer.publicSource():
+        table_name = layer.publicSource().split("|")[1].split("=")[1]
+
+    tmp_file = tempfile.NamedTemporaryFile(delete=False)
+    tmp_file.close()
+    geodiff.schema('sqlite', '', file_path, tmp_file.name)
+    with open(tmp_file.name, encoding="utf-8") as f:
+        schema = json.load(f).get('geodiff_schema')
+    os.unlink(tmp_file.name)
+
+    table = next((t for t in schema if t["table"] == table_name), None)
+    if table:
+        cols = [c["name"] for c in table["columns"] if "primary_key" in c]
+        return cols
+
 def test_server_connection(url, username, password):
     """
     """
