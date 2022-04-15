@@ -39,8 +39,8 @@ class Warning(Enum):
     DATABASE_SCHEMA_CHANGE = 13
     KEY_FIELD_NOT_UNIQUE = 14
     FIELD_IS_PRIMARY_KEY = 15
-    INCORRECT_FIELD_NAME = 16
-
+    VALUE_RELATION_LAYER_MISSED = 16
+    INCORRECT_FIELD_NAME = 17
 
 class MultipleLayersWarning:
     """Class for warning which is associated with multiple layers.
@@ -189,7 +189,7 @@ class MerginProjectValidator(object):
             self.issues.append(w)
 
     def check_attachment_widget(self):
-        """Check if attachment widget uses relative path."""
+        """Check if attachment widget configured correctly."""
         for lid, layer in self.layers.items():
             if lid not in self.editable:
                 continue
@@ -242,6 +242,26 @@ class MerginProjectValidator(object):
             self._check_primary_keys(parent_layer, parent_fields)
             self._check_primary_keys(child_layer, child_fields)
 
+    def check_value_relation(self):
+        """Check if value relation widget configured correctly."""
+        for lid, layer in self.layers.items():
+            if lid not in self.editable:
+                continue
+            fields = layer.fields()
+            for i in range(fields.count()):
+                ws = layer.editorWidgetSetup(i)
+                if ws and ws.type() == "ValueRelation":
+                    cfg = ws.config()
+                    child_layer = next((l for l in layers.values() if l.source() == cfg["LayerSource"]), None)
+                    if child_layer is None:
+                        self.issues.append(SingleLayerWarning(lid, Warning.VALUE_RELATION_LAYER_MISSED))
+
+                    # check that "key" field does not have duplicated values
+                    idx = layer.fields().indexFromName(cfg["Key"])
+                    self._check_field_unique(layer, [idx])
+
+                    # check that "key" field is not a primary key
+                    self._check_primary_keys(parent_layer, [idx])
 
     def _check_field_unique(self, layer, fields):
         feature_count = layer.dataProvider().featureCount()
@@ -302,5 +322,7 @@ def warning_display_string(warning_id):
         return "Relation key field contains duplicated values"
     elif warning_id == Warning.FIELD_IS_PRIMARY_KEY:
         return "Relation uses primary key field"
+    elif warning_id == Warning.VALUE_RELATION_LAYER_MISSED:
+        return "Referenced table is missed from the project"
     elif warning_id == Warning.INCORRECT_FIELD_NAME:
         return "Field names contain line-break characters"
