@@ -987,3 +987,23 @@ def same_schema(schema_a, schema_b):
                 return False, "Definition of '{}' field in '{}' table is not the same".format(column_a["name"], table_a["table"])
 
     return True, "No schema changes"
+
+
+def test_server_connection(url, username, password):
+    """
+    """
+    err_msg = validate_mergin_url(url)
+    if err_msg:
+        msg = f"<font color=red>{err_msg}</font>"
+        QgsApplication.messageLog().logMessage(f"Mergin plugin: {err_msg}")
+        return False, msg
+
+    result = True, "<font color=green> OK </font>"
+    proxy_config = get_qgis_proxy_config(url)
+    try:
+        mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
+    except (LoginError, ClientError) as e:
+        QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
+        result = False, f"<font color=red> Connection failed, {str(e)} </font>"
+
+    return result
