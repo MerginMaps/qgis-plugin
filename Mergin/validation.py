@@ -94,6 +94,7 @@ class MerginProjectValidator(object):
         self.check_attachment_widget()
         self.check_db_schema()
         self.check_project_relations()
+        self.check_value_relation()
         self.check_field_names()
 
         return self.issues
@@ -252,16 +253,15 @@ class MerginProjectValidator(object):
                 ws = layer.editorWidgetSetup(i)
                 if ws and ws.type() == "ValueRelation":
                     cfg = ws.config()
-                    child_layer = next((l for l in layers.values() if l.source() == cfg["LayerSource"]), None)
+                    child_layer = next((l for l in self.layers.values() if l.source() == cfg["LayerSource"]), None)
                     if child_layer is None:
                         self.issues.append(SingleLayerWarning(lid, Warning.VALUE_RELATION_LAYER_MISSED))
 
                     # check that "key" field does not have duplicated values
-                    idx = layer.fields().indexFromName(cfg["Key"])
-                    self._check_field_unique(layer, [idx])
-
-                    # check that "key" field is not a primary key
-                    self._check_primary_keys(parent_layer, [idx])
+                    # and is not a primary key
+                    idx = child_layer.fields().indexFromName(str(cfg["Key"]))
+                    self._check_field_unique(child_layer, [idx])
+                    self._check_primary_keys(child_layer, [idx])
 
     def _check_field_unique(self, layer, fields):
         feature_count = layer.dataProvider().featureCount()
