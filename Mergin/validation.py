@@ -33,6 +33,7 @@ class Warning(Enum):
     ATTACHMENT_EXPRESSION_PATH = 11
     ATTACHMENT_HYPERLINK = 12
     DATABASE_SCHEMA_CHANGE = 13
+    INCORRECT_FIELD_NAME = 14
 
 
 class MultipleLayersWarning:
@@ -86,6 +87,7 @@ class MerginProjectValidator(object):
         self.check_offline()
         self.check_attachment_widget()
         self.check_db_schema()
+        self.check_field_names()
 
         return self.issues
 
@@ -217,6 +219,18 @@ class MerginProjectValidator(object):
                 if not has_change:
                     self.issues.append(SingleLayerWarning(lid, Warning.DATABASE_SCHEMA_CHANGE))
 
+    def check_field_names(self):
+        for lid, layer in self.layers.items():
+            if lid not in self.editable:
+                continue
+            dp = layer.dataProvider()
+            if dp.storageType() == "GPKG":
+                fields = layer.fields()
+                for f in fields:
+                    if '\n' in f.name():
+                        self.issues.append(SingleLayerWarning(lid, Warning.INCORRECT_FIELD_NAME))
+
+
 
 def warning_display_string(warning_id):
     """Returns a display string for a corresponing warning
@@ -248,3 +262,5 @@ def warning_display_string(warning_id):
         return "Attachment widget uses hyperlink"
     elif warning_id == Warning.DATABASE_SCHEMA_CHANGE:
         return "Database schema was changed"
+    elif warning_id == Warning.INCORRECT_FIELD_NAME:
+        return "Field names contain line-break characters"
