@@ -15,6 +15,7 @@ from .utils import (
     find_qgis_files,
     same_dir,
     has_schema_change,
+    get_primary_keys,
     QGIS_DB_PROVIDERS,
     QGIS_NET_PROVIDERS
 )
@@ -36,8 +37,10 @@ class Warning(Enum):
     ATTACHMENT_EXPRESSION_PATH = 11
     ATTACHMENT_HYPERLINK = 12
     DATABASE_SCHEMA_CHANGE = 13
-    INCORRECT_FIELD_NAME = 14
-
+    KEY_FIELD_NOT_UNIQUE = 14
+    FIELD_IS_PRIMARY_KEY = 15
+    VALUE_RELATION_LAYER_MISSED = 16
+    INCORRECT_FIELD_NAME = 17
 
 class MultipleLayersWarning:
     """Class for warning which is associated with multiple layers.
@@ -90,6 +93,8 @@ class MerginProjectValidator(object):
         self.check_offline()
         self.check_attachment_widget()
         self.check_db_schema()
+        self.check_project_relations()
+        self.check_value_relation()
         self.check_field_names()
 
         return self.issues
@@ -185,7 +190,7 @@ class MerginProjectValidator(object):
             self.issues.append(w)
 
     def check_attachment_widget(self):
-        """Check if attachment widget uses relative path."""
+        """Check if attachment widget is configured correctly."""
         for lid, layer in self.layers.items():
             if lid not in self.editable:
                 continue
@@ -211,7 +216,6 @@ class MerginProjectValidator(object):
                         if "UseLink" in cfg:
                             self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_HYPERLINK))
 
-
     def check_db_schema(self):
         for lid, layer in self.layers.items():
             if lid not in self.editable:
@@ -219,8 +223,58 @@ class MerginProjectValidator(object):
             dp = layer.dataProvider()
             if dp.storageType() == "GPKG":
                 has_change, msg = has_schema_change(self.mp, layer)
-                if not has_change:
+                if has_change:
                     self.issues.append(SingleLayerWarning(lid, Warning.DATABASE_SCHEMA_CHANGE))
+
+    def check_project_relations(self):
+        """Check if project relations configured correctly"""
+        relations = QgsProject.instance().relationManager().relations()
+        for name, relation in relations.items():
+            parent_layer = relation.referencedLayer()
+            parent_fields = relation.referencedFields()
+            child_layer = relation.referencingLayer()
+            child_fields = relation.referencingFields()
+
+            # check fields are unique
+            self._check_field_unique(parent_layer, parent_fields)
+            self._check_field_unique(child_layer, child_fields)
+
+            # check both fields are not primary keys
+            self._check_primary_keys(parent_layer, parent_fields)
+            self._check_primary_keys(child_layer, child_fields)
+
+    def check_value_relation(self):
+        """Check if value relation widget configured correctly."""
+        for lid, layer in self.layers.items():
+            if lid not in self.editable:
+                continue
+            fields = layer.fields()
+            for i in range(fields.count()):
+                ws = layer.editorWidgetSetup(i)
+                if ws and ws.type() == "ValueRelation":
+                    cfg = ws.config()
+                    child_layer = next((l for l in self.layers.values() if l.source() == cfg["LayerSource"]), None)
+                    if child_layer is None:
+                        self.issues.append(SingleLayerWarning(lid, Warning.VALUE_RELATION_LAYER_MISSED))
+
+                    # check that "key" field does not have duplicated values
+                    # and is not a primary key
+                    idx = child_layer.fields().indexFromName(str(cfg["Key"]))
+                    self._check_field_unique(child_layer, [idx])
+                    self._check_primary_keys(child_layer, [idx])
+
+    def _check_field_unique(self, layer, fields):
+        feature_count = layer.dataProvider().featureCount()
+        for f in fields:
+            if len(layer.uniqueValues(f)) != feature_count:
+                self.issues.append(SingleLayerWarning(layer.id(), Warning.KEY_FIELD_NOT_UNIQUE))
+
+    def _check_primary_keys(self, layer, fields):
+        layer_fields = layer.fields()
+        keys = get_primary_keys(layer)
+        for i in fields:
+            if layer_fields[i].name() in keys:
+                self.issues.append(SingleLayerWarning(layer.id(), Warning.FIELD_IS_PRIMARY_KEY))
 
     def check_field_names(self):
         for lid, layer in self.layers.items():
@@ -232,7 +286,6 @@ class MerginProjectValidator(object):
                 for f in fields:
                     if INVALID_CHARS.search(f.name()):
                         self.issues.append(SingleLayerWarning(lid, Warning.INCORRECT_FIELD_NAME))
-
 
 
 def warning_display_string(warning_id):
@@ -265,5 +318,11 @@ def warning_display_string(warning_id):
         return "Attachment widget uses hyperlink"
     elif warning_id == Warning.DATABASE_SCHEMA_CHANGE:
         return "Database schema was changed"
+    elif warning_id == Warning.KEY_FIELD_NOT_UNIQUE:
+        return "Relation key field contains duplicated values"
+    elif warning_id == Warning.FIELD_IS_PRIMARY_KEY:
+        return "Relation uses primary key field"
+    elif warning_id == Warning.VALUE_RELATION_LAYER_MISSED:
+        return "Referenced table is missed from the project"
     elif warning_id == Warning.INCORRECT_FIELD_NAME:
         return "Field names contain line-break characters"

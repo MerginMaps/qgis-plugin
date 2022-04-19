@@ -929,11 +929,16 @@ def has_schema_change(mp, layer):
     f_name = os.path.split(local_path)[1]
     base_path = mp.fpath_meta(f_name)
 
+    if not os.path.exists(base_path):
+        return False, "No schema changes"
+
     base_schema = get_schema(base_path)
     local_schema = get_schema(local_path)
 
-
-    return same_schema(local_schema, base_schema)
+    # need to invert bool as same_schema returns True if there are no
+    # chnages, while has_schema_change should return False in this case
+    is_same, msg = same_schema(local_schema, base_schema)
+    return not is_same, msg
 
 
 def same_schema(schema_a, schema_b):
@@ -994,8 +999,30 @@ def same_schema(schema_a, schema_b):
     return True, "No schema changes"
 
 
+def get_primary_keys(layer):
+    """
+    Returns list of column names which are used as a primary key
+    """
+    geodiff = pygeodiff.GeoDiff()
+
+    file_path = layer.publicSource().split("|")[0]
+    table_name = os.path.splitext(os.path.split(file_path)[1])[0]
+
+    if "|" in layer.publicSource():
+        table_name = layer.publicSource().split("|")[1].split("=")[1]
+
+    schema = get_schema(file_path)
+
+    table = next((t for t in schema if t["table"] == table_name), None)
+    if table:
+        cols = [c["name"] for c in table["columns"] if "primary_key" in c]
+        return cols
+
+
 def test_server_connection(url, username, password):
     """
+    Test connection to Mergin server. This includes check for valid server URL
+    and user credentials correctness.
     """
     err_msg = validate_mergin_url(url)
     if err_msg:
