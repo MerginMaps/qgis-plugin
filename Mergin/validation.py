@@ -1,4 +1,5 @@
 import os
+import re
 from enum import Enum
 from collections import defaultdict
 
@@ -17,6 +18,8 @@ from .utils import (
     QGIS_DB_PROVIDERS,
     QGIS_NET_PROVIDERS
 )
+
+INVALID_CHARS = re.compile("[\\\/\(\)\[\]\{\}\"\n\r]")
 
 
 class Warning(Enum):
@@ -227,7 +230,7 @@ class MerginProjectValidator(object):
             if dp.storageType() == "GPKG":
                 fields = layer.fields()
                 for f in fields:
-                    if '\n' in f.name():
+                    if INVALID_CHARS.search(f.name()):
                         self.issues.append(SingleLayerWarning(lid, Warning.INCORRECT_FIELD_NAME))
 
 
