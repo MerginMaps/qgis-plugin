@@ -935,7 +935,6 @@ def has_schema_change(mp, layer):
     base_schema = get_schema(base_path)
     local_schema = get_schema(local_path)
 
-
     # need to invert bool as same_schema returns True if there are no
     # chnages, while has_schema_change should return False in this case
     is_same, msg = same_schema(local_schema, base_schema)
@@ -1012,21 +1011,18 @@ def get_primary_keys(layer):
     if "|" in layer.publicSource():
         table_name = layer.publicSource().split("|")[1].split("=")[1]
 
-    tmp_file = tempfile.NamedTemporaryFile(delete=False)
-    tmp_file.close()
-    geodiff.schema('sqlite', '', file_path, tmp_file.name)
-    with open(tmp_file.name, encoding="utf-8") as f:
-        data = f.read()
-        schema = json.loads(data.replace("\n", "")).get("geodiff_schema")
-    os.unlink(tmp_file.name)
+    schema = get_schema(file_path)
 
     table = next((t for t in schema if t["table"] == table_name), None)
     if table:
         cols = [c["name"] for c in table["columns"] if "primary_key" in c]
         return cols
 
+
 def test_server_connection(url, username, password):
     """
+    Test connection to Mergin server. This includes check for valid server URL
+    and user credentials correctness.
     """
     err_msg = validate_mergin_url(url)
     if err_msg:
