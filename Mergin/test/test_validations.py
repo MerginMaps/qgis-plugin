@@ -56,6 +56,5 @@ class test_validations(unittest.TestCase):
         self.assertFalse(equal)
         self.assertEqual(msg, "Definition of 'date' field in 'Survey_points' table is not the same")
 
-
 if __name__ == '__main__':
     nose2.main()

@@ -901,6 +901,22 @@ def is_number(s):
         return False
 
 
+def get_schema(layer_path):
+    """
+    Return JSON representation of the layer schema
+    """
+    geodiff = pygeodiff.GeoDiff()
+
+    tmp_file = tempfile.NamedTemporaryFile(delete=False)
+    tmp_file.close()
+    geodiff.schema('sqlite', '', layer_path, tmp_file.name)
+    with open(tmp_file.name, encoding="utf-8") as f:
+        data = f.read()
+        schema = json.loads(data.replace("\n", "")).get('geodiff_schema')
+    os.unlink(tmp_file.name)
+    return schema
+
+
 def has_schema_change(mp, layer):
     """
     Check whether the layer has schema changes using schema representaion
@@ -913,20 +929,9 @@ def has_schema_change(mp, layer):
     f_name = os.path.split(local_path)[1]
     base_path = mp.fpath_meta(f_name)
 
-    if not os.path.exists(base_path):
-        return True, "No schema changes"
+    base_schema = get_schema(base_path)
+    local_schema = get_schema(local_path)
 
-    tmp_file = tempfile.NamedTemporaryFile(delete=False)
-    tmp_file.close()
-    geodiff.schema('sqlite', '', local_path, tmp_file.name)
-    with open(tmp_file.name, encoding="utf-8") as f:
-        base_schema = json.load(f).get('geodiff_schema')
-
-    geodiff.schema('sqlite', '', base_path, tmp_file.name)
-    with open(tmp_file.name, encoding="utf-8") as f:
-        local_schema = json.load(f).get('geodiff_schema')
-
-    os.unlink(tmp_file.name)
 
     return same_schema(local_schema, base_schema)
 
