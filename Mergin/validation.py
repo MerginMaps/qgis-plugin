@@ -190,7 +190,7 @@ class MerginProjectValidator(object):
             self.issues.append(w)
 
     def check_attachment_widget(self):
-        """Check if attachment widget configured correctly."""
+        """Check if attachment widget is configured correctly."""
         for lid, layer in self.layers.items():
             if lid not in self.editable:
                 continue
