@@ -1,9 +1,10 @@
 import json
 import os
 from qgis.PyQt import uic
-from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QFileDialog
+from qgis.core import QgsProject
+from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
 from .utils import icon_path, mergin_project_local_path
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_project_config.ui')
@@ -28,6 +29,16 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
     def __init__(self, parent=None):
         QgsOptionsPageWidget.__init__(self, parent)
         self.setupUi(self)
+
+        self.cmb_photo_quality.addItem("Original", 0)
+        self.cmb_photo_quality.addItem("High", 1)
+        self.cmb_photo_quality.addItem("Medium", 2)
+        self.cmb_photo_quality.addItem("Low", 3)
+
+        quality, ok = QgsProject.instance().readEntry("Mergin", "PhotoQuality")
+        idx = self.cmb_photo_quality.findData(quality) if ok else 0
+        self.cmb_photo_quality.setCurrentIndex(idx if idx > 0 else 0)
+
         self.local_project_dir = mergin_project_local_path()
 
         if self.local_project_dir:
@@ -70,4 +81,5 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             json.dump(config, f, indent=2)
 
     def apply(self):
+        QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
         self.save_config_file()
