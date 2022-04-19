@@ -191,12 +191,26 @@ def get_qgis_proxy_config(url=None):
     proxy_enabled = s.value("proxy/proxyEnabled", False, type=bool)
     if proxy_enabled:
         proxy_type = s.value("proxy/proxyType")
-        if proxy_type not in ("HttpProxy", "HttpCachingProxy"):
+        if proxy_type not in ("DefaultProxy", "HttpProxy", "HttpCachingProxy"):
             raise ClientError(f"Not supported proxy server type ({proxy_type})")
-        excluded = [e.rstrip("/") for e in s.value("proxy/proxyExcludedUrls", "").split("|")]
+        excludedUrlList = s.value("proxy/proxyExcludedUrls", "")
+        excluded = []
+        if excludedUrlList:
+            excluded = [e.rstrip("/") for e in excludedUrlList.split("|")]
         if url is not None and url.rstrip("/") in excluded:
             return proxy_config
         proxy_config = dict()
+        # for default proxy we try to get system proxy
+        if proxy_type == "DefaultProxy":
+            sys_proxy = urllib.request.getproxies()
+            if sys_proxy and "http" in sys_proxy:
+                parsed = urllib.parse.urlparse(sys_proxy["http"])
+                proxy_config["url"] = parsed.host
+                proxy_config["port"] = parsed.port
+                return proxy_config
+            else:
+                raise ClientError("Failed to detect default proxy.")
+        # otherwise look for QGIS proxy settings
         proxy_config["url"] = s.value("proxy/proxyHost", None)
         if proxy_config["url"] is None:
             raise ClientError("No URL given for proxy server")
@@ -973,3 +987,23 @@ def same_schema(schema_a, schema_b):
                 return False, "Definition of '{}' field in '{}' table is not the same".format(column_a["name"], table_a["table"])
 
     return True, "No schema changes"
+
+
+def test_server_connection(url, username, password):
+    """
+    """
+    err_msg = validate_mergin_url(url)
+    if err_msg:
+        msg = f"<font color=red>{err_msg}</font>"
+        QgsApplication.messageLog().logMessage(f"Mergin plugin: {err_msg}")
+        return False, msg
+
+    result = True, "<font color=green> OK </font>"
+    proxy_config = get_qgis_proxy_config(url)
+    try:
+        mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
+    except (LoginError, ClientError) as e:
+        QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
+        result = False, f"<font color=red> Connection failed, {str(e)} </font>"
+
+    return result

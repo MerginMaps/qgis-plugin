@@ -14,8 +14,15 @@ except ImportError:
     sys.path.append(path)
     from mergin.client import MerginClient, ClientError, LoginError
 
-from .utils import get_mergin_auth, set_mergin_auth, MERGIN_URL, create_mergin_client, get_plugin_version, \
-    validate_mergin_url, get_qgis_proxy_config
+from .utils import (
+    get_mergin_auth,
+    set_mergin_auth,
+    MERGIN_URL,
+    create_mergin_client,
+    get_plugin_version,
+    get_qgis_proxy_config,
+    test_server_connection
+)
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_config.ui')
 
@@ -45,11 +52,9 @@ class ConfigurationDialog(QDialog):
         self.check_credentials()
 
     def accept(self):
-        err_msg = validate_mergin_url(self.server_url())
-        if err_msg:
-            msg = f"<font color=red> {err_msg} </font>"
-            self.ui.test_status.setText(msg)
+        if not self.test_connection():
             return
+
         super().accept()
 
     def toggle_custom_url(self):
@@ -108,18 +113,7 @@ class ConfigurationDialog(QDialog):
 
     def test_connection(self):
         QApplication.setOverrideCursor(Qt.WaitCursor)
-        url = self.server_url()
-        username = self.ui.username.text()
-        password = self.ui.password.text()
-        try:
-            proxy_config = get_qgis_proxy_config(url)
-            mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
-            msg = "<font color=green> OK </font>"
-        except (URLError, ValueError) as e:
-            QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
-            msg = "<font color=red> Connection failed, incorrect URL </font>"
-        except (LoginError, ClientError) as e:
-            QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
-            msg = f"<font color=red> Connection failed, {str(e)} </font>"
+        ok, msg = test_server_connection(self.server_url(), self.ui.username.text(), self.ui.password.text())
         QApplication.restoreOverrideCursor()
         self.ui.test_status.setText(msg)
+        return ok
