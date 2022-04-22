@@ -31,9 +31,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.setupUi(self)
 
         self.cmb_photo_quality.addItem("Original", 0)
-        self.cmb_photo_quality.addItem("High (approx. 5 Mb)", 1)
-        self.cmb_photo_quality.addItem("Medium (approx. 3 Mb)", 2)
-        self.cmb_photo_quality.addItem("Low (approx. 1 Mb)", 3)
+        self.cmb_photo_quality.addItem("High (approx. 2-4 Mb)", 1)
+        self.cmb_photo_quality.addItem("Medium (approx. 1-2 Mb)", 2)
+        self.cmb_photo_quality.addItem("Low (approx. 0.5 Mb)", 3)
 
         quality, ok = QgsProject.instance().readEntry("Mergin", "PhotoQuality")
         idx = self.cmb_photo_quality.findData(quality) if ok else 0
