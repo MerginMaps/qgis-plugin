@@ -102,7 +102,7 @@ class MerginPlugin:
         self.create_manager()
 
         self.add_action(
-            "mm_icon_positive.svg",
+            "mm_icon_positive_no_padding.svg",
             text="Mergin Maps",
             callback=self.open_configured_url,
             add_to_toolbar=self.toolbar
@@ -762,7 +762,7 @@ class MerginRootItem(QgsDataCollectionItem):
 
     def __init__(self, plugin=None):
         QgsDataCollectionItem.__init__(self, None, "Mergin Maps", "Mergin Maps")
-        self.setIcon(QIcon(os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/mm_icon_positive.png")))
+        self.setIcon(QIcon(icon_path("mm_icon_positive_no_padding.svg")))
         self.plugin = plugin
         self.project_manager = plugin.manager
         self.mc = self.project_manager.mc if self.project_manager is not None else None

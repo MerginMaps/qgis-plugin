@@ -23,7 +23,7 @@ class MerginProvider(QgsProcessingProvider):
         return 'Mergin Maps'
 
     def icon(self):
-        return QIcon(icon_path('mm_icon_positive.png', False))
+        return QIcon(icon_path('mm_icon_positive_no_padding.svg'))
 
     def load(self):
         self.refreshAlgorithms()

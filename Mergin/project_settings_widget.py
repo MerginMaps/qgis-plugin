@@ -16,7 +16,7 @@ class MerginProjectConfigFactory(QgsOptionsWidgetFactory):
         QgsOptionsWidgetFactory.__init__(self)
 
     def icon(self):
-        return QIcon(icon_path("mm_icon_positive.png", fa_icon=False))
+        return QIcon(icon_path("mm_icon_positive_no_padding.svg"))
 
     def title(self):
         return "Mergin Maps"

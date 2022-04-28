@@ -108,7 +108,7 @@
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap>../images/merginmaps_logo.svg</pixmap>
+      <pixmap>../images/mm_logo.svg</pixmap>
      </property>
      <property name="scaledContents">
       <bool>true</bool>

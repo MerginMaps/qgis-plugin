@@ -47,7 +47,7 @@ class CreateReport(QgsProcessingAlgorithm):
         return 'Exports changesets aggregates for Mergin Maps projects in given version range to a CSV file.'
 
     def icon(self):
-        return QIcon(icon_path('mm_icon_positive.png', False))
+        return QIcon(icon_path('mm_icon_positive_no_padding.svg'))
 
     def __init__(self):
         super().__init__()
