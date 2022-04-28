@@ -9,8 +9,8 @@ import os
 import shutil
 from pathlib import Path
 import posixpath
-from qgis.PyQt.QtCore import pyqtSignal, QTimer
-from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import pyqtSignal, QTimer, QUrl
+from qgis.PyQt.QtGui import QIcon, QDesktopServices
 from qgis.core import (
     QgsApplication,
     QgsDataCollectionItem,
@@ -100,6 +100,13 @@ class MerginPlugin:
         self.initProcessing()
 
         self.create_manager()
+
+        self.add_action(
+            "mm_icon_positive.svg",
+            text="Mergin Maps",
+            callback=self.open_configured_url,
+            add_to_toolbar=self.toolbar
+        )
 
         self.add_action(
             "mergin_configure.svg",
@@ -217,6 +224,15 @@ class MerginPlugin:
         self.enable_toolbar_actions()
         self.post_login()
 
+    def open_configured_url(self):
+        """Opens configured mergin maps server url in default browser"""
+        if self.mc is None:
+            url = QUrl("https://merginmaps.com")
+        else:
+            url = QUrl(self.mc.url)
+
+        QDesktopServices.openUrl(url)
+
     def enable_toolbar_actions(self, enable=None):
         """Check current project and set Mergin Toolbar icons enabled accordingly."""
         if enable is None:
@@ -254,6 +270,8 @@ class MerginPlugin:
         if not self.mc:
             return
 
+        settings = QSettings()
+
         # check action required flag
         service_response = self.mc.user_service()
 
@@ -269,6 +287,20 @@ class MerginPlugin:
                     level=Qgis.Critical,
                     duration=0
                 )
+
+        # inform user about rebranding
+        rebranding_has_been_notified = settings.value("Mergin/rebrandingNotified", False)
+        if not rebranding_has_been_notified:
+            iface.messageBar().pushMessage(
+                "Mergin Maps",
+                "Mergin is now called Mergin Maps "
+                f"<a href='https://www.lutraconsulting.co.uk/blog/2022/04/18/merginmaps/"
+                f"?utm_campaign=rebrand-news&utm_medium=banner&utm_source=qgis-plugin'>"
+                "Learn more</a>",
+                level=Qgis.Info,
+                duration=0
+            )
+            settings.setValue("Mergin/rebrandingNotified", True)
 
     def create_new_project(self):
         """Open new Mergin project creation dialog."""
