@@ -20,10 +20,10 @@ class MerginProvider(QgsProcessingProvider):
         return 'mergin'
 
     def name(self):
-        return 'Mergin'
+        return 'Mergin Maps'
 
     def icon(self):
-        return QIcon(icon_path('icon.png', False))
+        return QIcon(icon_path('mm_icon_positive.png', False))
 
     def load(self):
         self.refreshAlgorithms()

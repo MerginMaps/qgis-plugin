@@ -1,6 +1,6 @@
 ; the next section is mandatory
 [general]
-name=Mergin
+name=Mergin Maps
 qgisMinimumVersion=3.16
 qgisMaximumVersion=3.99
 description=Handle Mergin projects
@@ -153,7 +153,7 @@ changelog=2022.2.1
 homepage=https://public.cloudmergin.com
 tracker=https://github.com/lutraconsulting/qgis-mergin-plugin/issues
 repository=https://github.com/lutraconsulting/qgis-mergin-plugin
-icon=images/icon.png
+icon=images/mm_icon_positive.png
 
 hasProcessingProvider=yes
 

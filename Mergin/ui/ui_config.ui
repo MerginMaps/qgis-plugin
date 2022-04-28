@@ -6,51 +6,18 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>535</width>
-    <height>293</height>
+    <width>568</width>
+    <height>313</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Mergin Settings</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="3" colspan="2">
-    <widget class="QLabel" name="label_2">
-     <property name="maximumSize">
-      <size>
-       <width>160</width>
-       <height>76</height>
-      </size>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-     <property name="pixmap">
-      <pixmap>../images/logo_color.svg</pixmap>
-     </property>
-     <property name="scaledContents">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0" colspan="2">
-    <widget class="QCheckBox" name="save_credentials">
-     <property name="text">
-      <string>Save credentials</string>
-     </property>
-    </widget>
-   </item>
    <item row="3" column="2" colspan="3">
     <widget class="QLabel" name="master_password_status">
      <property name="text">
       <string>Warning: You may be prompted for QGIS master password</string>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="0">
-    <widget class="QToolButton" name="test_connection_btn">
-     <property name="text">
-      <string>Test Connection</string>
      </property>
     </widget>
    </item>
@@ -64,6 +31,13 @@
      </property>
     </widget>
    </item>
+   <item row="5" column="1" colspan="4">
+    <widget class="QLabel" name="test_status">
+     <property name="text">
+      <string>Not tested yet</string>
+     </property>
+    </widget>
+   </item>
    <item row="6" column="4">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
@@ -74,10 +48,17 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0" colspan="2">
-    <widget class="QCheckBox" name="custom_url">
+   <item row="3" column="0" colspan="2">
+    <widget class="QCheckBox" name="save_credentials">
      <property name="text">
-      <string>Custom Mergin server</string>
+      <string>Save credentials</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QToolButton" name="test_connection_btn">
+     <property name="text">
+      <string>Test Connection</string>
      </property>
     </widget>
    </item>
@@ -101,6 +82,13 @@
      </property>
     </widget>
    </item>
+   <item row="4" column="0" colspan="2">
+    <widget class="QCheckBox" name="custom_url">
+     <property name="text">
+      <string>Custom Mergin server</string>
+     </property>
+    </widget>
+   </item>
    <item row="1" column="0" colspan="5">
     <widget class="QLineEdit" name="username">
      <property name="placeholderText">
@@ -108,10 +96,25 @@
      </property>
     </widget>
    </item>
-   <item row="5" column="1" colspan="4">
-    <widget class="QLabel" name="test_status">
+   <item row="0" column="2">
+    <widget class="QLabel" name="label_2">
+     <property name="maximumSize">
+      <size>
+       <width>256</width>
+       <height>76</height>
+      </size>
+     </property>
      <property name="text">
-      <string>Not tested yet</string>
+      <string/>
+     </property>
+     <property name="pixmap">
+      <pixmap>../images/merginmaps_logo.svg</pixmap>
+     </property>
+     <property name="scaledContents">
+      <bool>true</bool>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
      </property>
     </widget>
    </item>
