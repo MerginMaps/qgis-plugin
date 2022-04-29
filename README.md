@@ -1,5 +1,5 @@
 # Mergin QGIS plugin
-<img src="Mergin/images/icon.png">
+<img src="Mergin/images/mm_logo.png">
 
 [![.github/workflows/packages.yml](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/packages.yml/badge.svg)](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/packages.yml)
 [![Mergin Plugin Tests](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/run-test.yml/badge.svg)](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/run-test.yml)

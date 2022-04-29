@@ -16,10 +16,10 @@ class MerginProjectConfigFactory(QgsOptionsWidgetFactory):
         QgsOptionsWidgetFactory.__init__(self)
 
     def icon(self):
-        return QIcon(icon_path("icon.png", fa_icon=False))
+        return QIcon(icon_path("mm_icon_positive_no_padding.svg"))
 
     def title(self):
-        return "Mergin"
+        return "Mergin Maps"
 
     def createWidget(self, parent):
         return ProjectConfigWidget(parent)

@@ -18,12 +18,12 @@
     <widget class="QLabel" name="labelMergin">
      <property name="maximumSize">
       <size>
-       <width>160</width>
+       <width>256</width>
        <height>76</height>
       </size>
      </property>
      <property name="pixmap">
-      <pixmap>../images/logo_color.svg</pixmap>
+      <pixmap>../images/mm_logo.svg</pixmap>
      </property>
      <property name="scaledContents">
       <bool>true</bool>

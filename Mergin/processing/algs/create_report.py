@@ -44,10 +44,10 @@ class CreateReport(QgsProcessingAlgorithm):
         return 'mergin,project,report,statistics'.split(',')
 
     def shortHelpString(self):
-        return 'Exports changesets aggregates for Mergin projects in given version range to a CSV file.'
+        return 'Exports changesets aggregates for Mergin Maps projects in given version range to a CSV file.'
 
     def icon(self):
-        return QIcon(icon_path('icon.png', False))
+        return QIcon(icon_path('mm_icon_positive_no_padding.svg'))
 
     def __init__(self):
         super().__init__()
@@ -75,7 +75,7 @@ class CreateReport(QgsProcessingAlgorithm):
         try:
             warnings = create_report(mc, project_dir, f"v{start}", f"v{end}" if end else "", output_file)
         except InvalidProject as e:
-            raise QgsProcessingException('Invalid Mergin project: ' + str(e))
+            raise QgsProcessingException('Invalid Mergin Maps project: ' + str(e))
         except ClientError as e:
             raise QgsProcessingException('Unable to create report: ' + str(e))
 
