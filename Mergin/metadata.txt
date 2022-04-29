@@ -1,6 +1,6 @@
 ; the next section is mandatory
 [general]
-name=Mergin Maps
+name=Mergin
 qgisMinimumVersion=3.16
 qgisMaximumVersion=3.99
 description=Handle Mergin projects
