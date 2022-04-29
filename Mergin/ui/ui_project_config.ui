@@ -83,7 +83,7 @@
     </widget>
    </item>
    <item row="1" column="0" colspan="2">
-    <widget class="QGroupBox" name="groupBox">
+    <widget class="QGroupBox" name="photo_quality_groupbox">
      <property name="title">
       <string>Photo quality</string>
      </property>
