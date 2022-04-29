@@ -15,6 +15,8 @@ from qgis.core import (
     QgsProcessingParameterFeatureSink
 )
 
+from ..postprocessors import StylingPostProcessor
+
 from ...mergin.merginproject import MerginProject
 
 from ...diff import (
@@ -116,5 +118,8 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
                     break
                 sink.addFeature(f, QgsFeatureSink.FastInsert)
                 feedback.setProgress(int(i * step))
+
+        if context.willLoadLayerOnCompletion(dest_id):
+            context.layerToLoadOnCompletionDetails(dest_id).setPostProcessor(StylingPostProcessor.create(db_schema[table_name]))
 
         return {self.OUTPUT: dest_id}
