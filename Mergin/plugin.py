@@ -33,7 +33,9 @@ from qgis.PyQt.QtWidgets import (
     QDockWidget,
     QPushButton,
     QLabel,
-    QWidgetAction
+    QWidgetAction,
+    QHBoxLayout,
+    QWidget
 )
 from urllib.error import URLError
 
@@ -108,13 +110,19 @@ class MerginPlugin:
 
         self.create_manager()
 
-        self.lbl_logo = QLabel()
+        widget = QWidget()
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        lbl_logo = QLabel()
         pix = QPixmap(icon_path("mm_logo.svg", False))
-        self.lbl_logo.setPixmap(pix.scaledToHeight(self.toolbar.iconSize().height(), Qt.SmoothTransformation))
+        lbl_logo.setPixmap(pix.scaledToHeight(self.toolbar.iconSize().height(), Qt.SmoothTransformation))
+        layout.addWidget(lbl_logo)
+        layout.addSpacing(self.toolbar.iconSize().width() / 2)
+        widget.setLayout(layout)
         self.action_mergin_maps = QWidgetAction(self.iface.mainWindow())
         self.action_mergin_maps.setText("Mergin Maps")
         self.actions_always_on.append(self.action_mergin_maps.text())
-        self.action_mergin_maps.setDefaultWidget(self.lbl_logo)
+        self.action_mergin_maps.setDefaultWidget(widget)
         self.action_mergin_maps.triggered.connect(self.open_configured_url)
         self.toolbar.addAction(self.action_mergin_maps)
 
