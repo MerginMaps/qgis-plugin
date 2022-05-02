@@ -9,8 +9,8 @@ import os
 import shutil
 from pathlib import Path
 import posixpath
-from qgis.PyQt.QtCore import pyqtSignal, QTimer, QUrl
-from qgis.PyQt.QtGui import QIcon, QDesktopServices
+from qgis.PyQt.QtCore import pyqtSignal, QTimer, QUrl, QSettings, Qt
+from qgis.PyQt.QtGui import QIcon, QDesktopServices, QPixmap
 from qgis.core import (
     QgsApplication,
     QgsDataCollectionItem,
@@ -26,8 +26,15 @@ from qgis.core import (
     Qgis
 )
 from qgis.utils import iface
-from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QDockWidget, QPushButton
-from qgis.PyQt.QtCore import QSettings, Qt
+from qgis.PyQt.QtWidgets import (
+    QAction,
+    QFileDialog,
+    QMessageBox,
+    QDockWidget,
+    QPushButton,
+    QLabel,
+    QWidgetAction
+)
 from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
@@ -101,12 +108,15 @@ class MerginPlugin:
 
         self.create_manager()
 
-        self.add_action(
-            "mm_icon_positive_no_padding.svg",
-            text="Mergin Maps",
-            callback=self.open_configured_url,
-            add_to_toolbar=self.toolbar
-        )
+        self.lbl_logo = QLabel()
+        pix = QPixmap(icon_path("mm_logo.svg", False))
+        self.lbl_logo.setPixmap(pix.scaledToHeight(self.toolbar.iconSize().height(), Qt.SmoothTransformation))
+        self.action_mergin_maps = QWidgetAction(self.iface.mainWindow())
+        self.action_mergin_maps.setText("Mergin Maps")
+        self.actions_always_on.append(self.action_mergin_maps.text())
+        self.action_mergin_maps.setDefaultWidget(self.lbl_logo)
+        self.action_mergin_maps.triggered.connect(self.open_configured_url)
+        self.toolbar.addAction(self.action_mergin_maps)
 
         self.add_action(
             "mergin_configure.svg",
