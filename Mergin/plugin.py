@@ -114,7 +114,7 @@ class MerginPlugin:
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         lbl_logo = QLabel()
-        pix = QPixmap(icon_path("mm_logo.svg", False))
+        pix = QPixmap(icon_path("mm_logo_no_padding.svg", False))
         lbl_logo.setPixmap(pix.scaledToHeight(self.toolbar.iconSize().height(), Qt.SmoothTransformation))
         layout.addWidget(lbl_logo)
         layout.addSpacing(self.toolbar.iconSize().width() / 2)
