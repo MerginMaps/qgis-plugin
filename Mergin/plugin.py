@@ -386,6 +386,7 @@ class MerginPlugin:
                 continue
             add_diff_layer_to_canvas(vl)
             self.diff_layers.append(vl.id())
+            self.iface.messageBar().pushInfo('Mergin', 'Diff layer(s) were created and added the "Mergin local changes" group.')
 
     def cleanup_diffs(self):
         if self.diff_layers:
