@@ -163,6 +163,7 @@ class MerginPlugin:
 
         # add layer context menu action for checking local changes
         self.action_show_changes = QAction("Show local changes", self.iface.mainWindow())
+        self.action_show_changes.setIcon(QIcon(icon_path("mm_icon_positive_no_padding.svg")))
         self.iface.addCustomActionForLayerType(self.action_show_changes, "", QgsMapLayer.VectorLayer, True)
         self.action_show_changes.triggered.connect(self.show_local_changes)
 
