@@ -492,7 +492,11 @@ def cleanup_project(diff_layers):
             p.remove(elements[i])
 
     if QgsProject.instance().isZipped():
-        xml.write(arc.projectFile())
+        with open(arc.projectFile(), 'wb') as f:
+            f.write("<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>".encode('utf8'))
+            xml.write(f)
         arc.zip(QgsProject.instance().fileName())
     else:
-        xml.write(QgsProject.instance().fileName())
+        with open(QgsProject.instance().fileName(), "wb") as f:
+            f.write("<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>".encode('utf8'))
+            xml.write(f)
