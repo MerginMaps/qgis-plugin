@@ -283,6 +283,7 @@ def get_local_changes(db_file, mp):
 
 def make_local_changes_layer(mp, layer):
     layer_path = layer.source().split("|")[0]
+    base_file = mp.fpath_meta(os.path.split(layer_path)[1])
     diff_path = get_local_changes(layer_path, mp)
 
     if diff_path is None:
@@ -298,7 +299,7 @@ def make_local_changes_layer(mp, layer):
     fields, cols_to_fields = create_field_list(db_schema[table_name])
 
     db_conn = None  # no ref. db
-    db_conn = sqlite3.connect(layer_path)
+    db_conn = sqlite3.connect(base_file)
 
     features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn)
 
@@ -365,7 +366,7 @@ def style_diff_layer(layer, schema_table):
             col_name = column.name
         cs = QgsConditionalStyle()
         cs.setName("update")
-        cs.setRule(f'"{col_name}" != "_old_{col_name}"')
+        cs.setRule(f'"{col_name}" IS NOT "_old_{col_name}"')
         cs.setBackgroundColor(color_yellow)
         st.setFieldStyles(col_name, [cs])
 
