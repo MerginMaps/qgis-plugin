@@ -4,6 +4,7 @@ import base64
 import sqlite3
 import tempfile
 import xml.etree.ElementTree as ET
+import zipfile
 
 from qgis.PyQt.QtCore import (
     QVariant
@@ -27,8 +28,7 @@ from qgis.core import (
     QgsLineSymbol,
     QgsFillSymbol,
     QgsRuleBasedRenderer,
-    QgsWkbTypes,
-    QgsProjectArchive
+    QgsWkbTypes
 )
 
 from .utils import (
@@ -456,14 +456,17 @@ def style_diff_layer(layer, schema_table):
 
 def cleanup_project(diff_layers):
     """Remove group and diff layers from the project"""
-
-    arc = QgsProjectArchive()
     xml = None
+
+    project_file = QgsProject.instance().fileName()
+    file_name = QgsProject.instance().baseName()
+
     if QgsProject.instance().isZipped():
-        arc.unzip(QgsProject.instance().fileName())
-        xml = ET.parse(arc.projectFile())
+        with zipfile.ZipFile(project_file) as zf:
+            with zf.open(file_name + ".qgs") as f:
+                xml = ET.parse(f)
     else:
-        xml = ET.parse(QgsProject.instance().fileName())
+        xml = ET.parse(project_file)
 
     root = xml.getroot()
 
@@ -494,11 +497,18 @@ def cleanup_project(diff_layers):
             p.remove(elements[i])
 
     if QgsProject.instance().isZipped():
-        with open(arc.projectFile(), 'wb') as f:
+        tmp_file = tempfile.NamedTemporaryFile(delete=False)
+        tmp_file.close()
+        with open(tmp_file.name, 'wb') as f:
             f.write("<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>".encode('utf8'))
             xml.write(f)
-        arc.zip(QgsProject.instance().fileName())
+
+        os.remove(project_file)
+        with zipfile.ZipFile(project_file, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.write(tmp_file.name, arcname=file_name + ".qgs")
+
+        os.unlink(tmp_file.name)
     else:
-        with open(QgsProject.instance().fileName(), "wb") as f:
+        with open(project_file, "wb") as f:
             f.write("<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>".encode('utf8'))
             xml.write(f)

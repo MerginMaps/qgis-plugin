@@ -167,8 +167,6 @@ class MerginPlugin:
         self.iface.addCustomActionForLayerType(self.action_show_changes, "", QgsMapLayer.VectorLayer, True)
         self.action_show_changes.triggered.connect(self.show_local_changes)
 
-        QgsProject.instance().projectSaved.connect(self.cleanup_diffs)
-
     def add_action(
         self,
         icon_name,
@@ -336,6 +334,19 @@ class MerginPlugin:
         if self.mergin_proj_dir is not None:
             self.enable_toolbar_actions()
 
+        if diff_layers_list:
+            root = QgsProject.instance().layerTreeRoot()
+            group = root.findGroup(CHANGES_GROUP)
+            if group:
+                root.removeChildNode(group)
+
+            QgsProject.instance().removeMapLayers(diff_layers_list)
+            diff_layers_list.clear()
+            self.iface.mapCanvas().refresh()
+            # let QGIS finalize previous project save and save again
+            # this time without memory layers
+            QTimer.singleShot(250, lambda: QgsProject.instance().write())
+
     def unload(self):
         # Disconnect Mergin related signals
         self.iface.projectRead.disconnect(self.on_qgis_project_changed)
@@ -387,19 +398,6 @@ class MerginPlugin:
             add_diff_layer_to_canvas(vl)
             diff_layers_list.append(vl.id())
             self.iface.messageBar().pushInfo('Mergin', 'Diff layer(s) were created and added the "Mergin local changes" group.')
-
-    def cleanup_diffs(self):
-        if diff_layers_list:
-            root = QgsProject.instance().layerTreeRoot()
-            group = root.findGroup(CHANGES_GROUP)
-            if group:
-                root.removeChildNode(group)
-
-            QgsProject.instance().removeMapLayers(diff_layers_list)
-            QgsProject.instance().setDirty(False)
-            cleanup_project(diff_layers_list)
-            diff_layers_list.clear()
-            self.iface.mapCanvas().refresh()
 
 
 class MerginRemoteProjectItem(QgsDataItem):
