@@ -47,7 +47,6 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             self.btn_get_sync_dir.clicked.connect(self.get_sync_dir)
         else:
             self.selective_sync_group.setEnabled(False)
-        self.photo_quality_groupbox.hide()
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(None, "Select directory", self.local_project_dir, QFileDialog.ShowDirsOnly)
