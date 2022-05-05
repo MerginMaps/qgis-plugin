@@ -123,7 +123,7 @@ class CreateDiff(QgsProcessingAlgorithm):
         fields, fields_mapping = create_field_list(db_schema[table_name])
         (sink, dest_id) = self.parameterAsSink(parameters, self.OUTPUT, context, fields, layer.wkbType(), layer.sourceCrs())
 
-        feedback.pushInfo("Parse diff…" + diff_file)
+        feedback.pushInfo("Parse diff…")
         diff = parse_diff(diff_file)
         feedback.setProgress(30)
 
