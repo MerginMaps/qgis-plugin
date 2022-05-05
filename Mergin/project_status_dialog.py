@@ -13,10 +13,15 @@ from qgis.PyQt.QtCore import QSize
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem, QIcon
 
 from qgis.gui import QgsGui
-from qgis.core import Qgis, QgsApplication, QgsProject
+from qgis.core import Qgis, QgsApplication, QgsProject, QgsMapLayer
 
 from .validation import MultipleLayersWarning, warning_display_string
 from .utils import is_versioned_file, icon_path
+from .diff import (
+    make_local_changes_layer,
+    add_diff_layer_to_canvas,
+    diff_layers_list
+)
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_status_dialog.ui')
 
@@ -45,6 +50,11 @@ class ProjectStatusDialog(QDialog):
         # add sync button with AcceptRole. If dialog accepted we will start
         # sync, otherwise just close status dialog
         self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.AcceptRole)
+        # add sync button with AcceptRole. If dialog accepted we will start
+        # sync, otherwise just close status dialog
+        self.btn_diff = QPushButton("View changes")
+        self.ui.buttonBox.addButton(self.btn_diff, QDialogButtonBox.ActionRole)
+        self.btn_diff.clicked.connect(self.show_changes)
 
         self.validation_results = validation_results
         self.mp = mergin_project
@@ -187,3 +197,24 @@ class ProjectStatusDialog(QDialog):
                 html.append(f"<ul>{''.join(items)}</ul>")
 
         self.txtWarnings.setHtml(''.join(html))
+
+    def show_changes(self):
+        if self.mp is None:
+            self.mp = MerginProject(QgsProject.instance().homePath())
+
+        for layer in QgsProject.instance().mapLayers().values():
+            if layer.type() != QgsMapLayer.VectorLayer:
+                continue
+
+            if layer.dataProvider().storageType() != "GPKG":
+                QgsMessageLog.logMessage(f"Layer {layer.name()} is not supported.", "Mergin")
+                continue
+
+            vl, msg = make_local_changes_layer(self.mp, layer)
+            if vl is None:
+                QgsMessageLog.logMessage(msg, "Mergin")
+                continue
+            add_diff_layer_to_canvas(vl)
+            diff_layers_list.append(vl.id())
+
+        self.close()

@@ -62,7 +62,8 @@ from .diff import (
     make_local_changes_layer,
     add_diff_layer_to_canvas,
     cleanup_project,
-    CHANGES_GROUP
+    CHANGES_GROUP,
+    diff_layers_list
 )
 
 from .mergin.merginproject import MerginProject
@@ -84,7 +85,6 @@ class MerginPlugin:
         self.mc = None
         self.manager = None
         self.provider = MerginProvider()
-        self.diff_layers = []
         self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
         self.toolbar.setToolTip("Mergin Maps Toolbar")
         self.toolbar.setObjectName("MerginMapsToolbar")
@@ -377,28 +377,28 @@ class MerginPlugin:
                 continue
 
             if layer.dataProvider().storageType() != "GPKG":
-                iface.messageBar().pushMessage("Mergin", f"Layer {layer.name()} is not supported.", Qgis.Warning)
+                QgsMessageLog.logMessage(f"Layer {layer.name()} is not supported.", "Mergin")
                 continue
 
             vl, msg = make_local_changes_layer(mp, layer)
             if vl is None:
-                iface.messageBar().pushMessage('Mergin', msg, Qgis.Warning)
+                QgsMessageLog.logMessage(msg, "Mergin")
                 continue
             add_diff_layer_to_canvas(vl)
-            self.diff_layers.append(vl.id())
+            diff_layers_list.append(vl.id())
             self.iface.messageBar().pushInfo('Mergin', 'Diff layer(s) were created and added the "Mergin local changes" group.')
 
     def cleanup_diffs(self):
-        if self.diff_layers:
+        if diff_layers_list:
             root = QgsProject.instance().layerTreeRoot()
             group = root.findGroup(CHANGES_GROUP)
             if group:
                 root.removeChildNode(group)
 
-            QgsProject.instance().removeMapLayers(self.diff_layers)
+            QgsProject.instance().removeMapLayers(diff_layers_list)
             QgsProject.instance().setDirty(False)
-            cleanup_project(self.diff_layers)
-            self.diff_layers.clear()
+            cleanup_project(diff_layers_list)
+            diff_layers_list.clear()
             self.iface.mapCanvas().refresh()
 
 

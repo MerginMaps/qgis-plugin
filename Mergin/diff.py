@@ -41,6 +41,8 @@ CHANGES_GROUP = "Mergin local changes"
 geodiff = pygeodiff.GeoDiff()
 geodiff.set_maximum_logger_level(10)
 
+diff_layers_list = []
+
 
 class ColumnSchema:
     """Describes GPKG table column"""
