@@ -10,6 +10,7 @@ import urllib.parse
 import urllib.request
 import tempfile
 import json
+import glob
 
 from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
@@ -680,6 +681,21 @@ def copy_tif_raster(raster_layer, project_dir):
     if os.path.exists(src_filepath_no_ext + ".aux"):
         shutil.copy(src_filepath_no_ext + ".aux", os.path.splitext(new_raster_filename)[0] + ".aux")
 
+    # also copy world file and projection
+    if os.path.exists(src_filepath_no_ext + ".prj"):
+        shutil.copy(src_filepath_no_ext + ".prj", os.path.splitext(new_raster_filename)[0] + ".prj")
+
+    if os.path.exists(src_filepath_no_ext + ".qpj"):
+        shutil.copy(src_filepath_no_ext + ".qpj", os.path.splitext(new_raster_filename)[0] + ".qpj")
+
+    if os.path.exists(src_filepath_no_ext + ".wld"):
+        shutil.copy(src_filepath_no_ext + ".wld", os.path.splitext(new_raster_filename)[0] + ".wld")
+
+    suffix = os.path.splitext(src_filepath)[1][1:]
+    files = glob.glob(f"{src_filepath_no_ext}.{suffix[0]}*w")
+    for f in files:
+        suffix = os.path.splitext(f)[1][1:]
+        shutil.copy(f, os.path.splitext(new_raster_filename)[0] + suffix)
 
 def save_raster_to_geopackage(raster_layer, project_dir):
     """Save a GeoPackage raster to GeoPackage table in the project directory."""
