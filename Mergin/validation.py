@@ -253,9 +253,10 @@ class MerginProjectValidator(object):
                 ws = layer.editorWidgetSetup(i)
                 if ws and ws.type() == "ValueRelation":
                     cfg = ws.config()
-                    child_layer = next((l for l in self.layers.values() if l.source() == cfg["LayerSource"]), None)
+                    child_layer = next((v for k, v in self.layers.items() if k == cfg["Layer"]), None)
                     if child_layer is None:
                         self.issues.append(SingleLayerWarning(lid, Warning.VALUE_RELATION_LAYER_MISSED))
+                        continue
 
                     # check that "key" field does not have duplicated values
                     # and is not a primary key
