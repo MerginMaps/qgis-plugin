@@ -41,6 +41,7 @@ class Warning(Enum):
     FIELD_IS_PRIMARY_KEY = 15
     VALUE_RELATION_LAYER_MISSED = 16
     INCORRECT_FIELD_NAME = 17
+    BROKEN_VALUE_RELATION_CONFIG = 18
 
 class MultipleLayersWarning:
     """Class for warning which is associated with multiple layers.
@@ -253,6 +254,10 @@ class MerginProjectValidator(object):
                 ws = layer.editorWidgetSetup(i)
                 if ws and ws.type() == "ValueRelation":
                     cfg = ws.config()
+                    if "Layer" not in cfg or "Key" not in cfg:
+                        self.issues.append(SingleLayerWarning(lid, Warning.BROKEN_VALUE_RELATION_CONFIG))
+                        continue
+
                     child_layer = next((v for k, v in self.layers.items() if k == cfg["Layer"]), None)
                     if child_layer is None:
                         self.issues.append(SingleLayerWarning(lid, Warning.VALUE_RELATION_LAYER_MISSED))
@@ -327,3 +332,5 @@ def warning_display_string(warning_id):
         return "Referenced table is missed from the project"
     elif warning_id == Warning.INCORRECT_FIELD_NAME:
         return "Field names contain line-break characters"
+    elif warning_id == Warning.BROKEN_VALUE_RELATION_CONFIG:
+        return "Incomplete value relation configuration"
