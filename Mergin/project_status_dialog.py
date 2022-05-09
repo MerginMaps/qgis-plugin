@@ -24,11 +24,11 @@ ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_st
 class ProjectStatusDialog(QDialog):
 
     icons = {
-        "added": "images/FA_icons/plus.svg",
-        "removed": "images/FA_icons/trash.svg",
-        "updated": "images/FA_icons/edit.svg",
-        "renamed": "images/FA_icons/edit.svg",
-        "table": "images/FA_icons/table.svg",
+        "added": "plus.svg",
+        "removed": "trash.svg",
+        "updated": "pencil.svg",
+        "renamed": "pencil.svg",
+        "table": "table.svg",
     }
 
     def __init__(
@@ -41,7 +41,7 @@ class ProjectStatusDialog(QDialog):
         QgsGui.instance().enableAutoGeometryRestore(self)
 
         self.btn_sync = QPushButton(" Sync")
-        self.btn_sync.setIcon(QIcon(icon_path("sync-solid.svg")))
+        self.btn_sync.setIcon(QIcon(icon_path("refresh.svg")))
         self.btn_sync.setIconSize(QSize(12, 12))
         # add sync button with AcceptRole. If dialog accepted we will start
         # sync, otherwise just close status dialog
@@ -145,7 +145,7 @@ class ProjectStatusDialog(QDialog):
         return [QStandardItem("{}: {}".format(k, summary[k])) for k in summary if k != "table"]
 
     def _get_icon_item(self, key, text):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), self.icons[key])
+        path = icon_path(self.icons[key])
         item = QStandardItem(text)
         item.setIcon(QIcon(path))
         return item

@@ -874,9 +874,9 @@ def mergin_project_local_path(project_name=None):
     return None
 
 
-def icon_path(icon_filename, fa_icon=True):
-    if fa_icon:
-        ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", "FA_icons", icon_filename)
+def icon_path(icon_filename, tabler_icon=True):
+    if tabler_icon:
+        ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", "tabler_icons", icon_filename)
     else:
         ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_filename)
     return ipath

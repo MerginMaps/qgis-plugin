@@ -113,14 +113,14 @@ class MerginPlugin:
             add_to_toolbar=self.toolbar,
         )
         self.add_action(
-            "mergin_configure.svg",
+            "settings.svg",
             text="Configure Mergin Plugin",
             callback=self.configure,
             add_to_menu=True,
             add_to_toolbar=self.toolbar,
         )
         self.add_action(
-            "mergin_new_project.svg",
+            "square-plus.svg",
             text="Create Mergin Project",
             callback=self.create_new_project,
             add_to_menu=False,
@@ -129,7 +129,7 @@ class MerginPlugin:
             always_on=False,
         )
         self.add_action(
-            "mergin_project_sync.svg",
+            "refresh.svg",
             text="Synchronise Mergin Project",
             callback=self.current_project_sync,
             add_to_menu=False,
@@ -367,7 +367,7 @@ class MerginRemoteProjectItem(QgsDataItem):
         QgsDataItem.__init__(self, QgsDataItem.Collection, parent, self.project_name, "/Mergin/" + self.project_name)
         self.path = None
         self.setSortKey(f"1 {self.name()}")
-        self.setIcon(QIcon(icon_path("cloud-solid.svg")))
+        self.setIcon(QIcon(icon_path("cloud.svg")))
         self.project_manager = project_manager
         if self.project_manager is not None:
             self.mc = self.project_manager.mc
@@ -468,13 +468,13 @@ class MerginRemoteProjectItem(QgsDataItem):
             login_error_message(e)
 
     def actions(self, parent):
-        action_download = QAction(QIcon(icon_path("cloud-download-alt-solid.svg")), "Download", parent)
+        action_download = QAction(QIcon(icon_path("cloud-download.svg")), "Download", parent)
         action_download.triggered.connect(self.download)
 
-        action_clone_remote = QAction(QIcon(icon_path("copy-solid.svg")), "Clone", parent)
+        action_clone_remote = QAction(QIcon(icon_path("copy.svg")), "Clone", parent)
         action_clone_remote.triggered.connect(self.clone_remote_project)
 
-        action_remove_remote = QAction(QIcon(icon_path("trash-alt-solid.svg")), "Remove from server", parent)
+        action_remove_remote = QAction(QIcon(icon_path("trash.svg")), "Remove from server", parent)
         action_remove_remote.triggered.connect(self.remove_remote_project)
 
         actions = [action_download, action_clone_remote]
@@ -593,19 +593,19 @@ class MerginLocalProjectItem(QgsDirectoryItem):
             login_error_message(e)
 
     def actions(self, parent):
-        action_remove_local = QAction(QIcon(icon_path("trash-solid.svg")), "Remove locally", parent)
+        action_remove_local = QAction(QIcon(icon_path("trash.svg")), "Remove locally", parent)
         action_remove_local.triggered.connect(self.remove_local_project)
 
         action_open_project = QAction("Open QGIS project", parent)
         action_open_project.triggered.connect(self.open_project)
 
-        action_sync_project = QAction(QIcon(icon_path("sync-solid.svg")), "Synchronize", parent)
+        action_sync_project = QAction(QIcon(icon_path("refresh.svg")), "Synchronize", parent)
         action_sync_project.triggered.connect(self.sync_project)
 
-        action_clone_remote = QAction(QIcon(icon_path("copy-solid.svg")), "Clone", parent)
+        action_clone_remote = QAction(QIcon(icon_path("copy.svg")), "Clone", parent)
         action_clone_remote.triggered.connect(self.clone_remote_project)
 
-        action_diagnostic_log = QAction(QIcon(icon_path("medkit-solid.svg")), "Diagnostic log", parent)
+        action_diagnostic_log = QAction(QIcon(icon_path("first-aid-kit.svg")), "Diagnostic log", parent)
         action_diagnostic_log.triggered.connect(self.submit_logs)
 
         actions = [
@@ -624,7 +624,7 @@ class FetchMoreItem(QgsDataItem):
     def __init__(self, parent):
         self.parent = parent
         QgsDataItem.__init__(self, QgsDataItem.Collection, parent, "Double-click for more...", "")
-        self.setIcon(QIcon(icon_path("fetch_more.svg")))
+        self.setIcon(QIcon(icon_path("download.svg")))
         self.setSortKey("2")  # the item should appear at the bottom of the list
 
     def handleDoubleClick(self):
@@ -723,12 +723,12 @@ class MerginGroupItem(QgsDataCollectionItem):
         action_refresh.triggered.connect(self.reload)
         actions = [action_refresh]
         if self.fetch_more_item is not None:
-            action_fetch_more = QAction(QIcon(icon_path("fetch_more.svg")), "Fetch more", parent)
+            action_fetch_more = QAction(QIcon(icon_path("download.svg")), "Fetch more", parent)
             action_fetch_more.triggered.connect(self.fetch_more)
             actions.append(action_fetch_more)
         if self.name().startswith("My projects"):
             action_create = QAction(
-                QIcon(icon_path("plus-square-solid.svg")), "Create new project", parent
+                QIcon(icon_path("square-plus.svg")), "Create new project", parent
             )
             action_create.triggered.connect(self.plugin.create_new_project)
             actions.append(action_create)
@@ -760,24 +760,24 @@ class MerginRootItem(QgsDataCollectionItem):
         if self.error or self.mc is None:
             self.error = self.error if self.error else "Not configured!"
             error_item = QgsErrorItem(self, self.error, "Mergin/error")
-            error_item.setIcon(QIcon(icon_path("exclamation-triangle-solid.svg")))
+            error_item.setIcon(QIcon(icon_path("alert-triangle.svg")))
             sip.transferto(error_item, self)
             return [error_item]
 
         items = []
-        my_projects = MerginGroupItem(self, "My projects", "created", "user-solid.svg", 1, self.plugin)
+        my_projects = MerginGroupItem(self, "My projects", "created", "user.svg", 1, self.plugin)
         my_projects.setState(QgsDataItem.Populated)
         my_projects.refresh()
         sip.transferto(my_projects, self)
         items.append(my_projects)
 
-        shared_projects = MerginGroupItem(self, "Shared with me", "shared", "user-friends-solid.svg", 2, self.plugin)
+        shared_projects = MerginGroupItem(self, "Shared with me", "shared", "users.svg", 2, self.plugin)
         shared_projects.setState(QgsDataItem.Populated)
         shared_projects.refresh()
         sip.transferto(shared_projects, self)
         items.append(shared_projects)
 
-        all_projects = MerginGroupItem(self, "Explore", None, "list-solid.svg", 3, self.plugin)
+        all_projects = MerginGroupItem(self, "Explore", None, "list.svg", 3, self.plugin)
         all_projects.setState(QgsDataItem.Populated)
         all_projects.refresh()
         sip.transferto(all_projects, self)
@@ -786,10 +786,10 @@ class MerginRootItem(QgsDataCollectionItem):
         return items
 
     def actions(self, parent):
-        action_configure = QAction(QIcon(icon_path("cog-solid.svg")), "Configure", parent)
+        action_configure = QAction(QIcon(icon_path("settings.svg")), "Configure", parent)
         action_configure.triggered.connect(self.plugin.configure)
 
-        action_create = QAction(QIcon(icon_path("plus-square-solid.svg")), "Create new project", parent)
+        action_create = QAction(QIcon(icon_path("square-plus.svg")), "Create new project", parent)
         action_create.triggered.connect(self.plugin.create_new_project)
         actions = [action_configure]
         if self.mc:
