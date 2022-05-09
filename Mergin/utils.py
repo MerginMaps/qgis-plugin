@@ -694,7 +694,7 @@ def copy_tif_raster(raster_layer, project_dir):
     suffix = os.path.splitext(src_filepath)[1][1:]
     files = glob.glob(f"{src_filepath_no_ext}.{suffix[0]}*w")
     for f in files:
-        suffix = os.path.splitext(f)[1][1:]
+        suffix = os.path.splitext(f)[1]
         shutil.copy(f, os.path.splitext(new_raster_filename)[0] + suffix)
 
 def save_raster_to_geopackage(raster_layer, project_dir):
