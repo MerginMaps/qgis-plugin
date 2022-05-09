@@ -40,9 +40,8 @@ class ProjectStatusDialog(QDialog):
 
         QgsGui.instance().enableAutoGeometryRestore(self)
 
-        self.btn_sync = QPushButton(" Sync")
+        self.btn_sync = QPushButton("Sync")
         self.btn_sync.setIcon(QIcon(icon_path("refresh.svg")))
-        self.btn_sync.setIconSize(QSize(12, 12))
         # add sync button with AcceptRole. If dialog accepted we will start
         # sync, otherwise just close status dialog
         self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.AcceptRole)
