@@ -83,7 +83,7 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
             raise QgsProcessingException("Selected layer does not belong to the selected Mergin project.")
 
         if layer.dataProvider().storageType() != "GPKG":
-            raise QgsProcessingException("Selected layers has unsupported format. Only GPKG layers are supported.")
+            raise QgsProcessingException("Selected layer not supported.")
 
         mp = MerginProject(project_dir)
 
@@ -92,7 +92,7 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
         feedback.setProgress(5)
 
         if diff_path is None:
-            raise QgsProcessingException("Failed to retrieve changes, as there is no base file for input layer.")
+            raise QgsProcessingException("Failed to get local changes.")
 
         table_name = get_table_name(layer)
 

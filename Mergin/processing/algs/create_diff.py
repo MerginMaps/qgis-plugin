@@ -91,7 +91,7 @@ class CreateDiff(QgsProcessingAlgorithm):
             raise QgsProcessingException("Selected layer does not belong to the selected Mergin project.")
 
         if layer.dataProvider().storageType() != "GPKG":
-            raise QgsProcessingException("Selected layers has unsupported format. Only GPKG layers are supported.")
+            raise QgsProcessingException("Selected layer not supported.")
 
         start = self.parameterAsInt(parameters, self.START_VERSION, context)
         if self.END_VERSION in parameters and parameters[self.END_VERSION] is not None:
