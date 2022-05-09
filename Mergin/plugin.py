@@ -30,12 +30,7 @@ from qgis.PyQt.QtWidgets import (
     QAction,
     QFileDialog,
     QMessageBox,
-    QDockWidget,
-    QPushButton,
-    QLabel,
-    QWidgetAction,
-    QHBoxLayout,
-    QWidget
+    QDockWidget
 )
 from urllib.error import URLError
 
@@ -110,14 +105,13 @@ class MerginPlugin:
 
         self.create_manager()
 
-        self.widget = LogoButton(self.toolbar)
-        self.action_mergin_maps = QWidgetAction(self.iface.mainWindow())
-        self.action_mergin_maps.setText("Mergin Maps")
-        self.actions_always_on.append(self.action_mergin_maps.text())
-        self.action_mergin_maps.setDefaultWidget(self.widget)
-        self.widget.clicked.connect(self.open_configured_url)
-        self.toolbar.addAction(self.action_mergin_maps)
-
+        self.add_action(
+            "mm_icon_positive_no_padding.svg",
+            text="Mergin Maps",
+            callback=self.open_configured_url,
+            add_to_menu=True,
+            add_to_toolbar=self.toolbar,
+        )
         self.add_action(
             "mergin_configure.svg",
             text="Configure Mergin Plugin",
@@ -847,23 +841,3 @@ class DataItemProvider(QgsDataItemProvider):
             return ri
         else:
             return None
-
-
-class LogoButton(QWidget):
-
-    clicked = pyqtSignal()
-
-    def __init__(self, toolbar, parent=None):
-        super().__init__(parent)
-
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        lbl_logo = QLabel()
-        pix = QPixmap(icon_path("mm_logo_no_padding.svg", False))
-        lbl_logo.setPixmap(pix.scaledToHeight(toolbar.iconSize().height(), Qt.SmoothTransformation))
-        layout.addWidget(lbl_logo)
-        layout.addSpacing(toolbar.iconSize().width() / 2)
-        self.setLayout(layout)
-
-    def mousePressEvent(self, event):
-        self.clicked.emit()
