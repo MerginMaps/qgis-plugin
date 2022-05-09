@@ -719,7 +719,7 @@ class MerginGroupItem(QgsDataCollectionItem):
         self.refresh()
 
     def actions(self, parent):
-        action_refresh = QAction(QIcon(icon_path("redo-solid.svg")), "Reload", parent)
+        action_refresh = QAction(QIcon(icon_path("repeat.svg")), "Reload", parent)
         action_refresh.triggered.connect(self.reload)
         actions = [action_refresh]
         if self.fetch_more_item is not None:
