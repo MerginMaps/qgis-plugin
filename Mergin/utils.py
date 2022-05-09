@@ -692,6 +692,12 @@ def copy_tif_raster(raster_layer, project_dir):
         shutil.copy(src_filepath_no_ext + ".wld", os.path.splitext(new_raster_filename)[0] + ".wld")
 
     suffix = os.path.splitext(src_filepath)[1][1:]
+    # check for world files with suffixes other than .wld. Usually they use the same
+    # suffixes as the image has with a "w" appended (tif -> tifw). A 3-letter suffixes
+    # also very common, in this case the first and third characters of the image file's
+    # suffix and a final "w" are used for the world file suffix (tif -> tfw).
+    # See https://webhelp.esri.com/arcims/9.3/General/topics/author_world_files.htm and
+    # https://gdal.org/drivers/raster/wld.html
     files = glob.glob(f"{src_filepath_no_ext}.{suffix[0]}*w")
     for f in files:
         suffix = os.path.splitext(f)[1]
