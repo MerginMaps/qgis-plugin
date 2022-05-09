@@ -129,15 +129,6 @@ class MerginPlugin:
             always_on=False,
         )
         self.add_action(
-            "mergin_project_status.svg",
-            text="Mergin Project Status",
-            callback=self.current_project_status,
-            add_to_menu=False,
-            add_to_toolbar=self.toolbar,
-            enabled=False,
-            always_on=False,
-        )
-        self.add_action(
             "mergin_project_sync.svg",
             text="Synchronise Mergin Project",
             callback=self.current_project_sync,
@@ -327,10 +318,6 @@ class MerginPlugin:
             # make sure the item has the link between remote and local project we have just added
             self.data_item_provider.root_item.depopulate()
 
-    def current_project_status(self):
-        """Show Mergin project status/validation dialog."""
-        self.manager.project_status(self.mergin_proj_dir)
-
     def current_project_sync(self):
         """Synchronise current Mergin project."""
         self.manager.project_status(self.mergin_proj_dir)
@@ -514,13 +501,6 @@ class MerginLocalProjectItem(QgsDirectoryItem):
     def open_project(self):
         self.project_manager.open_project(self.path)
 
-    def project_status(self):
-        if not self.path:
-            return
-        if not self.project_manager.unsaved_changes_check(self.path):
-            return
-        self.project_manager.project_status(self.path)
-
     def sync_project(self):
         if not self.path:
             return
@@ -625,15 +605,11 @@ class MerginLocalProjectItem(QgsDirectoryItem):
         action_clone_remote = QAction(QIcon(icon_path("copy-solid.svg")), "Clone", parent)
         action_clone_remote.triggered.connect(self.clone_remote_project)
 
-        action_status = QAction(QIcon(icon_path("info-circle-solid.svg")), "Status", parent)
-        action_status.triggered.connect(self.project_status)
-
         action_diagnostic_log = QAction(QIcon(icon_path("medkit-solid.svg")), "Diagnostic log", parent)
         action_diagnostic_log.triggered.connect(self.submit_logs)
 
         actions = [
             action_open_project,
-            action_status,
             action_sync_project,
             action_clone_remote,
             action_remove_local,
