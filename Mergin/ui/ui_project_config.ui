@@ -26,7 +26,7 @@
       <item row="0" column="0" colspan="4">
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is configuration for selective sync for Input in Mergin project. With selective sync enabled Input will not download photos from other surveyors to make synchronisation faster. Check out more in the &lt;a href=&quot;https://merginmaps.com/docs/manage/selective_sync/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;documentation&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is configuration for selective sync for Input in Mergin Maps project. With selective sync enabled Mergin Maps Input will not download photos from other surveyors to make synchronisation faster. Check out more in the &lt;a href=&quot;https://merginmaps.com/docs/manage/selective_sync/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;documentation&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
@@ -101,7 +101,7 @@
       <item row="0" column="0" colspan="2">
        <widget class="QLabel" name="label_3">
         <property name="text">
-         <string>This option is used by Input when adding pictures to the project (taken from camera or using existing picture from gallery).</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This option is used by Mergin Maps Input when adding pictures to the project (taken from camera or using existing picture from gallery).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>

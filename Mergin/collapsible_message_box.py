@@ -4,7 +4,7 @@ from qgis.PyQt import QtWidgets
 
 
 class CollapsibleBox(QtWidgets.QWidget):
-    def __init__(self, text, details, title="Mergin error", parent=None):
+    def __init__(self, text, details, title="Mergin Maps error", parent=None):
         msg = QMessageBox()
         msg.setWindowTitle(title)
         msg.setTextFormat(Qt.RichText)

@@ -71,14 +71,14 @@ class MerginPlugin:
         self.data_item_provider = None
         self.actions = []
         self.actions_always_on = []
-        self.menu = "Mergin Plugin"
+        self.menu = "Mergin Maps"
         self.mergin_proj_dir = None
         self.mc = None
         self.manager = None
         self.provider = MerginProvider()
-        self.toolbar = self.iface.addToolBar("Mergin Toolbar")
-        self.toolbar.setToolTip("Mergin Toolbar")
-        self.toolbar.setObjectName("MerginToolbar")
+        self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
+        self.toolbar.setToolTip("Mergin Maps Toolbar")
+        self.toolbar.setObjectName("MerginMapsToolbar")
 
         self.iface.projectRead.connect(self.on_qgis_project_changed)
         self.iface.newProjectCreated.connect(self.on_qgis_project_changed)
@@ -114,14 +114,14 @@ class MerginPlugin:
         )
         self.add_action(
             "settings.svg",
-            text="Configure Mergin Plugin",
+            text="Configure Mergin Maps Plugin",
             callback=self.configure,
             add_to_menu=True,
             add_to_toolbar=self.toolbar,
         )
         self.add_action(
             "square-plus.svg",
-            text="Create Mergin Project",
+            text="Create Mergin Maps Project",
             callback=self.create_new_project,
             add_to_menu=False,
             add_to_toolbar=self.toolbar,
@@ -130,7 +130,7 @@ class MerginPlugin:
         )
         self.add_action(
             "refresh.svg",
-            text="Synchronise Mergin Project",
+            text="Synchronise Mergin Maps Project",
             callback=self.current_project_sync,
             add_to_menu=False,
             add_to_toolbar=self.toolbar,
@@ -189,7 +189,7 @@ class MerginPlugin:
         return action
 
     def create_manager(self):
-        """Create Mergin projects manager."""
+        """Create Mergin Maps projects manager."""
         error = ""
         try:
             if self.mc is None:
@@ -207,7 +207,7 @@ class MerginPlugin:
                 mc=self.mc, manager=self.manager, err=error)
 
     def has_browser_item(self):
-        """Check if the Mergin provider Browser item exists and has the root item defined."""
+        """Check if the Mergin Maps provider Browser item exists and has the root item defined."""
         if self.data_item_provider is not None:
             if self.data_item_provider.root_item is not None:
                 return True
@@ -220,7 +220,7 @@ class MerginPlugin:
         self.post_login()
 
     def open_configured_url(self):
-        """Opens configured mergin maps server url in default browser"""
+        """Opens configured Mergin Maps server url in default browser"""
         if self.mc is None:
             url = QUrl("https://merginmaps.com")
         else:
@@ -229,7 +229,7 @@ class MerginPlugin:
         QDesktopServices.openUrl(url)
 
     def enable_toolbar_actions(self, enable=None):
-        """Check current project and set Mergin Toolbar icons enabled accordingly."""
+        """Check current project and set Mergin Maps Toolbar icons enabled accordingly."""
         if enable is None:
             enable = mergin_project_local_path() is not None
         if self.manager is None:
@@ -237,7 +237,7 @@ class MerginPlugin:
         for action in self.toolbar.actions():
             if action.text() in self.actions_always_on:
                 action.setEnabled(True)
-            elif action.text() == "Create Mergin Project":
+            elif action.text() == "Create Mergin Maps Project":
                 action.setEnabled(self.mc is not None and self.manager is not None)
             else:
                 action.setEnabled(enable)
@@ -245,10 +245,10 @@ class MerginPlugin:
     def show_browser_panel(self):
         """Check if QGIS Browser panel is open. If not, ask and eventually make it visible to users."""
         browser = [w for w in self.iface.mainWindow().findChildren(QDockWidget) if w.objectName() == "Browser"][0]
-        q = "QGIS Browser panel is currently off. The panel is used for Mergin projects management.\n"
+        q = "QGIS Browser panel is currently off. The panel is used for Mergin Maps projects management.\n"
         q += "Would you like to open it and see your Mergin projects?"
         if not browser.isVisible():
-            res = QMessageBox.question(None, "Mergin - QGIS Browser Panel", q)
+            res = QMessageBox.question(None, "Mergin Maps - QGIS Browser Panel", q)
             if res == QMessageBox.Yes:
                 self.iface.addDockWidget(Qt.LeftDockWidgetArea, browser)
 
@@ -275,7 +275,7 @@ class MerginPlugin:
 
             if requires_action:
                 iface.messageBar().pushMessage(
-                    "Mergin",
+                    "Mergin Maps",
                     "Your attention is required.&nbsp;Please visit the "
                     f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required'>"
                     "Mergin dashboard</a>",
@@ -298,12 +298,12 @@ class MerginPlugin:
             settings.setValue("Mergin/rebrandingNotified", True)
 
     def create_new_project(self):
-        """Open new Mergin project creation dialog."""
+        """Open new Mergin Maps project creation dialog."""
 
         if not unsaved_project_check():
             return
         if not self.manager:
-            QMessageBox.warning(None, "Create Mergin Project", "Plugin not configured!")
+            QMessageBox.warning(None, "Create Mergin Maps Project", "Plugin not configured!")
             return
 
         user_info = self.mc.user_info()
@@ -319,13 +319,13 @@ class MerginPlugin:
             self.data_item_provider.root_item.depopulate()
 
     def current_project_sync(self):
-        """Synchronise current Mergin project."""
+        """Synchronise current Mergin Maps project."""
         self.manager.project_status(self.mergin_proj_dir)
 
     def on_qgis_project_changed(self):
         """
-        Called when QGIS project is created or (re)loaded. Sets QGIS project related Mergin variables.
-        If a loaded project is not a Mergin project, there are no Mergin variables by default.
+        Called when QGIS project is created or (re)loaded. Sets QGIS project related Mergin Maps variables.
+        If a loaded project is not a Mergin Maps project, there are no Mergin variables by default.
         If a loaded project is invalid - doesnt have metadata, Mergin variables are removed.
         """
         self.enable_toolbar_actions(enable=False)
@@ -357,7 +357,7 @@ class MerginPlugin:
 
 
 class MerginRemoteProjectItem(QgsDataItem):
-    """Data item to represent a remote Mergin project."""
+    """Data item to represent a remote Mergin Maps project."""
 
     def __init__(self, parent, project, project_manager):
         self.project = project
@@ -395,10 +395,10 @@ class MerginRemoteProjectItem(QgsDataItem):
         dlg.exec_()  # blocks until completion / failure / cancellation
         if dlg.exception:
             if isinstance(dlg.exception, (URLError, ValueError)):
-                QgsApplication.messageLog().logMessage("Mergin plugin: " + str(dlg.exception))
+                QgsApplication.messageLog().logMessage("Mergin Maps plugin: " + str(dlg.exception))
                 msg = (
                     "Failed to download your project {}.\n"
-                    "Please make sure your Mergin settings are correct".format(self.project_name)
+                    "Please make sure your Mergin Maps settings are correct".format(self.project_name)
                 )
                 QMessageBox.critical(None, "Project download", msg, QMessageBox.Close)
             elif isinstance(dlg.exception, LoginError):
@@ -442,7 +442,7 @@ class MerginRemoteProjectItem(QgsDataItem):
         except LoginError as e:
             login_error_message(e)
             return
-        msg = "Mergin project cloned successfully."
+        msg = "Mergin Maps project cloned successfully."
         QMessageBox.information(None, "Clone project", msg, QMessageBox.Close)
         self.parent().reload()
         # we also need to reload My projects group as the cloned project could appear there
@@ -458,7 +458,7 @@ class MerginRemoteProjectItem(QgsDataItem):
 
         try:
             self.mc.delete_project(self.project_name)
-            msg = "Mergin project removed successfully."
+            msg = "Mergin Maps project removed successfully."
             QMessageBox.information(None, "Remove project", msg, QMessageBox.Close)
             self.parent().reload()
         except (URLError, ClientError) as e:
@@ -484,7 +484,7 @@ class MerginRemoteProjectItem(QgsDataItem):
 
 
 class MerginLocalProjectItem(QgsDirectoryItem):
-    """Data item to represent a local Mergin project."""
+    """Data item to represent a local Mergin Maps project."""
 
     def __init__(self, parent, project, project_manager):
         self.project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
@@ -559,7 +559,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
                 # will fail and removal of the local rpoject will fail as well
                 QTimer.singleShot(250, lambda: shutil.rmtree(self.path))
             except PermissionError as e:
-                QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
+                QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
                 msg = (
                     f"Failed to delete your project {self.project_name} because it is open.\n"
                     "You might need to close project or QGIS to remove its files."
@@ -583,7 +583,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
             return  # cancelled
         try:
             self.mc.clone_project(self.project_name, dlg.project_name, dlg.project_namespace)
-            msg = "Mergin project cloned successfully."
+            msg = "Mergin Maps project cloned successfully."
             QMessageBox.information(None, "Clone project", msg, QMessageBox.Close)
             self.parent().reload()
         except (URLError, ClientError) as e:
@@ -633,7 +633,7 @@ class FetchMoreItem(QgsDataItem):
 
 
 class MerginGroupItem(QgsDataCollectionItem):
-    """ Mergin group data item. Contains filtered list of Mergin projects. """
+    """ Mergin group data item. Contains filtered list of Mergin Maps projects. """
 
     def __init__(self, parent, grp_name, grp_filter, icon, order, plugin):
         QgsDataCollectionItem.__init__(self, parent, grp_name, "/Mergin" + grp_name)
@@ -648,7 +648,7 @@ class MerginGroupItem(QgsDataCollectionItem):
         self.fetch_more_item = None
 
     def fetch_projects(self, page=1, per_page=PROJS_PER_PAGE):
-        """Get paginated projects list from Mergin service. If anything goes wrong, return an error item."""
+        """Get paginated projects list from Mergin Maps service. If anything goes wrong, return an error item."""
         if self.project_manager is None:
             error_item = QgsErrorItem(self, "Failed to log in. Please check the configuration", "/Mergin/error")
             sip.transferto(error_item, self)
@@ -708,7 +708,7 @@ class MerginGroupItem(QgsDataCollectionItem):
     def fetch_more(self):
         """Fetch another page of projects and add them to the group item."""
         if self.fetch_more_item is None:
-            QMessageBox.information(None, "Fetch Mergin Projects", "All projects already listed.")
+            QMessageBox.information(None, "Fetch Mergin Maps Projects", "All projects already listed.")
             return
         page_to_get = floor(self.rowCount() / PROJS_PER_PAGE) + 1
         dummy = self.fetch_projects(page=page_to_get)

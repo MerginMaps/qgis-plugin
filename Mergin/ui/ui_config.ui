@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>568</width>
+    <width>616</width>
     <height>313</height>
    </rect>
   </property>
@@ -85,7 +85,7 @@
    <item row="4" column="0" colspan="2">
     <widget class="QCheckBox" name="custom_url">
      <property name="text">
-      <string>Custom Mergin server</string>
+      <string>Custom Mergin Maps server</string>
      </property>
     </widget>
    </item>

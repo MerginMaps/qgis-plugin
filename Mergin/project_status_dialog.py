@@ -125,7 +125,7 @@ class ProjectStatusDialog(QDialog):
                             item.appendRow(sub_item)
                     elif not is_server and category != "added":
                         item.appendRow(QStandardItem("Unable to detect changes"))
-                        msg = f"Mergin plugin: Unable to detect changes for {path}"
+                        msg = f"Mergin Maps plugin: Unable to detect changes for {path}"
                         QgsApplication.messageLog().logMessage(msg)
                         if self.mp is not None:
                             self.mp.log.warning(msg)
