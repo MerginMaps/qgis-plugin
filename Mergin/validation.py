@@ -240,9 +240,11 @@ class MerginProjectValidator(object):
             self._check_field_unique(parent_layer, parent_fields)
             self._check_field_unique(child_layer, child_fields)
 
-            # check both fields are not primary keys
-            self._check_primary_keys(parent_layer, parent_fields)
-            self._check_primary_keys(child_layer, child_fields)
+            # check that fields used in relation are not primary keys
+            if parent_layer.dataProvider().storageType() == "GPKG":
+                self._check_primary_keys(parent_layer, parent_fields)
+            if child_layer.dataProvider().storageType() == "GPKG":
+                self._check_primary_keys(child_layer, child_fields)
 
     def check_value_relation(self):
         """Check if value relation widget configured correctly."""
@@ -265,9 +267,10 @@ class MerginProjectValidator(object):
 
                     # check that "key" field does not have duplicated values
                     # and is not a primary key
-                    idx = child_layer.fields().indexFromName(str(cfg["Key"]))
-                    self._check_field_unique(child_layer, [idx])
-                    self._check_primary_keys(child_layer, [idx])
+                    if child_layer.dataProvider().storageType() == "GPKG":
+                        idx = child_layer.fields().indexFromName(str(cfg["Key"]))
+                        self._check_field_unique(child_layer, [idx])
+                        self._check_primary_keys(child_layer, [idx])
 
     def _check_field_unique(self, layer, fields):
         feature_count = layer.dataProvider().featureCount()
