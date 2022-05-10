@@ -13,7 +13,7 @@ from qgis.PyQt.QtCore import QSize
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem, QIcon
 
 from qgis.gui import QgsGui
-from qgis.core import Qgis, QgsApplication, QgsProject, QgsMapLayer
+from qgis.core import Qgis, QgsApplication, QgsProject, QgsMapLayer, QgsMessageLog
 
 from .validation import MultipleLayersWarning, warning_display_string
 from .utils import is_versioned_file, icon_path
