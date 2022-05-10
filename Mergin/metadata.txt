@@ -11,7 +11,9 @@ about=Mergin is a repository for storing and tracking changes to QGIS projects/d
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2022.3
+changelog=2022.3.1
+  - Fix relation validation (#393)
+  <p>2022.3
   - Updated branding to Mergin Maps
   - Added validation of relations (#380)
   - Better validation of field names (#379)
