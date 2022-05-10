@@ -624,7 +624,7 @@ class FetchMoreItem(QgsDataItem):
     def __init__(self, parent):
         self.parent = parent
         QgsDataItem.__init__(self, QgsDataItem.Collection, parent, "Double-click for more...", "")
-        self.setIcon(QIcon(icon_path("download.svg")))
+        self.setIcon(QIcon(icon_path("dots.svg")))
         self.setSortKey("2")  # the item should appear at the bottom of the list
 
     def handleDoubleClick(self):
