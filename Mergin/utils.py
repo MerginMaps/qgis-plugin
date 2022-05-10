@@ -307,7 +307,7 @@ def send_logs(username, logfile):
     url = MERGIN_LOGS_URL + "?" + urllib.parse.urlencode(params)
     header = {"content-type": "text/plain"}
 
-    meta = "Plugin: {} \nQGIS: {} \nSystem: {} \nMergin URL: {} \nMergin user: {} \n--------------------------------\n\n"\
+    meta = "Plugin: {} \nQGIS: {} \nSystem: {} \nMergin Maps URL: {} \nMergin Maps user: {} \n--------------------------------\n\n"\
         .format(
             version,
             get_qgis_version_str(),
@@ -343,16 +343,16 @@ def send_logs(username, logfile):
 def validate_mergin_url(url):
     """
     Validation of mergin URL by pinging. Checks if URL points at compatible Mergin server.
-    :param url: String Mergin URL to ping.
+    :param url: String Mergin Maps URL to ping.
     :return: String error message as result of validation. If None, URL is valid.
     """
     try:
         mc = MerginClient(url, proxy_config=get_qgis_proxy_config(url))
         if not mc.is_server_compatible():
-            return 'Incompatible Mergin server'
+            return 'Incompatible Mergin Maps server'
     # Valid but not Mergin URl
     except ClientError:
-        return "Invalid Mergin URL"
+        return "Invalid Mergin Maps URL"
     # Cannot parse URL
     except ValueError:
         return "Invalid URL"
@@ -580,7 +580,7 @@ def datasource_filepath(layer):
 
 
 def is_layer_packable(layer):
-    """Check if layer can be packaged for a Mergin project."""
+    """Check if layer can be packaged for a Mergin Maps project."""
     dp = layer.dataProvider()
     if dp is None:
         # Vector tile layers have no provider
@@ -596,7 +596,7 @@ def is_layer_packable(layer):
 
 
 def find_packable_layers(qgis_project=None):
-    """Find layers that can be packaged for Mergin."""
+    """Find layers that can be packaged for Mergin Maps."""
     packable = []
     if qgis_project is None:
         qgis_project = QgsProject.instance()
@@ -765,7 +765,7 @@ def write_raster(raster_layer, raster_writer, write_path):
 
 
 def login_error_message(e):
-    QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
+    QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
     msg = "<font color=red>Security token has been expired, failed to renew. Check your username and password </font>"
     QMessageBox.critical(None, "Login failed", msg, QMessageBox.Close)
 
@@ -820,7 +820,7 @@ def pretty_summary(summary):
 
 
 def get_local_mergin_projects_info():
-    """Get a list of local Mergin projects info from QSettings."""
+    """Get a list of local Mergin Maps projects info from QSettings."""
     local_projects_info = []
     settings = QSettings()
     config_server = settings.value("Mergin/server", None)
@@ -850,7 +850,7 @@ def get_local_mergin_projects_info():
 
 
 def set_qgis_project_mergin_variables():
-    """Check if current QGIS project is a local Mergin project and set QGIS project variables for Mergin."""
+    """Check if current QGIS project is a local Mergin Maps project and set QGIS project variables for Mergin Maps."""
     qgis_project_path = QgsProject.instance().absolutePath()
     if not qgis_project_path:
         return None
@@ -870,9 +870,9 @@ def set_qgis_project_mergin_variables():
 
 def mergin_project_local_path(project_name=None):
     """
-    Try to get local Mergin project path. If project_name is specified, look for this specific project, otherwise
-    check if current QGIS project directory is listed in QSettings Mergin local projects list.
-    :return: Mergin project local path if project was already downloaded, None otherwise.
+    Try to get local Mergin Maps project path. If project_name is specified, look for this specific project, otherwise
+    check if current QGIS project directory is listed in QSettings Mergin Maps local projects list.
+    :return: Mergin Maps project local path if project was already downloaded, None otherwise.
     """
     settings = QSettings()
     if project_name is not None:
@@ -896,16 +896,16 @@ def mergin_project_local_path(project_name=None):
     return None
 
 
-def icon_path(icon_filename, fa_icon=True):
-    if fa_icon:
-        ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", "FA_icons", icon_filename)
+def icon_path(icon_filename, tabler_icon=True):
+    if tabler_icon:
+        ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", "tabler_icons", icon_filename)
     else:
         ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_filename)
     return ipath
 
 
 def check_mergin_subdirs(directory):
-    """Check if the directory has a Mergin project subdir (.mergin)."""
+    """Check if the directory has a Mergin Maps project subdir (.mergin)."""
     for root, dirs, files in os.walk(directory):
         for name in dirs:
             if name == ".mergin":
@@ -1043,13 +1043,13 @@ def get_primary_keys(layer):
 
 def test_server_connection(url, username, password):
     """
-    Test connection to Mergin server. This includes check for valid server URL
+    Test connection to Mergin Maps server. This includes check for valid server URL
     and user credentials correctness.
     """
     err_msg = validate_mergin_url(url)
     if err_msg:
         msg = f"<font color=red>{err_msg}</font>"
-        QgsApplication.messageLog().logMessage(f"Mergin plugin: {err_msg}")
+        QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {err_msg}")
         return False, msg
 
     result = True, "<font color=green> OK </font>"
@@ -1057,7 +1057,7 @@ def test_server_connection(url, username, password):
     try:
         mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
     except (LoginError, ClientError) as e:
-        QgsApplication.messageLog().logMessage(f"Mergin plugin: {str(e)}")
+        QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
         result = False, f"<font color=red> Connection failed, {str(e)} </font>"
 
     return result

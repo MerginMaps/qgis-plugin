@@ -24,11 +24,11 @@ ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_st
 class ProjectStatusDialog(QDialog):
 
     icons = {
-        "added": "images/FA_icons/plus.svg",
-        "removed": "images/FA_icons/trash.svg",
-        "updated": "images/FA_icons/edit.svg",
-        "renamed": "images/FA_icons/edit.svg",
-        "table": "images/FA_icons/table.svg",
+        "added": "plus.svg",
+        "removed": "trash.svg",
+        "updated": "pencil.svg",
+        "renamed": "pencil.svg",
+        "table": "table.svg",
     }
 
     def __init__(
@@ -40,9 +40,8 @@ class ProjectStatusDialog(QDialog):
 
         QgsGui.instance().enableAutoGeometryRestore(self)
 
-        self.btn_sync = QPushButton(" Sync")
-        self.btn_sync.setIcon(QIcon(icon_path("sync-solid.svg")))
-        self.btn_sync.setIconSize(QSize(12, 12))
+        self.btn_sync = QPushButton("Sync")
+        self.btn_sync.setIcon(QIcon(icon_path("refresh.svg")))
         # add sync button with AcceptRole. If dialog accepted we will start
         # sync, otherwise just close status dialog
         self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.AcceptRole)
@@ -125,7 +124,7 @@ class ProjectStatusDialog(QDialog):
                             item.appendRow(sub_item)
                     elif not is_server and category != "added":
                         item.appendRow(QStandardItem("Unable to detect changes"))
-                        msg = f"Mergin plugin: Unable to detect changes for {path}"
+                        msg = f"Mergin Maps plugin: Unable to detect changes for {path}"
                         QgsApplication.messageLog().logMessage(msg)
                         if self.mp is not None:
                             self.mp.log.warning(msg)
@@ -145,7 +144,7 @@ class ProjectStatusDialog(QDialog):
         return [QStandardItem("{}: {}".format(k, summary[k])) for k in summary if k != "table"]
 
     def _get_icon_item(self, key, text):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), self.icons[key])
+        path = icon_path(self.icons[key])
         item = QStandardItem(text)
         item.setIcon(QIcon(path))
         return item

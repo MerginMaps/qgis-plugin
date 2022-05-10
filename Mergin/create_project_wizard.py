@@ -37,7 +37,7 @@ SETTINGS_PAGE = 2
 
 
 class InitPage(ui_init_page, base_init_page):
-    """Initial wizard page with Mergin project source to choose."""
+    """Initial wizard page with Mergin Maps project source to choose."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -63,7 +63,7 @@ class InitPage(ui_init_page, base_init_page):
             if mergin_dir:
                 self.cur_proj_no_pack_btn.setDisabled(True)
                 self.cur_proj_no_pack_btn.setToolTip(
-                    f"Current project directory is already a Mergin project.\nSee {mergin_dir}")
+                    f"Current project directory is already a Mergin Maps project.\nSee {mergin_dir}")
 
     def selection_changed(self):
         self.hidden_ledit.setText("Selection done!")
@@ -103,10 +103,10 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
 
     def initializePage(self):
         if self.parent.init_page.cur_proj_no_pack_btn.isChecked():
-            self.setup_browsing(current_proj=True, question="Mergin project folder:", field="project_dir*")
+            self.setup_browsing(current_proj=True, question="Mergin Maps project folder:", field="project_dir*")
             self.for_current_proj = True
         else:
-            self.setup_browsing(question="Create Mergin project in:", field="project_dir*")
+            self.setup_browsing(question="Create Mergin Maps project in:", field="project_dir*")
             self.for_current_proj = False
 
     def populate_namespace_cbo(self):
@@ -119,7 +119,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
     def setup_browsing(self, question=None, current_proj=False, field=None):
         """This will setup label and signals for browse button."""
         if question is None:
-            question = "Create Mergin project in:"
+            question = "Create Mergin Maps project in:"
         self.question_label.setText(question)
         if field:
             self.registerField(field, self.path_ok_ledit)
@@ -154,7 +154,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         self.info_label.setText(info)
 
     def check_input(self):
-        """Check if entered path is not already a Mergin project dir and has at most a single QGIS project file."""
+        """Check if entered path is not already a Mergin Maps project dir and has at most a single QGIS project file."""
         # TODO: check if the project exists on the server
         proj_name = self.project_name_ledit.text()
         if not proj_name:
@@ -384,13 +384,13 @@ class PackagingPage(ui_pack_page, base_pack_page):
 
 
 class NewMerginProjectWizard(QWizard):
-    """Wizard for creating new Mergin project."""
+    """Wizard for creating new Mergin Maps project."""
 
     def __init__(self, project_manager, username, user_organisations=None, parent=None):
         super().__init__(parent)
         self.iface = iface
         self.settings = QSettings()
-        self.setWindowTitle("Create new Mergin project")
+        self.setWindowTitle("Create new Mergin Maps project")
         self.setWizardStyle(QWizard.ClassicStyle)
         self.setDefaultProperty("QComboBox", "currentText", QComboBox.currentTextChanged)
         self.project_manager = project_manager

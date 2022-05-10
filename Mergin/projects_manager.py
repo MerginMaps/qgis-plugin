@@ -25,11 +25,9 @@ from .mergin.merginproject import MerginProject
 from .project_status_dialog import ProjectStatusDialog
 from .validation import MerginProjectValidator
 
-icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images/FA_icons")
-
 
 class MerginProjectsManager(object):
-    """Class for managing Mergin projects in QGIS."""
+    """Class for managing Mergin Maps projects in QGIS."""
 
     def __init__(self, mergin_client):
         self.mc = mergin_client
@@ -53,7 +51,7 @@ class MerginProjectsManager(object):
             iface.addProject(qgis_files[0])
             if self.mc.has_unfinished_pull(project_dir):
                 widget = iface.messageBar().createMessage(
-                    "Mergin",
+                    "Mergin Maps",
                     "The previous pull has not finished completely, status of some files may be reported incorrectly."
                 )
                 button = QPushButton(widget)
@@ -76,7 +74,7 @@ class MerginProjectsManager(object):
 
     def create_project(self, project_name, project_dir, is_public, namespace):
         """
-        Create new Mergin project.
+        Create new Mergin Maps project.
         If project_dir is None, we are creating empty project without upload.
         """
 
@@ -85,7 +83,7 @@ class MerginProjectsManager(object):
             self.mc.create_project(project_name, is_public, namespace)
         except Exception as e:
             QApplication.restoreOverrideCursor()
-            QMessageBox.critical(None, "Create Project", "Failed to create Mergin project.\n" + str(e))
+            QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + str(e))
             return False
 
         QApplication.restoreOverrideCursor()
@@ -140,7 +138,7 @@ class MerginProjectsManager(object):
             write_project_variables(self.mc.username(), project_name, full_project_name, "v1", server_url)
 
         QMessageBox.information(
-            None, "Create Project", "Mergin project created and uploaded successfully", QMessageBox.Close
+            None, "Create Project", "Mergin Maps project created and uploaded successfully", QMessageBox.Close
         )
 
         return True
@@ -185,7 +183,7 @@ class MerginProjectsManager(object):
             login_error_message(e)
 
     def check_project_server(self, project_dir, inform_user=True):
-        """Check if the project was created for current plugin Mergin server."""
+        """Check if the project was created for current plugin Mergin Maps server."""
         proj_server = None
         for path, owner, name, server in get_local_mergin_projects_info():
             if not same_dir(path, project_dir):
@@ -195,9 +193,9 @@ class MerginProjectsManager(object):
         if proj_server is not None and proj_server.rstrip("/") == self.mc.url.rstrip("/"):
             return True
         if inform_user:
-            info = f"Current project was created for another Mergin server:\n{proj_server}\n\n"
-            info += "You need to reconfigure Mergin plugin to synchronise the project."
-            QMessageBox.critical(None, "Mergin", info)
+            info = f"Current project was created for another Mergin Maps server:\n{proj_server}\n\n"
+            info += "You need to reconfigure Mergin Maps plugin to synchronise the project."
+            QMessageBox.critical(None, "Mergin Maps", info)
         return False
 
     def sync_project(self, project_dir, project_name=None):
@@ -308,7 +306,7 @@ class MerginProjectsManager(object):
 
         if dlg.is_complete:
             # TODO: report success only when we have actually done anything
-            msg = "Mergin project {} synchronized successfully".format(project_name)
+            msg = "Mergin Maps project {} synchronized successfully".format(project_name)
             QMessageBox.information(None, "Project sync", msg, QMessageBox.Close)
             # clear canvas cache so any changes become immediately visible to users
             self.iface.mapCanvas().clearCache()
@@ -351,11 +349,11 @@ class MerginProjectsManager(object):
 
     def get_mergin_browser_groups(self):
         """
-        Return browser tree items of Mergin provider. These should be the 3 projects groups, or Error item, if
+        Return browser tree items of Mergin Maps provider. These should be the 3 projects groups, or Error item, if
         the plugin is not properly configured.
         """
         browser_model = self.iface.browserModel()
-        root_idx = browser_model.findPath("Mergin")
+        root_idx = browser_model.findPath("Mergin Maps")
         if not root_idx.isValid():
             return {}
         group_items = [browser_model.dataItem(browser_model.index(i, 0, parent=root_idx)) for i in range(3)]
@@ -402,7 +400,7 @@ class MerginProjectsManager(object):
 
     def close_project_and_fix_pull(self, project_dir):
         """
-        Close current Mergin project if it is opened in QGIS and try to fix
+        Close current Mergin Maps project if it is opened in QGIS and try to fix
         unfinished pull.
         """
         delay = 0
