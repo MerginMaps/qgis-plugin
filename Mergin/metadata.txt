@@ -12,10 +12,10 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 
 ; start of optional metadata
 changelog=2022.3.2
+  - Add project setting to control photo quality in Mergin Maps Input (#383)
   - Disable primary keys validation for non-GPKG layers (#401)
-  - Update of icon pack and renaming Mergin to Mergin Maps
   - Fix packaging of raster auxilary files with georeferencing information (#371)
-  - Add project setting to control photo quiality in Mergin Maps Input
+  - Update of icon pack and renaming Mergin to Mergin Maps
   <p>2022.3.1
   - Fix relation validation (#393)
   <p>2022.3
