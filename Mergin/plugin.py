@@ -723,7 +723,7 @@ class MerginGroupItem(QgsDataCollectionItem):
         action_refresh.triggered.connect(self.reload)
         actions = [action_refresh]
         if self.fetch_more_item is not None:
-            action_fetch_more = QAction(QIcon(icon_path("download.svg")), "Fetch more", parent)
+            action_fetch_more = QAction(QIcon(icon_path("dots.svg")), "Fetch more", parent)
             action_fetch_more.triggered.connect(self.fetch_more)
             actions.append(action_fetch_more)
         if self.name().startswith("My projects"):
