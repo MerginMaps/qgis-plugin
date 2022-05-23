@@ -6,7 +6,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QDialog
 
 from qgis.core import QgsProject, QgsMapLayerProxyModel, QgsVectorLayerCache, QgsFeatureRequest
-from qgis.gui import QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
+from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
 from qgis.utils import iface
 
 from .mergin.merginproject import MerginProject
@@ -23,6 +23,8 @@ class DiffViewerDialog(QDialog):
     def __init__(self, parent=None):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
+
+        QgsGui.instance().enableAutoGeometryRestore(self)
 
         self.map_canvas.enableAntiAliasing(True)
         self.pan_tool = QgsMapToolPan(self.map_canvas)
