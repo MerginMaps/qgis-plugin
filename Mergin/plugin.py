@@ -38,6 +38,7 @@ from urllib.error import URLError
 from .configuration_dialog import ConfigurationDialog
 from .create_project_wizard import NewMerginProjectWizard
 from .clone_project_dialog import CloneProjectDialog
+from .diff_dialog import DiffViewerDialog
 from .project_settings_widget import MerginProjectConfigFactory
 from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
@@ -58,13 +59,6 @@ from .utils import (
     unsaved_project_check,
     check_mergin_subdirs,
 )
-from .diff import (
-    make_local_changes_layer,
-    add_diff_layer_to_canvas,
-    cleanup_project,
-    CHANGES_GROUP,
-    diff_layers_list
-)
 
 from .mergin.merginproject import MerginProject
 from .processing.provider import MerginProvider
@@ -84,6 +78,7 @@ class MerginPlugin:
         self.mergin_proj_dir = None
         self.mc = None
         self.manager = None
+        self.dlg_diff_viewer = None
         self.provider = MerginProvider()
         self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
         self.toolbar.setToolTip("Mergin Maps Toolbar")
@@ -91,7 +86,6 @@ class MerginPlugin:
 
         self.iface.projectRead.connect(self.on_qgis_project_changed)
         self.iface.newProjectCreated.connect(self.on_qgis_project_changed)
-        QgsProject.instance().projectSaved.connect(self.on_qgis_project_changed)
 
         settings = QSettings()
         QgsExpressionContextUtils.setGlobalVariable("mergin_username", settings.value("Mergin/username", ""))
@@ -138,6 +132,15 @@ class MerginPlugin:
             always_on=False,
         )
         self.add_action(
+            "file-diff.svg",
+            text="View Local Changes",
+            callback=self.view_local_changes,
+            add_to_menu=False,
+            add_to_toolbar=self.toolbar,
+            enabled=False,
+            always_on=False,
+        )
+        self.add_action(
             "refresh.svg",
             text="Synchronise Mergin Maps Project",
             callback=self.current_project_sync,
@@ -160,12 +163,6 @@ class MerginPlugin:
         # register custom mergin widget in project properties
         self.mergin_project_config_factory = MerginProjectConfigFactory()
         self.iface.registerProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
-
-        # add layer context menu action for checking local changes
-        self.action_show_changes = QAction("Show local changes", self.iface.mainWindow())
-        self.action_show_changes.setIcon(QIcon(icon_path("mm_icon_positive_no_padding.svg")))
-        self.iface.addCustomActionForLayerType(self.action_show_changes, "", QgsMapLayer.VectorLayer, True)
-        self.action_show_changes.triggered.connect(self.show_local_changes)
 
     def add_action(
         self,
@@ -334,24 +331,10 @@ class MerginPlugin:
         if self.mergin_proj_dir is not None:
             self.enable_toolbar_actions()
 
-        if diff_layers_list:
-            root = QgsProject.instance().layerTreeRoot()
-            group = root.findGroup(CHANGES_GROUP)
-            if group:
-                root.removeChildNode(group)
-
-            QgsProject.instance().removeMapLayers(diff_layers_list)
-            diff_layers_list.clear()
-            self.iface.mapCanvas().refresh()
-            # let QGIS finalize previous project save and save again
-            # this time without memory layers
-            QTimer.singleShot(250, lambda: QgsProject.instance().write())
-
     def unload(self):
         # Disconnect Mergin related signals
         self.iface.projectRead.disconnect(self.on_qgis_project_changed)
         self.iface.newProjectCreated.disconnect(self.on_qgis_project_changed)
-        QgsProject.instance().projectSaved.disconnect(self.on_qgis_project_changed)
 
         remove_project_variables()
         QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
@@ -366,12 +349,10 @@ class MerginPlugin:
             self.iface.removeToolBarIcon(action)
         del self.toolbar
 
-        self.iface.removeCustomActionForLayerType(self.action_show_changes)
-
         self.iface.unregisterProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
         QgsApplication.processingRegistry().removeProvider(self.provider)
 
-    def show_local_changes(self):
+    def view_local_changes(self):
         project_path = QgsProject.instance().homePath()
         if not project_path:
             iface.messageBar().pushMessage("Mergin", "Project is not saved, can not compute local changes", Qgis.Warning)
@@ -381,23 +362,14 @@ class MerginPlugin:
             iface.messageBar().pushMessage("Mergin", "Current project is not a Mergin project.", Qgis.Warning)
             return
 
-        mp = MerginProject(QgsProject.instance().homePath())
-        selected_layers = self.iface.layerTreeView().selectedLayersRecursive()
-        for layer in selected_layers:
-            if layer.type() != QgsMapLayer.VectorLayer:
-                continue
-
-            if layer.dataProvider().storageType() != "GPKG":
-                QgsMessageLog.logMessage(f"Layer {layer.name()} is not supported.", "Mergin")
-                continue
-
-            vl, msg = make_local_changes_layer(mp, layer)
-            if vl is None:
-                QgsMessageLog.logMessage(msg, "Mergin")
-                continue
-            add_diff_layer_to_canvas(vl)
-            diff_layers_list.append(vl.id())
-            self.iface.messageBar().pushInfo('Mergin', 'Diff layer(s) were created and added the "Mergin local changes" group.')
+        if self.dlg_diff_viewer is None:
+            self.dlg_diff_viewer = DiffViewerDialog()
+            self.dlg_diff_viewer.show()
+            self.dlg_diff_viewer.exec_()
+        else:
+            self.dlg_diff_viewer.showNormal()
+            self.dlg_diff_viewer.raise_()
+            self.dlg_diff_viewer.activateWindow()
 
 
 class MerginRemoteProjectItem(QgsDataItem):

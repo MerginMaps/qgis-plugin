@@ -3,8 +3,6 @@ import json
 import base64
 import sqlite3
 import tempfile
-import xml.etree.ElementTree as ET
-import zipfile
 
 from qgis.PyQt.QtCore import (
     QVariant
@@ -35,8 +33,6 @@ from .utils import (
     pygeodiff,
     get_schema
 )
-
-CHANGES_GROUP = "Mergin local changes"
 
 geodiff = pygeodiff.GeoDiff()
 geodiff.set_maximum_logger_level(10)
@@ -319,28 +315,6 @@ def make_local_changes_layer(mp, layer):
     return vl, ''
 
 
-def add_diff_layer_to_canvas(layer):
-    """Adds diff layer to the QGIS map canvas.
-
-    Layer added to the "Local changes" group (created if not exists).
-    If layer with the same name already exists it will be deleted and
-    new layer added instead of it.
-    """
-    layers = QgsProject.instance().mapLayersByName(layer.name())
-    if layers:
-        QgsProject.instance().removeMapLayers([l.id() for l in layers])
-
-    root = QgsProject.instance().layerTreeRoot()
-    group = root.findGroup(CHANGES_GROUP)
-    if not group:
-        group = root.insertGroup(0, CHANGES_GROUP)
-
-    QgsProject.instance().addMapLayer(layer, False)
-    node_layer = QgsLayerTreeLayer(layer)
-    group.insertChildNode(0, node_layer)
-    group.setExpanded(True)
-
-
 def style_diff_layer(layer, schema_table):
     """Apply conditional styling and symbology to diff layer"""
     ### setup conditional styles!
@@ -452,63 +426,3 @@ def style_diff_layer(layer, schema_table):
         root_rule.appendChild(QgsRuleBasedRenderer.Rule(QgsFillSymbol.createSimple(fill_symbol_delete), 0, 0, "_op = 'delete'", "Delete"))
         r = QgsRuleBasedRenderer(root_rule)
         layer.setRenderer(r)
-
-
-def cleanup_project(diff_layers):
-    """Remove group and diff layers from the project"""
-    xml = None
-
-    project_file = QgsProject.instance().fileName()
-    file_name = QgsProject.instance().baseName()
-
-    if QgsProject.instance().isZipped():
-        with zipfile.ZipFile(project_file) as zf:
-            with zf.open(file_name + ".qgs") as f:
-                xml = ET.parse(f)
-    else:
-        xml = ET.parse(project_file)
-
-    root = xml.getroot()
-
-    # drop any reference to the group
-    elements = root.findall(f".//*[@name='{CHANGES_GROUP}']")
-    parents = root.findall(f".//*[@name='{CHANGES_GROUP}']/..")
-    for i, p in enumerate(parents):
-        p.remove(elements[i])
-
-    # drop layer-related elements
-    for lid in diff_layers:
-        # <layer> and <layer-setting> items
-        elements = root.findall(f".//*[@id='{lid}']")
-        parents = root.findall(f".//*[@id='{lid}']/..")
-        for i, p in enumerate(parents):
-            p.remove(elements[i])
-
-        # <maplayer> item
-        elements = root.findall(f".//maplayer/*[.='{lid}']/..")
-        parents = root.findall(f".//maplayer/*[.='{lid}']/../..")
-        for i, p in enumerate(parents):
-            p.remove(elements[i])
-
-        # <layer> item
-        elements = root.findall(f".//*[.='{lid}']")
-        parents = root.findall(f".//*[.='{lid}']/..")
-        for i, p in enumerate(parents):
-            p.remove(elements[i])
-
-    if QgsProject.instance().isZipped():
-        tmp_file = tempfile.NamedTemporaryFile(delete=False)
-        tmp_file.close()
-        with open(tmp_file.name, 'wb') as f:
-            f.write("<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>".encode('utf8'))
-            xml.write(f)
-
-        os.remove(project_file)
-        with zipfile.ZipFile(project_file, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.write(tmp_file.name, arcname=file_name + ".qgs")
-
-        os.unlink(tmp_file.name)
-    else:
-        with open(project_file, "wb") as f:
-            f.write("<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>".encode('utf8'))
-            xml.write(f)
