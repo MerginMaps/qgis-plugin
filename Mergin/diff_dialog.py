@@ -3,16 +3,27 @@ import os
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QDialog
+from qgis.PyQt.QtWidgets import QDialog, QPushButton, QDialogButtonBox
 
-from qgis.core import QgsProject, QgsMapLayerProxyModel, QgsVectorLayerCache, QgsFeatureRequest
-from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
+from qgis.core import (
+    QgsProject,
+    QgsVectorLayerCache,
+    QgsFeatureRequest,
+    QgsIconUtils,
+    QgsMapLayer,
+    QgsMessageLog,
+    Qgis
+)
+from qgis.gui import (
+    QgsGui,
+    QgsMapToolPan,
+    QgsAttributeTableModel,
+    QgsAttributeTableFilterModel
+)
 from qgis.utils import iface
 
 from .mergin.merginproject import MerginProject
-
 from .diff import make_local_changes_layer
-
 from .utils import icon_path
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_diff_viewer_dialog.ui')
@@ -26,22 +37,52 @@ class DiffViewerDialog(QDialog):
 
         QgsGui.instance().enableAutoGeometryRestore(self)
 
+        self.btn_add_current_diff = QPushButton("Add diff to project")
+        self.btn_add_current_diff.setIcon(QIcon(icon_path('file-plus.svg')))
+        self.ui.buttonBox.addButton(self.btn_add_current_diff, QDialogButtonBox.ActionRole)
+        self.btn_add_current_diff.clicked.connect(self.add_diff_to_project)
+
+        self.btn_add_all_diffs = QPushButton("Add all diffs to project")
+        self.btn_add_all_diffs.setIcon(QIcon(icon_path('folder-plus.svg')))
+        self.ui.buttonBox.addButton(self.btn_add_all_diffs, QDialogButtonBox.ActionRole)
+        self.btn_add_all_diffs.clicked.connect(self.add_all_diffs)
+
+        self.project_layers_checkbox.stateChanged.connect(self.toggle_project_layers)
+
         self.map_canvas.enableAntiAliasing(True)
         self.pan_tool = QgsMapToolPan(self.map_canvas)
         self.map_canvas.setMapTool(self.pan_tool)
 
-        self.diff_layer_cbo.setAllowEmptyLayer(True)
-        self.diff_layer_cbo.setFilters(QgsMapLayerProxyModel.HasGeometry)
-        self.diff_layer_cbo.setCurrentIndex(-1)
-        self.diff_layer_cbo.layerChanged.connect(self.diff_layer_changed)
+        self.tab_bar.currentChanged.connect(self.diff_layer_changed)
 
-        self.add_to_project_btn.setIcon(QIcon(icon_path('file-plus.svg')))
-        self.add_to_project_btn.clicked.connect(self.add_diff_to_project)
-
-        self.project_layers_checkbox.stateChanged.connect(self.toggle_project_layers)
-
-        self.diff_layer = None
+        self.current_diff = None
+        self.diff_layers = []
         self.filter_model = None
+
+        self.create_tabs()
+
+    def reject(self):
+        QDialog.reject(self)
+
+    def create_tabs(self):
+        mp = MerginProject(QgsProject.instance().homePath())
+        project_layers = QgsProject.instance().mapLayers()
+        for layer in project_layers.values():
+            if layer.type() != QgsMapLayer.VectorLayer:
+                continue
+
+            if layer.dataProvider().storageType() != "GPKG":
+                QgsMessageLog.logMessage(f"Layer {layer.name()} is not supported.", "Mergin")
+                continue
+
+            vl, msg = make_local_changes_layer(mp, layer)
+            if vl is None:
+                QgsMessageLog.logMessage(msg, "Mergin")
+                continue
+
+            self.diff_layers.append(vl)
+            self.tab_bar.addTab(QgsIconUtils.iconForLayer(vl), vl.name())
+        self.tab_bar.setCurrentIndex(0)
 
     def toggle_project_layers(self, state):
         layers = self.collect_layers(state)
@@ -65,35 +106,37 @@ class DiffViewerDialog(QDialog):
         else:
             layers = []
 
-        if self.diff_layer:
-            layers.insert(0, self.diff_layer)
+        if self.current_diff:
+            layers.insert(0, self.current_diff)
 
         return layers
 
-    def diff_layer_changed(self, layer):
-        base_layer = self.diff_layer_cbo.currentLayer()
-        if base_layer is not None:
-            mp = MerginProject(QgsProject.instance().homePath())
-            self.diff_layer, msg = make_local_changes_layer(mp, base_layer)
-            config = self.diff_layer.attributeTableConfig()
+    def diff_layer_changed(self, index):
+        if index > len(self.diff_layers):
+            return
 
-            layer_cache = QgsVectorLayerCache(self.diff_layer, 1000, self)
-            layer_cache.setCacheGeometry(False)
-            table_model = QgsAttributeTableModel(layer_cache, self)
-            self.filter_model = QgsAttributeTableFilterModel(None, table_model, self)
-            table_model.setRequest(QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry).setLimit(100))
-            layer_cache.setParent(table_model)
-            table_model.setParent(self.filter_model)
-            self.attribute_table.setModel(self.filter_model)
-            table_model.loadLayer()
-            self.filter_model.setAttributeTableConfig(config)
-            self.attribute_table.setAttributeTableConfig(config)
-        else:
-            self.diff_layer = None
+        self.current_diff = self.diff_layers[index]
+        config = self.current_diff.attributeTableConfig()
+
+        layer_cache = QgsVectorLayerCache(self.current_diff, 1000, self)
+        layer_cache.setCacheGeometry(False)
+        table_model = QgsAttributeTableModel(layer_cache, self)
+        self.filter_model = QgsAttributeTableFilterModel(None, table_model, self)
+        table_model.setRequest(QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry).setLimit(100))
+        layer_cache.setParent(table_model)
+        table_model.setParent(self.filter_model)
+        self.attribute_table.setModel(self.filter_model)
+        table_model.loadLayer()
+        self.filter_model.setAttributeTableConfig(config)
+        self.attribute_table.setAttributeTableConfig(config)
 
         layers = self.collect_layers(self.project_layers_checkbox.checkState())
         self.update_canvas(layers)
 
     def add_diff_to_project(self):
-        if self.diff_layer:
-            QgsProject.instance().addMapLayer(self.diff_layer)
+        if self.current_diff:
+            QgsProject.instance().addMapLayer(self.current_diff)
+
+    def add_all_diffs(self):
+        for layer in self.diff_layers:
+            QgsProject.instance().addMapLayer(layer)

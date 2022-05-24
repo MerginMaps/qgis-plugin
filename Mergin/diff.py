@@ -310,6 +310,7 @@ def make_local_changes_layer(mp, layer):
     vl.dataProvider().addAttributes(fields)
     vl.updateFields()
     vl.dataProvider().addFeatures(features)
+    vl.setName(f"{layer.name()} - diff")
 
     style_diff_layer(vl, db_schema[table_name])
     return vl, ''
@@ -386,14 +387,14 @@ def style_diff_layer(layer, schema_table):
             'capstyle': 'square',
             'joinstyle': 'bevel',
             'line_style': 'solid',
-            'line_width': '0.26',
+            'line_width': '0.46',
             'line_width_unit': 'MM',
         }
-        line_symbol_insert = dict(point_symbol_base)
+        line_symbol_insert = dict(line_symbol_base)
         line_symbol_insert['line_color'] = QgsSymbolLayerUtils.encodeColor(color_green)
-        line_symbol_update = dict(point_symbol_base)
+        line_symbol_update = dict(line_symbol_base)
         line_symbol_update['line_color'] = QgsSymbolLayerUtils.encodeColor(color_yellow)
-        line_symbol_delete = dict(point_symbol_base)
+        line_symbol_delete = dict(line_symbol_base)
         line_symbol_delete['line_color'] = QgsSymbolLayerUtils.encodeColor(color_red)
 
         root_rule = QgsRuleBasedRenderer.Rule(None)
@@ -410,13 +411,13 @@ def style_diff_layer(layer, schema_table):
             'outline_width': '0.26',
             'outline_width_unit': 'MM',
         }
-        fill_symbol_insert = dict(point_symbol_base)
+        fill_symbol_insert = dict(fill_symbol_base)
         fill_symbol_insert['color'] = QgsSymbolLayerUtils.encodeColor(color_green)
         fill_symbol_insert['outline_color'] = QgsSymbolLayerUtils.encodeColor(color_green.darker(darker_factor))
-        fill_symbol_update = dict(point_symbol_base)
+        fill_symbol_update = dict(fill_symbol_base)
         fill_symbol_update['color'] = QgsSymbolLayerUtils.encodeColor(color_yellow)
         fill_symbol_update['outline_color'] = QgsSymbolLayerUtils.encodeColor(color_yellow.darker(darker_factor))
-        fill_symbol_delete = dict(point_symbol_base)
+        fill_symbol_delete = dict(fill_symbol_base)
         fill_symbol_delete['color'] = QgsSymbolLayerUtils.encodeColor(color_red)
         fill_symbol_delete['outline_color'] = QgsSymbolLayerUtils.encodeColor(color_red.darker(darker_factor))
 

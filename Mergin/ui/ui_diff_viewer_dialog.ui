@@ -7,40 +7,37 @@
     <x>0</x>
     <y>0</y>
     <width>556</width>
-    <height>408</height>
+    <height>541</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Diff viewer</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <widget class="QgsMapLayerComboBox" name="diff_layer_cbo"/>
-   </item>
-   <item row="0" column="1">
-    <widget class="QToolButton" name="add_to_project_btn">
-     <property name="toolTip">
-      <string>Add diff layer to project</string>
-     </property>
-     <property name="text">
-      <string>...</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="2">
-    <widget class="QCheckBox" name="project_layers_checkbox">
-     <property name="text">
-      <string>Show also project layers</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0" colspan="3">
+   <item row="3" column="0" colspan="3">
     <widget class="QSplitter" name="splitter">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
      <widget class="QgsMapCanvas" name="map_canvas"/>
      <widget class="QgsAttributeTableView" name="attribute_table"/>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QCheckBox" name="project_layers_checkbox">
+     <property name="text">
+      <string>Show also project layers</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0" rowspan="2" colspan="3">
+    <widget class="QTabBar" name="tab_bar" native="true"/>
+   </item>
+   <item row="4" column="1">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close</set>
+     </property>
     </widget>
    </item>
   </layout>
@@ -53,16 +50,50 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>QgsMapLayerComboBox</class>
-   <extends>QComboBox</extends>
-   <header>qgis.gui</header>
-  </customwidget>
-  <customwidget>
    <class>QgsAttributeTableView</class>
    <extends>QTableView</extends>
    <header>qgsattributetableview.h</header>
   </customwidget>
+  <customwidget>
+   <class>QTabBar</class>
+   <extends>QWidget</extends>
+   <header>qgis.PyQt.QtWidgets</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>Dialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>363</x>
+     <y>519</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>277</x>
+     <y>270</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>Dialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>363</x>
+     <y>519</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>277</x>
+     <y>270</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

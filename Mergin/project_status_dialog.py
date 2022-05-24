@@ -61,6 +61,7 @@ class ProjectStatusDialog(QDialog):
         self.add_content(pull_changes, "Server changes", True)
         self.add_content(push_changes, "Local changes", False, push_changes_summary)
         self.treeStatus.expandAll()
+        self.changes_summary = push_changes_summary
 
         if not self.validation_results:
             self.ui.lblWarnings.hide()
@@ -193,6 +194,10 @@ class ProjectStatusDialog(QDialog):
         self.txtWarnings.setHtml(''.join(html))
 
     def show_changes(self):
+        if not self.changes_summary:
+            self.ui.messageBar.pushMessage("Mergin", "No changes found in the project layers.", Qgis.Info)
+            return
+
         self.close()
         dlg_diff_viewer = DiffViewerDialog()
         dlg_diff_viewer.show()

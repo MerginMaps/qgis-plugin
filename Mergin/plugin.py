@@ -23,7 +23,6 @@ from qgis.core import (
     QgsProject,
     QgsMapLayer,
     QgsProviderRegistry,
-    QgsMessageLog,
     Qgis
 )
 from qgis.utils import iface
@@ -78,7 +77,6 @@ class MerginPlugin:
         self.mergin_proj_dir = None
         self.mc = None
         self.manager = None
-        self.dlg_diff_viewer = None
         self.provider = MerginProvider()
         self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
         self.toolbar.setToolTip("Mergin Maps Toolbar")
@@ -362,14 +360,16 @@ class MerginPlugin:
             iface.messageBar().pushMessage("Mergin", "Current project is not a Mergin project.", Qgis.Warning)
             return
 
-        if self.dlg_diff_viewer is None:
-            self.dlg_diff_viewer = DiffViewerDialog()
-            self.dlg_diff_viewer.show()
-            self.dlg_diff_viewer.exec_()
-        else:
-            self.dlg_diff_viewer.showNormal()
-            self.dlg_diff_viewer.raise_()
-            self.dlg_diff_viewer.activateWindow()
+        mp = MerginProject(QgsProject.instance().homePath())
+        push_changes = mp.get_push_changes()
+        push_changes_summary = mp.get_list_of_push_changes(push_changes)
+        if not push_changes_summary:
+            iface.messageBar().pushMessage("Mergin", "No changes found in the project layers.", Qgis.Info)
+            return
+
+        dlg_diff_viewer = DiffViewerDialog()
+        dlg_diff_viewer.show()
+        dlg_diff_viewer.exec_()
 
 
 class MerginRemoteProjectItem(QgsDataItem):
