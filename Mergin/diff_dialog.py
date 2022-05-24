@@ -1,7 +1,7 @@
 import os
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import Qt, QSettings
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtWidgets import (
     QDialog,
@@ -40,6 +40,10 @@ class DiffViewerDialog(QDialog):
         self.ui = uic.loadUi(ui_file, self)
 
         QgsGui.instance().enableAutoGeometryRestore(self)
+        settings = QSettings()
+        state = settings.value("Mergin/changesViewerSplitterSize")
+        if state:
+            self.splitter.restoreState(state)
 
         btn_add_changes = QPushButton("Add to project")
         btn_add_changes.setIcon(QIcon(icon_path('file-plus.svg')))
@@ -68,7 +72,16 @@ class DiffViewerDialog(QDialog):
         self.create_tabs()
 
     def reject(self):
+        self.saveSplitterState()
         QDialog.reject(self)
+
+    def closeEvent(self, event):
+        self.saveSplitterState()
+        QDialog.closeEvent(self, event)
+
+    def saveSplitterState(self):
+        settings = QSettings()
+        settings.setValue("Mergin/changesViewerSplitterSize", self.splitter.saveState())
 
     def create_tabs(self):
         mp = MerginProject(QgsProject.instance().homePath())
