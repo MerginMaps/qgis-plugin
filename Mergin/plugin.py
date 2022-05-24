@@ -130,15 +130,6 @@ class MerginPlugin:
             always_on=False,
         )
         self.add_action(
-            "file-diff.svg",
-            text="View Local Changes",
-            callback=self.view_local_changes,
-            add_to_menu=False,
-            add_to_toolbar=self.toolbar,
-            enabled=False,
-            always_on=False,
-        )
-        self.add_action(
             "refresh.svg",
             text="Synchronise Mergin Maps Project",
             callback=self.current_project_sync,
@@ -161,6 +152,12 @@ class MerginPlugin:
         # register custom mergin widget in project properties
         self.mergin_project_config_factory = MerginProjectConfigFactory()
         self.iface.registerProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
+
+        # add layer context menu action for checking local changes
+        self.action_show_changes = QAction("Show Local Changes", self.iface.mainWindow())
+        self.action_show_changes.setIcon(QIcon(icon_path("file-diff.svg")))
+        self.iface.addCustomActionForLayerType(self.action_show_changes, "", QgsMapLayer.VectorLayer, True)
+        self.action_show_changes.triggered.connect(self.view_local_changes)
 
     def add_action(
         self,
@@ -367,7 +364,22 @@ class MerginPlugin:
             iface.messageBar().pushMessage("Mergin", "No changes found in the project layers.", Qgis.Info)
             return
 
+        selected_layers = self.iface.layerTreeView().selectedLayersRecursive()
+        layer_name = None
+        for layer in selected_layers:
+            if layer.type() != QgsMapLayer.VectorLayer:
+                continue
+
+            if layer.dataProvider().storageType() == "GPKG":
+                layer_name = layer.name()
+                break
+
         dlg_diff_viewer = DiffViewerDialog()
+        if layer_name:
+            for i, layer in enumerate(dlg_diff_viewer.diff_layers):
+                if layer.name() == layer_name:
+                    dlg_diff_viewer.tab_bar.setCurrentIndex(i)
+                    break
         dlg_diff_viewer.show()
         dlg_diff_viewer.exec_()
 

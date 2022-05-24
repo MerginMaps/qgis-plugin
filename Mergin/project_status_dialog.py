@@ -46,7 +46,8 @@ class ProjectStatusDialog(QDialog):
         # add sync button with AcceptRole. If dialog accepted we will start
         # sync, otherwise just close status dialog
         self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.AcceptRole)
-        self.btn_diff = QPushButton("View changes")
+        self.btn_diff = QPushButton("View Changes")
+        self.btn_diff.setIcon(QIcon(icon_path("file-diff.svg")))
         self.ui.buttonBox.addButton(self.btn_diff, QDialogButtonBox.ActionRole)
         self.btn_diff.clicked.connect(self.show_changes)
 
@@ -58,8 +59,8 @@ class ProjectStatusDialog(QDialog):
         self.treeStatus.setModel(self.model)
 
         self.check_any_changes(pull_changes, push_changes)
-        self.add_content(pull_changes, "Server changes", True)
-        self.add_content(push_changes, "Local changes", False, push_changes_summary)
+        self.add_content(pull_changes, "Server Changes", True)
+        self.add_content(push_changes, "Local Changes", False, push_changes_summary)
         self.treeStatus.expandAll()
         self.changes_summary = push_changes_summary
 

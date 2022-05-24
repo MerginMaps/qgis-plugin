@@ -303,14 +303,13 @@ def make_local_changes_layer(mp, layer):
 
     # create diff layer
     vl = QgsVectorLayer(f"{QgsWkbTypes.displayString(layer.wkbType())}?crs={layer.sourceCrs().authid()}",
-                        f"{layer.name()}-diff", "memory")
+                        layer.name(), "memory")
     if not vl.isValid():
         return None, f"Failed to create memory layer for local changes"
 
     vl.dataProvider().addAttributes(fields)
     vl.updateFields()
     vl.dataProvider().addFeatures(features)
-    vl.setName(f"{layer.name()} - diff")
 
     style_diff_layer(vl, db_schema[table_name])
     return vl, ''
@@ -363,7 +362,7 @@ def style_diff_layer(layer, schema_table):
             'outline_style': 'solid',
             'outline_width': '0.4',
             'outline_width_unit': 'MM',
-            'size': '2',
+            'size': '5',
             'size_unit': 'MM',
         }
         point_symbol_insert = dict(point_symbol_base)
@@ -387,7 +386,7 @@ def style_diff_layer(layer, schema_table):
             'capstyle': 'square',
             'joinstyle': 'bevel',
             'line_style': 'solid',
-            'line_width': '0.46',
+            'line_width': '0.86',
             'line_width_unit': 'MM',
         }
         line_symbol_insert = dict(line_symbol_base)

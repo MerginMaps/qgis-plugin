@@ -2,9 +2,13 @@ import os
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QDialog, QPushButton, QDialogButtonBox
-
+from qgis.PyQt.QtGui import QIcon, QColor
+from qgis.PyQt.QtWidgets import (
+    QDialog,
+    QPushButton,
+    QDialogButtonBox,
+    QMenu
+)
 from qgis.core import (
     QgsProject,
     QgsVectorLayerCache,
@@ -37,22 +41,24 @@ class DiffViewerDialog(QDialog):
 
         QgsGui.instance().enableAutoGeometryRestore(self)
 
-        self.btn_add_current_diff = QPushButton("Add diff to project")
-        self.btn_add_current_diff.setIcon(QIcon(icon_path('file-plus.svg')))
-        self.ui.buttonBox.addButton(self.btn_add_current_diff, QDialogButtonBox.ActionRole)
-        self.btn_add_current_diff.clicked.connect(self.add_diff_to_project)
-
-        self.btn_add_all_diffs = QPushButton("Add all diffs to project")
-        self.btn_add_all_diffs.setIcon(QIcon(icon_path('folder-plus.svg')))
-        self.ui.buttonBox.addButton(self.btn_add_all_diffs, QDialogButtonBox.ActionRole)
-        self.btn_add_all_diffs.clicked.connect(self.add_all_diffs)
+        btn_add_changes = QPushButton("Add to project")
+        btn_add_changes.setIcon(QIcon(icon_path('file-plus.svg')))
+        self.ui.buttonBox.addButton(btn_add_changes, QDialogButtonBox.ActionRole)
+        menu = QMenu()
+        add_current_action = menu.addAction(QIcon(icon_path('file-plus.svg')), "Add current changes layer to project")
+        add_current_action.triggered.connect(self.add_current_to_project)
+        add_all_action = menu.addAction(QIcon(icon_path('folder-plus.svg')), "Add all changes layers to project")
+        add_all_action.triggered.connect(self.add_all_to_project)
+        btn_add_changes.setMenu(menu)
 
         self.project_layers_checkbox.stateChanged.connect(self.toggle_project_layers)
 
         self.map_canvas.enableAntiAliasing(True)
+        self.map_canvas.setSelectionColor(QColor(Qt.cyan))
         self.pan_tool = QgsMapToolPan(self.map_canvas)
         self.map_canvas.setMapTool(self.pan_tool)
 
+        self.tab_bar.setUsesScrollButtons(True)
         self.tab_bar.currentChanged.connect(self.diff_layer_changed)
 
         self.current_diff = None
@@ -133,10 +139,10 @@ class DiffViewerDialog(QDialog):
         layers = self.collect_layers(self.project_layers_checkbox.checkState())
         self.update_canvas(layers)
 
-    def add_diff_to_project(self):
+    def add_current_to_project(self):
         if self.current_diff:
             QgsProject.instance().addMapLayer(self.current_diff)
 
-    def add_all_diffs(self):
+    def add_all_to_project(self):
         for layer in self.diff_layers:
             QgsProject.instance().addMapLayer(layer)

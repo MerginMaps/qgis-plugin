@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Diff viewer</string>
+   <string>Changes Viewer</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="3" column="0" colspan="3">
@@ -27,6 +27,9 @@
     <widget class="QCheckBox" name="project_layers_checkbox">
      <property name="text">
       <string>Show also project layers</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
