@@ -21,6 +21,7 @@ from .utils import (
 )
 
 INVALID_CHARS = re.compile("[\\\/\(\)\[\]\{\}\"\n\r]")
+PROJECT_VARS = re.compile("\@project_home|\@project_path|\@project_folder")
 
 
 class Warning(Enum):
@@ -42,6 +43,7 @@ class Warning(Enum):
     VALUE_RELATION_LAYER_MISSED = 16
     INCORRECT_FIELD_NAME = 17
     BROKEN_VALUE_RELATION_CONFIG = 18
+    ATTACHMENT_WRONG_EXPRESSION = 19
 
 class MultipleLayersWarning:
     """Class for warning which is associated with multiple layers.
@@ -217,6 +219,14 @@ class MerginProjectValidator(object):
                         if "UseLink" in cfg:
                             self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_HYPERLINK))
 
+                    # check that expression uses Mergin variables
+                    if "PropertyCollection" in cfg:
+                        if "properties" in cfg["PropertyCollection"]:
+                            if "propertyRootPath" in cfg["PropertyCollection"]["properties"] and "expression" in cfg["PropertyCollection"]["properties"]["propertyRootPath"]:
+                                formula = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["expression"]
+                                if not PROJECT_VARS.search(formula):
+                                    self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION))
+
     def check_db_schema(self):
         for lid, layer in self.layers.items():
             if lid not in self.editable:
@@ -337,3 +347,5 @@ def warning_display_string(warning_id):
         return "Field names contain line-break characters"
     elif warning_id == Warning.BROKEN_VALUE_RELATION_CONFIG:
         return "Incomplete value relation configuration"
+    elif warning_id == Warning.ATTACHMENT_WRONG_EXPRESSION:
+        return "Expression for the default path in the attachment widget configuration might be wrong. <a href='{help_mgr.howto_attachment_widget()}'>Read more.</a>"
