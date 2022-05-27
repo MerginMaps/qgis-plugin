@@ -220,12 +220,12 @@ class MerginProjectValidator(object):
                             self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_HYPERLINK))
 
                     # check that expression uses Mergin variables
-                    if "PropertyCollection" in cfg:
-                        if "properties" in cfg["PropertyCollection"]:
-                            if "propertyRootPath" in cfg["PropertyCollection"]["properties"] and "expression" in cfg["PropertyCollection"]["properties"]["propertyRootPath"]:
-                                formula = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["expression"]
-                                if not PROJECT_VARS.search(formula):
-                                    self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION))
+                    try:
+                        formula = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["expression"]
+                        if not PROJECT_VARS.search(formula):
+                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION))
+                    except KeyError:
+                        continue
 
     def check_db_schema(self):
         for lid, layer in self.layers.items():
