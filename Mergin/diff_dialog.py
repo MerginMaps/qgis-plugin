@@ -45,6 +45,9 @@ class DiffViewerDialog(QDialog):
             state = settings.value("Mergin/changesViewerSplitterSize")
             if state:
                 self.splitter.restoreState(state)
+            else:
+                height = max([self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()])
+                self.splitter.setSizes([height, height])
 
             btn_add_changes = QPushButton("Add to project")
             btn_add_changes.setIcon(QIcon(icon_path('file-plus.svg')))
@@ -73,14 +76,14 @@ class DiffViewerDialog(QDialog):
             self.create_tabs()
 
     def reject(self):
-        self.saveSplitterState()
+        self.save_splitter_state()
         QDialog.reject(self)
 
     def closeEvent(self, event):
-        self.saveSplitterState()
+        self.save_splitter_state()
         QDialog.closeEvent(self, event)
 
-    def saveSplitterState(self):
+    def save_splitter_state(self):
         settings = QSettings()
         settings.setValue("Mergin/changesViewerSplitterSize", self.splitter.saveState())
 
