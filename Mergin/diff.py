@@ -303,7 +303,7 @@ def make_local_changes_layer(mp, layer):
 
     # create diff layer
     vl = QgsVectorLayer(f"{QgsWkbTypes.displayString(layer.wkbType())}?crs={layer.sourceCrs().authid()}",
-                        layer.name(), "memory")
+                        f"[Local changes] {layer.name()}", "memory")
     if not vl.isValid():
         return None, f"Failed to create memory layer for local changes"
 
