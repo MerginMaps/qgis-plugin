@@ -59,7 +59,6 @@ class SyncDialog(QDialog):
             self.pull_cancel()
 
     def reset_operation(self, success, close, exception=None):
-
         self.operation = None
         self.mergin_client = None
         self.target_dir = None
@@ -76,10 +75,7 @@ class SyncDialog(QDialog):
         """ If an exception was set, this returns a formatted string with a traceback """
         return '\n'.join(traceback.format_exception(self.exception_type, self.exception, self.exception_tb))
 
-    #######################################################
-
     def download_start(self, mergin_client, target_dir, project_name):
-
         self.operation = self.DOWNLOAD
         self.mergin_client = mergin_client
         self.target_dir = target_dir
@@ -92,7 +88,6 @@ class SyncDialog(QDialog):
         QTimer.singleShot(250, self.download_start_internal)
 
     def download_start_internal(self):
-
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
         try:
@@ -115,7 +110,6 @@ class SyncDialog(QDialog):
         self.labelStatus.setText("Downloading project...")
 
     def download_timer_tick(self):
-
         self.progress.setValue(int(self.job.transferred_size / 1024))
 
         try:
@@ -143,24 +137,18 @@ class SyncDialog(QDialog):
             self.reset_operation(success=True, close=True)
 
     def download_cancel(self):
-        assert self.job
-
-        self.timer.stop()
-
-        self.labelStatus.setText("Cancelling download...")
-
-        QApplication.setOverrideCursor(Qt.WaitCursor)
-
-        download_project_cancel(self.job)
-
-        QApplication.restoreOverrideCursor()
-
-        self.reset_operation(success=False, close=True)
-
-    #######################################################
+        if self.job is None:
+            self.timer.stop()
+            self.reset_operation(success=False, close=True)
+        else:
+            self.timer.stop()
+            self.labelStatus.setText("Cancelling download...")
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            download_project_cancel(self.job)
+            QApplication.restoreOverrideCursor()
+            self.reset_operation(success=False, close=True)
 
     def push_start(self, mergin_client, target_dir, project_name):
-
         self.operation = self.PUSH
         self.mergin_client = mergin_client
         self.target_dir = target_dir
@@ -173,7 +161,6 @@ class SyncDialog(QDialog):
         QTimer.singleShot(250, self.push_start_internal)
 
     def push_start_internal(self):
-
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
         try:
@@ -199,7 +186,6 @@ class SyncDialog(QDialog):
         self.labelStatus.setText("Uploading project data...")
 
     def push_timer_tick(self):
-
         self.progress.setValue(int(self.job.transferred_size / 1024))
 
         try:
@@ -227,24 +213,18 @@ class SyncDialog(QDialog):
             self.reset_operation(success=True, close=True)
 
     def push_cancel(self):
-        assert self.job
-
-        self.timer.stop()
-
-        self.labelStatus.setText("Cancelling sync...")
-
-        QApplication.setOverrideCursor(Qt.WaitCursor)
-
-        push_project_cancel(self.job)
-
-        QApplication.restoreOverrideCursor()
-
-        self.reset_operation(success=False, close=True)
-
-    #######################################################
+        if self.job is None:
+            self.timer.stop()
+            self.reset_operation(success=False, close=True)
+        else:
+            self.timer.stop()
+            self.labelStatus.setText("Cancelling sync...")
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            push_project_cancel(self.job)
+            QApplication.restoreOverrideCursor()
+            self.reset_operation(success=False, close=True)
 
     def pull_start(self, mergin_client, target_dir, project_name):
-
         self.operation = self.PULL
         self.mergin_client = mergin_client
         self.target_dir = target_dir
@@ -257,7 +237,6 @@ class SyncDialog(QDialog):
         QTimer.singleShot(250, self.pull_start_internal)
 
     def pull_start_internal(self):
-
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
         try:
@@ -283,7 +262,6 @@ class SyncDialog(QDialog):
         self.labelStatus.setText("Downloading project data...")
 
     def pull_timer_tick(self):
-
         self.progress.setValue(int(self.job.transferred_size / 1024))
 
         try:
@@ -311,16 +289,13 @@ class SyncDialog(QDialog):
             self.reset_operation(success=True, close=True)
 
     def pull_cancel(self):
-        assert self.job
-
-        self.timer.stop()
-
-        self.labelStatus.setText("Cancelling sync...")
-
-        QApplication.setOverrideCursor(Qt.WaitCursor)
-
-        pull_project_cancel(self.job)
-
-        QApplication.restoreOverrideCursor()
-
-        self.reset_operation(success=False, close=True)
+        if self.job is None:
+            self.timer.stop()
+            self.reset_operation(success=False, close=True)
+        else:
+            self.timer.stop()
+            self.labelStatus.setText("Cancelling sync...")
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            pull_project_cancel(self.job)
+            QApplication.restoreOverrideCursor()
+            self.reset_operation(success=False, close=True)
