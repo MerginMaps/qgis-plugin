@@ -24,7 +24,7 @@ from qgis.gui import (
     QgsAttributeTableModel,
     QgsAttributeTableFilterModel
 )
-from qgis.utils import iface
+from qgis.utils import iface, OverrideCursor
 
 from .mergin.merginproject import MerginProject
 from .diff import make_local_changes_layer
@@ -39,37 +39,38 @@ class DiffViewerDialog(QDialog):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
 
-        QgsGui.instance().enableAutoGeometryRestore(self)
-        settings = QSettings()
-        state = settings.value("Mergin/changesViewerSplitterSize")
-        if state:
-            self.splitter.restoreState(state)
+        with OverrideCursor(Qt.WaitCursor):
+            QgsGui.instance().enableAutoGeometryRestore(self)
+            settings = QSettings()
+            state = settings.value("Mergin/changesViewerSplitterSize")
+            if state:
+                self.splitter.restoreState(state)
 
-        btn_add_changes = QPushButton("Add to project")
-        btn_add_changes.setIcon(QIcon(icon_path('file-plus.svg')))
-        self.ui.buttonBox.addButton(btn_add_changes, QDialogButtonBox.ActionRole)
-        menu = QMenu()
-        add_current_action = menu.addAction(QIcon(icon_path('file-plus.svg')), "Add current changes layer to project")
-        add_current_action.triggered.connect(self.add_current_to_project)
-        add_all_action = menu.addAction(QIcon(icon_path('folder-plus.svg')), "Add all changes layers to project")
-        add_all_action.triggered.connect(self.add_all_to_project)
-        btn_add_changes.setMenu(menu)
+            btn_add_changes = QPushButton("Add to project")
+            btn_add_changes.setIcon(QIcon(icon_path('file-plus.svg')))
+            self.ui.buttonBox.addButton(btn_add_changes, QDialogButtonBox.ActionRole)
+            menu = QMenu()
+            add_current_action = menu.addAction(QIcon(icon_path('file-plus.svg')), "Add current changes layer to project")
+            add_current_action.triggered.connect(self.add_current_to_project)
+            add_all_action = menu.addAction(QIcon(icon_path('folder-plus.svg')), "Add all changes layers to project")
+            add_all_action.triggered.connect(self.add_all_to_project)
+            btn_add_changes.setMenu(menu)
 
-        self.project_layers_checkbox.stateChanged.connect(self.toggle_project_layers)
+            self.project_layers_checkbox.stateChanged.connect(self.toggle_project_layers)
 
-        self.map_canvas.enableAntiAliasing(True)
-        self.map_canvas.setSelectionColor(QColor(Qt.cyan))
-        self.pan_tool = QgsMapToolPan(self.map_canvas)
-        self.map_canvas.setMapTool(self.pan_tool)
+            self.map_canvas.enableAntiAliasing(True)
+            self.map_canvas.setSelectionColor(QColor(Qt.cyan))
+            self.pan_tool = QgsMapToolPan(self.map_canvas)
+            self.map_canvas.setMapTool(self.pan_tool)
 
-        self.tab_bar.setUsesScrollButtons(True)
-        self.tab_bar.currentChanged.connect(self.diff_layer_changed)
+            self.tab_bar.setUsesScrollButtons(True)
+            self.tab_bar.currentChanged.connect(self.diff_layer_changed)
 
-        self.current_diff = None
-        self.diff_layers = []
-        self.filter_model = None
+            self.current_diff = None
+            self.diff_layers = []
+            self.filter_model = None
 
-        self.create_tabs()
+            self.create_tabs()
 
     def reject(self):
         self.saveSplitterState()
