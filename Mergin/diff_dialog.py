@@ -104,7 +104,7 @@ class DiffViewerDialog(QDialog):
                 continue
 
             self.diff_layers.append(vl)
-            self.tab_bar.addTab(QgsIconUtils.iconForLayer(vl), vl.name())
+            self.tab_bar.addTab(QgsIconUtils.iconForLayer(vl), f"{layer.name()} ({vl.featureCount()})")
         self.tab_bar.setCurrentIndex(0)
 
     def toggle_project_layers(self, state):
