@@ -46,10 +46,9 @@ class ProjectStatusDialog(QDialog):
         # add sync button with AcceptRole. If dialog accepted we will start
         # sync, otherwise just close status dialog
         self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.AcceptRole)
-        self.btn_diff = QPushButton("View Changes")
-        self.btn_diff.setIcon(QIcon(icon_path("file-diff.svg")))
-        self.ui.buttonBox.addButton(self.btn_diff, QDialogButtonBox.ActionRole)
-        self.btn_diff.clicked.connect(self.show_changes)
+
+        self.btn_view_changes.setIcon(QIcon(icon_path("file-diff.svg")))
+        self.btn_view_changes.clicked.connect(self.show_changes)
 
         self.validation_results = validation_results
         self.mp = mergin_project
