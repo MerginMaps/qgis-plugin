@@ -59,7 +59,7 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
         return 'Extracts local changes made in the specific layer of the Mergin project to make it easier to revise changes.'
 
     def icon(self):
-        return QIcon(icon_path('icon.png', False))
+        return QIcon(icon_path('mm_icon_positive_no_padding.svg'))
 
     def __init__(self):
         super().__init__()
