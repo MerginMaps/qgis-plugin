@@ -14,7 +14,17 @@
    <string>Changes Viewer</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="3" column="0" colspan="3">
+   <item row="3" column="1">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close</set>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="2">
+    <widget class="QTabBar" name="tab_bar" native="true"/>
+   </item>
+   <item row="2" column="0" colspan="2">
     <widget class="QSplitter" name="splitter">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -23,23 +33,16 @@
      <widget class="QgsAttributeTableView" name="attribute_table"/>
     </widget>
    </item>
-   <item row="4" column="0">
-    <widget class="QCheckBox" name="project_layers_checkbox">
-     <property name="text">
-      <string>Show also project layers</string>
+   <item row="1" column="0" colspan="2">
+    <widget class="QToolBar" name="toolbar">
+     <property name="iconSize">
+      <size>
+       <width>16</width>
+       <height>16</height>
+      </size>
      </property>
-     <property name="checked">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0" rowspan="2" colspan="3">
-    <widget class="QTabBar" name="tab_bar" native="true"/>
-   </item>
-   <item row="4" column="1">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Close</set>
+     <property name="floatable">
+      <bool>false</bool>
      </property>
     </widget>
    </item>

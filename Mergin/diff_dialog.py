@@ -7,7 +7,8 @@ from qgis.PyQt.QtWidgets import (
     QDialog,
     QPushButton,
     QDialogButtonBox,
-    QMenu
+    QMenu,
+    QAction
 )
 from qgis.core import (
     QgsProject,
@@ -16,7 +17,8 @@ from qgis.core import (
     QgsIconUtils,
     QgsMapLayer,
     QgsMessageLog,
-    Qgis
+    Qgis,
+    QgsApplication
 )
 from qgis.gui import (
     QgsGui,
@@ -49,9 +51,26 @@ class DiffViewerDialog(QDialog):
                 height = max([self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()])
                 self.splitter.setSizes([height, height])
 
+            self.toggle_layers_action = QAction(QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Toggle Project Layers", self)
+            self.toggle_layers_action.setCheckable(True)
+            self.toggle_layers_action.setChecked(True)
+            self.toggle_layers_action.toggled.connect(self.toggle_project_layers)
+            self.toolbar.addAction(self.toggle_layers_action)
+
+            self.toolbar.addSeparator()
+
+            self.zoom_full_action = QAction(QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"), "Zoom Full", self)
+            self.zoom_full_action.triggered.connect(self.zoom_full)
+            self.toolbar.addAction(self.zoom_full_action)
+
+            self.zoom_selected_action = QAction(QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"), "Zoom To Selection", self)
+            self.zoom_selected_action.triggered.connect(self.zoom_selected)
+            self.toolbar.addAction(self.zoom_selected_action)
+
+            self.toolbar.addSeparator()
+
             btn_add_changes = QPushButton("Add to project")
-            btn_add_changes.setIcon(QIcon(icon_path('file-plus.svg')))
-            self.ui.buttonBox.addButton(btn_add_changes, QDialogButtonBox.ActionRole)
+            btn_add_changes.setIcon(QgsApplication.getThemeIcon("/mActionAdd.svg"))
             menu = QMenu()
             add_current_action = menu.addAction(QIcon(icon_path('file-plus.svg')), "Add current changes layer to project")
             add_current_action.triggered.connect(self.add_current_to_project)
@@ -59,7 +78,8 @@ class DiffViewerDialog(QDialog):
             add_all_action.triggered.connect(self.add_all_to_project)
             btn_add_changes.setMenu(menu)
 
-            self.project_layers_checkbox.stateChanged.connect(self.toggle_project_layers)
+            self.toolbar.addWidget(btn_add_changes)
+            self.toolbar.setIconSize(iface.iconSize())
 
             self.map_canvas.enableAntiAliasing(True)
             self.map_canvas.setSelectionColor(QColor(Qt.cyan))
@@ -107,8 +127,8 @@ class DiffViewerDialog(QDialog):
             self.tab_bar.addTab(QgsIconUtils.iconForLayer(vl), f"{layer.name()} ({vl.featureCount()})")
         self.tab_bar.setCurrentIndex(0)
 
-    def toggle_project_layers(self, state):
-        layers = self.collect_layers(state)
+    def toggle_project_layers(self, checked):
+        layers = self.collect_layers(checked)
         self.update_canvas(layers)
 
     def update_canvas(self, layers):
@@ -123,8 +143,8 @@ class DiffViewerDialog(QDialog):
             self.map_canvas.setExtent(extent)
         self.map_canvas.refresh()
 
-    def collect_layers(self, state):
-        if state == Qt.Checked:
+    def collect_layers(self, checked):
+        if checked:
             layers = iface.mapCanvas().layers()
         else:
             layers = []
@@ -160,7 +180,7 @@ class DiffViewerDialog(QDialog):
         self.filter_model.setAttributeTableConfig(config)
         self.attribute_table.setAttributeTableConfig(config)
 
-        layers = self.collect_layers(self.project_layers_checkbox.checkState())
+        layers = self.collect_layers(self.toggle_layers_action.isChecked())
         self.update_canvas(layers)
 
     def add_current_to_project(self):
@@ -170,3 +190,13 @@ class DiffViewerDialog(QDialog):
     def add_all_to_project(self):
         for layer in self.diff_layers:
             QgsProject.instance().addMapLayer(layer)
+
+    def zoom_full(self):
+        if self.current_diff:
+            self.map_canvas.setExtent(self.current_diff.extent())
+            self.map_canvas.refresh()
+
+    def zoom_selected(self):
+        if self.current_diff:
+            self.map_canvas.zoomToSelected([self.current_diff])
+            self.map_canvas.refresh()
