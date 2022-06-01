@@ -69,7 +69,7 @@ except ImportError:
     from .mergin.report import create_report
     from .mergin.deps import pygeodiff
 
-MERGIN_URL = 'https://public.cloudmergin.com'
+MERGIN_URL = 'https://app.merginmaps.com/'
 MERGIN_LOGS_URL = 'https://g4pfq226j0.execute-api.eu-west-1.amazonaws.com/mergin_client_log_submit'
 
 QGIS_NET_PROVIDERS = ("WFS", "arcgisfeatureserver", "arcgismapserver", "geonode", "ows", "wcs", "wms", "vectortile")
