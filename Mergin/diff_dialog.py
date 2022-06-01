@@ -138,18 +138,25 @@ class DiffViewerDialog(QDialog):
         if index > len(self.diff_layers):
             return
 
-        self.current_diff = self.diff_layers[index]
-        config = self.current_diff.attributeTableConfig()
+        self.map_canvas.setLayers([])
+        self.attribute_table.clearSelection()
 
-        layer_cache = QgsVectorLayerCache(self.current_diff, 1000, self)
-        layer_cache.setCacheGeometry(False)
-        table_model = QgsAttributeTableModel(layer_cache, self)
-        self.filter_model = QgsAttributeTableFilterModel(None, table_model, self)
-        table_model.setRequest(QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry).setLimit(100))
-        layer_cache.setParent(table_model)
-        table_model.setParent(self.filter_model)
+        self.current_diff = self.diff_layers[index]
+
+        self.layer_cache = QgsVectorLayerCache(self.current_diff, 1000)
+        self.layer_cache.setCacheGeometry(False)
+
+        self.table_model = QgsAttributeTableModel(self.layer_cache)
+        self.table_model.setRequest(QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry).setLimit(100))
+
+        self.filter_model = QgsAttributeTableFilterModel(self.map_canvas, self.table_model)
+
+        self.layer_cache.setParent(self.table_model)
+
         self.attribute_table.setModel(self.filter_model)
-        table_model.loadLayer()
+        self.table_model.loadLayer()
+
+        config = self.current_diff.attributeTableConfig()
         self.filter_model.setAttributeTableConfig(config)
         self.attribute_table.setAttributeTableConfig(config)
 
