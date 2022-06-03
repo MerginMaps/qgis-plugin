@@ -283,20 +283,6 @@ class MerginPlugin:
                     duration=0
                 )
 
-        # inform user about rebranding
-        rebranding_has_been_notified = settings.value("Mergin/rebrandingNotified", False)
-        if not rebranding_has_been_notified:
-            iface.messageBar().pushMessage(
-                "Mergin Maps",
-                "Mergin is now called Mergin Maps "
-                f"<a href='https://www.lutraconsulting.co.uk/blog/2022/04/18/merginmaps/"
-                f"?utm_campaign=rebrand-news&utm_medium=banner&utm_source=qgis-plugin'>"
-                "Learn more</a>",
-                level=Qgis.Info,
-                duration=0
-            )
-            settings.setValue("Mergin/rebrandingNotified", True)
-
     def create_new_project(self):
         """Open new Mergin Maps project creation dialog."""
 
