@@ -342,7 +342,7 @@ def style_diff_layer(layer, schema_table):
             col_name = column.name
         cs = QgsConditionalStyle()
         cs.setName("update")
-        cs.setRule(f'"_op" = "update" AND "{col_name}" IS NOT "_old_{col_name}"')
+        cs.setRule(f'"_op" = \'update\' AND "{col_name}" IS NOT "_old_{col_name}"')
         cs.setBackgroundColor(color_yellow)
         st.setFieldStyles(col_name, [cs])
 
