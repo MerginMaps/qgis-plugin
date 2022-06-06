@@ -141,12 +141,7 @@ class SyncDialog(QDialog):
             self.timer.stop()
             self.reset_operation(success=False, close=True)
         else:
-            self.timer.stop()
-            self.labelStatus.setText("Cancelling download...")
-            QApplication.setOverrideCursor(Qt.WaitCursor)
-            download_project_cancel(self.job)
-            QApplication.restoreOverrideCursor()
-            self.reset_operation(success=False, close=True)
+            self.cancel_sync_operation("Cancelling download...", download_project_cancel)
 
     def push_start(self, mergin_client, target_dir, project_name):
         self.operation = self.PUSH
@@ -217,12 +212,7 @@ class SyncDialog(QDialog):
             self.timer.stop()
             self.reset_operation(success=False, close=True)
         else:
-            self.timer.stop()
-            self.labelStatus.setText("Cancelling sync...")
-            QApplication.setOverrideCursor(Qt.WaitCursor)
-            push_project_cancel(self.job)
-            QApplication.restoreOverrideCursor()
-            self.reset_operation(success=False, close=True)
+            self.cancel_sync_operation("Cancelling sync...", push_project_cancel)
 
     def pull_start(self, mergin_client, target_dir, project_name):
         self.operation = self.PULL
@@ -293,9 +283,13 @@ class SyncDialog(QDialog):
             self.timer.stop()
             self.reset_operation(success=False, close=True)
         else:
-            self.timer.stop()
-            self.labelStatus.setText("Cancelling sync...")
-            QApplication.setOverrideCursor(Qt.WaitCursor)
-            pull_project_cancel(self.job)
-            QApplication.restoreOverrideCursor()
-            self.reset_operation(success=False, close=True)
+            self.cancel_sync_operation("Cancelling sync...", pull_project_cancel)
+
+    def cancel_sync_operation(self, msg, cancel_func):
+        self.timer.stop()
+        self.labelStatus.setText(msg)
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        cancel_func(self.job)
+        QApplication.restoreOverrideCursor()
+        self.reset_operation(success=False, close=True)
+
