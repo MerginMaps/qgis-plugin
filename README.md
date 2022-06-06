@@ -22,4 +22,4 @@ A typical workflow for setting up a project for field survey:
 Mergin Maps QGIS plugin will assist users with steps 2 and 5.
 
 ## Documentation
-To learn more about how to use this plugin, see [user's documentation](https://merginmaps.com/docs)
+To learn more about how to use this plugin, see [user's documentation](https://merginmaps.com/docs/setup/install-mergin-maps-plugin-for-qgis/)
