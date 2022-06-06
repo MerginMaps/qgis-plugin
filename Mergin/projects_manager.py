@@ -192,7 +192,7 @@ class MerginProjectsManager(object):
             proj_server = server
             break
         if proj_server is not None:
-            server_urls = []
+            server_urls = [self.mc.url.rstrip("/")]
             url = urlparse(self.mc.url)
             if url.netloc.startswith("dev.dev") or url.netloc.startswith("app.dev"):
                 server_urls.append("https://app.dev.merginmaps.com")
