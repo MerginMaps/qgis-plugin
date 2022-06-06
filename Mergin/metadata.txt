@@ -162,7 +162,7 @@ changelog=2022.3.2
 ; tags are in comma separated value format, spaces are allowed
 ; tags=
 
-homepage=https://public.cloudmergin.com
+homepage=https://merginmaps.com/
 tracker=https://github.com/lutraconsulting/qgis-mergin-plugin/issues
 repository=https://github.com/lutraconsulting/qgis-mergin-plugin
 icon=images/mm_icon_positive.png
