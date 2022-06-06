@@ -4,9 +4,9 @@
 [![.github/workflows/packages.yml](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/packages.yml/badge.svg)](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/packages.yml)
 [![Mergin Plugin Tests](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/run-test.yml/badge.svg)](https://github.com/lutraconsulting/qgis-mergin-plugin/actions/workflows/run-test.yml)
 
-QGIS plugin aims to simplify handling of [Mergin Maps](https://app.merginmaps.com/) projects.
+QGIS plugin aims to simplify handling of [Mergin Maps](https://merginmaps.com/) projects.
 
-[Mergin Maps](https://app.merginmaps.com/) is a service to store, synchronise and manage GIS data and QGIS projects. Currently, [Mergin Maps](https://app.merginmaps.com/) is used as the back-end of [Mergin Maps Input](https://inputapp.io/), an [open source](https://github.com/lutraconsulting/input) mobile application to collect data in field.
+[Mergin Maps](https://merginmaps.com/) is a service to store, synchronise and manage GIS data and QGIS projects. Currently, [Mergin Maps](https://merginmaps.com/) is used as the back-end of [Mergin Maps Input](https://inputapp.io/), an [open source](https://github.com/lutraconsulting/input) mobile application to collect data in field.
 
 <div><img align="left" width="45" height="45" src="https://raw.githubusercontent.com/MerginMaps/docs/main/src/.vuepress/public/slack.svg"><a href="https://merginmaps.com/community/join">Join our community chat</a><br/>and ask questions!</div>
 
