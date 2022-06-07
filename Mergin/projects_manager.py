@@ -197,10 +197,10 @@ class MerginProjectsManager(object):
             if url.netloc.startswith("dev.dev") or url.netloc.startswith("app.dev"):
                 server_urls.append("https://app.dev.merginmaps.com")
                 server_urls.append("https://dev.dev.cloudmergin.com")
-            elif project_url.netloc.startswith("test.dev"):
+            elif url.netloc.startswith("test.dev"):
                 server_urls.append("https://test.dev.merginmaps.com")
                 server_urls.append("https://test.dev.cloudmergin.com")
-            elif project_url.netloc.startswith("public.cloudmergin") or url.netloc.startswith("app.merginmaps"):
+            elif url.netloc.startswith("public.cloudmergin") or url.netloc.startswith("app.merginmaps"):
                 server_urls.append("https://app.merginmaps.com")
                 server_urls.append("https://public.cloudmergin.com")
             if proj_server.rstrip("/") in server_urls:
