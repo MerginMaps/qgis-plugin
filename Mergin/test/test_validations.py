@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import os
-import json
-import copy
 
+from qgis.PyQt.QtCore import QVariant
+
+from qgis.core import QgsVectorLayer, QgsField, QgsEditorWidgetSetup
 from qgis.testing import start_app, unittest
-from Mergin.utils import same_schema
+
+from Mergin.validation import MerginProjectValidator, Warning, SingleLayerWarning
 
 test_data_path = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -17,44 +19,98 @@ class test_validations(unittest.TestCase):
         start_app()
 
     def tearDown(self):
-        del(self.base_schema)
-        del(self.tables_schema)
+        pass
 
     def setUp(self):
-        with open(os.path.join(test_data_path, 'schema_base.json')) as f:
-            self.base_schema = json.load(f).get('geodiff_schema')
+        pass
 
-        with open(os.path.join(test_data_path, 'schema_two_tables.json')) as f:
-            self.tables_schema = json.load(f).get('geodiff_schema')
+    def test_attachment_widget(self):
+        layer = QgsVectorLayer("Point", "test", "memory")
+        fields = [QgsField("photo", QVariant.String)]
+        layer.dataProvider().addAttributes(fields)
+        layer.updateFields()
 
-    def test_table_added_removed(self):
-        equal, msg = same_schema(self.base_schema, self.base_schema)
-        self.assertTrue(equal)
-        self.assertEqual(msg, "No schema changes")
+        validator = MerginProjectValidator()
+        validator.layers = {'mem_1': layer}
+        validator.editable = ['mem_1']
 
-        equal, msg = same_schema(self.base_schema, self.tables_schema)
-        self.assertFalse(equal)
-        self.assertEqual(msg, "Tables added/removed: added: hotels")
+        # absolute path
+        config = {'DocumentViewer': 0,
+                  'DocumentViewerHeight': 0,
+                  'DocumentViewerWidth': 0,
+                  'FileWidget': True,
+                  'FileWidgetButton': True,
+                  'FileWidgetFilter': '',
+                  'PropertyCollection': {'name': None, 'properties': {}, 'type': 'collection'},
+                  'RelativeStorage': 0,
+                  'StorageAuthConfigId': None,
+                  'StorageMode': 0,
+                  'StorageType': None}
+        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
+        layer.setEditorWidgetSetup(0, widget_setup)
+        validator.check_attachment_widget()
+        self.assertTrue(len(validator.issues) == 1)
+        issue = validator.issues[0]
+        self.assertTrue(isinstance(issue, SingleLayerWarning))
+        self.assertEqual(issue.layer_id, 'mem_1')
+        self.assertEqual(issue.warning, Warning.ATTACHMENT_ABSOLUTE_PATH)
+        validator.issues = []
 
-        equal, msg = same_schema(self.tables_schema, self.base_schema)
-        self.assertFalse(equal)
-        self.assertEqual(msg, "Tables added/removed: removed: hotels")
+        # local path
+        config['RelativeStorage'] = 1
+        config['DefaultRoot'] = "/tmp/photos"
+        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
+        layer.setEditorWidgetSetup(0, widget_setup)
+        validator.check_attachment_widget()
+        self.assertTrue(len(validator.issues) == 1)
+        issue = validator.issues[0]
+        self.assertTrue(isinstance(issue, SingleLayerWarning))
+        self.assertEqual(issue.layer_id, 'mem_1')
+        self.assertEqual(issue.warning, Warning.ATTACHMENT_LOCAL_PATH)
+        validator.issues = []
 
-    def test_table_schema_changed(self):
-        modified_schema = copy.deepcopy(self.base_schema)
+        # default path not expression
+        config['DefaultRoot'] = "@project_home + '/Photos'"
+        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
+        layer.setEditorWidgetSetup(0, widget_setup)
+        validator.check_attachment_widget()
+        self.assertTrue(len(validator.issues) == 1)
+        issue = validator.issues[0]
+        self.assertTrue(isinstance(issue, SingleLayerWarning))
+        self.assertEqual(issue.layer_id, 'mem_1')
+        self.assertEqual(issue.warning, Warning.ATTACHMENT_EXPRESSION_PATH)
+        validator.issues = []
 
-        # change column name from fid to id
-        modified_schema[0]["columns"][0]["name"] = "id"
-        equal, msg = same_schema(self.base_schema, modified_schema)
-        self.assertFalse(equal)
-        self.assertEqual(msg, "Fields in table 'Survey_points' added/removed: added: id; removed: fid")
-        modified_schema[0]["columns"][0]["name"] = "fid"
+        # uses link
+        config['DefaultRoot'] = ""
+        config['UseLink'] = True
+        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
+        layer.setEditorWidgetSetup(0, widget_setup)
+        validator.check_attachment_widget()
+        self.assertTrue(len(validator.issues) == 1)
+        issue = validator.issues[0]
+        self.assertTrue(isinstance(issue, SingleLayerWarning))
+        self.assertEqual(issue.layer_id, 'mem_1')
+        self.assertEqual(issue.warning, Warning.ATTACHMENT_HYPERLINK)
+        validator.issues = []
 
-        # change column type from datetime to date
-        modified_schema[0]["columns"][2]["type"] = "date"
-        equal, msg = same_schema(self.base_schema, modified_schema)
-        self.assertFalse(equal)
-        self.assertEqual(msg, "Definition of 'date' field in 'Survey_points' table is not the same")
+
+        # valid expression
+        del config['UseLink']
+        config['PropertyCollection'] = {'name': '0',
+                                        'properties': {'propertyRootPath': {'active': True,
+                                                                            'expression': "'/Photos'",
+                                                                            'type': 3}},
+                                        'type': 'collection'}
+        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
+        layer.setEditorWidgetSetup(0, widget_setup)
+        validator.check_attachment_widget()
+        self.assertTrue(len(validator.issues) == 1)
+        issue = validator.issues[0]
+        self.assertTrue(isinstance(issue, SingleLayerWarning))
+        self.assertEqual(issue.layer_id, 'mem_1')
+        self.assertEqual(issue.warning, Warning.ATTACHMENT_WRONG_EXPRESSION)
+        validator.issues = []
 
 
 if __name__ == '__main__':
