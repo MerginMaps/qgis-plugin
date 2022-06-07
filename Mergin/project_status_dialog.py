@@ -13,8 +13,9 @@ from qgis.PyQt.QtCore import QSize
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem, QIcon
 
 from qgis.gui import QgsGui
-from qgis.core import Qgis, QgsApplication, QgsProject
+from qgis.core import Qgis, QgsApplication, QgsProject, QgsMapLayer, QgsMessageLog
 
+from .diff_dialog import DiffViewerDialog
 from .validation import MultipleLayersWarning, warning_display_string
 from .utils import is_versioned_file, icon_path
 
@@ -46,6 +47,9 @@ class ProjectStatusDialog(QDialog):
         # sync, otherwise just close status dialog
         self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.AcceptRole)
 
+        self.btn_view_changes.setIcon(QIcon(icon_path("file-diff.svg")))
+        self.btn_view_changes.clicked.connect(self.show_changes)
+
         self.validation_results = validation_results
         self.mp = mergin_project
 
@@ -54,9 +58,10 @@ class ProjectStatusDialog(QDialog):
         self.treeStatus.setModel(self.model)
 
         self.check_any_changes(pull_changes, push_changes)
-        self.add_content(pull_changes, "Server changes", True)
-        self.add_content(push_changes, "Local changes", False, push_changes_summary)
+        self.add_content(pull_changes, "Server Changes", True)
+        self.add_content(push_changes, "Local Changes", False, push_changes_summary)
         self.treeStatus.expandAll()
+        self.changes_summary = push_changes_summary
 
         if not self.validation_results:
             self.ui.lblWarnings.hide()
@@ -187,3 +192,13 @@ class ProjectStatusDialog(QDialog):
                 html.append(f"<ul>{''.join(items)}</ul>")
 
         self.txtWarnings.setHtml(''.join(html))
+
+    def show_changes(self):
+        if not self.changes_summary:
+            self.ui.messageBar.pushMessage("Mergin", "No changes found in the project layers.", Qgis.Info)
+            return
+
+        self.close()
+        dlg_diff_viewer = DiffViewerDialog()
+        dlg_diff_viewer.show()
+        dlg_diff_viewer.exec_()

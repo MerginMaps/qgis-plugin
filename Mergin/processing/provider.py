@@ -8,6 +8,8 @@ from qgis.core import QgsProcessingProvider
 
 from ..utils import icon_path
 from .algs.create_report import CreateReport
+from .algs.extract_local_changes import ExtractLocalChanges
+from .algs.create_diff import CreateDiff
 
 
 class MerginProvider(QgsProcessingProvider):
@@ -37,6 +39,8 @@ class MerginProvider(QgsProcessingProvider):
 
     def getAlgs(self):
         algs = [CreateReport(),
+                ExtractLocalChanges(),
+                CreateDiff()
                ]
 
         return algs

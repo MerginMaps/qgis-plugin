@@ -21,8 +21,8 @@ from qgis.core import (
     QgsErrorItem,
     QgsExpressionContextUtils,
     QgsProject,
+    QgsMapLayer,
     QgsProviderRegistry,
-    QgsMessageLog,
     Qgis
 )
 from qgis.utils import iface
@@ -37,6 +37,7 @@ from urllib.error import URLError
 from .configuration_dialog import ConfigurationDialog
 from .create_project_wizard import NewMerginProjectWizard
 from .clone_project_dialog import CloneProjectDialog
+from .diff_dialog import DiffViewerDialog
 from .project_settings_widget import MerginProjectConfigFactory
 from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
@@ -55,6 +56,7 @@ from .utils import (
     same_dir,
     unhandled_exception_message,
     unsaved_project_check,
+    check_mergin_subdirs,
 )
 
 from .mergin.merginproject import MerginProject
@@ -82,7 +84,6 @@ class MerginPlugin:
 
         self.iface.projectRead.connect(self.on_qgis_project_changed)
         self.iface.newProjectCreated.connect(self.on_qgis_project_changed)
-        QgsProject.instance().projectSaved.connect(self.on_qgis_project_changed)
 
         settings = QSettings()
         QgsExpressionContextUtils.setGlobalVariable("mergin_username", settings.value("Mergin/username", ""))
@@ -151,6 +152,12 @@ class MerginPlugin:
         # register custom mergin widget in project properties
         self.mergin_project_config_factory = MerginProjectConfigFactory()
         self.iface.registerProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
+
+        # add layer context menu action for checking local changes
+        self.action_show_changes = QAction("Show Local Changes", self.iface.mainWindow())
+        self.action_show_changes.setIcon(QIcon(icon_path("file-diff.svg")))
+        self.iface.addCustomActionForLayerType(self.action_show_changes, "", QgsMapLayer.VectorLayer, True)
+        self.action_show_changes.triggered.connect(self.view_local_changes)
 
     def add_action(
         self,
@@ -323,7 +330,6 @@ class MerginPlugin:
         # Disconnect Mergin related signals
         self.iface.projectRead.disconnect(self.on_qgis_project_changed)
         self.iface.newProjectCreated.disconnect(self.on_qgis_project_changed)
-        QgsProject.instance().projectSaved.disconnect(self.on_qgis_project_changed)
 
         remove_project_variables()
         QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
@@ -338,8 +344,46 @@ class MerginPlugin:
             self.iface.removeToolBarIcon(action)
         del self.toolbar
 
+        self.iface.removeCustomActionForLayerType(self.action_show_changes)
+
         self.iface.unregisterProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
         QgsApplication.processingRegistry().removeProvider(self.provider)
+
+    def view_local_changes(self):
+        project_path = QgsProject.instance().homePath()
+        if not project_path:
+            iface.messageBar().pushMessage("Mergin", "Project is not saved, can not compute local changes", Qgis.Warning)
+            return
+
+        if not check_mergin_subdirs(project_path):
+            iface.messageBar().pushMessage("Mergin", "Current project is not a Mergin project.", Qgis.Warning)
+            return
+
+        mp = MerginProject(QgsProject.instance().homePath())
+        push_changes = mp.get_push_changes()
+        push_changes_summary = mp.get_list_of_push_changes(push_changes)
+        if not push_changes_summary:
+            iface.messageBar().pushMessage("Mergin", "No changes found in the project layers.", Qgis.Info)
+            return
+
+        selected_layers = self.iface.layerTreeView().selectedLayersRecursive()
+        layer_name = None
+        for layer in selected_layers:
+            if layer.type() != QgsMapLayer.VectorLayer:
+                continue
+
+            if layer.dataProvider().storageType() == "GPKG":
+                layer_name = layer.name()
+                break
+
+        dlg_diff_viewer = DiffViewerDialog()
+        if layer_name:
+            for i, layer in enumerate(dlg_diff_viewer.diff_layers):
+                if layer.name() == layer_name:
+                    dlg_diff_viewer.tab_bar.setCurrentIndex(i)
+                    break
+        dlg_diff_viewer.show()
+        dlg_diff_viewer.exec_()
 
 
 class MerginRemoteProjectItem(QgsDataItem):
