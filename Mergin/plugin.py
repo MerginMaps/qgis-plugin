@@ -344,6 +344,8 @@ class MerginPlugin:
             self.iface.removeToolBarIcon(action)
         del self.toolbar
 
+        self.iface.removeCustomActionForLayerType(self.action_show_changes)
+
         self.iface.unregisterProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
         QgsApplication.processingRegistry().removeProvider(self.provider)
 
