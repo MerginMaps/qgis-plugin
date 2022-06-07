@@ -773,7 +773,7 @@ def login_error_message(e):
 def unhandled_exception_message(error_details, dialog_title, error_text):
     msg = (
         error_text + "<p>This should not happen, "
-        '<a href="https://github.com/lutraconsulting/qgis-mergin-plugin/issues">'
+        '<a href="https://github.com/MerginMaps/qgis-mergin-plugin/issues">'
         "please report the problem</a>."
     )
     box = QMessageBox()

@@ -1,7 +1,7 @@
 
 # Developer's documentation
 ## Development/Testing
-Download python [client](https://github.com/lutraconsulting/mergin-py-client) and
+Download python [client](https://github.com/MerginMaps/mergin-py-client) and
 link to qgis plugin:
 
     ln -s <path-to-py-client>/mergin/ <path-to-mergin-qgis-plugin>/Mergin/mergin

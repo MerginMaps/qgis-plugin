@@ -336,7 +336,7 @@ class MerginProjectsManager(object):
             "Use this option when you encounter synchronization issues, as the log is "
             "very useful to determine the exact cause of the problem.\n\n"
             "The log does not contain any of your data, only file names. It can be found here:\n"
-            "{}\n\nIt would be useful if you also send a mail to info@lutraconsulting.co.uk "
+            "{}\n\nIt would be useful if you also send a mail to support@merginmaps.com "
             "and briefly describe the problem to add more context to the diagnostic log.\n\n"
             "Please click OK if you want to proceed.".format(logs_path)
         )

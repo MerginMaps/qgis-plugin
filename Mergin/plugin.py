@@ -145,7 +145,7 @@ class MerginPlugin:
 
         self.data_item_provider = DataItemProvider(self)
         QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
-        # related to https://github.com/lutraconsulting/qgis-mergin-plugin/issues/3
+        # related to https://github.com/MerginMaps/qgis-mergin-plugin/issues/3
         # if self.iface.browserModel().initialized():
         #     self.iface.browserModel().reload()
 
