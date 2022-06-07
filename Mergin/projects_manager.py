@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 
 from qgis.core import QgsProject, Qgis
 from qgis.utils import iface
@@ -190,8 +191,21 @@ class MerginProjectsManager(object):
                 continue
             proj_server = server
             break
-        if proj_server is not None and proj_server.rstrip("/") == self.mc.url.rstrip("/"):
-            return True
+        if proj_server is not None:
+            server_urls = [self.mc.url.rstrip("/")]
+            url = urlparse(self.mc.url)
+            if url.netloc.startswith("dev.dev") or url.netloc.startswith("app.dev"):
+                server_urls.append("https://app.dev.merginmaps.com")
+                server_urls.append("https://dev.dev.cloudmergin.com")
+            elif url.netloc.startswith("test.dev"):
+                server_urls.append("https://test.dev.merginmaps.com")
+                server_urls.append("https://test.dev.cloudmergin.com")
+            elif url.netloc.startswith("public.cloudmergin") or url.netloc.startswith("app.merginmaps"):
+                server_urls.append("https://app.merginmaps.com")
+                server_urls.append("https://public.cloudmergin.com")
+            if proj_server.rstrip("/") in server_urls:
+                return True
+
         if inform_user:
             info = f"Current project was created for another Mergin Maps server:\n{proj_server}\n\n"
             info += "You need to reconfigure Mergin Maps plugin to synchronise the project."
