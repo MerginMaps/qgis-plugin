@@ -224,7 +224,7 @@ class MerginProjectValidator(object):
                         formula = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["expression"]
                         if not PROJECT_VARS.search(formula):
                             self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION))
-                    except KeyError:
+                    except (KeyError, TypeError):
                         continue
 
     def check_db_schema(self):
