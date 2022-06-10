@@ -85,9 +85,9 @@ def get_row_from_db(db_conn, schema_table, entry_changes):
     where_bits = []
     for i, col in enumerate(schema_table.columns):
         if col.pkey:
-            where_bits.append("{} = {}".format(col.name, old_value_for_column_by_index(entry_changes, i)))
+            where_bits.append('"{}" = {}'.format(col.name, old_value_for_column_by_index(entry_changes, i)))
 
-    c.execute('SELECT * FROM {} WHERE {}'.format(schema_table.name, " AND ".join(where_bits)))
+    c.execute('SELECT * FROM "{}" WHERE {}'.format(schema_table.name, ' AND '.join(where_bits)))
     return c.fetchone()
 
 

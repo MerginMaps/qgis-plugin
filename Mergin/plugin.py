@@ -379,7 +379,7 @@ class MerginPlugin:
         dlg_diff_viewer = DiffViewerDialog()
         if layer_name:
             for i, layer in enumerate(dlg_diff_viewer.diff_layers):
-                if layer.name() == layer_name:
+                if layer_name in layer.name():
                     dlg_diff_viewer.tab_bar.setCurrentIndex(i)
                     break
         dlg_diff_viewer.show()
