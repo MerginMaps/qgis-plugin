@@ -3,7 +3,7 @@ name: Run Mergin Plugin Tests
 on: [push]
 
 env:
-  MERGIN_CLIENT_VER: "0.7.1"
+  MERGIN_CLIENT_VER: "0.7.3"
   PLUGIN_NAME: Mergin
   TEST_FUNCTION: suite.test_all
   DOCKER_IMAGE: qgis/qgis
