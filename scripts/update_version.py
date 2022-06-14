@@ -23,4 +23,3 @@ print("using version " + ver)
 about_file = os.path.join(dir_path, os.pardir, "Mergin", "metadata.txt")
 print("patching " + about_file)
 replace_in_file(about_file, "version=.*", "version=" + ver)
-version=2022.3.2
