@@ -2,7 +2,7 @@ import os
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QApplication, QMessageBox
 from qgis.PyQt import uic
 
-ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_clone_project.ui')
+ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_clone_project.ui")
 
 
 class CloneProjectDialog(QDialog):
@@ -13,8 +13,9 @@ class CloneProjectDialog(QDialog):
         self.ui.buttonBox.accepted.connect(self.accept_dialog)
         self.ui.projectNamespace.addItem(username)
         if user_organisations:
-            self.ui.projectNamespace.addItems([o for o in user_organisations
-                                               if user_organisations[o] in ['admin', 'owner']])
+            self.ui.projectNamespace.addItems(
+                [o for o in user_organisations if user_organisations[o] in ["admin", "owner"]]
+            )
         self.ui.edit_project_name.textChanged.connect(self.text_changed)
 
         # these are the variables used by the caller

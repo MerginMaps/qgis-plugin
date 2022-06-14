@@ -19,7 +19,7 @@ from .diff_dialog import DiffViewerDialog
 from .validation import MultipleLayersWarning, warning_display_string
 from .utils import is_versioned_file, icon_path
 
-ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_status_dialog.ui')
+ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_status_dialog.ui")
 
 
 class ProjectStatusDialog(QDialog):
@@ -33,8 +33,14 @@ class ProjectStatusDialog(QDialog):
     }
 
     def __init__(
-        self, pull_changes, push_changes, push_changes_summary, has_write_permissions, validation_results,
-            mergin_project=None, parent=None
+        self,
+        pull_changes,
+        push_changes,
+        push_changes_summary,
+        has_write_permissions,
+        validation_results,
+        mergin_project=None,
+        parent=None,
     ):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
@@ -94,8 +100,7 @@ class ProjectStatusDialog(QDialog):
 
         if has_unfinished_pull:
             msg.append(
-                f"The previous pull has not finished completely: status "
-                f"of some files may be reported incorrectly."
+                f"The previous pull has not finished completely: status " f"of some files may be reported incorrectly."
             )
 
         return msg
@@ -161,7 +166,9 @@ class ProjectStatusDialog(QDialog):
 
         # separate MultipleLayersWarning and SingleLayerWarning items
         groups = dict()
-        for k, v in groupby(self.validation_results, key=lambda x: "multi" if isinstance(x, MultipleLayersWarning) else "single"):
+        for k, v in groupby(
+            self.validation_results, key=lambda x: "multi" if isinstance(x, MultipleLayersWarning) else "single"
+        ):
             groups[k] = list(v)
 
         # first add MultipleLayersWarnings. They are displayed using warning
@@ -191,7 +198,7 @@ class ProjectStatusDialog(QDialog):
                     items.append(f"<li>{warning_display_string(w.warning)}</li>")
                 html.append(f"<ul>{''.join(items)}</ul>")
 
-        self.txtWarnings.setHtml(''.join(html))
+        self.txtWarnings.setHtml("".join(html))
 
     def show_changes(self):
         if not self.changes_summary:

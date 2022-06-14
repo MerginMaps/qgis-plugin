@@ -7,7 +7,7 @@ from qgis.core import QgsProject
 from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
 from .utils import icon_path, mergin_project_local_path
 
-ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_project_config.ui')
+ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
 ProjectConfigUiWidget, _ = uic.loadUiType(ui_file)
 
 
@@ -49,7 +49,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             self.selective_sync_group.setEnabled(False)
 
     def get_sync_dir(self):
-        abs_path = QFileDialog.getExistingDirectory(None, "Select directory", self.local_project_dir, QFileDialog.ShowDirsOnly)
+        abs_path = QFileDialog.getExistingDirectory(
+            None, "Select directory", self.local_project_dir, QFileDialog.ShowDirsOnly
+        )
         if self.local_project_dir not in abs_path:
             return
         dir_path = abs_path.replace(self.local_project_dir, "").lstrip("/")

@@ -4,4 +4,5 @@
 
 def classFactory(iface):
     from .plugin import MerginPlugin
+
     return MerginPlugin(iface)

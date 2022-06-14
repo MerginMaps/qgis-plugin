@@ -15,7 +15,7 @@ from qgis.core import (
     QgsProcessingParameterFile,
     QgsProcessingParameterNumber,
     QgsProcessingParameterVectorLayer,
-    QgsProcessingParameterFeatureSink
+    QgsProcessingParameterFeatureSink,
 )
 
 from ..postprocessors import StylingPostProcessor
@@ -23,13 +23,7 @@ from ..postprocessors import StylingPostProcessor
 from ...mergin.merginproject import MerginProject
 from ...mergin.utils import get_versions_with_file_changes
 
-from ...diff import (
-    parse_db_schema,
-    parse_diff,
-    get_table_name,
-    create_field_list,
-    diff_table_to_features
-)
+from ...diff import parse_db_schema, parse_diff, get_table_name, create_field_list, diff_table_to_features
 
 from ...utils import (
     icon_path,
@@ -40,32 +34,34 @@ from ...utils import (
 
 class CreateDiff(QgsProcessingAlgorithm):
 
-    PROJECT_DIR = 'PROJECT_DIR'
-    LAYER = 'LAYER'
-    START_VERSION = 'START_VERSION'
-    END_VERSION = 'END_VERSION'
-    OUTPUT = 'OUTPUT'
+    PROJECT_DIR = "PROJECT_DIR"
+    LAYER = "LAYER"
+    START_VERSION = "START_VERSION"
+    END_VERSION = "END_VERSION"
+    OUTPUT = "OUTPUT"
 
     def name(self):
-        return 'creatediff'
+        return "creatediff"
 
     def displayName(self):
-        return 'Create diff'
+        return "Create diff"
 
     def group(self):
-        return 'Tools'
+        return "Tools"
 
     def groupId(self):
-        return 'tools'
+        return "tools"
 
     def tags(self):
-        return 'mergin,added,dropped,new,deleted,features,geometries,difference,delta,revised,original,version,compare'.split(',')
+        return "mergin,added,dropped,new,deleted,features,geometries,difference,delta,revised,original,version,compare".split(
+            ","
+        )
 
     def shortHelpString(self):
-        return 'Extracts changes made between two versions of the layer of the Mergin project to make it easier to revise changes.'
+        return "Extracts changes made between two versions of the layer of the Mergin project to make it easier to revise changes."
 
     def icon(self):
-        return QIcon(icon_path('mm_icon_positive_no_padding.svg'))
+        return QIcon(icon_path("mm_icon_positive_no_padding.svg"))
 
     def __init__(self):
         super().__init__()
@@ -74,11 +70,21 @@ class CreateDiff(QgsProcessingAlgorithm):
         return type(self)()
 
     def initAlgorithm(self, config=None):
-        self.addParameter(QgsProcessingParameterFile(self.PROJECT_DIR, 'Project directory', QgsProcessingParameterFile.Folder))
-        self.addParameter(QgsProcessingParameterVectorLayer(self.LAYER, 'Input layer'))
-        self.addParameter(QgsProcessingParameterNumber(self.START_VERSION, 'Start version', QgsProcessingParameterNumber.Integer, 1, False, 1))
-        self.addParameter(QgsProcessingParameterNumber(self.END_VERSION, 'End version', QgsProcessingParameterNumber.Integer, None, True, 1))
-        self.addParameter(QgsProcessingParameterFeatureSink(self.OUTPUT, 'Diff layer'))
+        self.addParameter(
+            QgsProcessingParameterFile(self.PROJECT_DIR, "Project directory", QgsProcessingParameterFile.Folder)
+        )
+        self.addParameter(QgsProcessingParameterVectorLayer(self.LAYER, "Input layer"))
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.START_VERSION, "Start version", QgsProcessingParameterNumber.Integer, 1, False, 1
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.END_VERSION, "End version", QgsProcessingParameterNumber.Integer, None, True, 1
+            )
+        )
+        self.addParameter(QgsProcessingParameterFeatureSink(self.OUTPUT, "Diff layer"))
 
     def processAlgorithm(self, parameters, context, feedback):
         project_dir = self.parameterAsString(parameters, self.PROJECT_DIR, context)
@@ -97,7 +103,7 @@ class CreateDiff(QgsProcessingAlgorithm):
         if self.END_VERSION in parameters and parameters[self.END_VERSION] is not None:
             end = self.parameterAsInt(parameters, self.END_VERSION, context)
         else:
-            end = ''
+            end = ""
 
         table_name = get_table_name(layer)
         layer_path = layer.source().split("|")[0]
@@ -121,7 +127,9 @@ class CreateDiff(QgsProcessingAlgorithm):
 
         feedback.pushInfo("Create field list…")
         fields, fields_mapping = create_field_list(db_schema[table_name])
-        (sink, dest_id) = self.parameterAsSink(parameters, self.OUTPUT, context, fields, layer.wkbType(), layer.sourceCrs())
+        (sink, dest_id) = self.parameterAsSink(
+            parameters, self.OUTPUT, context, fields, layer.wkbType(), layer.sourceCrs()
+        )
 
         feedback.pushInfo("Parse diff…")
         diff = parse_diff(diff_file)
@@ -142,6 +150,8 @@ class CreateDiff(QgsProcessingAlgorithm):
                 feedback.setProgress(int(i * step))
 
         if context.willLoadLayerOnCompletion(dest_id):
-            context.layerToLoadOnCompletionDetails(dest_id).setPostProcessor(StylingPostProcessor.create(db_schema[table_name]))
+            context.layerToLoadOnCompletionDetails(dest_id).setPostProcessor(
+                StylingPostProcessor.create(db_schema[table_name])
+            )
 
         return {self.OUTPUT: dest_id}

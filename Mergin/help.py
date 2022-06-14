@@ -1,4 +1,3 @@
-
 HELP_ROOT = "https://merginmaps.com/docs"
 
 
@@ -10,5 +9,3 @@ class MerginHelp:
 
     def howto_background_maps(self):
         return f"{HELP_ROOT}/gis/settingup_background_map/"
-
-

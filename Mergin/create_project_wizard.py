@@ -63,7 +63,8 @@ class InitPage(ui_init_page, base_init_page):
             if mergin_dir:
                 self.cur_proj_no_pack_btn.setDisabled(True)
                 self.cur_proj_no_pack_btn.setToolTip(
-                    f"Current project directory is already a Mergin Maps project.\nSee {mergin_dir}")
+                    f"Current project directory is already a Mergin Maps project.\nSee {mergin_dir}"
+                )
 
     def selection_changed(self):
         self.hidden_ledit.setText("Selection done!")
@@ -195,8 +196,11 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
             warn += "\nConsider another directory for saving the project."
             self.create_warning(warn)
         else:
-            qgis_file = QgsProject.instance().absoluteFilePath() if self.for_current_proj else \
-                os.path.join(proj_dir, proj_name + ".qgz")
+            qgis_file = (
+                QgsProject.instance().absoluteFilePath()
+                if self.for_current_proj
+                else os.path.join(proj_dir, proj_name + ".qgz")
+            )
             info = f"QGIS project path:\n{qgis_file}"
             self.no_warning(info)
 
@@ -269,7 +273,8 @@ class LayerTreeProxyModel(QSortFilterProxyModel):
             node = self.layer_tree_model.index2node(self.mapToSource(idx))
         else:
             node = self.layer_tree_model.index2node(
-                self.mapToSource(self.index(idx.row(), self.LAYER_COL, idx.parent())))
+                self.mapToSource(self.index(idx.row(), self.LAYER_COL, idx.parent()))
+            )
         if not node or not QgsProject.instance().layerTreeRoot().isLayer(node):
             return None
         return node.layer()
@@ -354,6 +359,7 @@ class LayerTreeProxyModel(QSortFilterProxyModel):
 
 class PackageLayersTreeView(QTreeView):
     """Layers tree view with packaging options to choose."""
+
     def __init__(self, parent=None):
         super(PackageLayersTreeView, self).__init__(parent)
         self.proxy_model = LayerTreeProxyModel(self)
@@ -417,7 +423,7 @@ class NewMerginProjectWizard(QWizard):
         self.is_public = None
         self.package_data = None
 
-        geom = self.settings.value('Mergin/NewProjWizard/geometry', None)
+        geom = self.settings.value("Mergin/NewProjWizard/geometry", None)
         if geom is not None:
             self.restoreGeometry(geom)
         else:
@@ -495,12 +501,7 @@ class NewMerginProjectWizard(QWizard):
         QApplication.processEvents()
         QApplication.restoreOverrideCursor()
 
-        self.project_manager.create_project(
-            self.project_name,
-            self.project_dir,
-            self.is_public,
-            self.project_namespace
-        )
+        self.project_manager.create_project(self.project_name, self.project_dir, self.is_public, self.project_namespace)
         if reload_project:
             self.project_manager.open_project(self.project_dir)
 

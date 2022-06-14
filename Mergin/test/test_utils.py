@@ -7,25 +7,24 @@ import copy
 from qgis.testing import start_app, unittest
 from Mergin.utils import same_schema
 
-test_data_path = os.path.join(os.path.dirname(__file__), 'data')
+test_data_path = os.path.join(os.path.dirname(__file__), "data")
 
 
 class test_utils(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         start_app()
 
     def tearDown(self):
-        del(self.base_schema)
-        del(self.tables_schema)
+        del self.base_schema
+        del self.tables_schema
 
     def setUp(self):
-        with open(os.path.join(test_data_path, 'schema_base.json')) as f:
-            self.base_schema = json.load(f).get('geodiff_schema')
+        with open(os.path.join(test_data_path, "schema_base.json")) as f:
+            self.base_schema = json.load(f).get("geodiff_schema")
 
-        with open(os.path.join(test_data_path, 'schema_two_tables.json')) as f:
-            self.tables_schema = json.load(f).get('geodiff_schema')
+        with open(os.path.join(test_data_path, "schema_two_tables.json")) as f:
+            self.tables_schema = json.load(f).get("geodiff_schema")
 
     def test_table_added_removed(self):
         equal, msg = same_schema(self.base_schema, self.base_schema)
@@ -57,5 +56,5 @@ class test_utils(unittest.TestCase):
         self.assertEqual(msg, "Definition of 'date' field in 'Survey_points' table is not the same")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     nose2.main()

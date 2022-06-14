@@ -23,15 +23,10 @@ from qgis.core import (
     QgsProject,
     QgsMapLayer,
     QgsProviderRegistry,
-    Qgis
+    Qgis,
 )
 from qgis.utils import iface
-from qgis.PyQt.QtWidgets import (
-    QAction,
-    QFileDialog,
-    QMessageBox,
-    QDockWidget
-)
+from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QDockWidget
 from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
@@ -63,7 +58,7 @@ from .mergin.merginproject import MerginProject
 from .processing.provider import MerginProvider
 
 MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
-os.environ['MERGIN_CLIENT_LOG'] = MERGIN_CLIENT_LOG
+os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
 
 
 class MerginPlugin:
@@ -210,8 +205,7 @@ class MerginPlugin:
             self.mc = None
             self.manager = None
         if self.has_browser_item():
-            self.data_item_provider.root_item.update_client_and_manager(
-                mc=self.mc, manager=self.manager, err=error)
+            self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager, err=error)
 
     def has_browser_item(self):
         """Check if the Mergin Maps provider Browser item exists and has the root item defined."""
@@ -287,7 +281,7 @@ class MerginPlugin:
                     f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required'>"
                     "Mergin dashboard</a>",
                     level=Qgis.Critical,
-                    duration=0
+                    duration=0,
                 )
 
     def create_new_project(self):
@@ -301,9 +295,7 @@ class MerginPlugin:
 
         user_info = self.mc.user_info()
         wizard = NewMerginProjectWizard(
-            self.manager,
-            username=user_info["username"],
-            user_organisations=user_info.get("organisations", [])
+            self.manager, username=user_info["username"], user_organisations=user_info.get("organisations", [])
         )
         if not wizard.exec_():
             return  # cancelled
@@ -352,7 +344,9 @@ class MerginPlugin:
     def view_local_changes(self):
         project_path = QgsProject.instance().homePath()
         if not project_path:
-            iface.messageBar().pushMessage("Mergin", "Project is not saved, can not compute local changes", Qgis.Warning)
+            iface.messageBar().pushMessage(
+                "Mergin", "Project is not saved, can not compute local changes", Qgis.Warning
+            )
             return
 
         if not check_mergin_subdirs(project_path):
@@ -537,7 +531,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
         self.project_manager.project_status(self.path)
 
     def _reload_project(self):
-        """ This will forcefully reload the QGIS project because the project (or its data) may have changed """
+        """This will forcefully reload the QGIS project because the project (or its data) may have changed"""
         qgis_files = find_qgis_files(self.path)
         if QgsProject.instance().fileName() in qgis_files:
             iface.addProject(QgsProject.instance().fileName())
@@ -663,7 +657,7 @@ class FetchMoreItem(QgsDataItem):
 
 
 class MerginGroupItem(QgsDataCollectionItem):
-    """ Mergin group data item. Contains filtered list of Mergin Maps projects. """
+    """Mergin group data item. Contains filtered list of Mergin Maps projects."""
 
     def __init__(self, parent, grp_name, grp_filter, icon, order, plugin):
         QgsDataCollectionItem.__init__(self, parent, grp_name, "/Mergin" + grp_name)
@@ -685,7 +679,8 @@ class MerginGroupItem(QgsDataCollectionItem):
             return [error_item]
         try:
             resp = self.project_manager.mc.paginated_projects_list(
-                flag=self.filter, page=page, per_page=per_page, order_params="namespace_asc,name_asc")
+                flag=self.filter, page=page, per_page=per_page, order_params="namespace_asc,name_asc"
+            )
             self.projects += resp["projects"]
             self.total_projects_count = int(resp["count"]) if is_number(resp["count"]) else 0
         except URLError:
@@ -757,16 +752,14 @@ class MerginGroupItem(QgsDataCollectionItem):
             action_fetch_more.triggered.connect(self.fetch_more)
             actions.append(action_fetch_more)
         if self.name().startswith("My projects"):
-            action_create = QAction(
-                QIcon(icon_path("square-plus.svg")), "Create new project", parent
-            )
+            action_create = QAction(QIcon(icon_path("square-plus.svg")), "Create new project", parent)
             action_create.triggered.connect(self.plugin.create_new_project)
             actions.append(action_create)
         return actions
 
 
 class MerginRootItem(QgsDataCollectionItem):
-    """ Mergin root data containing project groups item with configuration dialog. """
+    """Mergin root data containing project groups item with configuration dialog."""
 
     local_project_removed = pyqtSignal()
 

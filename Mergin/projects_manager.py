@@ -53,7 +53,7 @@ class MerginProjectsManager(object):
             if self.mc.has_unfinished_pull(project_dir):
                 widget = iface.messageBar().createMessage(
                     "Mergin Maps",
-                    "The previous pull has not finished completely, status of some files may be reported incorrectly."
+                    "The previous pull has not finished completely, status of some files may be reported incorrectly.",
                 )
                 button = QPushButton(widget)
                 button.setText("Finish pull")
@@ -169,7 +169,7 @@ class MerginProjectsManager(object):
                 push_changes_summary,
                 self.mc.has_writing_permissions(project_name),
                 validation_results,
-                mp
+                mp,
             )
             # Sync button in the status dialog returns QDialog.Accepted
             # and Close button retuns QDialog::Rejected, so it dialog was

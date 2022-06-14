@@ -12,7 +12,7 @@ from qgis.core import (
     QgsProcessingContext,
     QgsProcessingParameterFile,
     QgsProcessingParameterVectorLayer,
-    QgsProcessingParameterFeatureSink
+    QgsProcessingParameterFeatureSink,
 )
 
 from ..postprocessors import StylingPostProcessor
@@ -25,7 +25,7 @@ from ...diff import (
     parse_diff,
     get_table_name,
     create_field_list,
-    diff_table_to_features
+    diff_table_to_features,
 )
 
 from ...utils import (
@@ -36,30 +36,32 @@ from ...utils import (
 
 class ExtractLocalChanges(QgsProcessingAlgorithm):
 
-    PROJECT_DIR = 'PROJECT_DIR'
-    LAYER = 'LAYER'
-    OUTPUT = 'OUTPUT'
+    PROJECT_DIR = "PROJECT_DIR"
+    LAYER = "LAYER"
+    OUTPUT = "OUTPUT"
 
     def name(self):
-        return 'extractlocalchanges'
+        return "extractlocalchanges"
 
     def displayName(self):
-        return 'Extract local changes'
+        return "Extract local changes"
 
     def group(self):
-        return 'Tools'
+        return "Tools"
 
     def groupId(self):
-        return 'tools'
+        return "tools"
 
     def tags(self):
-        return 'mergin,added,dropped,new,deleted,features,geometries,difference,delta,revised,original,version,compare'.split(',')
+        return "mergin,added,dropped,new,deleted,features,geometries,difference,delta,revised,original,version,compare".split(
+            ","
+        )
 
     def shortHelpString(self):
-        return 'Extracts local changes made in the specific layer of the Mergin project to make it easier to revise changes.'
+        return "Extracts local changes made in the specific layer of the Mergin project to make it easier to revise changes."
 
     def icon(self):
-        return QIcon(icon_path('mm_icon_positive_no_padding.svg'))
+        return QIcon(icon_path("mm_icon_positive_no_padding.svg"))
 
     def __init__(self):
         super().__init__()
@@ -68,9 +70,11 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
         return type(self)()
 
     def initAlgorithm(self, config=None):
-        self.addParameter(QgsProcessingParameterFile(self.PROJECT_DIR, 'Project directory', QgsProcessingParameterFile.Folder))
-        self.addParameter(QgsProcessingParameterVectorLayer(self.LAYER, 'Input layer'))
-        self.addParameter(QgsProcessingParameterFeatureSink(self.OUTPUT, 'Local changes layer'))
+        self.addParameter(
+            QgsProcessingParameterFile(self.PROJECT_DIR, "Project directory", QgsProcessingParameterFile.Folder)
+        )
+        self.addParameter(QgsProcessingParameterVectorLayer(self.LAYER, "Input layer"))
+        self.addParameter(QgsProcessingParameterFeatureSink(self.OUTPUT, "Local changes layer"))
 
     def processAlgorithm(self, parameters, context, feedback):
         project_dir = self.parameterAsString(parameters, self.PROJECT_DIR, context)
@@ -100,7 +104,9 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
         feedback.setProgress(10)
 
         fields, fields_mapping = create_field_list(db_schema[table_name])
-        (sink, dest_id) = self.parameterAsSink(parameters, self.OUTPUT, context, fields, layer.wkbType(), layer.sourceCrs())
+        (sink, dest_id) = self.parameterAsSink(
+            parameters, self.OUTPUT, context, fields, layer.wkbType(), layer.sourceCrs()
+        )
 
         diff = parse_diff(diff_path)
         feedback.setProgress(15)
@@ -120,6 +126,8 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
                 feedback.setProgress(int(i * step))
 
         if context.willLoadLayerOnCompletion(dest_id):
-            context.layerToLoadOnCompletionDetails(dest_id).setPostProcessor(StylingPostProcessor.create(db_schema[table_name]))
+            context.layerToLoadOnCompletionDetails(dest_id).setPostProcessor(
+                StylingPostProcessor.create(db_schema[table_name])
+            )
 
         return {self.OUTPUT: dest_id}
