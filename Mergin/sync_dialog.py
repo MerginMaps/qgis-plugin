@@ -5,20 +5,30 @@ from PyQt5.QtWidgets import QDialog, QApplication
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QTimer
 
-from .utils import \
-    download_project_async, download_project_is_running, download_project_finalize, download_project_cancel, \
-    pull_project_async, pull_project_is_running, pull_project_finalize, pull_project_cancel, \
-    push_project_async, push_project_is_running, push_project_finalize, push_project_cancel
+from .utils import (
+    download_project_async,
+    download_project_is_running,
+    download_project_finalize,
+    download_project_cancel,
+    pull_project_async,
+    pull_project_is_running,
+    pull_project_finalize,
+    pull_project_cancel,
+    push_project_async,
+    push_project_is_running,
+    push_project_finalize,
+    push_project_cancel,
+)
 
-ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_sync_dialog.ui')
+ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_sync_dialog.ui")
 
 
 class SyncDialog(QDialog):
 
     # possible operations
-    DOWNLOAD = 1   # initial download of a project
-    PUSH = 2       # synchronization - push
-    PULL = 3       # synchronization - pull
+    DOWNLOAD = 1  # initial download of a project
+    PUSH = 2  # synchronization - push
+    PULL = 3  # synchronization - pull
 
     def __init__(self, parent=None):
         QDialog.__init__(self, parent)
@@ -72,8 +82,8 @@ class SyncDialog(QDialog):
             self.close()
 
     def exception_details(self):
-        """ If an exception was set, this returns a formatted string with a traceback """
-        return '\n'.join(traceback.format_exception(self.exception_type, self.exception, self.exception_tb))
+        """If an exception was set, this returns a formatted string with a traceback"""
+        return "\n".join(traceback.format_exception(self.exception_type, self.exception, self.exception_tb))
 
     def download_start(self, mergin_client, target_dir, project_name):
         self.operation = self.DOWNLOAD
@@ -292,4 +302,3 @@ class SyncDialog(QDialog):
         cancel_func(self.job)
         QApplication.restoreOverrideCursor()
         self.reset_operation(success=False, close=True)
-

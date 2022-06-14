@@ -46,31 +46,56 @@ from .mergin.merginproject import MerginProject
 
 try:
     from .mergin.client import MerginClient, ClientError, LoginError, InvalidProject
-    from .mergin.client_pull import download_project_async, download_project_is_running, \
-                                    download_project_finalize, download_project_cancel
-    from .mergin.client_pull import pull_project_async, pull_project_is_running, \
-                                    pull_project_finalize, pull_project_cancel
-    from .mergin.client_push import push_project_async, push_project_is_running, \
-                                    push_project_finalize, push_project_cancel
+    from .mergin.client_pull import (
+        download_project_async,
+        download_project_is_running,
+        download_project_finalize,
+        download_project_cancel,
+    )
+    from .mergin.client_pull import (
+        pull_project_async,
+        pull_project_is_running,
+        pull_project_finalize,
+        pull_project_cancel,
+    )
+    from .mergin.client_push import (
+        push_project_async,
+        push_project_is_running,
+        push_project_finalize,
+        push_project_cancel,
+    )
     from .mergin.report import create_report
     from .mergin.deps import pygeodiff
 except ImportError:
     import sys
+
     this_dir = os.path.dirname(os.path.realpath(__file__))
-    path = os.path.join(this_dir, 'mergin_client.whl')
+    path = os.path.join(this_dir, "mergin_client.whl")
     sys.path.append(path)
     from mergin.client import MerginClient, ClientError, InvalidProject, LoginError
-    from mergin.client_pull import download_project_async, download_project_is_running, \
-                                   download_project_finalize, download_project_cancel
-    from mergin.client_pull import pull_project_async, pull_project_is_running, \
-                                   pull_project_finalize, pull_project_cancel
-    from mergin.client_push import push_project_async, push_project_is_running, \
-                                   push_project_finalize, push_project_cancel
+    from mergin.client_pull import (
+        download_project_async,
+        download_project_is_running,
+        download_project_finalize,
+        download_project_cancel,
+    )
+    from mergin.client_pull import (
+        pull_project_async,
+        pull_project_is_running,
+        pull_project_finalize,
+        pull_project_cancel,
+    )
+    from mergin.client_push import (
+        push_project_async,
+        push_project_is_running,
+        push_project_finalize,
+        push_project_cancel,
+    )
     from .mergin.report import create_report
     from .mergin.deps import pygeodiff
 
-MERGIN_URL = 'https://app.merginmaps.com/'
-MERGIN_LOGS_URL = 'https://g4pfq226j0.execute-api.eu-west-1.amazonaws.com/mergin_client_log_submit'
+MERGIN_URL = "https://app.merginmaps.com/"
+MERGIN_LOGS_URL = "https://g4pfq226j0.execute-api.eu-west-1.amazonaws.com/mergin_client_log_submit"
 
 QGIS_NET_PROVIDERS = ("WFS", "arcgisfeatureserver", "arcgismapserver", "geonode", "ows", "wcs", "wms", "vectortile")
 QGIS_DB_PROVIDERS = ("postgres", "mssql", "oracle", "hana", "postgresraster", "DB2")
@@ -90,6 +115,7 @@ class FieldConverter(QgsVectorFileWriter.FieldValueConverter):
     Custom field value converter renaming fid attribute if it has non-unique values preventing the column to be a
     proper unique FID attribute.
     """
+
     def __init__(self, layer):
         QgsVectorFileWriter.FieldValueConverter.__init__(self)
         self.layer = layer
@@ -138,31 +164,31 @@ def find_qgis_files(directory):
     for root, dirs, files in os.walk(directory):
         for f in files:
             _, ext = os.path.splitext(f)
-            if ext in ['.qgs', '.qgz']:
+            if ext in [".qgs", ".qgz"]:
                 qgis_files.append(os.path.join(root, f))
     return qgis_files
 
 
 def get_mergin_auth():
     settings = QSettings()
-    save_credentials = settings.value('Mergin/saveCredentials', 'false').lower() == 'true'
-    mergin_url = settings.value('Mergin/server', MERGIN_URL)
+    save_credentials = settings.value("Mergin/saveCredentials", "false").lower() == "true"
+    mergin_url = settings.value("Mergin/server", MERGIN_URL)
     auth_manager = QgsApplication.authManager()
     if not save_credentials or not auth_manager.masterPasswordHashInDatabase():
-        return mergin_url, '', ''
+        return mergin_url, "", ""
 
-    authcfg = settings.value('Mergin/authcfg', None)
+    authcfg = settings.value("Mergin/authcfg", None)
     cfg = QgsAuthMethodConfig()
     auth_manager.loadAuthenticationConfig(authcfg, cfg, True)
     url = cfg.uri()
-    username = cfg.config('username')
-    password = cfg.config('password')
+    username = cfg.config("username")
+    password = cfg.config("password")
     return url, username, password
 
 
 def set_mergin_auth(url, username, password):
     settings = QSettings()
-    authcfg = settings.value('Mergin/authcfg', None)
+    authcfg = settings.value("Mergin/authcfg", None)
     cfg = QgsAuthMethodConfig()
     auth_manager = QgsApplication.authManager()
     auth_manager.setMasterPassword()
@@ -180,9 +206,9 @@ def set_mergin_auth(url, username, password):
         cfg.setConfig("username", username)
         cfg.setConfig("password", password)
         auth_manager.storeAuthenticationConfig(cfg)
-        settings.setValue('Mergin/authcfg', cfg.id())
+        settings.setValue("Mergin/authcfg", cfg.id())
 
-    settings.setValue('Mergin/server', url)
+    settings.setValue("Mergin/server", url)
 
 
 def get_qgis_proxy_config(url=None):
@@ -232,12 +258,12 @@ def get_qgis_proxy_config(url=None):
 def create_mergin_client():
     url, username, password = get_mergin_auth()
     settings = QSettings()
-    auth_token = settings.value('Mergin/auth_token', None)
+    auth_token = settings.value("Mergin/auth_token", None)
     proxy_config = get_qgis_proxy_config(url)
     if auth_token:
         mc = MerginClient(url, auth_token, username, password, get_plugin_version(), proxy_config)
         # check token expiration
-        delta = mc._auth_session['expire'] - datetime.now(timezone.utc)
+        delta = mc._auth_session["expire"] - datetime.now(timezone.utc)
         if delta.total_seconds() > 1:
             return mc
 
@@ -249,22 +275,22 @@ def create_mergin_client():
     except (URLError, ClientError) as e:
         QgsApplication.messageLog().logMessage(str(e))
         raise
-    settings.setValue('Mergin/auth_token', mc._auth_session['token'])
-    return MerginClient(url, mc._auth_session['token'], username, password, get_plugin_version(), proxy_config)
+    settings.setValue("Mergin/auth_token", mc._auth_session["token"])
+    return MerginClient(url, mc._auth_session["token"], username, password, get_plugin_version(), proxy_config)
 
 
 def get_qgis_version_str():
-    """ Returns QGIS verion as 'MAJOR.MINOR.PATCH', for example '3.10.6' """
+    """Returns QGIS verion as 'MAJOR.MINOR.PATCH', for example '3.10.6'"""
     # there's also Qgis.QGIS_VERSION which is string but also includes release name (possibly with unicode characters)
     qgis_ver_int = Qgis.QGIS_VERSION_INT
     qgis_ver_major = qgis_ver_int // 10000
     qgis_ver_minor = (qgis_ver_int % 10000) // 100
-    qgis_ver_patch = (qgis_ver_int % 100)
+    qgis_ver_patch = qgis_ver_int % 100
     return "{}.{}.{}".format(qgis_ver_major, qgis_ver_minor, qgis_ver_patch)
 
 
 def plugin_version():
-    with open(os.path.join(os.path.dirname(__file__), "metadata.txt"), 'r') as f:
+    with open(os.path.join(os.path.dirname(__file__), "metadata.txt"), "r") as f:
         config = configparser.ConfigParser()
         config.read_file(f)
     return config["general"]["version"]
@@ -276,20 +302,20 @@ def get_plugin_version():
 
 
 def is_versioned_file(file):
-    """ Check if file is compatible with geodiff lib and hence suitable for versioning.
+    """Check if file is compatible with geodiff lib and hence suitable for versioning.
 
     :param file: file path
     :type file: str
     :returns: if file is compatible with geodiff lib
     :rtype: bool
     """
-    diff_extensions = ['.gpkg', '.sqlite']
+    diff_extensions = [".gpkg", ".sqlite"]
     f_extension = os.path.splitext(file)[1]
     return f_extension in diff_extensions
 
 
 def send_logs(username, logfile):
-    """ Send mergin-client logs to dedicated server
+    """Send mergin-client logs to dedicated server
 
     :param logfile: path to logfile
     :returns: name of submitted file, error message
@@ -298,32 +324,24 @@ def send_logs(username, logfile):
     system = platform.system().lower()
     version = plugin_version()
     # also read global mergin client log
-    global_log_file = os.environ.get('MERGIN_CLIENT_LOG', None)
+    global_log_file = os.environ.get("MERGIN_CLIENT_LOG", None)
 
-    params = {
-        "app": "plugin-{}-{}".format(system, version),
-        "username": username
-    }
+    params = {"app": "plugin-{}-{}".format(system, version), "username": username}
     url = MERGIN_LOGS_URL + "?" + urllib.parse.urlencode(params)
     header = {"content-type": "text/plain"}
 
-    meta = "Plugin: {} \nQGIS: {} \nSystem: {} \nMergin Maps URL: {} \nMergin Maps user: {} \n--------------------------------\n\n"\
-        .format(
-            version,
-            get_qgis_version_str(),
-            system,
-            mergin_url,
-            username
-        )
+    meta = "Plugin: {} \nQGIS: {} \nSystem: {} \nMergin Maps URL: {} \nMergin Maps user: {} \n--------------------------------\n\n".format(
+        version, get_qgis_version_str(), system, mergin_url, username
+    )
 
     global_logs = b""
     if global_log_file and os.path.exists(global_log_file):
-        with open(global_log_file, 'rb') as f:
+        with open(global_log_file, "rb") as f:
             if os.path.getsize(global_log_file) > 100 * 1024:
                 f.seek(-100 * 1024, os.SEEK_END)
             global_logs = f.read() + b"\n--------------------------------\n\n"
 
-    with open(logfile, 'rb') as f:
+    with open(logfile, "rb") as f:
         if os.path.getsize(logfile) > 512 * 1024:
             f.seek(-512 * 1024, os.SEEK_END)
         logs = f.read()
@@ -333,7 +351,7 @@ def send_logs(username, logfile):
         req = urllib.request.Request(url, data=payload, headers=header)
         resp = urllib.request.urlopen(req)
         log_file_name = resp.read().decode()
-        if resp.msg != 'OK':
+        if resp.msg != "OK":
             return None, str(resp.reason)
         return log_file_name, None
     except (HTTPError, URLError) as e:
@@ -349,7 +367,7 @@ def validate_mergin_url(url):
     try:
         mc = MerginClient(url, proxy_config=get_qgis_proxy_config(url))
         if not mc.is_server_compatible():
-            return 'Incompatible Mergin Maps server'
+            return "Incompatible Mergin Maps server"
     # Valid but not Mergin URl
     except ClientError:
         return "Invalid Mergin Maps URL"
@@ -381,7 +399,8 @@ def get_new_qgis_project_filepath(project_name=None):
         project_file = os.path.abspath(os.path.join(dest_dir, project_name))
     else:
         project_file, filters = QFileDialog.getSaveFileName(
-            None, "Save QGIS project", "", "QGIS projects (*.qgz *.qgs)")
+            None, "Save QGIS project", "", "QGIS projects (*.qgz *.qgs)"
+        )
     if project_file:
         if not (project_file.endswith(".qgs") or project_file.endswith(".qgz")):
             project_file += ".qgz"
@@ -422,8 +441,9 @@ def unsaved_project_check():
                         QgsProject.instance().setFileName(project_file)
                         write_ok = QgsProject.instance().write()
                         if not write_ok:
-                            QMessageBox.warning(None, "Error Saving Project",
-                                                "QGIS project was not saved properly. Cancelling...")
+                            QMessageBox.warning(
+                                None, "Error Saving Project", "QGIS project was not saved properly. Cancelling..."
+                            )
                             return False
                     else:
                         return False
@@ -482,33 +502,50 @@ def create_basic_qgis_project(project_path=None, project_name=None):
 
     mem_uri = "Point?crs=epsg:3857"
     mem_layer = QgsVectorLayer(mem_uri, "Survey points", "memory")
-    res = mem_layer.dataProvider().addAttributes([
-        QgsField("date", QVariant.DateTime),
-        QgsField("notes", QVariant.String),
-        QgsField("photo", QVariant.String),
-    ])
+    res = mem_layer.dataProvider().addAttributes(
+        [
+            QgsField("date", QVariant.DateTime),
+            QgsField("notes", QVariant.String),
+            QgsField("photo", QVariant.String),
+        ]
+    )
     mem_layer.updateFields()
     vector_fname, err = save_vector_layer_as_gpkg(mem_layer, os.path.dirname(project_path))
     if err:
         QMessageBox.warning(None, "Error Creating New Project", f"Couldn't save vector layer to:\n{vector_fname}")
     vector_layer = QgsVectorLayer(vector_fname, "Survey", "ogr")
-    symbol = QgsMarkerSymbol.createSimple({
-        'name': 'circle', 'color': '#d73027', 'size': '3', "outline_color": '#e8e8e8', 'outline_style': 'solid',
-        'outline_width': '0.4'
-    })
+    symbol = QgsMarkerSymbol.createSimple(
+        {
+            "name": "circle",
+            "color": "#d73027",
+            "size": "3",
+            "outline_color": "#e8e8e8",
+            "outline_style": "solid",
+            "outline_width": "0.4",
+        }
+    )
     vector_layer.renderer().setSymbol(symbol)
     fid_ws = QgsEditorWidgetSetup("Hidden", {})
     vector_layer.setEditorWidgetSetup(0, fid_ws)
     datetime_config = {
-        'allow_null': True, 'calendar_popup': True, 'display_format': 'yyyy-MM-dd HH:mm:ss',
-        'field_format': 'yyyy-MM-dd HH:mm:ss', 'field_iso_format': False
+        "allow_null": True,
+        "calendar_popup": True,
+        "display_format": "yyyy-MM-dd HH:mm:ss",
+        "field_format": "yyyy-MM-dd HH:mm:ss",
+        "field_iso_format": False,
     }
     datetime_ws = QgsEditorWidgetSetup("DateTime", datetime_config)
     vector_layer.setEditorWidgetSetup(1, datetime_ws)
     photo_config = {
-        'DocumentViewer': 1, 'DocumentViewerHeight': 0, 'DocumentViewerWidth': 0, 'FileWidget': True,
-        'FileWidgetButton': True, 'FileWidgetFilter': '', 'RelativeStorage': 1, 'StorageMode': 0,
-        'PropertyCollection': {'name': NULL, 'properties': {}, 'type': 'collection'},
+        "DocumentViewer": 1,
+        "DocumentViewerHeight": 0,
+        "DocumentViewerWidth": 0,
+        "FileWidget": True,
+        "FileWidgetButton": True,
+        "FileWidgetFilter": "",
+        "RelativeStorage": 1,
+        "StorageMode": 0,
+        "PropertyCollection": {"name": NULL, "properties": {}, "type": "collection"},
     }
     photo_ws = QgsEditorWidgetSetup("ExternalResource", photo_config)
     vector_layer.setEditorWidgetSetup(3, photo_ws)
@@ -565,7 +602,13 @@ def datasource_filepath(layer):
     dp = layer.dataProvider()
     if dp.name() not in QGIS_FILE_BASED_PROVIDERS:
         return None
-    if isinstance(dp, (QgsRasterDataProvider, QgsMeshDataProvider,)):
+    if isinstance(
+        dp,
+        (
+            QgsRasterDataProvider,
+            QgsMeshDataProvider,
+        ),
+    ):
         ds_uri = dp.dataSourceUri()
     elif isinstance(dp, QgsVectorDataProvider):
         if dp.storageType() in ("GPKG", "GPX", "GeoJSON"):
@@ -702,6 +745,7 @@ def copy_tif_raster(raster_layer, project_dir):
     for f in files:
         suffix = os.path.splitext(f)[1]
         shutil.copy(f, os.path.splitext(new_raster_filename)[0] + suffix)
+
 
 def save_raster_to_geopackage(raster_layer, project_dir):
     """Save a GeoPackage raster to GeoPackage table in the project directory."""
@@ -859,9 +903,7 @@ def set_qgis_project_mergin_variables():
             try:
                 mp = MerginProject(path)
                 metadata = mp.metadata
-                write_project_variables(
-                    owner, name, metadata.get("name"), metadata.get("version"), server
-                )
+                write_project_variables(owner, name, metadata.get("name"), metadata.get("version"), server)
                 return metadata.get("name")
             except InvalidProject:
                 remove_project_variables()
@@ -931,10 +973,10 @@ def get_schema(layer_path):
 
     tmp_file = tempfile.NamedTemporaryFile(delete=False)
     tmp_file.close()
-    geodiff.schema('sqlite', '', layer_path, tmp_file.name)
+    geodiff.schema("sqlite", "", layer_path, tmp_file.name)
     with open(tmp_file.name, encoding="utf-8") as f:
         data = f.read()
-        schema = json.loads(data.replace("\n", "")).get('geodiff_schema')
+        schema = json.loads(data.replace("\n", "")).get("geodiff_schema")
     os.unlink(tmp_file.name)
     return schema
 
@@ -996,27 +1038,29 @@ def same_schema(schema_a, schema_b):
             s2 = set(items_b)
             added = s2 - s1
             removed = s1 - s2
-            msg = ["added: {}".format(', '.join(added)) if added else '']
-            msg.append("removed: {}".format(', '.join(removed)) if removed else '')
+            msg = ["added: {}".format(", ".join(added)) if added else ""]
+            msg.append("removed: {}".format(", ".join(removed)) if removed else "")
             if added or removed:
-                return False, '; '.join(filter(None, msg))
+                return False, "; ".join(filter(None, msg))
 
-        return True, ''
+        return True, ""
 
-    equal, msg = compare(schema_a, schema_b, 'table')
+    equal, msg = compare(schema_a, schema_b, "table")
     if not equal:
         return equal, "Tables added/removed: " + msg
 
     for table_a in schema_a:
         table_b = next(item for item in schema_b if item["table"] == table_a["table"])
-        equal, msg = compare(table_a["columns"], table_b["columns"], 'name')
+        equal, msg = compare(table_a["columns"], table_b["columns"], "name")
         if not equal:
             return equal, "Fields in table '{}' added/removed: {}".format(table_a["table"], msg)
 
         for column_a in table_a["columns"]:
             column_b = next(item for item in table_b["columns"] if item["name"] == column_a["name"])
             if column_a != column_b:
-                return False, "Definition of '{}' field in '{}' table is not the same".format(column_a["name"], table_a["table"])
+                return False, "Definition of '{}' field in '{}' table is not the same".format(
+                    column_a["name"], table_a["table"]
+                )
 
     return True, "No schema changes"
 

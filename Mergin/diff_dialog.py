@@ -3,13 +3,7 @@ import os
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, QSettings
 from qgis.PyQt.QtGui import QIcon, QColor
-from qgis.PyQt.QtWidgets import (
-    QDialog,
-    QPushButton,
-    QDialogButtonBox,
-    QMenu,
-    QAction
-)
+from qgis.PyQt.QtWidgets import QDialog, QPushButton, QDialogButtonBox, QMenu, QAction
 from qgis.core import (
     QgsProject,
     QgsVectorLayerCache,
@@ -18,25 +12,19 @@ from qgis.core import (
     QgsMapLayer,
     QgsMessageLog,
     Qgis,
-    QgsApplication
+    QgsApplication,
 )
-from qgis.gui import (
-    QgsGui,
-    QgsMapToolPan,
-    QgsAttributeTableModel,
-    QgsAttributeTableFilterModel
-)
+from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
 from qgis.utils import iface, OverrideCursor
 
 from .mergin.merginproject import MerginProject
 from .diff import make_local_changes_layer
 from .utils import icon_path
 
-ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ui_diff_viewer_dialog.ui')
+ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_diff_viewer_dialog.ui")
 
 
 class DiffViewerDialog(QDialog):
-
     def __init__(self, parent=None):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
@@ -48,10 +36,14 @@ class DiffViewerDialog(QDialog):
             if state:
                 self.splitter.restoreState(state)
             else:
-                height = max([self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()])
+                height = max(
+                    [self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()]
+                )
                 self.splitter.setSizes([height, height])
 
-            self.toggle_layers_action = QAction(QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Toggle Project Layers", self)
+            self.toggle_layers_action = QAction(
+                QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Toggle Project Layers", self
+            )
             self.toggle_layers_action.setCheckable(True)
             self.toggle_layers_action.setChecked(True)
             self.toggle_layers_action.toggled.connect(self.toggle_project_layers)
@@ -59,11 +51,15 @@ class DiffViewerDialog(QDialog):
 
             self.toolbar.addSeparator()
 
-            self.zoom_full_action = QAction(QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"), "Zoom Full", self)
+            self.zoom_full_action = QAction(
+                QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"), "Zoom Full", self
+            )
             self.zoom_full_action.triggered.connect(self.zoom_full)
             self.toolbar.addAction(self.zoom_full_action)
 
-            self.zoom_selected_action = QAction(QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"), "Zoom To Selection", self)
+            self.zoom_selected_action = QAction(
+                QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"), "Zoom To Selection", self
+            )
             self.zoom_selected_action.triggered.connect(self.zoom_selected)
             self.toolbar.addAction(self.zoom_selected_action)
 
@@ -72,9 +68,11 @@ class DiffViewerDialog(QDialog):
             btn_add_changes = QPushButton("Add to project")
             btn_add_changes.setIcon(QgsApplication.getThemeIcon("/mActionAdd.svg"))
             menu = QMenu()
-            add_current_action = menu.addAction(QIcon(icon_path('file-plus.svg')), "Add current changes layer to project")
+            add_current_action = menu.addAction(
+                QIcon(icon_path("file-plus.svg")), "Add current changes layer to project"
+            )
             add_current_action.triggered.connect(self.add_current_to_project)
-            add_all_action = menu.addAction(QIcon(icon_path('folder-plus.svg')), "Add all changes layers to project")
+            add_all_action = menu.addAction(QIcon(icon_path("folder-plus.svg")), "Add all changes layers to project")
             add_all_action.triggered.connect(self.add_all_to_project)
             btn_add_changes.setMenu(menu)
 

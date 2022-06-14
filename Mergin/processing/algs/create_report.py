@@ -9,45 +9,39 @@ from qgis.core import (
     QgsProcessingContext,
     QgsProcessingParameterFile,
     QgsProcessingParameterNumber,
-    QgsProcessingParameterFileDestination
+    QgsProcessingParameterFileDestination,
 )
 
-from ...utils import (
-    icon_path,
-    create_mergin_client,
-    create_report,
-    ClientError,
-    InvalidProject
-)
+from ...utils import icon_path, create_mergin_client, create_report, ClientError, InvalidProject
 
 
 class CreateReport(QgsProcessingAlgorithm):
 
-    PROJECT_DIR = 'PROJECT_DIR'
-    START_VERSION = 'START_VERSION'
-    END_VERSION = 'END_VERSION'
-    REPORT = 'REPORT'
+    PROJECT_DIR = "PROJECT_DIR"
+    START_VERSION = "START_VERSION"
+    END_VERSION = "END_VERSION"
+    REPORT = "REPORT"
 
     def name(self):
-        return 'createreport'
+        return "createreport"
 
     def displayName(self):
-        return 'Create report'
+        return "Create report"
 
     def group(self):
-        return 'Tools'
+        return "Tools"
 
     def groupId(self):
-        return 'tools'
+        return "tools"
 
     def tags(self):
-        return 'mergin,project,report,statistics'.split(',')
+        return "mergin,project,report,statistics".split(",")
 
     def shortHelpString(self):
-        return 'Exports changesets aggregates for Mergin Maps projects in given version range to a CSV file.'
+        return "Exports changesets aggregates for Mergin Maps projects in given version range to a CSV file."
 
     def icon(self):
-        return QIcon(icon_path('mm_icon_positive_no_padding.svg'))
+        return QIcon(icon_path("mm_icon_positive_no_padding.svg"))
 
     def __init__(self):
         super().__init__()
@@ -56,10 +50,20 @@ class CreateReport(QgsProcessingAlgorithm):
         return type(self)()
 
     def initAlgorithm(self, config=None):
-        self.addParameter(QgsProcessingParameterFile(self.PROJECT_DIR, 'Project directory', QgsProcessingParameterFile.Folder))
-        self.addParameter(QgsProcessingParameterNumber(self.START_VERSION, 'Start version', QgsProcessingParameterNumber.Integer, 1, False, 1))
-        self.addParameter(QgsProcessingParameterNumber(self.END_VERSION, 'End version', QgsProcessingParameterNumber.Integer, None, True, 1))
-        self.addParameter(QgsProcessingParameterFileDestination(self.REPORT, 'Report', 'CSV files (*.csv *.CSV)'))
+        self.addParameter(
+            QgsProcessingParameterFile(self.PROJECT_DIR, "Project directory", QgsProcessingParameterFile.Folder)
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.START_VERSION, "Start version", QgsProcessingParameterNumber.Integer, 1, False, 1
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.END_VERSION, "End version", QgsProcessingParameterNumber.Integer, None, True, 1
+            )
+        )
+        self.addParameter(QgsProcessingParameterFileDestination(self.REPORT, "Report", "CSV files (*.csv *.CSV)"))
 
     def processAlgorithm(self, parameters, context, feedback):
         project_dir = self.parameterAsString(parameters, self.PROJECT_DIR, context)
@@ -67,7 +71,7 @@ class CreateReport(QgsProcessingAlgorithm):
         if self.END_VERSION in parameters and parameters[self.END_VERSION] is not None:
             end = self.parameterAsInt(parameters, self.END_VERSION, context)
         else:
-            end = ''
+            end = ""
         output_file = self.parameterAsFileOutput(parameters, self.REPORT, context)
 
         mc = create_mergin_client()
@@ -75,14 +79,14 @@ class CreateReport(QgsProcessingAlgorithm):
         try:
             warnings = create_report(mc, project_dir, f"v{start}", f"v{end}" if end else "", output_file)
         except InvalidProject as e:
-            raise QgsProcessingException('Invalid Mergin Maps project: ' + str(e))
+            raise QgsProcessingException("Invalid Mergin Maps project: " + str(e))
         except ClientError as e:
-            raise QgsProcessingException('Unable to create report: ' + str(e))
+            raise QgsProcessingException("Unable to create report: " + str(e))
 
         if warnings:
             for w in warnings:
                 feedback.pushWarning(w)
 
-        context.addLayerToLoadOnCompletion(output_file, QgsProcessingContext.LayerDetails('Report', context.project()))
+        context.addLayerToLoadOnCompletion(output_file, QgsProcessingContext.LayerDetails("Report", context.project()))
 
         return {self.REPORT: output_file}

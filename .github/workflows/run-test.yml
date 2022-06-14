@@ -8,8 +8,11 @@ env:
   TEST_FUNCTION: suite.test_all
   DOCKER_IMAGE: qgis/qgis
 
+concurrency:
+  group: ci-${{github.ref}}-autotests
+  cancel-in-progress: true
+  
 jobs:
-
   run-tests:
     runs-on: ubuntu-latest
 

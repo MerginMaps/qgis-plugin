@@ -4,13 +4,9 @@ import base64
 import sqlite3
 import tempfile
 
-from qgis.PyQt.QtCore import (
-    QVariant
-)
+from qgis.PyQt.QtCore import QVariant
 
-from qgis.PyQt.QtGui import (
-    QColor
-)
+from qgis.PyQt.QtGui import QColor
 
 from qgis.core import (
     QgsVectorLayer,
@@ -26,13 +22,10 @@ from qgis.core import (
     QgsLineSymbol,
     QgsFillSymbol,
     QgsRuleBasedRenderer,
-    QgsWkbTypes
+    QgsWkbTypes,
 )
 
-from .utils import (
-    pygeodiff,
-    get_schema
-)
+from .utils import pygeodiff, get_schema
 
 geodiff = pygeodiff.GeoDiff()
 geodiff.set_maximum_logger_level(10)
@@ -42,17 +35,19 @@ diff_layers_list = []
 
 class ColumnSchema:
     """Describes GPKG table column"""
+
     def __init__(self, name, datatype, pkey):
         self.name = name
         self.datatype = datatype
         self.pkey = pkey
 
     def __repr__(self):
-        return f'<ColumnSchema {self.name} ({self.datatype})>'
+        return f"<ColumnSchema {self.name} ({self.datatype})>"
 
 
 class TableSchema:
     """Describes GPKG table"""
+
     def __init__(self, name, columns):
         self.name = name
         self.columns = columns
@@ -60,19 +55,19 @@ class TableSchema:
     def geometry_column_index(self):
         """Returns index of the geometry column or -1 if it does not exist"""
         for i, col in enumerate(self.columns):
-            if col.datatype == 'geometry':
+            if col.datatype == "geometry":
                 return i
         return -1
 
     def __repr__(self):
-        return f'<TableSchema {self.name}>'
+        return f"<TableSchema {self.name}>"
 
 
 def old_value_for_column_by_index(entry_changes, i):
     """Retrieve previous (old) column value for given column index"""
     for ch in entry_changes:
-        if ch['column'] == i:
-            return ch['old']
+        if ch["column"] == i:
+            return ch["old"]
     raise ValueError("Expected value for column, but missing")
 
 
@@ -87,7 +82,7 @@ def get_row_from_db(db_conn, schema_table, entry_changes):
         if col.pkey:
             where_bits.append('"{}" = {}'.format(col.name, old_value_for_column_by_index(entry_changes, i)))
 
-    c.execute('SELECT * FROM "{}" WHERE {}'.format(schema_table.name, ' AND '.join(where_bits)))
+    c.execute('SELECT * FROM "{}" WHERE {}'.format(schema_table.name, " AND ".join(where_bits)))
     return c.fetchone()
 
 
@@ -95,24 +90,23 @@ def parse_gpkg_geom_encoding(wkb_with_gpkg_hdr):
     """Parse header of GPKG WKB and return WKB geometry"""
     flag_byte = wkb_with_gpkg_hdr[3]
     envelope_byte = (flag_byte & 14) >> 1
-    envelope_size = {0: 0, 1: 32, 2: 48, 3: 48, 4: 64 }[envelope_byte]
+    envelope_size = {0: 0, 1: 32, 2: 48, 3: 48, 4: 64}[envelope_byte]
     hdr_size = 8 + envelope_size
     wkb = wkb_with_gpkg_hdr[hdr_size:]
     return wkb
 
 
 def parse_db_schema(db_file):
-    """Parse GPKG file schema and return map of tables
-    """
+    """Parse GPKG file schema and return map of tables"""
     schema_json = get_schema(db_file)
 
     tables = {}  # key: name, value: TableSchema
     for tbl in schema_json:
         columns = []
-        for col in tbl['columns']:
-            columns.append(ColumnSchema(col['name'], col['type'], 'primary_key' in col and col['primary_key']))
+        for col in tbl["columns"]:
+            columns.append(ColumnSchema(col["name"], col["type"], "primary_key" in col and col["primary_key"]))
 
-        tables[tbl['table']] = TableSchema(tbl['table'], columns)
+        tables[tbl["table"]] = TableSchema(tbl["table"], columns)
     return tables
 
 
@@ -131,18 +125,18 @@ def parse_diff(diff_file):
         diff_json = json.load(f)
     os.unlink(tmp_file.name)
 
-    diff_entries = diff_json['geodiff']
+    diff_entries = diff_json["geodiff"]
 
     # group diff entries by tables
-    diff_tables = {}    # key: table name, value: list of tuples (type, changes)
+    diff_tables = {}  # key: table name, value: list of tuples (type, changes)
     for diff_entry in diff_entries:
-        entry_table = diff_entry['table']
-        entry_type = diff_entry['type']
-        entry_changes = diff_entry['changes']
+        entry_table = diff_entry["table"]
+        entry_type = diff_entry["type"]
+        entry_changes = diff_entry["changes"]
 
         if entry_table not in diff_tables:
             diff_tables[entry_table] = []
-        diff_tables[entry_table].append( (entry_type, entry_changes) )
+        diff_tables[entry_table].append((entry_type, entry_changes))
 
     return diff_tables
 
@@ -156,21 +150,21 @@ def create_field_list(schema_table):
 
     fields = QgsFields()
     for i, column in enumerate(schema_table.columns):
-        if column.datatype == 'integer':
+        if column.datatype == "integer":
             t = QVariant.Int
-        elif column.datatype == 'text':
+        elif column.datatype == "text":
             t = QVariant.String
-        elif column.datatype == 'double':
+        elif column.datatype == "double":
             t = QVariant.Double
-        elif column.datatype == 'date':
+        elif column.datatype == "date":
             t = QVariant.Date
-        elif column.datatype == 'datetime':
+        elif column.datatype == "datetime":
             t = QVariant.DateTime
-        elif column.datatype == 'boolean':
+        elif column.datatype == "boolean":
             t = QVariant.Bool
-        elif column.datatype == 'blob':
+        elif column.datatype == "blob":
             t = QVariant.QByteArray
-        elif column.datatype == 'geometry':
+        elif column.datatype == "geometry":
             continue
         else:
             raise ValueError(f"Unknow column type '{column.datatype}' for column '{column.name}'")
@@ -198,7 +192,7 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
     column_names = [column.name for column in schema_table.columns]
     features = []
 
-    fld_geometry_idx = fields.indexOf('geometry')
+    fld_geometry_idx = fields.indexOf("geometry")
     fld_old_offset = fld_geometry_idx + 1
 
     geom_col_index = schema_table.geometry_column_index()
@@ -210,7 +204,7 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
         f["_op"] = entry_type
 
         # try to fill in unchanged columns from the database
-        if entry_type == 'update' and db_conn is not None:
+        if entry_type == "update" and db_conn is not None:
             db_row = get_row_from_db(db_conn, schema_table, entry_changes)
 
             for i in range(len(db_row)):
@@ -228,16 +222,16 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
                     f[cols_to_flds[i] + fld_old_offset] = db_row[i]
 
         for entry_change in entry_changes:
-            i = entry_change['column']
-            if 'new' in entry_change:
-                value = entry_change['new']
-            elif 'old' in entry_change:
-                value = entry_change['old']
+            i = entry_change["column"]
+            if "new" in entry_change:
+                value = entry_change["new"]
+            elif "old" in entry_change:
+                value = entry_change["old"]
             else:
-                value = '?'
+                value = "?"
 
             if i == geom_col_index:
-                wkb_with_gpkg_hdr = base64.decodebytes(value.encode('ascii'))
+                wkb_with_gpkg_hdr = base64.decodebytes(value.encode("ascii"))
                 wkb = parse_gpkg_geom_encoding(wkb_with_gpkg_hdr)
                 g = QgsGeometry()
                 g.fromWkb(wkb)
@@ -253,13 +247,13 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
 
 
 def get_table_name(layer):
-    """"Returns name of the GPKG table name for the given vector layer"""
-    table_name = ''
-    if 'layername' not in layer.source():
+    """ "Returns name of the GPKG table name for the given vector layer"""
+    table_name = ""
+    if "layername" not in layer.source():
         sublayers = layer.dataProvider().subLayers()
-        table_name = sublayers[0].split('!!::!!')[1]
+        table_name = sublayers[0].split("!!::!!")[1]
     else:
-        table_name = layer.source().partition('|layername=')[2]
+        table_name = layer.source().partition("|layername=")[2]
 
     return table_name
 
@@ -302,8 +296,11 @@ def make_local_changes_layer(mp, layer):
     features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn)
 
     # create diff layer
-    vl = QgsVectorLayer(f"{QgsWkbTypes.displayString(layer.wkbType())}?crs={layer.sourceCrs().authid()}",
-                        f"[Local changes] {layer.name()}", "memory")
+    vl = QgsVectorLayer(
+        f"{QgsWkbTypes.displayString(layer.wkbType())}?crs={layer.sourceCrs().authid()}",
+        f"[Local changes] {layer.name()}",
+        "memory",
+    )
     if not vl.isValid():
         return None, f"Failed to create memory layer for local changes"
 
@@ -312,16 +309,16 @@ def make_local_changes_layer(mp, layer):
     vl.dataProvider().addFeatures(features)
 
     style_diff_layer(vl, db_schema[table_name])
-    return vl, ''
+    return vl, ""
 
 
 def style_diff_layer(layer, schema_table):
     """Apply conditional styling and symbology to diff layer"""
     ### setup conditional styles!
     st = layer.conditionalStyles()
-    color_red = QColor('#ffdce0')
-    color_green = QColor('#dcffe4')
-    color_yellow = QColor('#fff5b1')
+    color_red = QColor("#ffdce0")
+    color_green = QColor("#dcffe4")
+    color_yellow = QColor("#fff5b1")
 
     # full row for insert / delete
     cs_insert = QgsConditionalStyle()
@@ -336,8 +333,8 @@ def style_diff_layer(layer, schema_table):
 
     # field style for each updated field
     for column in schema_table.columns:
-        if column.datatype == 'geometry':
-            col_name = 'geometry'
+        if column.datatype == "geometry":
+            col_name = "geometry"
         else:
             col_name = column.name
         cs = QgsConditionalStyle()
@@ -358,71 +355,95 @@ def style_diff_layer(layer, schema_table):
     darker_factor = 150
     if layer.geometryType() == QgsWkbTypes.PointGeometry:
         point_symbol_base = {
-            'name': 'circle',
-            'outline_style': 'solid',
-            'outline_width': '0.4',
-            'outline_width_unit': 'MM',
-            'size': '5',
-            'size_unit': 'MM',
+            "name": "circle",
+            "outline_style": "solid",
+            "outline_width": "0.4",
+            "outline_width_unit": "MM",
+            "size": "5",
+            "size_unit": "MM",
         }
         point_symbol_insert = dict(point_symbol_base)
-        point_symbol_insert['color'] = QgsSymbolLayerUtils.encodeColor(color_green)
-        point_symbol_insert['outline_color'] = QgsSymbolLayerUtils.encodeColor(color_green.darker(darker_factor))
+        point_symbol_insert["color"] = QgsSymbolLayerUtils.encodeColor(color_green)
+        point_symbol_insert["outline_color"] = QgsSymbolLayerUtils.encodeColor(color_green.darker(darker_factor))
         point_symbol_update = dict(point_symbol_base)
-        point_symbol_update['color'] = QgsSymbolLayerUtils.encodeColor(color_yellow)
-        point_symbol_update['outline_color'] = QgsSymbolLayerUtils.encodeColor(color_yellow.darker(darker_factor))
+        point_symbol_update["color"] = QgsSymbolLayerUtils.encodeColor(color_yellow)
+        point_symbol_update["outline_color"] = QgsSymbolLayerUtils.encodeColor(color_yellow.darker(darker_factor))
         point_symbol_delete = dict(point_symbol_base)
-        point_symbol_delete['color'] = QgsSymbolLayerUtils.encodeColor(color_red)
-        point_symbol_delete['outline_color'] = QgsSymbolLayerUtils.encodeColor(color_red.darker(darker_factor))
+        point_symbol_delete["color"] = QgsSymbolLayerUtils.encodeColor(color_red)
+        point_symbol_delete["outline_color"] = QgsSymbolLayerUtils.encodeColor(color_red.darker(darker_factor))
 
         root_rule = QgsRuleBasedRenderer.Rule(None)
-        root_rule.appendChild(QgsRuleBasedRenderer.Rule(QgsMarkerSymbol.createSimple(point_symbol_insert), 0, 0, "_op = 'insert'", "Insert"))
-        root_rule.appendChild(QgsRuleBasedRenderer.Rule(QgsMarkerSymbol.createSimple(point_symbol_update), 0, 0, "_op = 'update'", "Update"))
-        root_rule.appendChild(QgsRuleBasedRenderer.Rule(QgsMarkerSymbol.createSimple(point_symbol_delete), 0, 0, "_op = 'delete'", "Delete"))
+        root_rule.appendChild(
+            QgsRuleBasedRenderer.Rule(
+                QgsMarkerSymbol.createSimple(point_symbol_insert), 0, 0, "_op = 'insert'", "Insert"
+            )
+        )
+        root_rule.appendChild(
+            QgsRuleBasedRenderer.Rule(
+                QgsMarkerSymbol.createSimple(point_symbol_update), 0, 0, "_op = 'update'", "Update"
+            )
+        )
+        root_rule.appendChild(
+            QgsRuleBasedRenderer.Rule(
+                QgsMarkerSymbol.createSimple(point_symbol_delete), 0, 0, "_op = 'delete'", "Delete"
+            )
+        )
         r = QgsRuleBasedRenderer(root_rule)
         layer.setRenderer(r)
     elif layer.geometryType() == QgsWkbTypes.LineGeometry:
         line_symbol_base = {
-            'capstyle': 'square',
-            'joinstyle': 'bevel',
-            'line_style': 'solid',
-            'line_width': '0.86',
-            'line_width_unit': 'MM',
+            "capstyle": "square",
+            "joinstyle": "bevel",
+            "line_style": "solid",
+            "line_width": "0.86",
+            "line_width_unit": "MM",
         }
         line_symbol_insert = dict(line_symbol_base)
-        line_symbol_insert['line_color'] = QgsSymbolLayerUtils.encodeColor(color_green)
+        line_symbol_insert["line_color"] = QgsSymbolLayerUtils.encodeColor(color_green)
         line_symbol_update = dict(line_symbol_base)
-        line_symbol_update['line_color'] = QgsSymbolLayerUtils.encodeColor(color_yellow)
+        line_symbol_update["line_color"] = QgsSymbolLayerUtils.encodeColor(color_yellow)
         line_symbol_delete = dict(line_symbol_base)
-        line_symbol_delete['line_color'] = QgsSymbolLayerUtils.encodeColor(color_red)
+        line_symbol_delete["line_color"] = QgsSymbolLayerUtils.encodeColor(color_red)
 
         root_rule = QgsRuleBasedRenderer.Rule(None)
-        root_rule.appendChild(QgsRuleBasedRenderer.Rule(QgsLineSymbol.createSimple(line_symbol_insert), 0, 0, "_op = 'insert'", "Insert"))
-        root_rule.appendChild(QgsRuleBasedRenderer.Rule(QgsLineSymbol.createSimple(line_symbol_update), 0, 0, "_op = 'update'", "Update"))
-        root_rule.appendChild(QgsRuleBasedRenderer.Rule(QgsLineSymbol.createSimple(line_symbol_delete), 0, 0, "_op = 'delete'", "Delete"))
+        root_rule.appendChild(
+            QgsRuleBasedRenderer.Rule(QgsLineSymbol.createSimple(line_symbol_insert), 0, 0, "_op = 'insert'", "Insert")
+        )
+        root_rule.appendChild(
+            QgsRuleBasedRenderer.Rule(QgsLineSymbol.createSimple(line_symbol_update), 0, 0, "_op = 'update'", "Update")
+        )
+        root_rule.appendChild(
+            QgsRuleBasedRenderer.Rule(QgsLineSymbol.createSimple(line_symbol_delete), 0, 0, "_op = 'delete'", "Delete")
+        )
         r = QgsRuleBasedRenderer(root_rule)
         layer.setRenderer(r)
     elif layer.geometryType() == QgsWkbTypes.PolygonGeometry:
         fill_symbol_base = {
-            'joinstyle': 'bevel',
-            'style': 'solid',
-            'outline_style': 'solid',
-            'outline_width': '0.26',
-            'outline_width_unit': 'MM',
+            "joinstyle": "bevel",
+            "style": "solid",
+            "outline_style": "solid",
+            "outline_width": "0.26",
+            "outline_width_unit": "MM",
         }
         fill_symbol_insert = dict(fill_symbol_base)
-        fill_symbol_insert['color'] = QgsSymbolLayerUtils.encodeColor(color_green)
-        fill_symbol_insert['outline_color'] = QgsSymbolLayerUtils.encodeColor(color_green.darker(darker_factor))
+        fill_symbol_insert["color"] = QgsSymbolLayerUtils.encodeColor(color_green)
+        fill_symbol_insert["outline_color"] = QgsSymbolLayerUtils.encodeColor(color_green.darker(darker_factor))
         fill_symbol_update = dict(fill_symbol_base)
-        fill_symbol_update['color'] = QgsSymbolLayerUtils.encodeColor(color_yellow)
-        fill_symbol_update['outline_color'] = QgsSymbolLayerUtils.encodeColor(color_yellow.darker(darker_factor))
+        fill_symbol_update["color"] = QgsSymbolLayerUtils.encodeColor(color_yellow)
+        fill_symbol_update["outline_color"] = QgsSymbolLayerUtils.encodeColor(color_yellow.darker(darker_factor))
         fill_symbol_delete = dict(fill_symbol_base)
-        fill_symbol_delete['color'] = QgsSymbolLayerUtils.encodeColor(color_red)
-        fill_symbol_delete['outline_color'] = QgsSymbolLayerUtils.encodeColor(color_red.darker(darker_factor))
+        fill_symbol_delete["color"] = QgsSymbolLayerUtils.encodeColor(color_red)
+        fill_symbol_delete["outline_color"] = QgsSymbolLayerUtils.encodeColor(color_red.darker(darker_factor))
 
         root_rule = QgsRuleBasedRenderer.Rule(None)
-        root_rule.appendChild(QgsRuleBasedRenderer.Rule(QgsFillSymbol.createSimple(fill_symbol_insert), 0, 0, "_op = 'insert'", "Insert"))
-        root_rule.appendChild(QgsRuleBasedRenderer.Rule(QgsFillSymbol.createSimple(fill_symbol_update), 0, 0, "_op = 'update'", "Update"))
-        root_rule.appendChild(QgsRuleBasedRenderer.Rule(QgsFillSymbol.createSimple(fill_symbol_delete), 0, 0, "_op = 'delete'", "Delete"))
+        root_rule.appendChild(
+            QgsRuleBasedRenderer.Rule(QgsFillSymbol.createSimple(fill_symbol_insert), 0, 0, "_op = 'insert'", "Insert")
+        )
+        root_rule.appendChild(
+            QgsRuleBasedRenderer.Rule(QgsFillSymbol.createSimple(fill_symbol_update), 0, 0, "_op = 'update'", "Update")
+        )
+        root_rule.appendChild(
+            QgsRuleBasedRenderer.Rule(QgsFillSymbol.createSimple(fill_symbol_delete), 0, 0, "_op = 'delete'", "Delete")
+        )
         r = QgsRuleBasedRenderer(root_rule)
         layer.setRenderer(r)

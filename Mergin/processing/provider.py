@@ -13,19 +13,18 @@ from .algs.create_diff import CreateDiff
 
 
 class MerginProvider(QgsProcessingProvider):
-
     def __init__(self):
         super().__init__()
         self.algs = []
 
     def id(self):
-        return 'mergin'
+        return "mergin"
 
     def name(self):
-        return 'Mergin Maps'
+        return "Mergin Maps"
 
     def icon(self):
-        return QIcon(icon_path('mm_icon_positive_no_padding.svg'))
+        return QIcon(icon_path("mm_icon_positive_no_padding.svg"))
 
     def load(self):
         self.refreshAlgorithms()
@@ -38,10 +37,7 @@ class MerginProvider(QgsProcessingProvider):
         return False
 
     def getAlgs(self):
-        algs = [CreateReport(),
-                ExtractLocalChanges(),
-                CreateDiff()
-               ]
+        algs = [CreateReport(), ExtractLocalChanges(), CreateDiff()]
 
         return algs
 

@@ -6,11 +6,10 @@ import urllib.request
 from qgis.testing import start_app, unittest
 from Mergin.help import MerginHelp
 
-test_data_path = os.path.join(os.path.dirname(__file__), 'data')
+test_data_path = os.path.join(os.path.dirname(__file__), "data")
 
 
 class test_help(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         start_app()
@@ -26,5 +25,6 @@ class test_help(unittest.TestCase):
         resp = urllib.request.urlopen(req)
         self.assertEqual(resp.status, 200)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     nose2.main()

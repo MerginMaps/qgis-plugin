@@ -3,24 +3,12 @@ import re
 from enum import Enum
 from collections import defaultdict
 
-from qgis.core import (
-    QgsMapLayerType,
-    QgsProject,
-    QgsVectorDataProvider,
-    QgsExpression
-)
+from qgis.core import QgsMapLayerType, QgsProject, QgsVectorDataProvider, QgsExpression
 
 from .help import MerginHelp
-from .utils import (
-    find_qgis_files,
-    same_dir,
-    has_schema_change,
-    get_primary_keys,
-    QGIS_DB_PROVIDERS,
-    QGIS_NET_PROVIDERS
-)
+from .utils import find_qgis_files, same_dir, has_schema_change, get_primary_keys, QGIS_DB_PROVIDERS, QGIS_NET_PROVIDERS
 
-INVALID_CHARS = re.compile("[\\\/\(\)\[\]\{\}\"\n\r]")
+INVALID_CHARS = re.compile('[\\\/\(\)\[\]\{\}"\n\r]')
 PROJECT_VARS = re.compile("\@project_home|\@project_path|\@project_folder")
 
 
@@ -45,6 +33,7 @@ class Warning(Enum):
     BROKEN_VALUE_RELATION_CONFIG = 18
     ATTACHMENT_WRONG_EXPRESSION = 19
 
+
 class MultipleLayersWarning:
     """Class for warning which is associated with multiple layers.
 
@@ -52,14 +41,15 @@ class MultipleLayersWarning:
     displayed only once in the validation results and list all matching
     layers.
     """
+
     def __init__(self, warning_id):
         self.id = warning_id
         self.layers = list()
 
 
 class SingleLayerWarning:
-    """Class for warning which is associated with single layer.
-    """
+    """Class for warning which is associated with single layer."""
+
     def __init__(self, layer_id, warning):
         self.layer_id = layer_id
         self.warning = warning
@@ -170,7 +160,7 @@ class MerginProjectValidator(object):
             pub_src = layer.publicSource()
             if pub_src.startswith("GPKG:"):
                 pub_src = pub_src[5:]
-                l_path = pub_src[:pub_src.rfind(":")]
+                l_path = pub_src[: pub_src.rfind(":")]
             else:
                 l_path = layer.publicSource().split("|")[0]
             l_dir = os.path.dirname(l_path)
@@ -308,8 +298,7 @@ class MerginProjectValidator(object):
 
 
 def warning_display_string(warning_id):
-    """Returns a display string for a corresponing warning
-    """
+    """Returns a display string for a corresponing warning"""
     help_mgr = MerginHelp()
     if warning_id == Warning.PROJ_NOT_LOADED:
         return "The QGIS project is not loaded. Open it to allow validation"

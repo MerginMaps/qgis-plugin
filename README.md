@@ -1,6 +1,7 @@
 # Mergin Maps QGIS plugin
 <img src="Mergin/images/mm_logo.png">
 
+[![Code Style](https://github.com/MerginMaps/qgis-mergin-plugin/actions/workflows/code_style.yml/badge.svg)](https://github.com/MerginMaps/qgis-mergin-plugin/actions/workflows/code_style.yml)
 [![.github/workflows/packages.yml](https://github.com/MerginMaps/qgis-mergin-plugin/actions/workflows/packages.yml/badge.svg)](https://github.com/MerginMaps/qgis-mergin-plugin/actions/workflows/packages.yml)
 [![Mergin Maps Plugin Tests](https://github.com/MerginMaps/qgis-mergin-plugin/actions/workflows/run-test.yml/badge.svg)](https://github.com/MerginMaps/qgis-mergin-plugin/actions/workflows/run-test.yml)
 
