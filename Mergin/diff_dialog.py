@@ -12,7 +12,7 @@ from qgis.core import (
     QgsMessageLog,
     Qgis,
     QgsApplication,
-    QgsWkbTypes
+    QgsWkbTypes,
 )
 from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
 from qgis.utils import iface, OverrideCursor
