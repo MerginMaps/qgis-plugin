@@ -1,7 +1,7 @@
 ; the next section is mandatory
 [general]
 name=Mergin
-qgisMinimumVersion=3.16
+qgisMinimumVersion=3.20
 qgisMaximumVersion=3.99
 description=Handle Mergin Maps projects
 version=2022.4
@@ -11,7 +11,9 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2022.4
+changelog=2022.4.1
+  - fix minimum QGIS version
+  <p>2022.4
   - addition of Processing tools to visualize local changes and changes between two versions of the layer
   - addition of local changes viewer
   - more validations for attachment widget configuration
