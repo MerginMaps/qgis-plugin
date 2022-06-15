@@ -8,11 +8,11 @@ from qgis.core import (
     QgsProject,
     QgsVectorLayerCache,
     QgsFeatureRequest,
-    QgsIconUtils,
     QgsMapLayer,
     QgsMessageLog,
     Qgis,
     QgsApplication,
+    QgsWkbTypes
 )
 from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
 from qgis.utils import iface, OverrideCursor
@@ -122,7 +122,7 @@ class DiffViewerDialog(QDialog):
                 continue
 
             self.diff_layers.append(vl)
-            self.tab_bar.addTab(QgsIconUtils.iconForLayer(vl), f"{layer.name()} ({vl.featureCount()})")
+            self.tab_bar.addTab(self.icon_for_layer(vl), f"{layer.name()} ({vl.featureCount()})")
         self.tab_bar.setCurrentIndex(0)
 
     def toggle_project_layers(self, checked):
@@ -198,3 +198,16 @@ class DiffViewerDialog(QDialog):
         if self.current_diff:
             self.map_canvas.zoomToSelected([self.current_diff])
             self.map_canvas.refresh()
+
+    def icon_for_layer(self, layer):
+        geom_type = layer.geometryType()
+        if geom_type == QgsWkbTypes.PointGeometry:
+            return QgsApplication.getThemeIcon("/mIconPointLayer.svg")
+        elif geom_type == QgsWkbTypes.LineGeometry:
+            return QgsApplication.getThemeIcon("/mIconLineLayer.svg")
+        elif geom_type == QgsWkbTypes.PolygonGeometry:
+            return QgsApplication.getThemeIcon("/mIconPolygonLayer.svg")
+        elif geom_type == QgsWkbTypes.UnknownGeometry:
+            return QgsApplication.getThemeIcon("/mIconGeometryCollectionLayer.svg")
+        else:
+            return QgsApplication.getThemeIcon("/mIconTableLayer.svg")
