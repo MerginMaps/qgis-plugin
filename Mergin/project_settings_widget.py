@@ -35,9 +35,17 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.cmb_photo_quality.addItem("Medium (approx. 1-2 Mb)", 2)
         self.cmb_photo_quality.addItem("Low (approx. 0.5 Mb)", 3)
 
-        quality, ok = QgsProject.instance().readEntry("Mergin", "PhotoQuality")
+        quality, ok = QgsProject.instance().readNumEntry("Mergin", "PhotoQuality")
         idx = self.cmb_photo_quality.findData(quality) if ok else 0
         self.cmb_photo_quality.setCurrentIndex(idx if idx > 0 else 0)
+
+        self.cmb_snapping_mode.addItem("No snapping", 0)
+        self.cmb_snapping_mode.addItem("Basic snapping", 1)
+        self.cmb_snapping_mode.addItem("Follow QGIS snapping", 2)
+
+        mode, ok = QgsProject.instance().readNumEntry("Mergin", "Snapping")
+        idx = self.cmb_snapping_mode.findData(mode) if ok else 0
+        self.cmb_snapping_mode.setCurrentIndex(idx if idx > 0 else 0)
 
         self.local_project_dir = mergin_project_local_path()
 
@@ -84,4 +92,5 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
+        QgsProject.instance().writeEntry("Mergin", "Snapping", self.cmb_snapping_mode.currentData())
         self.save_config_file()
