@@ -130,7 +130,7 @@
    <item row="2" column="0" colspan="2">
     <widget class="QGroupBox" name="snapping_group_box">
      <property name="title">
-      <string>GroupBox</string>
+      <string>Snapping</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
       <item row="1" column="1">
