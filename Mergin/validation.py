@@ -311,7 +311,6 @@ class MerginProjectValidator(object):
                 self.issues.append(MultipleLayersWarning(Warning.MERGIN_SNAPPING_NOT_ENABLED))
 
 
-
 def warning_display_string(warning_id):
     """Returns a display string for a corresponing warning"""
     help_mgr = MerginHelp()
