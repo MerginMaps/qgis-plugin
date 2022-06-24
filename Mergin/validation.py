@@ -32,6 +32,8 @@ class Warning(Enum):
     INCORRECT_FIELD_NAME = 17
     BROKEN_VALUE_RELATION_CONFIG = 18
     ATTACHMENT_WRONG_EXPRESSION = 19
+    QGIS_SNAPPING_NOT_ENABLED = 20
+    MERGIN_SNAPPING_NOT_ENABLED = 21
 
 
 class MultipleLayersWarning:
@@ -89,6 +91,7 @@ class MerginProjectValidator(object):
         self.check_project_relations()
         self.check_value_relation()
         self.check_field_names()
+        self.check_snapping()
 
         return self.issues
 
@@ -296,6 +299,17 @@ class MerginProjectValidator(object):
                     if INVALID_CHARS.search(f.name()):
                         self.issues.append(SingleLayerWarning(lid, Warning.INCORRECT_FIELD_NAME))
 
+    def check_snapping(self):
+        mode, ok = QgsProject.instance().readNumEntry("Mergin", "Snapping")
+        if ok:
+            enabled = QgsProject.instance().snappingConfig().enabled()
+            if not enabled and mode == 2:
+                # snapping in Input using QGIS setting is enbaled but QGIS snapping is not activated
+                self.issues.append(MultipleLayersWarning(Warning.QGIS_SNAPPING_NOT_ENABLED))
+            if enabled and mode == 0:
+                # snapping in Input using QGIS setting is disabled but project has snapping activated
+                self.issues.append(MultipleLayersWarning(Warning.MERGIN_SNAPPING_NOT_ENABLED))
+
 
 def warning_display_string(warning_id):
     """Returns a display string for a corresponing warning"""
@@ -338,3 +352,7 @@ def warning_display_string(warning_id):
         return "Incomplete value relation configuration"
     elif warning_id == Warning.ATTACHMENT_WRONG_EXPRESSION:
         return "Expression for the default path in the attachment widget configuration might be wrong. <a href='{help_mgr.howto_attachment_widget()}'>Read more.</a>"
+    elif warning_id == Warning.QGIS_SNAPPING_NOT_ENABLED:
+        return "Snapping is currently disabled in this QGIS project, it will be thus disabled in Mergin Maps Input"
+    elif warning_id == Warning.MERGIN_SNAPPING_NOT_ENABLED:
+        return "Snapping is currently enabled in this QGIS project, but not enabled in Mergin Maps Input"
