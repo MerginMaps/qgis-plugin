@@ -93,7 +93,7 @@ class CreateDiff(QgsProcessingAlgorithm):
         if not check_mergin_subdirs(project_dir):
             raise QgsProcessingException("Selected directory does not contain a valid Mergin project.")
 
-        if not os.path.normpath(layer.source()).lower().startswith(os.path.normpath(project_dir)):
+        if not os.path.normpath(layer.source()).lower().startswith(os.path.normpath(project_dir).lower()):
             raise QgsProcessingException("Selected layer does not belong to the selected Mergin project.")
 
         if layer.dataProvider().storageType() != "GPKG":
