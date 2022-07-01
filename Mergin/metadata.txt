@@ -4,22 +4,25 @@ name=Mergin
 qgisMinimumVersion=3.16
 qgisMaximumVersion=3.99
 description=Handle Mergin Maps projects
-version=2022.4.1
+version=2022.5
 author=Lutra Consulting
 email=info@merginmaps.com
 about=Mergin Maps is a repository for storing and tracking changes to QGIS projects/data. It is linked with Mergin Maps Input (a QGIS mobile app). With this plugin, users can upload and sync their data to Mergin Maps service.
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2022.4.1
-  - fix plugin to work with minimum QGIS version 3.16
+changelog=2022.5
+  - Add project setting to control snapping in Mergin Maps Input
+  - Fix Processing tools to visualize local changes and changes between two versions of the layer
+  <p>2022.4.1
+  - Fix plugin to work with minimum QGIS version 3.16
   <p>2022.4
-  - addition of Processing tools to visualize local changes and changes between two versions of the layer
-  - addition of local changes viewer
-  - more validations for attachment widget configuration
-  - check both old and new server URLs before sync (#409)
-  - fix Python error when cancelling sync immediately after it started (#405)
-  - update public server URL following rebranding changes (#417)
+  - Addition of Processing tools to visualize local changes and changes between two versions of the layer
+  - Addition of local changes viewer
+  - More validations for attachment widget configuration
+  - Check both old and new server URLs before sync (#409)
+  - Fix Python error when cancelling sync immediately after it started (#405)
+  - Update public server URL following rebranding changes (#417)
   <p>2022.3.2
   - Add project setting to control photo quality in Mergin Maps Input (#383)
   - Disable primary keys validation for non-GPKG layers (#401)
