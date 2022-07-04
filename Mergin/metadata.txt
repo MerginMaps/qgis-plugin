@@ -13,6 +13,7 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 ; start of optional metadata
 changelog=2022.5
   - Add project setting to control snapping in Mergin Maps Input
+  - Add validations for snapping configuration in Mergin Maps project
   - Fix Processing tools to visualize local changes and changes between two versions of the layer
   <p>2022.4.1
   - Fix plugin to work with minimum QGIS version 3.16
