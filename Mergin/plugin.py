@@ -353,6 +353,14 @@ class MerginPlugin:
             iface.messageBar().pushMessage("Mergin", "Current project is not a Mergin project.", Qgis.Warning)
             return
 
+        if unsaved_project_check(force_saving=True):
+            iface.messageBar().pushMessage(
+                "Mergin",
+                "Project contains unsaved modifications, can not compute local changes",
+                Qgis.Warning
+            )
+            return
+
         mp = MerginProject(QgsProject.instance().homePath())
         push_changes = mp.get_push_changes()
         push_changes_summary = mp.get_list_of_push_changes(push_changes)

@@ -408,11 +408,12 @@ def get_new_qgis_project_filepath(project_name=None):
     return None
 
 
-def unsaved_project_check():
+def unsaved_project_check(force_saving=False):
     """
     Check if current QGIS project has some unsaved changes.
     Let the user decide if the changes are to be saved before continuing.
-    :return: True if previous method should continue, False otherwise
+    :return: True if previous method should continue, False otherwise.
+    If 'force_saving' flag is set to True then changes have to be saved before continuing.
     :type: boolean
     """
     if (
@@ -449,7 +450,10 @@ def unsaved_project_check():
                         return False
             return True
         elif btn_reply == QMessageBox.No:
-            return True
+            if force_saving:
+                return False
+            else:
+                return True
         else:
             return False
     return True
