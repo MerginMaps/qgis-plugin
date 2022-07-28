@@ -355,7 +355,10 @@ class MerginPlugin:
 
         if not unsaved_project_check(force_saving=True):
             iface.messageBar().pushMessage(
-                "Mergin", "Project contains unsaved modifications, can not compute local changes", Qgis.Warning
+                "Mergin",
+                "Project contains unsaved modifications, can not compute local changes. "
+                "Save unsaved edits and try again",
+                Qgis.Warning,
             )
             return
 
