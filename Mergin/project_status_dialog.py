@@ -8,16 +8,17 @@ from qgis.PyQt.QtWidgets import (
     QSizePolicy,
     QPushButton,
     QLabel,
+    QMessageBox,
 )
 from qgis.PyQt.QtCore import QSize
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem, QIcon
-
 from qgis.gui import QgsGui
 from qgis.core import Qgis, QgsApplication, QgsProject, QgsMapLayer, QgsMessageLog
-
+from qgis.utils import iface
 from .diff_dialog import DiffViewerDialog
 from .validation import MultipleLayersWarning, warning_display_string
-from .utils import is_versioned_file, icon_path
+from .utils import is_versioned_file, icon_path, unsaved_project_check
+
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_status_dialog.ui")
 
@@ -204,7 +205,15 @@ class ProjectStatusDialog(QDialog):
         if not self.changes_summary:
             self.ui.messageBar.pushMessage("Mergin", "No changes found in the project layers.", Qgis.Info)
             return
-
+        proceed, reply_btn = unsaved_project_check()
+        if not proceed:
+            return
+        if reply_btn and reply_btn != QMessageBox.Yes:
+            iface.messageBar().pushMessage(
+                "Mergin",
+                "Project contains unsaved modifications, which won't be visible in the local changes view.",
+                Qgis.Warning,
+            )
         self.close()
         dlg_diff_viewer = DiffViewerDialog()
         dlg_diff_viewer.show()

@@ -408,13 +408,12 @@ def get_new_qgis_project_filepath(project_name=None):
     return None
 
 
-def unsaved_project_check(force_saving=False):
+def unsaved_project_check():
     """
     Check if current QGIS project has some unsaved changes.
     Let the user decide if the changes are to be saved before continuing.
-    :return: True if previous method should continue, False otherwise.
-    If 'force_saving' flag is set to True then changes have to be saved before continuing.
-    :type: boolean
+    :return: True if previous method should continue, False otherwise and replay button (or None if no changes detected)
+    :type: boolean, QMessageBox.Yes|QMessageBox.No|QMessageBox.Cancel|None
     """
     if (
         any(
@@ -445,18 +444,15 @@ def unsaved_project_check(force_saving=False):
                             QMessageBox.warning(
                                 None, "Error Saving Project", "QGIS project was not saved properly. Cancelling..."
                             )
-                            return False
+                            return False, btn_reply
                     else:
-                        return False
-            return True
+                        return False, btn_reply
+            return True, btn_reply
         elif btn_reply == QMessageBox.No:
-            if force_saving:
-                return False
-            else:
-                return True
+            return True, btn_reply
         else:
-            return False
-    return True
+            return False, btn_reply
+    return True, None
 
 
 def save_vector_layer_as_gpkg(layer, target_dir, update_datasource=False):

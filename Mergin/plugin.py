@@ -286,8 +286,8 @@ class MerginPlugin:
 
     def create_new_project(self):
         """Open new Mergin Maps project creation dialog."""
-
-        if not unsaved_project_check():
+        proceed, replay_btn = unsaved_project_check()
+        if not proceed:
             return
         if not self.manager:
             QMessageBox.warning(None, "Create Mergin Maps Project", "Plugin not configured!")
@@ -353,14 +353,15 @@ class MerginPlugin:
             iface.messageBar().pushMessage("Mergin", "Current project is not a Mergin project.", Qgis.Warning)
             return
 
-        if not unsaved_project_check(force_saving=True):
+        proceed, reply_btn = unsaved_project_check()
+        if not proceed:
+            return
+        if reply_btn and reply_btn != QMessageBox.Yes:
             iface.messageBar().pushMessage(
                 "Mergin",
-                "Project contains unsaved modifications, can not compute local changes. "
-                "Save unsaved edits and try again",
+                "Project contains unsaved modifications, which won't be visible in the local changes view.",
                 Qgis.Warning,
             )
-            return
 
         mp = MerginProject(QgsProject.instance().homePath())
         push_changes = mp.get_push_changes()

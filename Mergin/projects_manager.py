@@ -40,7 +40,8 @@ class MerginProjectsManager(object):
         Check if current project is the same as actually operated Mergin project and has some unsaved changes.
         """
         if QgsProject.instance().fileName() in find_qgis_files(project_dir):
-            return True if unsaved_project_check() else False
+            proceed, replay_btn = unsaved_project_check()
+            return True if proceed else False
         return True  # not a Mergin project
 
     def open_project(self, project_dir):
@@ -147,7 +148,8 @@ class MerginProjectsManager(object):
     def project_status(self, project_dir):
         if project_dir is None:
             return
-        if not unsaved_project_check():
+        proceed, replay_btn = unsaved_project_check()
+        if not proceed:
             return
 
         mp = MerginProject(project_dir)
