@@ -17,13 +17,21 @@ class test_packaging(unittest.TestCase):
         start_app()
 
     def test_copy_raster(self):
-        layer = QgsRasterLayer(os.path.join(test_data_path, "dem.tif"), "test", "gdal")
+        test_data_raster_path = os.path.join(test_data_path, "dem.tif")
+        layer = QgsRasterLayer(test_data_raster_path, "test", "gdal")
         self.assertTrue(layer.isValid())
-
+        source_raster_uri = layer.dataProvider().dataSourceUri()
+        self.assertTrue(source_raster_uri == str(test_data_raster_path))
         with tempfile.TemporaryDirectory() as tmp_dir:
             copy_tif_raster(layer, tmp_dir)
             for ext in ("tif", "wld", "tfw", "prj", "qpj", "tifw"):
-                self.assertTrue(os.path.exists(os.path.join(tmp_dir, f"dem.{ext}")))
+                expected_filepath = os.path.join(tmp_dir, f"dem.{ext}")
+                self.assertTrue(os.path.exists(expected_filepath))
+                if ext == "tif":
+                    # Check if raster data source was updated
+                    destination_raster_uri = layer.dataProvider().dataSourceUri()
+                    self.assertTrue(destination_raster_uri == str(expected_filepath))
+                    self.assertTrue(destination_raster_uri != source_raster_uri)
 
 
 if __name__ == "__main__":

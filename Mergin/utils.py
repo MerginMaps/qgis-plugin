@@ -749,6 +749,11 @@ def copy_tif_raster(raster_layer, project_dir):
     for f in files:
         suffix = os.path.splitext(f)[1]
         shutil.copy(f, os.path.splitext(new_raster_filename)[0] + suffix)
+    # Update raster layer data source
+    raster_layer_name = raster_layer.name()
+    provider_opts = QgsDataProvider.ProviderOptions()
+    provider_opts.layerName = raster_layer_name
+    raster_layer.setDataSource(new_raster_filename, raster_layer_name, "gdal", provider_opts)
 
 
 def save_raster_to_geopackage(raster_layer, project_dir):
