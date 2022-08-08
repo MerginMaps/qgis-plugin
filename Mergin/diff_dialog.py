@@ -211,3 +211,10 @@ class DiffViewerDialog(QDialog):
             return QgsApplication.getThemeIcon("/mIconGeometryCollectionLayer.svg")
         else:
             return QgsApplication.getThemeIcon("/mIconTableLayer.svg")
+
+    def show_unsaved_changes_warning(self):
+        self.ui.messageBar.pushMessage(
+            "Mergin",
+            "Project contains unsaved modifications, which won't be visible in the local changes view.",
+            Qgis.Warning,
+        )
