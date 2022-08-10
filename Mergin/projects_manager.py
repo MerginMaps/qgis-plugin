@@ -42,7 +42,7 @@ class MerginProjectsManager(object):
         """
         if QgsProject.instance().fileName() in find_qgis_files(project_dir):
             check_result = unsaved_project_check()
-            return False if check_result == UnsavedChangesStrategy else True
+            return False if check_result == UnsavedChangesStrategy.HasUnsavedChanges else True
         return True  # not a Mergin project
 
     def open_project(self, project_dir):
