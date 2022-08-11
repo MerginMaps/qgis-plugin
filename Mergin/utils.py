@@ -1,5 +1,6 @@
 import shutil
 from datetime import datetime, timezone
+from enum import Enum
 from urllib.error import URLError, HTTPError
 import configparser
 import os
@@ -108,6 +109,12 @@ PROJS_PER_PAGE = 50
 
 class PackagingError(Exception):
     pass
+
+
+class UnsavedChangesStrategy(Enum):
+    NoUnsavedChanges = 0  # None / successful Yes
+    HasUnsavedChangesButIgnore = 1  # No
+    HasUnsavedChanges = -1  # Cancel / failed Yes
 
 
 class FieldConverter(QgsVectorFileWriter.FieldValueConverter):
@@ -408,13 +415,12 @@ def get_new_qgis_project_filepath(project_name=None):
     return None
 
 
-def unsaved_project_check(force_saving=False):
+def unsaved_project_check():
     """
     Check if current QGIS project has some unsaved changes.
     Let the user decide if the changes are to be saved before continuing.
-    :return: True if previous method should continue, False otherwise.
-    If 'force_saving' flag is set to True then changes have to be saved before continuing.
-    :type: boolean
+    :return: UnsavedChangesStrategy enumerator defining if previous method should continue
+    :type: Enum
     """
     if (
         any(
@@ -445,18 +451,15 @@ def unsaved_project_check(force_saving=False):
                             QMessageBox.warning(
                                 None, "Error Saving Project", "QGIS project was not saved properly. Cancelling..."
                             )
-                            return False
+                            return UnsavedChangesStrategy.HasUnsavedChanges
                     else:
-                        return False
-            return True
+                        return UnsavedChangesStrategy.HasUnsavedChanges
+            return UnsavedChangesStrategy.NoUnsavedChanges
         elif btn_reply == QMessageBox.No:
-            if force_saving:
-                return False
-            else:
-                return True
+            return UnsavedChangesStrategy.HasUnsavedChangesButIgnore
         else:
-            return False
-    return True
+            return UnsavedChangesStrategy.HasUnsavedChanges
+    return UnsavedChangesStrategy.NoUnsavedChanges
 
 
 def save_vector_layer_as_gpkg(layer, target_dir, update_datasource=False):

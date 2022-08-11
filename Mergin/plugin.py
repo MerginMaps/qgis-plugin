@@ -39,6 +39,7 @@ from .sync_dialog import SyncDialog
 from .utils import (
     ClientError,
     LoginError,
+    check_mergin_subdirs,
     create_mergin_client,
     find_qgis_files,
     get_mergin_auth,
@@ -51,7 +52,7 @@ from .utils import (
     same_dir,
     unhandled_exception_message,
     unsaved_project_check,
-    check_mergin_subdirs,
+    UnsavedChangesStrategy,
 )
 
 from .mergin.merginproject import MerginProject
@@ -286,8 +287,8 @@ class MerginPlugin:
 
     def create_new_project(self):
         """Open new Mergin Maps project creation dialog."""
-
-        if not unsaved_project_check():
+        check_result = unsaved_project_check()
+        if check_result == UnsavedChangesStrategy.HasUnsavedChanges:
             return
         if not self.manager:
             QMessageBox.warning(None, "Create Mergin Maps Project", "Plugin not configured!")
@@ -353,13 +354,8 @@ class MerginPlugin:
             iface.messageBar().pushMessage("Mergin", "Current project is not a Mergin project.", Qgis.Warning)
             return
 
-        if not unsaved_project_check(force_saving=True):
-            iface.messageBar().pushMessage(
-                "Mergin",
-                "Project contains unsaved modifications, can not compute local changes. "
-                "Save unsaved edits and try again",
-                Qgis.Warning,
-            )
+        check_result = unsaved_project_check()
+        if check_result == UnsavedChangesStrategy.HasUnsavedChanges:
             return
 
         mp = MerginProject(QgsProject.instance().homePath())
@@ -380,6 +376,8 @@ class MerginPlugin:
                 break
 
         dlg_diff_viewer = DiffViewerDialog()
+        if check_result == UnsavedChangesStrategy.HasUnsavedChangesButIgnore:
+            dlg_diff_viewer.show_unsaved_changes_warning()
         if layer_name:
             for i, layer in enumerate(dlg_diff_viewer.diff_layers):
                 if layer_name in layer.name():

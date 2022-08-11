@@ -19,6 +19,7 @@ from .utils import (
     send_logs,
     unhandled_exception_message,
     unsaved_project_check,
+    UnsavedChangesStrategy,
     write_project_variables,
 )
 
@@ -40,7 +41,8 @@ class MerginProjectsManager(object):
         Check if current project is the same as actually operated Mergin project and has some unsaved changes.
         """
         if QgsProject.instance().fileName() in find_qgis_files(project_dir):
-            return True if unsaved_project_check() else False
+            check_result = unsaved_project_check()
+            return False if check_result == UnsavedChangesStrategy.HasUnsavedChanges else True
         return True  # not a Mergin project
 
     def open_project(self, project_dir):
@@ -147,7 +149,8 @@ class MerginProjectsManager(object):
     def project_status(self, project_dir):
         if project_dir is None:
             return
-        if not unsaved_project_check():
+        check_result = unsaved_project_check()
+        if check_result == UnsavedChangesStrategy.HasUnsavedChanges:
             return
 
         mp = MerginProject(project_dir)
