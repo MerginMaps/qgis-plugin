@@ -19,7 +19,7 @@ from .utils import (
     push_project_is_running,
     push_project_finalize,
     push_project_cancel,
-    icon_path
+    icon_path,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_sync_dialog.ui")

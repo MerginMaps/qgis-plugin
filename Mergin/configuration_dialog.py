@@ -24,7 +24,7 @@ from .utils import (
     get_plugin_version,
     get_qgis_proxy_config,
     test_server_connection,
-    icon_path
+    icon_path,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_config.ui")
