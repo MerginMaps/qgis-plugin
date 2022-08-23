@@ -1186,3 +1186,22 @@ def is_dark_theme():
     bg_color = palette.color(QPalette.Window)
     brightness = (bg_color.red() * 299 + bg_color.green() * 587 + bg_color.blue() * 114) / 1000
     return brightness < 155
+    
+    
+def list_datum_shift_files():
+    files = []
+    context = QgsProject.instance().transformContext()
+
+    for k, v in context.coordinateOperations():
+        src = QgsCoordinateReferenceSystem(k[0])
+        dst = QgsCoordinateReferenceSystem(k[1])
+        usedOperation = context.calculateCoordinateOperation(src, dst)
+        if op:
+            operations = QgsDatumTransform.operations(src, dst)
+            for o in operations:
+                if o.proj == usedOperation and len(o.grids()) > 0:
+                    for grid in o.grids():
+                        files.append((grid.shortName, grid.url))
+
+    return files
+
