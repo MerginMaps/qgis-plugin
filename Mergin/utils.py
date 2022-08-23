@@ -39,6 +39,7 @@ from qgis.core import (
     QgsVectorDataProvider,
     QgsVectorFileWriter,
     QgsVectorLayer,
+    QgsProviderRegistry,
 )
 
 from .mergin.utils import int_version
@@ -633,7 +634,6 @@ def is_layer_packable(layer):
     """Check if layer can be packaged for a Mergin Maps project."""
     dp = layer.dataProvider()
     if dp is None:
-        # Vector tile layers have no provider
         return False
     provider_name = dp.name()
     if provider_name in QGIS_DB_PROVIDERS:
@@ -642,6 +642,14 @@ def is_layer_packable(layer):
         if provider_name == "gdal":
             # for GDAL rasters check it is a local file
             return os.path.isfile(layer.dataProvider().dataSourceUri())
+        elif provider_name == "wms":
+            # raster MBTiles use WMS provider even if this is a local file
+            uri = QgsProviderRegistry.instance().decodeUri("wms", layer.source())
+            return os.path.isfile(uri["path"]) if "path" in uri else False
+        elif provider_name == "vectortile":
+            uri = QgsProviderRegistry.instance().decodeUri("vectortile", layer.source())
+            return os.path.isfile(uri["path"]) if "path" in uri else False
+
         return provider_name in PACKABLE_PROVIDERS
 
 
@@ -677,15 +685,11 @@ def package_layer(layer, project_dir):
                 return True
 
     if layer.type() == QgsMapLayerType.VectorLayer:
-
         fname, err = save_vector_layer_as_gpkg(layer, project_dir, update_datasource=True)
         if err:
             raise PackagingError(f"Couldn't properly save layer {layer.name()}: {err}")
-
     elif layer.type() == QgsMapLayerType.RasterLayer:
-
         save_raster_layer(layer, project_dir)
-
     else:
         # everything else (meshes)
         raise PackagingError("Layer type not supported")
