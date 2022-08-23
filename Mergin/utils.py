@@ -102,7 +102,7 @@ MERGIN_LOGS_URL = "https://g4pfq226j0.execute-api.eu-west-1.amazonaws.com/mergin
 QGIS_NET_PROVIDERS = ("WFS", "arcgisfeatureserver", "arcgismapserver", "geonode", "ows", "wcs", "wms", "vectortile")
 QGIS_DB_PROVIDERS = ("postgres", "mssql", "oracle", "hana", "postgresraster", "DB2")
 QGIS_MESH_PROVIDERS = ("mdal", "mesh_memory")
-QGIS_FILE_BASED_PROVIDERS = ("ogr", "gdal", "spatialite", "delimitedtext", "gpx", "mdal", "grass", "grassraster")
+QGIS_FILE_BASED_PROVIDERS = ("ogr", "gdal", "spatialite", "delimitedtext", "gpx", "mdal", "grass", "grassraster", "wms", "vectortile")
 PACKABLE_PROVIDERS = ("ogr", "gdal", "delimitedtext", "gpx", "postgres", "memory")
 
 PROJS_PER_PAGE = 50
@@ -610,14 +610,14 @@ def datasource_filepath(layer):
     dp = layer.dataProvider()
     if dp.name() not in QGIS_FILE_BASED_PROVIDERS:
         return None
-    if isinstance(
-        dp,
-        (
-            QgsRasterDataProvider,
-            QgsMeshDataProvider,
-        ),
-    ):
+    if isinstance(dp, QgsMeshDataProvider):
         ds_uri = dp.dataSourceUri()
+    elif isinstance(dp, QgsRasterDataProvider):
+        if dp.name() == "wms":
+            uri = QgsProviderRegistry.instance().decodeUri("wms", layer.source())
+            ds_uri = uri["path"] if "path" in uri else None
+        else:
+            ds_uri = dp.dataSourceUri()
     elif isinstance(dp, QgsVectorDataProvider):
         if dp.storageType() in ("GPKG", "GPX", "GeoJSON"):
             ds_uri = dp.dataSourceUri().split("|")[0]
@@ -625,6 +625,9 @@ def datasource_filepath(layer):
             ds_uri = dp.dataSourceUri().split("?")[0].replace("file://", "")
         else:
             ds_uri = dp.dataSourceUri()
+    elif dp.name() == "vectortile":
+        uri = QgsProviderRegistry.instance().decodeUri("vectortile", layer.source())
+        ds_uri = uri["path"] if "path" in uri else None
     else:
         ds_uri = None
     return ds_uri if os.path.isfile(ds_uri) else None
@@ -677,7 +680,7 @@ def package_layer(layer, project_dir):
     src_filepath = datasource_filepath(layer)
     if src_filepath and same_dir(os.path.dirname(src_filepath), project_dir):
         # layer already stored in the target project dir
-        if layer.type() in (QgsMapLayerType.RasterLayer, QgsMapLayerType.MeshLayer):
+        if layer.type() in (QgsMapLayerType.RasterLayer, QgsMapLayerType.MeshLayer, QgsMapLayerType.VectorTileLayer):
             return True
         if layer.type() == QgsMapLayerType.VectorLayer:
             # if it is a GPKG we do not need to rewrite it
@@ -685,10 +688,12 @@ def package_layer(layer, project_dir):
                 return True
 
     if layer.type() == QgsMapLayerType.VectorLayer:
+        # TODO: add vector tiles support
         fname, err = save_vector_layer_as_gpkg(layer, project_dir, update_datasource=True)
         if err:
             raise PackagingError(f"Couldn't properly save layer {layer.name()}: {err}")
     elif layer.type() == QgsMapLayerType.RasterLayer:
+        # TODO: add raster tiles support
         save_raster_layer(layer, project_dir)
     else:
         # everything else (meshes)
