@@ -4,6 +4,7 @@ import traceback
 from PyQt5.QtWidgets import QDialog, QApplication
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QPixmap
 
 from .utils import (
     download_project_async,
@@ -18,6 +19,7 @@ from .utils import (
     push_project_is_running,
     push_project_finalize,
     push_project_cancel,
+    icon_path
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_sync_dialog.ui")
@@ -33,6 +35,8 @@ class SyncDialog(QDialog):
     def __init__(self, parent=None):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
+
+        self.ui.labelMergin.setPixmap(QPixmap(icon_path("mm_logo.svg", False)))
 
         self.operation = None
         self.mergin_client = None

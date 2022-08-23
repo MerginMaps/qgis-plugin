@@ -40,6 +40,7 @@ from qgis.core import (
     QgsVectorFileWriter,
     QgsVectorLayer,
     QgsProviderRegistry,
+    QgsSettings,
 )
 
 from .mergin.utils import int_version
@@ -997,10 +998,13 @@ def mergin_project_local_path(project_name=None):
 
 
 def icon_path(icon_filename, tabler_icon=True):
+    settings = QgsSettings()
+    theme_name = settings.value("UI/UITheme", "default")
+    icon_set = "white" if theme_name != "default" else "default"
     if tabler_icon:
-        ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", "tabler_icons", icon_filename)
+        ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, "tabler_icons", icon_filename)
     else:
-        ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_filename)
+        ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, icon_filename)
     return ipath
 
 

@@ -2,6 +2,7 @@ import os
 from qgis.PyQt.QtWidgets import QDialog, QApplication, QDialogButtonBox, QMessageBox
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, QSettings
+from qgis.PyQt.QtGui import QPixmap
 from qgis.core import QgsApplication, QgsExpressionContextUtils
 from urllib.error import URLError
 
@@ -23,6 +24,7 @@ from .utils import (
     get_plugin_version,
     get_qgis_proxy_config,
     test_server_connection,
+    icon_path
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_config.ui")
@@ -37,6 +39,7 @@ class ConfigurationDialog(QDialog):
         if save_credentials:
             QgsApplication.authManager().setMasterPassword()
         url, username, password = get_mergin_auth()
+        self.ui.label_logo.setPixmap(QPixmap(icon_path("mm_logo.svg", False)))
         self.ui.merginURL.setText(url)
         self.ui.username.setText(username)
         self.ui.password.setText(password)
