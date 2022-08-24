@@ -21,7 +21,7 @@ class test_packaging(unittest.TestCase):
         layer = QgsRasterLayer(test_data_raster_path, "test", "gdal")
         self.assertTrue(layer.isValid())
         source_raster_uri = layer.dataProvider().dataSourceUri()
-        self.assertTrue(source_raster_uri == str(test_data_raster_path))
+        self.assertEqual(source_raster_uri, test_data_raster_path)
         with tempfile.TemporaryDirectory() as tmp_dir:
             copy_tif_raster(layer, tmp_dir)
             for ext in ("tif", "wld", "tfw", "prj", "qpj", "tifw"):
@@ -30,8 +30,8 @@ class test_packaging(unittest.TestCase):
                 if ext == "tif":
                     # Check if raster data source was updated
                     destination_raster_uri = layer.dataProvider().dataSourceUri()
-                    self.assertTrue(destination_raster_uri == str(expected_filepath))
-                    self.assertTrue(destination_raster_uri != source_raster_uri)
+                    self.assertEqual(destination_raster_uri, expected_filepath)
+                    self.assertNotEqual(destination_raster_uri, source_raster_uri)
 
 
 if __name__ == "__main__":
