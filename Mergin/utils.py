@@ -688,12 +688,15 @@ def package_layer(layer, project_dir):
                 return True
 
     if layer.type() == QgsMapLayerType.VectorLayer:
-        # TODO: add vector tiles support
         fname, err = save_vector_layer_as_gpkg(layer, project_dir, update_datasource=True)
         if err:
             raise PackagingError(f"Couldn't properly save layer {layer.name()}: {err}")
+    elif layer.type() == QgsMapLayerType.VectorTileLayer:
+        uri = QgsProviderRegistry.instance().decodeUri("vectortile", layer.source())
+        is_local = os.path.isfile(uri["path"]) if "path" in uri else False
+        if is_local:
+            copy_layer_files(layer, uri["path"], project_dir)
     elif layer.type() == QgsMapLayerType.RasterLayer:
-        # TODO: add raster tiles support
         save_raster_layer(layer, project_dir)
     else:
         # everything else (meshes)
@@ -709,63 +712,92 @@ def save_raster_layer(raster_layer, project_dir):
     Otherwise, save the raster as GeoTiff using Qgs with some optimisations.
     """
 
-    driver_name = get_raster_driver_name(raster_layer)
+    driver_name = "mbtiles"
+    if raster_layer.dataProvider().name() != "wms":
+        driver_name = get_raster_driver_name(raster_layer)
 
     if driver_name == "GTiff":
         # check if it is a local file
         is_local = os.path.isfile(raster_layer.dataProvider().dataSourceUri())
         if is_local:
-            copy_tif_raster(raster_layer, project_dir)
+            copy_layer_files(raster_layer, raster_layer.dataProvider().dataSourceUri(), project_dir)
+    elif driver_name == "mbtiles":
+        uri = QgsProviderRegistry.instance().decodeUri("wms", raster_layer.source())
+        is_local = os.path.isfile(uri["path"]) if "path" in uri else False
+        if is_local:
+            copy_layer_files(raster_layer, uri["path"], project_dir)
     elif driver_name == "GPKG":
         save_raster_to_geopackage(raster_layer, project_dir)
     else:
         save_raster_as_geotif(raster_layer, project_dir)
 
+def copy_layer_files(layer, src_path, project_dir):
+    """Creates a copy of the layer file(s) in the MerginMaps project directory
+       and updates layer datasource to point to the correct location.
 
-def copy_tif_raster(raster_layer, project_dir):
-    """Create a copy of raster layer file(s) without rewriting."""
-    dp = raster_layer.dataProvider()
-    src_filepath = dp.dataSourceUri() if os.path.isfile(dp.dataSourceUri()) else None
-    if src_filepath is None:
-        raise PackagingError(f"Can't find the source file for {raster_layer.name()}")
+       If necessary, auxilary files (e.g. world files, overviews, etc) are also
+       copied to the MerginMaps project directory.
+    """
+    if not os.path.exists(src_path):
+        raise PackagingError(f"Can't find the source file for {layer.name()}")
 
-    # Make sure the destination path is unique and create a copy including any external pyramids
-    new_raster_filename = get_unique_filename(os.path.join(project_dir, os.path.basename(src_filepath)))
-    shutil.copy(src_filepath, new_raster_filename)
-    # External pyramids
-    if os.path.exists(src_filepath + ".ovr"):
-        shutil.copy(src_filepath + ".ovr", new_raster_filename + ".ovr")
-    # Erdas external pyramids
-    src_filepath_no_ext = os.path.splitext(src_filepath)[0]
-    if os.path.exists(src_filepath_no_ext + ".aux"):
-        shutil.copy(src_filepath_no_ext + ".aux", os.path.splitext(new_raster_filename)[0] + ".aux")
+    # Make sure the destination path is unique by adding suffix to it if necessary
+    new_filename = get_unique_filename(os.path.join(project_dir, os.path.basename(src_path)))
+    shutil.copy(src_path, new_filename)
+
+    # for GDAL rasters copy overviews and any other auxilary files
+    if layer.dataProvider().name() == "gdal":
+        copy_gdal_aux_files(src_path, new_filename)
+
+    # Update layer datasource so the layer is loaded from the new location
+    update_datasource(layer, new_filename)
+
+
+def update_datasource(layer, new_path):
+    """Updates layer datasource, so the layer is loaded from the new location
+    """
+    options = QgsDataProvider.ProviderOptions()
+    options.layerName = layer.name()
+    layer.setDataSource(new_path, layer.name(), layer.dataProvider().name(), options)
+
+
+def copy_gdal_aux_files(src_path, new_path):
+    """Copies various auxilary files created/used by GDAL, e.g. pyramids,
+       world files, metadata, etc.
+    """
+
+    # External pyramids in GDAL format
+    if os.path.exists(src_path + ".ovr"):
+        shutil.copy(src_path + ".ovr", new_path + ".ovr")
+
+    src_basename = os.path.splitext(src_path)[0]
+    new_basename = os.path.splitext(new_path)[0]
+
+    # External pyramids in Erdas format
+    if os.path.exists(src_basename + ".aux"):
+        shutil.copy(src_basename + ".aux", f"{new_basename}.aux")
 
     # also copy world file and projection
-    if os.path.exists(src_filepath_no_ext + ".prj"):
-        shutil.copy(src_filepath_no_ext + ".prj", os.path.splitext(new_raster_filename)[0] + ".prj")
+    if os.path.exists(src_basename + ".prj"):
+        shutil.copy(src_basename + ".prj", f"{new_basename}.prj")
 
-    if os.path.exists(src_filepath_no_ext + ".qpj"):
-        shutil.copy(src_filepath_no_ext + ".qpj", os.path.splitext(new_raster_filename)[0] + ".qpj")
+    if os.path.exists(src_basename + ".qpj"):
+        shutil.copy(src_basename + ".qpj", f"{new_basename}.qpj")
 
-    if os.path.exists(src_filepath_no_ext + ".wld"):
-        shutil.copy(src_filepath_no_ext + ".wld", os.path.splitext(new_raster_filename)[0] + ".wld")
+    if os.path.exists(src_basename + ".wld"):
+        shutil.copy(src_basename + ".wld", f"{new_basename}.wld")
 
-    suffix = os.path.splitext(src_filepath)[1][1:]
     # check for world files with suffixes other than .wld. Usually they use the same
     # suffixes as the image has with a "w" appended (tif -> tifw). A 3-letter suffixes
     # also very common, in this case the first and third characters of the image file's
     # suffix and a final "w" are used for the world file suffix (tif -> tfw).
     # See https://webhelp.esri.com/arcims/9.3/General/topics/author_world_files.htm and
     # https://gdal.org/drivers/raster/wld.html
-    files = glob.glob(f"{src_filepath_no_ext}.{suffix[0]}*w")
+    suffix = os.path.splitext(src_path)[1][1:]
+    files = glob.glob(f"{src_basename}.{suffix[0]}*w")
     for f in files:
         suffix = os.path.splitext(f)[1]
-        shutil.copy(f, os.path.splitext(new_raster_filename)[0] + suffix)
-    # Update raster layer data source
-    raster_layer_name = raster_layer.name()
-    provider_opts = QgsDataProvider.ProviderOptions()
-    provider_opts.layerName = raster_layer_name
-    raster_layer.setDataSource(new_raster_filename, raster_layer_name, "gdal", provider_opts)
+        shutil.copy(f, new_basename + suffix)
 
 
 def save_raster_to_geopackage(raster_layer, project_dir):
@@ -824,9 +856,7 @@ def write_raster(raster_layer, raster_writer, write_path):
     if not res == QgsRasterFileWriter.NoError:
         raise PackagingError(f"Couldn't save raster {write_path} - write error: {res}")
 
-    provider_opts = QgsDataProvider.ProviderOptions()
-    provider_opts.layerName = raster_layer.name()
-    raster_layer.setDataSource(write_path, raster_layer.name(), "gdal", provider_opts)
+    update_datasource(raster_layer, write_path)
 
 
 def login_error_message(e):
