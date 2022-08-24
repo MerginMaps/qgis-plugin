@@ -102,7 +102,18 @@ MERGIN_LOGS_URL = "https://g4pfq226j0.execute-api.eu-west-1.amazonaws.com/mergin
 QGIS_NET_PROVIDERS = ("WFS", "arcgisfeatureserver", "arcgismapserver", "geonode", "ows", "wcs", "wms", "vectortile")
 QGIS_DB_PROVIDERS = ("postgres", "mssql", "oracle", "hana", "postgresraster", "DB2")
 QGIS_MESH_PROVIDERS = ("mdal", "mesh_memory")
-QGIS_FILE_BASED_PROVIDERS = ("ogr", "gdal", "spatialite", "delimitedtext", "gpx", "mdal", "grass", "grassraster", "wms", "vectortile")
+QGIS_FILE_BASED_PROVIDERS = (
+    "ogr",
+    "gdal",
+    "spatialite",
+    "delimitedtext",
+    "gpx",
+    "mdal",
+    "grass",
+    "grassraster",
+    "wms",
+    "vectortile",
+)
 PACKABLE_PROVIDERS = ("ogr", "gdal", "delimitedtext", "gpx", "postgres", "memory")
 
 PROJS_PER_PAGE = 50
@@ -731,12 +742,14 @@ def save_raster_layer(raster_layer, project_dir):
     else:
         save_raster_as_geotif(raster_layer, project_dir)
 
-def copy_layer_files(layer, src_path, project_dir):
-    """Creates a copy of the layer file(s) in the MerginMaps project directory
-       and updates layer datasource to point to the correct location.
 
-       If necessary, auxilary files (e.g. world files, overviews, etc) are also
-       copied to the MerginMaps project directory.
+def copy_layer_files(layer, src_path, project_dir):
+    """
+    Creates a copy of the layer file(s) in the MerginMaps project directory
+    and updates layer datasource to point to the correct location.
+
+    If necessary, auxilary files (e.g. world files, overviews, etc) are also
+    copied to the MerginMaps project directory.
     """
     if not os.path.exists(src_path):
         raise PackagingError(f"Can't find the source file for {layer.name()}")
@@ -754,16 +767,21 @@ def copy_layer_files(layer, src_path, project_dir):
 
 
 def update_datasource(layer, new_path):
-    """Updates layer datasource, so the layer is loaded from the new location
-    """
+    """Updates layer datasource, so the layer is loaded from the new location"""
     options = QgsDataProvider.ProviderOptions()
     options.layerName = layer.name()
-    layer.setDataSource(new_path, layer.name(), layer.dataProvider().name(), options)
+    if layer.dataProvider().name() == "vectortile":
+        layer.setDataSource(f"url={new_path}&type=mbtiles", layer.name(), layer.dataProvider().name(), options)
+    elif layer.dataProvider().name() == "wms":
+        layer.setDataSource(f"url=file://{new_path}&type=mbtiles", layer.name(), layer.dataProvider().name(), options)
+    else:
+        layer.setDataSource(new_path, layer.name(), layer.dataProvider().name(), options)
 
 
 def copy_gdal_aux_files(src_path, new_path):
-    """Copies various auxilary files created/used by GDAL, e.g. pyramids,
-       world files, metadata, etc.
+    """
+    Copies various auxilary files created/used by GDAL, e.g. pyramids,
+    world files, metadata, etc.
     """
 
     # External pyramids in GDAL format
