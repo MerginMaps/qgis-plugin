@@ -6,7 +6,15 @@ from collections import defaultdict
 from qgis.core import QgsMapLayerType, QgsProject, QgsVectorDataProvider, QgsExpression
 
 from .help import MerginHelp
-from .utils import find_qgis_files, same_dir, has_schema_change, get_primary_keys, QGIS_DB_PROVIDERS, QGIS_NET_PROVIDERS
+from .utils import (
+    find_qgis_files,
+    same_dir,
+    has_schema_change,
+    get_primary_keys,
+    get_datum_shift_grids,
+    QGIS_DB_PROVIDERS,
+    QGIS_NET_PROVIDERS,
+)
 
 INVALID_CHARS = re.compile('[\\\/\(\)\[\]\{\}"\n\r]')
 PROJECT_VARS = re.compile("\@project_home|\@project_path|\@project_folder")
@@ -34,6 +42,7 @@ class Warning(Enum):
     ATTACHMENT_WRONG_EXPRESSION = 19
     QGIS_SNAPPING_NOT_ENABLED = 20
     MERGIN_SNAPPING_NOT_ENABLED = 21
+    MISSING_DATUM_SHIFT_GRID = 22
 
 
 class MultipleLayersWarning:
@@ -92,6 +101,7 @@ class MerginProjectValidator(object):
         self.check_value_relation()
         self.check_field_names()
         self.check_snapping()
+        self.check_datum_shift_grids()
 
         return self.issues
 
@@ -310,6 +320,12 @@ class MerginProjectValidator(object):
                 # snapping in Input using QGIS setting is disabled but project has snapping activated
                 self.issues.append(MultipleLayersWarning(Warning.MERGIN_SNAPPING_NOT_ENABLED))
 
+    def check_datum_shift_grids(self):
+        grids = get_datum_shift_grids()
+        for grid in grids.keys():
+            if not os.path.exists(os.path.join(self.qgis_proj_dir, "proj", grid)):
+                self.issues.append(MultipleLayersWarning(Warning.MISSING_DATUM_SHIFT_GRID))
+
 
 def warning_display_string(warning_id):
     """Returns a display string for a corresponing warning"""
@@ -356,3 +372,5 @@ def warning_display_string(warning_id):
         return "Snapping is currently disabled in this QGIS project, it will be thus disabled in Mergin Maps Input"
     elif warning_id == Warning.MERGIN_SNAPPING_NOT_ENABLED:
         return "Snapping is currently enabled in this QGIS project, but not enabled in Mergin Maps Input"
+    elif warning_id == Warning.MISSING_DATUM_SHIFT_GRID:
+        return "Required datum shift grid is missed"
