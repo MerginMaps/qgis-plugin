@@ -42,6 +42,7 @@ from qgis.core import (
     QgsVectorLayer,
     QgsProviderRegistry,
     QgsSettings,
+    QgsDatumTransform,
 )
 
 from .mergin.utils import int_version
@@ -1188,20 +1189,21 @@ def is_dark_theme():
     return brightness < 155
     
     
-def list_datum_shift_files():
-    files = []
+def get_datum_shift_grids():
+    grids = dict()
     context = QgsProject.instance().transformContext()
 
-    for k, v in context.coordinateOperations():
+    for k, v in context.coordinateOperations().items():
         src = QgsCoordinateReferenceSystem(k[0])
         dst = QgsCoordinateReferenceSystem(k[1])
         usedOperation = context.calculateCoordinateOperation(src, dst)
-        if op:
+        if usedOperation:
             operations = QgsDatumTransform.operations(src, dst)
-            for o in operations:
-                if o.proj == usedOperation and len(o.grids()) > 0:
-                    for grid in o.grids():
-                        files.append((grid.shortName, grid.url))
+            for op in operations:
+                if op.proj == usedOperation and len(op.grids) > 0:
+                    for grid in op.grids:
+                        if grid.shortName not in grids:
+                            grids[grid.shortName] = grid.url
 
-    return files
+    return grids
 
