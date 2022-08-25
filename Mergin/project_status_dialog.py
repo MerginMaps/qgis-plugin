@@ -1,5 +1,6 @@
 import os
 from itertools import groupby
+import importlib
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import (
@@ -14,7 +15,7 @@ from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem, QIcon
 from qgis.gui import QgsGui
 from qgis.core import Qgis, QgsApplication, QgsProject
 from .diff_dialog import DiffViewerDialog
-from .validation import MultipleLayersWarning, warning_display_string
+from .validation import MultipleLayersWarning, warning_display_string, MerginProjectValidator
 from .utils import is_versioned_file, icon_path, unsaved_project_check, UnsavedChangesStrategy
 
 
@@ -55,6 +56,8 @@ class ProjectStatusDialog(QDialog):
         self.btn_view_changes.setIcon(QIcon(icon_path("file-diff.svg")))
         self.btn_view_changes.clicked.connect(self.show_changes)
 
+        self.txtWarnings.anchorClicked.connect(self.link_clicked)
+
         self.validation_results = validation_results
         self.mp = mergin_project
 
@@ -67,6 +70,11 @@ class ProjectStatusDialog(QDialog):
         self.add_content(push_changes, "Local Changes", False, push_changes_summary)
         self.treeStatus.expandAll()
         self.changes_summary = push_changes_summary
+
+        try:
+            self.module = importlib.import_module('Mergin.fixer')
+        except ImportError:
+            self.module = None
 
         if not self.validation_results:
             self.ui.lblWarnings.hide()
@@ -213,3 +221,28 @@ class ProjectStatusDialog(QDialog):
         self.ui.messageBar.pushMessage("Mergin", "No changes found in the project layers.", Qgis.Info)
         dlg_diff_viewer.show()
         dlg_diff_viewer.exec_()
+
+    def link_clicked(self, url):
+        if self.module is None:
+            self.ui.messageBar.pushMessage("Mergin", f"Repair module not found", Qgis.Warning)
+            return
+
+        function_name = url.toString().strip("#")
+        if hasattr(self.module, function_name):
+            ok, msg = getattr(self.module, function_name)(self.mp, )
+            if not ok:
+                self.ui.messageBar.pushMessage("Mergin", f"Failed to fix issue: {message}", Qgis.Warning)
+                return
+
+            validator = MerginProjectValidator(self.mp)
+            self.validation_results = validator.run_checks()
+            if not self.validation_results:
+                self.ui.lblWarnings.hide()
+                self.ui.txtWarnings.hide()
+                self.btn_sync.setStyleSheet("background-color: #90ee90")
+            else:
+                self.show_validation_results()
+                self.btn_sync.setStyleSheet("background-color: #ffc800")
+        else:
+            self.ui.messageBar.pushMessage("Mergin", f"Method {function_name} not found", Qgis.Warning)
+            return
