@@ -784,26 +784,15 @@ def copy_gdal_aux_files(src_path, new_path):
     world files, metadata, etc.
     """
 
-    # External pyramids in GDAL format
     if os.path.exists(src_path + ".ovr"):
         shutil.copy(src_path + ".ovr", new_path + ".ovr")
 
     src_basename = os.path.splitext(src_path)[0]
     new_basename = os.path.splitext(new_path)[0]
 
-    # External pyramids in Erdas format
-    if os.path.exists(src_basename + ".aux"):
-        shutil.copy(src_basename + ".aux", f"{new_basename}.aux")
-
-    # also copy world file and projection
-    if os.path.exists(src_basename + ".prj"):
-        shutil.copy(src_basename + ".prj", f"{new_basename}.prj")
-
-    if os.path.exists(src_basename + ".qpj"):
-        shutil.copy(src_basename + ".qpj", f"{new_basename}.qpj")
-
-    if os.path.exists(src_basename + ".wld"):
-        shutil.copy(src_basename + ".wld", f"{new_basename}.wld")
+    for i in (".aux", ".prj", ".qpj", ".wld"):
+        if os.path.exists(src_basename + i):
+            shutil.copy(src_basename + i, f"{new_basename}{i}")
 
     # check for world files with suffixes other than .wld. Usually they use the same
     # suffixes as the image has with a "w" appended (tif -> tifw). A 3-letter suffixes
