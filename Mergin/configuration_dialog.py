@@ -35,6 +35,12 @@ class ConfigurationDialog(QDialog):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
         settings = QSettings()
+        theme_name = settings.value("UI/UITheme", "default")
+        if theme_name != "default":
+            self.ui.label.setText("Don't have an account yet? <a style='color:#88b2f5' href='https://app.merginmaps.com/register'>Sign up</a> now!")
+        else:
+            self.ui.label.setText("Don't have an account yet? <a href='https://app.merginmaps.com/register'>Sign up</a> now!")
+
         save_credentials = settings.value("Mergin/saveCredentials", "false").lower() == "true"
         if save_credentials:
             QgsApplication.authManager().setMasterPassword()
