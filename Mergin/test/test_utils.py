@@ -4,8 +4,15 @@ import os
 import json
 import copy
 
+from qgis.core import (
+    QgsProject,
+    QgsDatumTransform,
+    QgsCoordinateReferenceSystem,
+    QgsCoordinateTransformContext,
+)
+
 from qgis.testing import start_app, unittest
-from Mergin.utils import same_schema
+from Mergin.utils import same_schema, get_datum_shift_grids
 
 test_data_path = os.path.join(os.path.dirname(__file__), "data")
 
@@ -54,6 +61,23 @@ class test_utils(unittest.TestCase):
         equal, msg = same_schema(self.base_schema, modified_schema)
         self.assertFalse(equal)
         self.assertEqual(msg, "Definition of 'date' field in 'Survey_points' table is not the same")
+
+    def test_datum_shift_grids(self):
+        grids = get_datum_shift_grids()
+        self.assertEqual(len(grids), 0)
+
+        crs_a = QgsCoordinateReferenceSystem("EPSG:27700")
+        crs_b = QgsCoordinateReferenceSystem("EPSG:3857")
+        ops = QgsDatumTransform.operations(crs_a, crs_b)
+        self.assertTrue(len(ops) > 0)
+        proj_str = ops[0].proj
+
+        context = QgsCoordinateTransformContext()
+        context.addCoordinateOperation(crs_a, crs_b, proj_str)
+        QgsProject.instance().setTransformContext(context)
+
+        grids = get_datum_shift_grids()
+        self.assertEqual(len(grids), 1)
 
 
 if __name__ == "__main__":

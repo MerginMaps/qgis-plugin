@@ -72,7 +72,7 @@ class ProjectStatusDialog(QDialog):
         self.changes_summary = push_changes_summary
 
         try:
-            self.module = importlib.import_module('Mergin.fixer')
+            self.module = importlib.import_module("Mergin.repair")
         except ImportError:
             self.module = None
 
@@ -229,7 +229,7 @@ class ProjectStatusDialog(QDialog):
 
         function_name = url.toString().strip("#")
         if hasattr(self.module, function_name):
-            ok, msg = getattr(self.module, function_name)(self.mp, )
+            ok, msg = getattr(self.module, function_name)(self.mp)
             if not ok:
                 self.ui.messageBar.pushMessage("Mergin", f"Failed to fix issue: {message}", Qgis.Warning)
                 return

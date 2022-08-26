@@ -1204,6 +1204,5 @@ def get_datum_shift_grids():
                     for grid in op.grids:
                         if grid.shortName not in grids:
                             grids[grid.shortName] = grid.url
-
     return grids
 
