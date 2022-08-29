@@ -76,6 +76,15 @@ class test_utils(unittest.TestCase):
         context.addCoordinateOperation(crs_a, crs_b, proj_str)
         QgsProject.instance().setTransformContext(context)
 
+        # if there are no layers which use datum transformtaions nothing
+        # should be returned
+        grids = get_datum_shift_grids()
+        self.assertEqual(len(grids), 0)
+
+        layer = QgsVectorLayer("Point?crs=EPSG:27700", "", "memory")
+        QgsProject.instance().addMapLayer(layer)
+        QgsProject.instance().setCrs(crs_b)
+
         grids = get_datum_shift_grids()
         self.assertEqual(len(grids), 1)
         self.assertTrue("uk_os_OSTN15_NTv2_OSGBtoETRS.tif" in grids or "OSTN15_NTv2_OSGBtoETRS.gsb" in grids)
