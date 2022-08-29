@@ -1190,6 +1190,9 @@ def is_dark_theme():
     
     
 def get_datum_shift_grids():
+    """
+    Retrieves filenames of datum shift grids used by the project
+    """
     grids = dict()
     context = QgsProject.instance().transformContext()
 
@@ -1206,3 +1209,24 @@ def get_datum_shift_grids():
                             grids[grid.shortName] = grid.url
     return grids
 
+
+def copy_datum_shift_grids(project_dir):
+    """
+    Copies datum shift grids required by the project inside
+    project directory.
+    """
+    proj_dir = os.path.join(project_dir, "proj")
+    os.makedirs(proj_dir, exist_ok=True)
+
+    missed_files = list()
+
+    grids_dir = os.path.join(QgsApplication.qgisSettingsDirPath(), "proj")
+    grids = get_datum_shift_grids()
+    for grid in grids.keys():
+        if not os.path.exists(os.path.join(proj_dir, grid)):
+            if not os.path.exists(os.path.join(grids_dir, grid)):
+                missed_files.append(grid)
+                continue
+            shutil.copy(os.path.join(grids_dir, grid), os.path.join(proj_dir, grid))
+
+    return missed_files
