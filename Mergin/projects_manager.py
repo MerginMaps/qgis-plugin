@@ -162,8 +162,6 @@ class MerginProjectsManager(object):
             return
         if not self.check_project_server(project_dir):
             return
-        validator = MerginProjectValidator(mp)
-        validation_results = validator.run_checks()
         try:
             pull_changes, push_changes, push_changes_summary = self.mc.project_status(project_dir)
             dlg = ProjectStatusDialog(
@@ -171,7 +169,6 @@ class MerginProjectsManager(object):
                 push_changes,
                 push_changes_summary,
                 self.mc.has_writing_permissions(project_name),
-                validation_results,
                 mp,
             )
             # Sync button in the status dialog returns QDialog.Accepted

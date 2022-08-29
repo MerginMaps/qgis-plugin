@@ -12,6 +12,7 @@ from .utils import (
     has_schema_change,
     get_primary_keys,
     get_datum_shift_grids,
+    project_grids_directory,
     QGIS_DB_PROVIDERS,
     QGIS_NET_PROVIDERS,
 )
@@ -322,8 +323,9 @@ class MerginProjectValidator(object):
 
     def check_datum_shift_grids(self):
         grids = get_datum_shift_grids()
+        proj_dir = project_grids_directory(self.mp)
         for grid in grids.keys():
-            if not os.path.exists(os.path.join(self.qgis_proj_dir, "proj", grid)):
+            if proj_dir and not os.path.exists(os.path.join(proj_dir, grid)):
                 self.issues.append(MultipleLayersWarning(Warning.MISSING_DATUM_SHIFT_GRID))
 
 
