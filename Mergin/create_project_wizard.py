@@ -24,7 +24,7 @@ from .utils import (
     package_layer,
     PackagingError,
     save_current_project,
-    copy_datum_shift_grids,
+    package_datum_grids,
 )
 
 base_dir = os.path.dirname(__file__)
@@ -495,14 +495,17 @@ class NewMerginProjectWizard(QWizard):
             reload_project = True
 
             # copy datum shift grids
-            copy_datum_shift_grids(self.project_dir)
+            src = os.path.join(QgsProject.instance().homePath(), "proj")
+            dst = os.path.join(self.project_dir, "proj")
+            package_datum_grids(src, dst)
 
         elif self.init_page.cur_proj_no_pack_btn.isChecked():
             cur_proj = QgsProject.instance()
             cur_proj.write()
 
             # copy datum shift grids
-            copy_datum_shift_grids(self.project_dir)
+            src = os.path.join(QgsProject.instance().homePath(), "proj")
+            package_datum_grids(src, src)
 
             reload_project = True
 

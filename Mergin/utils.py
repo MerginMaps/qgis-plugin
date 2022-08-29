@@ -1215,18 +1215,34 @@ def copy_datum_shift_grids(project_dir):
     Copies datum shift grids required by the project inside
     project directory.
     """
-    proj_dir = os.path.join(project_dir, "proj")
-    os.makedirs(proj_dir, exist_ok=True)
+    os.makedirs(project_dir, exist_ok=True)
 
     missed_files = list()
 
     grids_dir = os.path.join(QgsApplication.qgisSettingsDirPath(), "proj")
     grids = get_datum_shift_grids()
     for grid in grids.keys():
-        if not os.path.exists(os.path.join(proj_dir, grid)):
-            if not os.path.exists(os.path.join(grids_dir, grid)):
+        src = os.path.join(grids_dir, grid)
+        dst = os.path.join(project_dir, grid)
+        if not os.path.exists(dst):
+            if not os.path.exists(src):
                 missed_files.append(grid)
                 continue
-            shutil.copy(os.path.join(grids_dir, grid), os.path.join(proj_dir, grid))
+            shutil.copy(src, dst)
 
     return missed_files
+
+
+def project_grids_directory(mp):
+    if mp:
+        return os.path.join(mp.dir, "proj")
+    return None
+
+
+def package_datum_grids(src, dst):
+    if os.path.exists(src):
+        shutil.copytree(src, dst)
+
+    if dst is not None:
+        os.makedirs(dst, exist_ok=True)
+        copy_datum_shift_grids(dst)

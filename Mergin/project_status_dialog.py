@@ -11,9 +11,11 @@ from qgis.PyQt.QtWidgets import (
     QLabel,
     QMessageBox,
 )
+from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem, QIcon
 from qgis.gui import QgsGui
 from qgis.core import Qgis, QgsApplication, QgsProject
+from qgis.utils import OverrideCursor
 from .diff_dialog import DiffViewerDialog
 from .validation import MultipleLayersWarning, warning_display_string, MerginProjectValidator
 from .utils import is_versioned_file, icon_path, unsaved_project_check, UnsavedChangesStrategy
@@ -38,61 +40,54 @@ class ProjectStatusDialog(QDialog):
         push_changes,
         push_changes_summary,
         has_write_permissions,
-        validation_results,
         mergin_project=None,
         parent=None,
     ):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
 
-        QgsGui.instance().enableAutoGeometryRestore(self)
+        with OverrideCursor(Qt.WaitCursor):
+            QgsGui.instance().enableAutoGeometryRestore(self)
 
-        self.btn_sync = QPushButton("Sync")
-        self.btn_sync.setIcon(QIcon(icon_path("refresh.svg")))
-        # add sync button with AcceptRole. If dialog accepted we will start
-        # sync, otherwise just close status dialog
-        self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.AcceptRole)
+            self.btn_sync = QPushButton("Sync")
+            self.btn_sync.setIcon(QIcon(icon_path("refresh.svg")))
+            # add sync button with AcceptRole. If dialog accepted we will start
+            # sync, otherwise just close status dialog
+            self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.AcceptRole)
 
-        self.btn_view_changes.setIcon(QIcon(icon_path("file-diff.svg")))
-        self.btn_view_changes.clicked.connect(self.show_changes)
+            self.btn_view_changes.setIcon(QIcon(icon_path("file-diff.svg")))
+            self.btn_view_changes.clicked.connect(self.show_changes)
 
-        self.txtWarnings.anchorClicked.connect(self.link_clicked)
+            self.txtWarnings.anchorClicked.connect(self.link_clicked)
 
-        self.validation_results = validation_results
-        self.mp = mergin_project
+            self.mp = mergin_project
 
-        self.model = QStandardItemModel()
-        self.model.setHorizontalHeaderLabels(["Status"])
-        self.treeStatus.setModel(self.model)
+            self.model = QStandardItemModel()
+            self.model.setHorizontalHeaderLabels(["Status"])
+            self.treeStatus.setModel(self.model)
 
-        self.check_any_changes(pull_changes, push_changes)
-        self.add_content(pull_changes, "Server Changes", True)
-        self.add_content(push_changes, "Local Changes", False, push_changes_summary)
-        self.treeStatus.expandAll()
-        self.changes_summary = push_changes_summary
+            self.check_any_changes(pull_changes, push_changes)
+            self.add_content(pull_changes, "Server Changes", True)
+            self.add_content(push_changes, "Local Changes", False, push_changes_summary)
+            self.treeStatus.expandAll()
+            self.changes_summary = push_changes_summary
 
-        try:
-            self.module = importlib.import_module("Mergin.repair")
-        except ImportError:
-            self.module = None
+            has_files_to_replace = any(
+                ["diff" not in file and is_versioned_file(file["path"]) for file in push_changes["updated"]]
+            )
+            info_text = self._get_info_text(has_files_to_replace, has_write_permissions, self.mp.has_unfinished_pull())
+            for msg in info_text:
+                lbl = QLabel(msg)
+                lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+                lbl.setWordWrap(True)
+                self.ui.messageBar.pushWidget(lbl, Qgis.Warning)
 
-        if not self.validation_results:
-            self.ui.lblWarnings.hide()
-            self.ui.txtWarnings.hide()
-            self.btn_sync.setStyleSheet("background-color: #90ee90")
-        else:
-            self.show_validation_results()
-            self.btn_sync.setStyleSheet("background-color: #ffc800")
+            self.validate_project()
 
-        has_files_to_replace = any(
-            ["diff" not in file and is_versioned_file(file["path"]) for file in push_changes["updated"]]
-        )
-        info_text = self._get_info_text(has_files_to_replace, has_write_permissions, self.mp.has_unfinished_pull())
-        for msg in info_text:
-            lbl = QLabel(msg)
-            lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-            lbl.setWordWrap(True)
-            self.ui.messageBar.pushWidget(lbl, Qgis.Warning)
+            try:
+                self.module = importlib.import_module("Mergin.repair")
+            except ImportError:
+                self.module = None
 
     def _get_info_text(self, has_files_to_replace, has_write_permissions, has_unfinished_pull):
         msg = []
@@ -166,7 +161,7 @@ class ProjectStatusDialog(QDialog):
         item.setIcon(QIcon(path))
         return item
 
-    def show_validation_results(self):
+    def show_validation_results(self, results):
         map_layers = QgsProject.instance().mapLayers()
 
         html = []
@@ -174,7 +169,7 @@ class ProjectStatusDialog(QDialog):
         # separate MultipleLayersWarning and SingleLayerWarning items
         groups = dict()
         for k, v in groupby(
-            self.validation_results, key=lambda x: "multi" if isinstance(x, MultipleLayersWarning) else "single"
+            results, key=lambda x: "multi" if isinstance(x, MultipleLayersWarning) else "single"
         ):
             groups[k] = list(v)
 
@@ -229,20 +224,23 @@ class ProjectStatusDialog(QDialog):
 
         function_name = url.toString().strip("#")
         if hasattr(self.module, function_name):
-            ok, msg = getattr(self.module, function_name)(self.mp)
-            if not ok:
-                self.ui.messageBar.pushMessage("Mergin", f"Failed to fix issue: {message}", Qgis.Warning)
+            msg = getattr(self.module, function_name)(self.mp)
+            if msg is not None:
+                self.ui.messageBar.pushMessage("Mergin", f"Failed to fix issue: {msg}", Qgis.Warning)
                 return
 
-            validator = MerginProjectValidator(self.mp)
-            self.validation_results = validator.run_checks()
-            if not self.validation_results:
-                self.ui.lblWarnings.hide()
-                self.ui.txtWarnings.hide()
-                self.btn_sync.setStyleSheet("background-color: #90ee90")
-            else:
-                self.show_validation_results()
-                self.btn_sync.setStyleSheet("background-color: #ffc800")
+            self.validate_project()
         else:
             self.ui.messageBar.pushMessage("Mergin", f"Method {function_name} not found", Qgis.Warning)
             return
+
+    def validate_project(self):
+        validator = MerginProjectValidator(self.mp)
+        results = validator.run_checks()
+        if not results:
+            self.ui.lblWarnings.hide()
+            self.ui.txtWarnings.hide()
+            self.btn_sync.setStyleSheet("background-color: #90ee90")
+        else:
+            self.show_validation_results(results)
+            self.btn_sync.setStyleSheet("background-color: #ffc800")
