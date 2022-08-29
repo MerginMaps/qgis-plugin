@@ -9,6 +9,7 @@ from qgis.core import (
     QgsDatumTransform,
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransformContext,
+    QgsVectorLayer,
 )
 
 from qgis.testing import start_app, unittest
