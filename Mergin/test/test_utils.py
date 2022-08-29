@@ -78,6 +78,7 @@ class test_utils(unittest.TestCase):
 
         grids = get_datum_shift_grids()
         self.assertEqual(len(grids), 1)
+        self.assertTrue("uk_os_OSTN15_NTv2_OSGBtoETRS.tif" in grids or "OSTN15_NTv2_OSGBtoETRS.gsb" in grids)
 
 
 if __name__ == "__main__":

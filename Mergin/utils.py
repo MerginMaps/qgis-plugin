@@ -43,6 +43,7 @@ from qgis.core import (
     QgsProviderRegistry,
     QgsSettings,
     QgsDatumTransform,
+    QgsProjUtils,
 )
 
 from .mergin.utils import int_version
@@ -1191,55 +1192,71 @@ def is_dark_theme():
     
 def get_datum_shift_grids():
     """
-    Retrieves filenames of datum shift grids used by the project
+    Retrieves filenames and download URLs of datum shift grids used by the project.
+    Returns dictionary with grid file name as a key and download URL as a value.
     """
     grids = dict()
+    crs_list = list()
+    project_crs = QgsProject.instance().crs()
     context = QgsProject.instance().transformContext()
+    for layer in QgsProject.instance().mapLayers().values():
+        layer_crs = layer.crs()
+        if layer_crs not in crs_list:
+            crs_list.append(layer_crs)
 
-    for k, v in context.coordinateOperations().items():
-        src = QgsCoordinateReferenceSystem(k[0])
-        dst = QgsCoordinateReferenceSystem(k[1])
-        usedOperation = context.calculateCoordinateOperation(src, dst)
-        if usedOperation:
-            operations = QgsDatumTransform.operations(src, dst)
-            for op in operations:
-                if op.proj == usedOperation and len(op.grids) > 0:
-                    for grid in op.grids:
-                        if grid.shortName not in grids:
-                            grids[grid.shortName] = grid.url
+            usedOperation = context.calculateCoordinateOperation(layer_crs, project_crs)
+            if usedOperation:
+                operations = QgsDatumTransform.operations(layer_crs, project_crs)
+                for op in operations:
+                    if op.proj == usedOperation and len(op.grids) > 0:
+                        for grid in op.grids:
+                            if grid.shortName not in grids:
+                                grids[grid.shortName] = grid.url
     return grids
 
 
-def copy_datum_shift_grids(project_dir):
+def copy_datum_shift_grids(grids_dir):
     """
-    Copies datum shift grids required by the project inside
-    project directory.
+    Copies datum shift grids required by the project inside MerginMaps "proj" directory.
+    Returns list of files which were not copied or empty list if all grid files were copied.
     """
-    os.makedirs(project_dir, exist_ok=True)
-
     missed_files = list()
-
-    grids_dir = os.path.join(QgsApplication.qgisSettingsDirPath(), "proj")
+    os.makedirs(grids_dir, exist_ok=True)
     grids = get_datum_shift_grids()
     for grid in grids.keys():
-        src = os.path.join(grids_dir, grid)
-        dst = os.path.join(project_dir, grid)
-        if not os.path.exists(dst):
+        copy_ok = False
+        for p in QgsProjUtils.searchPaths():
+            src = os.path.join(p, grid)
             if not os.path.exists(src):
-                missed_files.append(grid)
                 continue
-            shutil.copy(src, dst)
+
+            dst = os.path.join(grids_dir, grid)
+            if not os.path.exists(dst):
+                shutil.copy(src, dst)
+                copy_ok = True
+
+        if not copy_ok:
+            missed_files.append(grid)
 
     return missed_files
 
 
 def project_grids_directory(mp):
+    """
+    Returns location of the "proj" directory inside MerginMaps project root directory
+    """
     if mp:
         return os.path.join(mp.dir, "proj")
     return None
 
 
 def package_datum_grids(src, dst):
+    """
+    Package datum shift grids used by the project:
+     - if there is "proj" directory with grids in the project home, it will be copied
+    to the destination
+     - copy if necessary any missed datum shift grid files
+    """
     if os.path.exists(src):
         shutil.copytree(src, dst)
 

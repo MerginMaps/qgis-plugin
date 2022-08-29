@@ -168,22 +168,19 @@ class ProjectStatusDialog(QDialog):
 
         # separate MultipleLayersWarning and SingleLayerWarning items
         groups = dict()
-        for k, v in groupby(
-            results, key=lambda x: "multi" if isinstance(x, MultipleLayersWarning) else "single"
-        ):
+        for k, v in groupby(results, key=lambda x: "multi" if isinstance(x, MultipleLayersWarning) else "single"):
             groups[k] = list(v)
 
         # first add MultipleLayersWarnings. They are displayed using warning
-        # string as a title and list of affected layers
+        # string as a title and list of affected layers/items
         if "multi" in groups:
             for w in groups["multi"]:
                 issue = warning_display_string(w.id)
                 html.append(f"<h3>{issue}</h3>")
-                if w.layers:
+                if w.items:
                     items = []
-                    for lid in sorted(w.layers, key=lambda x: map_layers[x].name()):
-                        layer = map_layers[lid]
-                        items.append(f"<li>{layer.name()}</li>")
+                    for i in w.items:
+                        items.append(f"<li>{i}</li>")
                     html.append(f"<ul>{''.join(items)}</ul>")
 
         if "single" in groups:

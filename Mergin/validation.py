@@ -56,7 +56,7 @@ class MultipleLayersWarning:
 
     def __init__(self, warning_id):
         self.id = warning_id
-        self.layers = list()
+        self.items = list()
 
 
 class SingleLayerWarning:
@@ -191,9 +191,9 @@ class MerginProjectValidator(object):
                 # might be vector tiles - no provider name
                 continue
             if dp_name in QGIS_NET_PROVIDERS + QGIS_DB_PROVIDERS:
-                w.layers.append(lid)
+                w.items.append(layer.name())
 
-        if w.layers:
+        if w.items:
             self.issues.append(w)
 
     def check_attachment_widget(self):
@@ -322,11 +322,15 @@ class MerginProjectValidator(object):
                 self.issues.append(MultipleLayersWarning(Warning.MERGIN_SNAPPING_NOT_ENABLED))
 
     def check_datum_shift_grids(self):
+        w = MultipleLayersWarning(Warning.MISSING_DATUM_SHIFT_GRID)
         grids = get_datum_shift_grids()
         proj_dir = project_grids_directory(self.mp)
         for grid in grids.keys():
             if proj_dir and not os.path.exists(os.path.join(proj_dir, grid)):
-                self.issues.append(MultipleLayersWarning(Warning.MISSING_DATUM_SHIFT_GRID))
+                w.items.append(grid)
+
+        if w.items:
+            self.issues.append(w)
 
 
 def warning_display_string(warning_id):
@@ -375,4 +379,4 @@ def warning_display_string(warning_id):
     elif warning_id == Warning.MERGIN_SNAPPING_NOT_ENABLED:
         return "Snapping is currently enabled in this QGIS project, but not enabled in Mergin Maps Input"
     elif warning_id == Warning.MISSING_DATUM_SHIFT_GRID:
-        return "Required datum shift grid is missing. <a href='#fix_datum_shift_grids'>Fix issue.</a>"
+        return "Required datum shift grid is missing, reprojection may not work correctly. <a href='#fix_datum_shift_grids'>Fix the issue.</a>"
