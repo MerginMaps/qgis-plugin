@@ -373,4 +373,4 @@ def warning_display_string(warning_id):
     elif warning_id == Warning.MERGIN_SNAPPING_NOT_ENABLED:
         return "Snapping is currently enabled in this QGIS project, but not enabled in Mergin Maps Input"
     elif warning_id == Warning.MISSING_DATUM_SHIFT_GRID:
-        return "Required datum shift grid is missed. <a href='#fix_datum_shift_grids'>Fix.</a>"
+        return "Required datum shift grid is missing. <a href='#fix_datum_shift_grids'>Fix issue.</a>"
