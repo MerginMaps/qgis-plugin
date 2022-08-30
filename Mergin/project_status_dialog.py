@@ -1,6 +1,5 @@
 import os
 from itertools import groupby
-import importlib
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import (
@@ -19,6 +18,7 @@ from qgis.utils import OverrideCursor
 from .diff_dialog import DiffViewerDialog
 from .validation import MultipleLayersWarning, warning_display_string, MerginProjectValidator
 from .utils import is_versioned_file, icon_path, unsaved_project_check, UnsavedChangesStrategy
+from .repair import fix_datum_shift_grids
 
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_status_dialog.ui")
@@ -83,11 +83,6 @@ class ProjectStatusDialog(QDialog):
                 self.ui.messageBar.pushWidget(lbl, Qgis.Warning)
 
             self.validate_project()
-
-            try:
-                self.module = importlib.import_module("Mergin.repair")
-            except ImportError:
-                self.module = None
 
     def _get_info_text(self, has_files_to_replace, has_write_permissions, has_unfinished_pull):
         msg = []
@@ -215,21 +210,14 @@ class ProjectStatusDialog(QDialog):
         dlg_diff_viewer.exec_()
 
     def link_clicked(self, url):
-        if self.module is None:
-            self.ui.messageBar.pushMessage("Mergin", f"Repair module not found", Qgis.Warning)
-            return
-
-        function_name = url.toString().strip("#")
-        if hasattr(self.module, function_name):
-            msg = getattr(self.module, function_name)(self.mp)
+        function_name = url.toString()
+        if function_name == "#fix_datum_shift_grids":
+            msg = fix_datum_shift_grids(self.mp)
             if msg is not None:
                 self.ui.messageBar.pushMessage("Mergin", f"Failed to fix issue: {msg}", Qgis.Warning)
                 return
 
-            self.validate_project()
-        else:
-            self.ui.messageBar.pushMessage("Mergin", f"Method {function_name} not found", Qgis.Warning)
-            return
+        self.validate_project()
 
     def validate_project(self):
         validator = MerginProjectValidator(self.mp)
