@@ -15,6 +15,7 @@ import glob
 
 from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
+from qgis.PyQt.QtGui import QPalette
 
 from qgis.core import (
     NULL,
@@ -998,9 +999,7 @@ def mergin_project_local_path(project_name=None):
 
 
 def icon_path(icon_filename, tabler_icon=True):
-    settings = QgsSettings()
-    theme_name = settings.value("UI/UITheme", "default")
-    icon_set = "white" if theme_name != "default" else "default"
+    icon_set = "white" if is_dark_theme() else "default"
     if tabler_icon:
         ipath = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "images", icon_set, "tabler_icons", icon_filename
@@ -1169,3 +1168,21 @@ def test_server_connection(url, username, password):
         result = False, f"<font color=red> Connection failed, {str(e)} </font>"
 
     return result
+
+
+def is_dark_theme():
+    """
+    Checks whether dark theme is used:
+    - first check theme used by QGIS and if it is "default" then
+    - try to detect if OS-level theme is dark
+    """
+    settings = QSettings()
+    theme_name = settings.value("UI/UITheme", "default")
+    if theme_name != "default":
+        return True
+
+    # check whether system-wide theme is dark
+    palette = QgsApplication.instance().palette()
+    bg_color = palette.color(QPalette.Window)
+    brightness = (bg_color.red() * 299 + bg_color.green() * 587 + bg_color.blue() * 114) / 1000
+    return brightness < 155

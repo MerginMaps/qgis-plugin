@@ -25,6 +25,7 @@ from .utils import (
     get_qgis_proxy_config,
     test_server_connection,
     icon_path,
+    is_dark_theme,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_config.ui")
@@ -35,8 +36,7 @@ class ConfigurationDialog(QDialog):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
         settings = QSettings()
-        theme_name = settings.value("UI/UITheme", "default")
-        if theme_name != "default":
+        if is_dark_theme():
             self.ui.label.setText(
                 "Don't have an account yet? <a style='color:#88b2f5' href='https://app.merginmaps.com/register'>Sign up</a> now!"
             )
