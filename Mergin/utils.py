@@ -1176,7 +1176,7 @@ def is_dark_theme():
     - first check theme used by QGIS and if it is "default" then
     - try to detect if OS-level theme is dark
     """
-    settings = QSettings()
+    settings = QgsSettings()
     theme_name = settings.value("UI/UITheme", "default")
     if theme_name != "default":
         return True
