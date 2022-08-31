@@ -495,17 +495,14 @@ class NewMerginProjectWizard(QWizard):
             reload_project = True
 
             # copy datum shift grids
-            src = os.path.join(QgsProject.instance().homePath(), "proj")
-            dst = os.path.join(self.project_dir, "proj")
-            package_datum_grids(src, dst)
+            package_datum_grids(os.path.join(self.project_dir, "proj"))
 
         elif self.init_page.cur_proj_no_pack_btn.isChecked():
             cur_proj = QgsProject.instance()
             cur_proj.write()
 
             # copy datum shift grids
-            src = os.path.join(QgsProject.instance().homePath(), "proj")
-            package_datum_grids(src, src)
+            package_datum_grids(os.path.join(QgsProject.instance().homePath(), "proj"))
 
             reload_project = True
 
