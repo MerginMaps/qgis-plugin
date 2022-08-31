@@ -1234,6 +1234,7 @@ def copy_datum_shift_grids(grids_dir):
             if not os.path.exists(dst):
                 shutil.copy(src, dst)
                 copy_ok = True
+                break
 
         if not copy_ok:
             missed_files.append(grid)
@@ -1250,16 +1251,11 @@ def project_grids_directory(mp):
     return None
 
 
-def package_datum_grids(src, dst):
+def package_datum_grids(dest_dir):
     """
-    Package datum shift grids used by the project:
-     - if there is "proj" directory with grids in the project home, it will be copied
-    to the destination
-     - copy if necessary any missed datum shift grid files
+    Package datum shift grids used by the project: copy all necessary datum shift grids
+    to the given path
     """
-    if os.path.exists(src):
-        shutil.copytree(src, dst)
-
-    if dst is not None:
-        os.makedirs(dst, exist_ok=True)
-        copy_datum_shift_grids(dst)
+    if dest_dir is not None:
+        os.makedirs(dest_dir, exist_ok=True)
+        copy_datum_shift_grids(dest_dir)

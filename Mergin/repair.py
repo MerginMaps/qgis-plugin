@@ -10,7 +10,7 @@ def fix_datum_shift_grids(mp):
     copied.
     """
     if mp is None:
-        return "Invalid MerginMaps project"
+        return "Invalid Mergin Maps project"
 
     grids_directory = project_grids_directory(mp)
     if grids_directory is None:
