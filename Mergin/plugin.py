@@ -103,7 +103,7 @@ class MerginPlugin:
         self.create_manager()
 
         self.add_action(
-            "mm_icon_positive_no_padding.svg",
+            icon_path("mm_icon_positive_no_padding.svg"),
             text="Mergin Maps",
             callback=self.open_configured_url,
             add_to_menu=True,
