@@ -502,7 +502,7 @@ class NewMerginProjectWizard(QWizard):
             cur_proj.write()
 
             # copy datum shift grids
-            package_datum_grids(os.path.join(QgsProject.instance().homePath(), "proj"))
+            package_datum_grids(os.path.join(self.project_dir, "proj"))
 
             reload_project = True
 
