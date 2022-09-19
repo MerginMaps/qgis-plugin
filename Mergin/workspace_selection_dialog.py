@@ -25,7 +25,7 @@ class WorkspaceSelectionDialog(QDialog):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
 
-        self.ui.label_logo.setPixmap(QPixmap(icon_path("mm_logo.svg", False)))
+        self.ui.label_logo.setPixmap(QPixmap(icon_path("mm_icon_positive_no_padding.svg", True)))
         self.workspace = None
         # TODO: use list view and filter model based on lineEdit
         self.ui.workspace_list.addItems(workspaces)
