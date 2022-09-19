@@ -363,15 +363,15 @@ class MerginProjectsManager(object):
 
     def get_mergin_browser_groups(self):
         """
-        Return browser tree items of Mergin Maps provider. These should be the 3 projects groups, or Error item, if
+        Return browser tree items of Mergin Maps provider. These should be the 2 projects groups, or Error item, if
         the plugin is not properly configured.
         """
         browser_model = self.iface.browserModel()
         root_idx = browser_model.findPath("Mergin Maps")
         if not root_idx.isValid():
             return {}
-        group_items = [browser_model.dataItem(browser_model.index(i, 0, parent=root_idx)) for i in range(3)]
-        return {i.path().replace("/Mergin", ""): i for i in group_items}
+        group_items = [browser_model.dataItem(browser_model.index(i, 0, parent=root_idx)) for i in range(2)]
+        return {i.path().replace("/Mergin", ""): i for i in group_items if i}
 
     def report_conflicts(self, conflicts):
         """

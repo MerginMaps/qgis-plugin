@@ -468,7 +468,11 @@ class MerginRemoteProjectItem(QgsDataItem):
         self.project_name = posixpath.join(
             project["namespace"], project["name"]
         )  # we need posix path for server API calls
-        QgsDataItem.__init__(self, QgsDataItem.Collection, parent, self.project_name, "/Mergin/" + self.project_name)
+        display_name = project["name"]
+        group_items = project_manager.get_mergin_browser_groups()
+        if group_items.get("Shared with me") == parent:
+            display_name = self.project_name
+        QgsDataItem.__init__(self, QgsDataItem.Collection, parent, display_name, "/Mergin/" + self.project_name)
         self.path = None
         self.setSortKey(f"1 {self.name()}")
         self.setIcon(QIcon(icon_path("cloud.svg")))
@@ -593,7 +597,11 @@ class MerginLocalProjectItem(QgsDirectoryItem):
     def __init__(self, parent, project, project_manager):
         self.project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
         self.path = mergin_project_local_path(self.project_name)
-        QgsDirectoryItem.__init__(self, parent, self.project_name, self.path, "/Mergin/" + self.project_name)
+        display_name = project["name"]
+        group_items = project_manager.get_mergin_browser_groups()
+        if group_items.get("Shared with me") == parent:
+            display_name = self.project_name
+        QgsDirectoryItem.__init__(self, parent, display_name, self.path, "/Mergin/" + self.project_name)
         self.setSortKey(f"0 {self.name()}")
         self.project = project
         self.project_manager = project_manager
