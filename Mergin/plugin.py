@@ -81,7 +81,7 @@ class MerginPlugin:
         self.mc = None
         self.manager = None
         self.current_workspace = None
-        self.workspaces = []
+        self.server_workspaces = []
         self.provider = MerginProvider()
         self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
         self.toolbar.setToolTip("Mergin Maps Toolbar")
@@ -110,7 +110,6 @@ class MerginPlugin:
         self.initProcessing()
 
         self.create_manager()
-        self.chose_active_workspace()
 
         self.add_action(
             icon_path("mm_icon_positive_no_padding.svg"),
@@ -207,6 +206,7 @@ class MerginPlugin:
         try:
             if self.mc is None:
                 self.mc = create_mergin_client()
+            self.chose_active_workspace()
             self.manager = MerginProjectsManager(self.mc)
         except (URLError, ClientError, LoginError):
             error = "Plugin not configured or \nQGIS master password not set up"
@@ -228,7 +228,6 @@ class MerginPlugin:
     def on_config_changed(self):
         """Called when plugin config (connection settings) were changed."""
         self.create_manager()
-        self.chose_active_workspace(use_gui_if_fail=True)
         self.enable_toolbar_actions()
         self.post_login()
 
@@ -277,24 +276,23 @@ class MerginPlugin:
         try:
             response = self.mc.workspaces_list()
             workspace_names = [w["name"] for w in response]
-            self.workspaces = workspace_names
+            self.server_workspaces = workspace_names
             return
         except (URLError, ClientError) as e:
             pass  # server is old, fall back to collect workspace names
         ns = self.mc.global_namespace()
 
         if ns:
-            self.workspaces = [ns]
+            self.server_workspaces = [ns]
         else:
-            self.workspaces = [self.mc.username()]
+            self.server_workspaces = [self.mc.username()]
 
     def set_current_workspace(self, workspace):
         settings = QSettings()
         self.current_workspace = workspace
         settings.setValue("Mergin/lastUsedWorkSpace", workspace)
-        self.create_manager()
         if self.has_browser_item():
-            self.data_item_provider.root_item.reload()
+            self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager)
 
     def chose_active_workspace(self, use_gui_if_fail=False):
         server_type = self.mc.server_type()
@@ -308,16 +306,17 @@ class MerginPlugin:
         self.update_available_workspaces()
         settings = QSettings()
         last_workspace = settings.value("Mergin/lastUsedWorkSpace", "", str)
-        if last_workspace in self.workspaces:
+        if last_workspace in self.server_workspaces:
             workspace = last_workspace
-        elif len(self.workspaces) == 1 or not use_gui_if_fail:
-            workspace = self.workspaces[0]
+        elif len(self.server_workspaces) == 1 or not use_gui_if_fail:
+            workspace = self.server_workspaces[0]
         else:
-            dlg = WorkspaceSelectionDialog(self.workspaces)
+            dlg = WorkspaceSelectionDialog(self.server_workspaces)
             while not dlg.exec_():
                 pass
             workspace = dlg.getWorkspace()
-        self.set_current_workspace(workspace)
+            settings.setValue("Mergin/lastUsedWorkSpace", workspace)
+        self.current_workspace = workspace
 
     def post_login(self):
         """Groups actions that needs to be done when auth information changes"""
@@ -372,7 +371,7 @@ class MerginPlugin:
     def switch_workspace(self):
         """Open new Switch workspace dialog"""
         self.update_available_workspaces()
-        dlg = WorkspaceSelectionDialog(self.workspaces)
+        dlg = WorkspaceSelectionDialog(self.server_workspaces)
         if not dlg.exec_():
             return
         workspace = dlg.getWorkspace()
@@ -766,8 +765,8 @@ class MerginRootItem(QgsDataCollectionItem):
         self.mc = mc
         self.project_manager = manager
         self.error = err
-        self.workspace = self.plugin.current_workspace
         self.projects = []
+        self.workspace = self.plugin.current_workspace
         self.depopulate()
 
     def createChildren(self):
