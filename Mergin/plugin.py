@@ -303,7 +303,7 @@ class MerginPlugin:
     def set_current_workspace(self, workspace):
         settings = QSettings()
         self.current_workspace = workspace
-        settings.setValue("Mergin/lastUsedWorkSpace", workspace)
+        settings.setValue("Mergin/lastUsedWorkspace", str(workspace))
         if self.has_browser_item():
             self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager)
 
@@ -318,7 +318,7 @@ class MerginPlugin:
 
         self.update_available_workspaces()
         settings = QSettings()
-        last_workspace = settings.value("Mergin/lastUsedWorkSpace", "", str)
+        last_workspace = settings.value("Mergin/lastUsedWorkspace", "", str)
         if not self.server_workspaces:
             self.show_no_workspaces_dialog()
             workspace = None
@@ -331,7 +331,7 @@ class MerginPlugin:
             while not dlg.exec_():
                 pass
             workspace = dlg.getWorkspace()
-            settings.setValue("Mergin/lastUsedWorkSpace", workspace)
+            settings.setValue("Mergin/lastUsedWorkspace", str(workspace))
         self.current_workspace = workspace
 
     def post_login(self):
