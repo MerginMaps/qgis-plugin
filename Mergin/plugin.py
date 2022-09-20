@@ -327,7 +327,7 @@ class MerginPlugin:
         elif len(self.server_workspaces) == 1 or not use_gui_if_fail:
             workspace = self.server_workspaces[0]
         else:
-            dlg = WorkspaceSelectionDialog(self.server_workspaces)
+            dlg = WorkspaceSelectionDialog(self)
             while not dlg.exec_():
                 pass
             workspace = dlg.getWorkspace()
@@ -392,7 +392,7 @@ class MerginPlugin:
             self.current_workspace = None
             return
 
-        dlg = WorkspaceSelectionDialog(self.server_workspaces)
+        dlg = WorkspaceSelectionDialog(self)
         if not dlg.exec_():
             return
 

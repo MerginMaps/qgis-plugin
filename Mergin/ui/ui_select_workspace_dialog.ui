@@ -21,8 +21,24 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="0">
-    <widget class="QListWidget" name="workspace_list"/>
+   <item row="4" column="0" alignment="Qt::AlignHCenter">
+    <widget class="QPushButton" name="manage_workspaces">
+     <property name="minimumSize">
+      <size>
+       <width>200</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>200</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="text">
+      <string>Manage Workspaces</string>
+     </property>
+    </widget>
    </item>
    <item row="0" column="0">
     <widget class="QLabel" name="label_logo">
@@ -40,15 +56,21 @@
      </property>
     </widget>
    </item>
+   <item row="2" column="0">
+    <widget class="QgsFilterLineEdit" name="line_edit"/>
+   </item>
    <item row="3" column="0">
-    <widget class="QPushButton" name="manage_workspaces">
-     <property name="text">
-      <string>Manage Workspaces</string>
-     </property>
-    </widget>
+    <widget class="QListView" name="workspace_list"/>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsFilterLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>qgsfilterlineedit.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
