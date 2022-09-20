@@ -919,7 +919,7 @@ class MerginRootItem(QgsDataCollectionItem):
 
     def reload(self):
         self.projects = []
-        self.refresh()
+        self.depopulate()
 
     def actions(self, parent):
         action_configure = QAction(QIcon(icon_path("settings.svg")), "Configure", parent)
