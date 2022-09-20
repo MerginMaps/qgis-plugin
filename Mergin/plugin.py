@@ -64,7 +64,8 @@ os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
 
 try:
     import pydevd_pycharm
-    pydevd_pycharm.settrace('localhost', port=6667, stdoutToServer=True, stderrToServer=True, suspend=False)
+
+    pydevd_pycharm.settrace("localhost", port=6667, stdoutToServer=True, stderrToServer=True, suspend=False)
 except:
     pass
 
@@ -749,7 +750,15 @@ class MerginRootItem(QgsDataCollectionItem):
 
     local_project_removed = pyqtSignal()
 
-    def __init__(self, parent=None, name="Mergin Maps", flag=None, icon="mm_icon_positive_no_padding.svg", order=None, plugin=None):
+    def __init__(
+        self,
+        parent=None,
+        name="Mergin Maps",
+        flag=None,
+        icon="mm_icon_positive_no_padding.svg",
+        order=None,
+        plugin=None,
+    ):
         providerKey = "Mergin Maps"
         if name != providerKey:
             providerKey = "/Mergin" + name
@@ -836,7 +845,11 @@ class MerginRootItem(QgsDataCollectionItem):
             return [error_item]
         try:
             resp = self.project_manager.mc.paginated_projects_list(
-                flag=self.filter, namespace=self.workspace, page=page, per_page=per_page, order_params="namespace_asc,name_asc"
+                flag=self.filter,
+                namespace=self.workspace,
+                page=page,
+                per_page=per_page,
+                order_params="namespace_asc,name_asc",
             )
             self.projects += resp["projects"]
             self.total_projects_count = int(resp["count"]) if is_number(resp["count"]) else 0
@@ -869,7 +882,6 @@ class MerginRootItem(QgsDataCollectionItem):
         else:
             name = f"{self.base_name} [{self.workspace}]"
             self.setName(name)
-
 
     def fetch_more(self):
         """Fetch another page of projects and add them to the group item."""
