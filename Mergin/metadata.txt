@@ -11,7 +11,14 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2022.5
+changelog=2022.6
+  - Add validation for required datum shift grids (#444)
+  - Package required datum shift grids (#184)
+  - Better support for dark themes (#434)
+  - Add support for packaging of local MBTiles (#452)
+  - Fix packaging of rasters (#441)
+  - Add warning about unsaved changes in the project before showing local changes (#432)
+  <p>2022.5
   - Add project setting to control snapping in Mergin Maps Input
   - Add validations for snapping configuration in Mergin Maps project
   - Fix Processing tools to visualize local changes and changes between two versions of the layer
