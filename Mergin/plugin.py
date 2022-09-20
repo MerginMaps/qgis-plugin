@@ -925,7 +925,7 @@ class MerginRootItem(QgsDataCollectionItem):
         action_configure = QAction(QIcon(icon_path("settings.svg")), "Configure", parent)
         action_configure.triggered.connect(self.plugin.configure)
 
-        action_refresh = QAction(QIcon(icon_path("refresh.svg")), "Refresh", parent)
+        action_refresh = QAction(QIcon(icon_path("repeat.svg")), "Refresh", parent)
         action_refresh.triggered.connect(self.reload)
 
         action_create = QAction(QIcon(icon_path("square-plus.svg")), "Create new project", parent)
@@ -934,7 +934,7 @@ class MerginRootItem(QgsDataCollectionItem):
         action_find = QAction(QIcon(icon_path("search.svg")), "Find project", parent)
         action_find.triggered.connect(self.plugin.find_project)
 
-        action_switch = QAction(QIcon(icon_path("repeat.svg")), "Switch workspace", parent)
+        action_switch = QAction(QIcon(icon_path("replace.svg")), "Switch workspace", parent)
         action_switch.triggered.connect(self.plugin.switch_workspace)
 
         action_explore = QAction(QIcon(icon_path("explore.svg")), "Explore public projects", parent)
