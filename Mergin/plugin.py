@@ -273,6 +273,18 @@ class MerginPlugin:
             self.on_config_changed()
             self.show_browser_panel()
 
+    def show_no_workspaces_dialog(self):
+        msg = (
+            "Workspace is a place to store your projects and share them with your colleagues. "
+            "Click on the button below to create one. \n\n"
+            "A minimum of one workspace is required to use Mergin Maps."
+        )
+        msg_box = QMessageBox(QMessageBox.Critical, "You do not have any workspace", msg, QMessageBox.Close)
+        create_button = msg_box.addButton("Create workspace", msg_box.ActionRole)
+        create_button.clicked.disconnect()
+        create_button.clicked.connect(self.open_configured_url)
+        msg_box.exec_()
+
     def update_available_workspaces(self):
         try:
             response = self.mc.workspaces_list()
@@ -307,7 +319,10 @@ class MerginPlugin:
         self.update_available_workspaces()
         settings = QSettings()
         last_workspace = settings.value("Mergin/lastUsedWorkSpace", "", str)
-        if last_workspace in self.server_workspaces:
+        if not self.server_workspaces:
+            self.show_no_workspaces_dialog()
+            workspace = None
+        elif last_workspace in self.server_workspaces:
             workspace = last_workspace
         elif len(self.server_workspaces) == 1 or not use_gui_if_fail:
             workspace = self.server_workspaces[0]
@@ -372,9 +387,15 @@ class MerginPlugin:
     def switch_workspace(self):
         """Open new Switch workspace dialog"""
         self.update_available_workspaces()
+        if not self.server_workspaces:
+            self.show_no_workspaces_dialog()
+            self.current_workspace = None
+            return
+
         dlg = WorkspaceSelectionDialog(self.server_workspaces)
         if not dlg.exec_():
             return
+
         workspace = dlg.getWorkspace()
         self.set_current_workspace(workspace)
 
@@ -841,6 +862,10 @@ class MerginRootItem(QgsDataCollectionItem):
         """Get paginated projects list from Mergin Maps service. If anything goes wrong, return an error item."""
         if self.project_manager is None:
             error_item = QgsErrorItem(self, "Failed to log in. Please check the configuration", "/Mergin/error")
+            sip.transferto(error_item, self)
+            return [error_item]
+        if not self.workspace:
+            error_item = QgsErrorItem(self, "No workspace available", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
         try:
