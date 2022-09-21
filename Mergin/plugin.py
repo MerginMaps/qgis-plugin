@@ -560,7 +560,12 @@ class MerginRemoteProjectItem(QgsDataItem):
 
     def clone_remote_project(self):
         user_info = self.mc.user_info()
-        dlg = CloneProjectDialog(username=user_info["username"], user_organisations=user_info.get("organisations", []))
+        try:
+            workspaces = self.mc.workspaces_list()
+        except (URLError, ClientError) as e:
+            workspaces = []  # todo: handle bad server response?
+            # todo: handle CE servers (global namespace)
+        dlg = CloneProjectDialog(user_info=user_info, workspaces=workspaces)
         if not dlg.exec_():
             return  # cancelled
         try:
@@ -712,7 +717,12 @@ class MerginLocalProjectItem(QgsDirectoryItem):
 
     def clone_remote_project(self):
         user_info = self.mc.user_info()
-        dlg = CloneProjectDialog(username=user_info["username"], user_organisations=user_info.get("organisations", []))
+        try:
+            workspaces = self.mc.workspaces_list()
+        except (URLError, ClientError) as e:
+            workspaces = []  # todo: handle bad server response?
+        dlg = CloneProjectDialog(user_info=user_info, workspaces=workspaces)
+
         if not dlg.exec_():
             return  # cancelled
         try:
@@ -805,7 +815,6 @@ class MerginRootItem(QgsDataCollectionItem):
         self.error = err
         self.projects = []
         self.workspace = self.plugin.current_workspace
-        self.depopulate()
         self.refresh()
 
     def createChildren(self):
@@ -919,7 +928,6 @@ class MerginRootItem(QgsDataCollectionItem):
 
     def reload(self):
         self.projects = []
-        self.depopulate()
         self.refresh()
 
     def actions(self, parent):
