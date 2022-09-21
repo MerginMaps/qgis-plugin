@@ -370,8 +370,15 @@ class MerginProjectsManager(object):
         root_idx = browser_model.findPath("Mergin Maps")
         if not root_idx.isValid():
             return {}
-        group_items = [browser_model.dataItem(browser_model.index(i, 0, parent=root_idx)) for i in range(2)]
-        return {i.path().replace("/Mergin", ""): i for i in group_items if i}
+        group_items = []
+        for i in range(browser_model.rowCount(root_idx)):
+            item = browser_model.dataItem(browser_model.index(i, 0, parent=root_idx))
+            try:
+                if item.isMerginGroupItem():
+                    group_items.append(item)
+            except AttributeError as e:
+                pass
+        return {i.path().replace("/Mergin", ""): i for i in group_items}
 
     def report_conflicts(self, conflicts):
         """

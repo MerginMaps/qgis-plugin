@@ -826,6 +826,9 @@ class MerginRootItem(QgsDataCollectionItem):
             if error is not None:
                 return error
         items = []
+        if not self.projects:
+            # This should fail before qgis 3.20
+            self.setState(Qgis.BrowserItemState.Populated)
         for project in self.projects:
             project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
             local_proj_path = mergin_project_local_path(project_name)
@@ -964,6 +967,9 @@ class MerginGroupItem(MerginRootItem):
 
     def __init__(self, parent, grp_name, grp_filter, icon, order, plugin):
         MerginRootItem.__init__(self, parent, grp_name, grp_filter, icon, order, plugin)
+
+    def isMerginGroupItem(self):
+        return True
 
     def createChildren(self):
         return self.createChildrenProjects()
