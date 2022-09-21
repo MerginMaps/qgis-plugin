@@ -806,6 +806,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.projects = []
         self.workspace = self.plugin.current_workspace
         self.depopulate()
+        self.refresh()
 
     def createChildren(self):
         if self.error or self.mc is None:
@@ -826,9 +827,6 @@ class MerginRootItem(QgsDataCollectionItem):
             if error is not None:
                 return error
         items = []
-        if not self.projects:
-            # This should fail before qgis 3.20
-            self.setState(Qgis.BrowserItemState.Populated)
         for project in self.projects:
             project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
             local_proj_path = mergin_project_local_path(project_name)
@@ -923,6 +921,7 @@ class MerginRootItem(QgsDataCollectionItem):
     def reload(self):
         self.projects = []
         self.depopulate()
+        self.refresh()
 
     def actions(self, parent):
         action_configure = QAction(QIcon(icon_path("settings.svg")), "Configure", parent)
