@@ -817,8 +817,11 @@ class MerginRootItem(QgsDataCollectionItem):
             return [error_item]
 
         if self.mc.server_type() == "old":
+            self.setName(self.base_name)
             return self.createChildrenGroups()
 
+        name = f"{self.base_name} [{self.workspace}]"
+        self.setName(name)
         return self.createChildrenProjects()
 
     def createChildrenProjects(self):
@@ -843,7 +846,6 @@ class MerginRootItem(QgsDataCollectionItem):
         return items
 
     def createChildrenGroups(self):
-        self.setName(self.base_name)
         items = []
         my_projects = MerginGroupItem(self, "My projects", "created", "user.svg", 1, self.plugin)
         my_projects.setState(QgsDataItem.Populated)
@@ -905,9 +907,6 @@ class MerginRootItem(QgsDataCollectionItem):
         if isinstance(self, MerginGroupItem):
             group_name = f"{self.base_name} ({self.total_projects_count})"
             self.setName(group_name)
-        else:
-            name = f"{self.base_name} [{self.workspace}]"
-            self.setName(name)
 
     def fetch_more(self):
         """Fetch another page of projects and add them to the group item."""
