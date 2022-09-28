@@ -1,5 +1,5 @@
 import os
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QApplication, QMessageBox
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QApplication, QMessageBox, QComboBox
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt import uic
 
@@ -7,12 +7,13 @@ ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_cl
 
 
 class CloneProjectDialog(QDialog):
-    def __init__(self, user_info, workspaces=[]):
+    def __init__(self, user_info, workspaces=[], default_workspace=None):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
         self.ui.buttonBox.accepted.connect(self.accept_dialog)
         if not workspaces:
+            # This means server is old and uses namespaces
             username = user_info["username"]
             user_organisations = user_info.get("organisations", [])
             self.ui.projectNamespace.addItem(username)
@@ -21,14 +22,22 @@ class CloneProjectDialog(QDialog):
                     self.ui.projectNamespace.addItem(o, True)
 
         for ws in workspaces:
-            is_writable = user_info["id"] in ws["writers"]
-            self.ui.projectNamespace.addItem(ws["name"], is_writable)
+            try:
+                # Check if server is ee offering per workspace permissions
+                is_writable = user_info["id"] in ws["writers"]
+                self.ui.projectNamespace.addItem(ws["name"], is_writable)
+            except (KeyError, TypeError):
+                # Server is ce, we'll ask for forgiveness instead of permission
+                is_writable = True
+                self.ui.projectNamespace.addItem(ws, is_writable)
 
         self.ui.projectNamespace.currentTextChanged.connect(self.workspace_changed)
         self.ui.edit_project_name.textChanged.connect(self.text_changed)
 
         # disable widgets if default workspace is read only
         self.workspace_changed()
+        if default_workspace:
+            self.ui.projectNamespace.setCurrentText(default_workspace)
 
         # these are the variables used by the caller
         self.project_name = None
@@ -38,7 +47,7 @@ class CloneProjectDialog(QDialog):
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(bool(self.ui.edit_project_name.text()))
 
     def workspace_changed(self):
-        is_writable = self.ui.projectNamespace.currentData(Qt.UserRole)
+        is_writable = bool(self.ui.projectNamespace.currentData(Qt.UserRole))
 
         if is_writable:
             msg = ""

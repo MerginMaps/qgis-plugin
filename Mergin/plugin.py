@@ -563,9 +563,12 @@ class MerginRemoteProjectItem(QgsDataItem):
         try:
             workspaces = self.mc.workspaces_list()
         except (URLError, ClientError) as e:
+            ns = self.mc.global_namespace()
             workspaces = []  # todo: handle bad server response?
-            # todo: handle CE servers (global namespace)
-        dlg = CloneProjectDialog(user_info=user_info, workspaces=workspaces)
+            if ns:
+                workspaces.append(ns)
+
+        dlg = CloneProjectDialog(user_info=user_info, workspaces=workspaces, default_workspace=self.project["namespace"])
         if not dlg.exec_():
             return  # cancelled
         try:
@@ -720,8 +723,12 @@ class MerginLocalProjectItem(QgsDirectoryItem):
         try:
             workspaces = self.mc.workspaces_list()
         except (URLError, ClientError) as e:
+            ns = self.mc.global_namespace()
             workspaces = []  # todo: handle bad server response?
-        dlg = CloneProjectDialog(user_info=user_info, workspaces=workspaces)
+            if ns:
+                workspaces.append(ns)
+
+        dlg = CloneProjectDialog(user_info=user_info, workspaces=workspaces, default_workspace=self.project["namespace"])
 
         if not dlg.exec_():
             return  # cancelled
