@@ -16,7 +16,7 @@ class CloneProjectDialog(QDialog):
             # This means server is old and uses namespaces
             username = user_info["username"]
             user_organisations = user_info.get("organisations", [])
-            self.ui.projectNamespace.addItem(username)
+            self.ui.projectNamespace.addItem(username, True)
             for o in user_organisations:
                 if user_organisations[o] in ["admin", "owner"]:
                     self.ui.projectNamespace.addItem(o, True)
