@@ -207,7 +207,7 @@ class MerginProjectValidator(object):
                 if ws and ws.type() == "ExternalResource":
                     cfg = ws.config()
                     # check for relative paths
-                    if cfg["RelativeStorage"] == 0:
+                    if "RelativeStorage" in cfg and cfg["RelativeStorage"] == 0:
                         self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH))
                     if "DefaultRoot" in cfg:
                         # default root should not be set to the local path
