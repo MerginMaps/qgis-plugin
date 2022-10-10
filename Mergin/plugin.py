@@ -568,7 +568,9 @@ class MerginRemoteProjectItem(QgsDataItem):
             if ns:
                 workspaces.append(ns)
 
-        dlg = CloneProjectDialog(user_info=user_info, workspaces=workspaces, default_workspace=self.project["namespace"])
+        dlg = CloneProjectDialog(
+            user_info=user_info, workspaces=workspaces, default_workspace=self.project["namespace"]
+        )
         if not dlg.exec_():
             return  # cancelled
         try:
@@ -728,7 +730,9 @@ class MerginLocalProjectItem(QgsDirectoryItem):
             if ns:
                 workspaces.append(ns)
 
-        dlg = CloneProjectDialog(user_info=user_info, workspaces=workspaces, default_workspace=self.project["namespace"])
+        dlg = CloneProjectDialog(
+            user_info=user_info, workspaces=workspaces, default_workspace=self.project["namespace"]
+        )
 
         if not dlg.exec_():
             return  # cancelled
