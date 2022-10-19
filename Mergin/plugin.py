@@ -826,6 +826,9 @@ class MerginRootItem(QgsDataCollectionItem):
         self.error = err
         self.projects = []
         self.workspace = self.plugin.current_workspace
+        # We need to depopulate() so that child groups are refreshed (eg when changing user on old server)
+        self.depopulate()
+        # We need to refresh() so that changing from an empty workspace repopulates entries
         self.refresh()
 
     def createChildren(self):
