@@ -14,17 +14,17 @@ class CloneProjectDialog(QDialog):
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
         self.ui.buttonBox.accepted.connect(self.accept_dialog)
 
-        for ws in workspaces:
-            try:
-                # Check if server is ee offering per workspace permissions
-                is_writable = user_info["id"] in ws["writers"]
-                self.ui.projectNamespace.addItem(ws["name"], is_writable)
-            except (KeyError, TypeError):
-                # Server is ce, we'll ask for forgiveness instead of permission
-                is_writable = True
-                self.ui.projectNamespace.addItem(ws, is_writable)
-
-        if not workspaces:
+        if workspaces is not None:
+            for ws in workspaces:
+                try:
+                    # Check if server is ee offering per workspace permissions
+                    is_writable = user_info["id"] in ws["writers"]
+                    self.ui.projectNamespace.addItem(ws["name"], is_writable)
+                except (KeyError, TypeError):
+                    # Server is ce, we'll ask for forgiveness instead of write permission
+                    is_writable = True
+                    self.ui.projectNamespace.addItem(ws, is_writable)
+        else:
             # This means server is old and uses namespaces
             username = user_info["username"]
             user_organisations = user_info.get("organisations", [])

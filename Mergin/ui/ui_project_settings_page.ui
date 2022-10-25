@@ -29,7 +29,7 @@
         </widget>
        </item>
        <item row="0" column="0">
-        <widget class="QLabel" name="label">
+        <widget class="QLabel" name="projectNamespaceLabel">
          <property name="maximumSize">
           <size>
            <width>200</width>
@@ -37,7 +37,7 @@
           </size>
          </property>
          <property name="text">
-          <string>Owner</string>
+          <string>Workspace</string>
          </property>
         </widget>
        </item>

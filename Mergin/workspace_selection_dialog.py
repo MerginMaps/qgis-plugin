@@ -22,16 +22,15 @@ ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_se
 
 
 class WorkspaceSelectionDialog(QDialog):
-    def __init__(self, plugin):
+    def __init__(self, workspaces, manage_workspaces_callback):
         QDialog.__init__(self)
-        self.plugin = plugin
-        workspaces = plugin.server_workspaces
         self.ui = uic.loadUi(ui_file, self)
 
         self.ui.label_logo.setPixmap(QPixmap(icon_path("mm_icon_positive_no_padding.svg", True)))
         self.workspace = None
 
-        self.model = QStringListModel(workspaces)
+        workspaces_names = [w["name"] for w in workspaces]
+        self.model = QStringListModel(workspaces_names)
         for i in range(self.model.rowCount()):
             idx = self.model.index(i, 0)
             self.model.setData(idx, QSize(100, 50), Qt.SizeHintRole)
@@ -48,7 +47,7 @@ class WorkspaceSelectionDialog(QDialog):
         self.ui.line_edit.setVisible(len(workspaces) >= 5)
         self.ui.line_edit.textChanged.connect(self.proxy.setFilterFixedString)
 
-        self.ui.manage_workspaces.clicked.connect(self.plugin.open_configured_url)
+        self.ui.manage_workspaces.clicked.connect(manage_workspaces_callback)
 
     def on_double_click(self, index):
         self.workspace = self.proxy.data(index, Qt.EditRole)

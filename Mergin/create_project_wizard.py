@@ -112,11 +112,27 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
             self.for_current_proj = False
 
     def populate_namespace_cbo(self):
-        self.project_owner_cbo.addItem(self.parent.username)
-        if self.parent.user_organisations:
-            self.project_owner_cbo.addItems(
-                [o for o in self.parent.user_organisations if self.parent.user_organisations[o] in ["admin", "owner"]]
-            )
+        if self.parent.workspaces is not None:
+            for ws in self.parent.workspaces:
+                try:
+                    # Check if server is ee offering per workspace permissions
+                    is_writable = self.parent.user_info["id"] in ws["writers"]
+                    self.project_owner_cbo.addItem(ws["name"], is_writable)
+                except (KeyError, TypeError):
+                    # Server is ce, we'll ask for forgiveness instead of permission
+                    is_writable = True
+                    self.project_owner_cbo.addItem(ws, is_writable)
+            self.project_owner_cbo.setCurrentText(self.parent.default_workspace)
+
+        else:
+            # This means server is old and uses namespaces
+            username = self.parent.user_info["username"]
+            user_organisations = self.parent.user_info.get("organisations", [])
+            self.project_owner_cbo.addItem(username, True)
+            self.projectNamespaceLabel.setText("Owner")
+            for o in user_organisations:
+                if user_organisations[o] in ["admin", "owner"]:
+                    self.project_owner_cbo.addItem(o, True)
 
     def setup_browsing(self, question=None, current_proj=False, field=None):
         """This will setup label and signals for browse button."""
@@ -393,7 +409,7 @@ class PackagingPage(ui_pack_page, base_pack_page):
 class NewMerginProjectWizard(QWizard):
     """Wizard for creating new Mergin Maps project."""
 
-    def __init__(self, project_manager, username, user_organisations=None, parent=None):
+    def __init__(self, project_manager, user_info, workspaces=[], default_workspace=None, parent=None):
         super().__init__(parent)
         self.iface = iface
         self.settings = QSettings()
@@ -401,8 +417,11 @@ class NewMerginProjectWizard(QWizard):
         self.setWizardStyle(QWizard.ClassicStyle)
         self.setDefaultProperty("QComboBox", "currentText", QComboBox.currentTextChanged)
         self.project_manager = project_manager
-        self.username = username
-        self.user_organisations = user_organisations
+        self.username = user_info["username"]
+        self.user_organisations = user_info.get("organisations", [])
+        self.workspaces = workspaces
+        self.default_workspace = default_workspace
+        self.user_info = user_info
 
         self.init_page = InitPage(self)
         self.setPage(INIT_PAGE, self.init_page)

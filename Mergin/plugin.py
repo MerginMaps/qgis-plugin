@@ -82,7 +82,6 @@ class MerginPlugin:
         self.mc = None
         self.manager = None
         self.current_workspace = None
-        self.server_workspaces = []
         self.provider = MerginProvider()
         self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
         self.toolbar.setToolTip("Mergin Maps Toolbar")
@@ -285,21 +284,6 @@ class MerginPlugin:
         create_button.clicked.connect(self.open_configured_url)
         msg_box.exec_()
 
-    def update_available_workspaces(self):
-        try:
-            response = self.mc.workspaces_list()
-            workspace_names = [w["name"] for w in response]
-            self.server_workspaces = workspace_names
-            return
-        except (URLError, ClientError) as e:
-            pass  # server is old, fall back to collect workspace names
-        ns = self.mc.global_namespace()
-
-        if ns:
-            self.server_workspaces = [ns]
-        else:
-            self.server_workspaces = [self.mc.username()]
-
     def set_current_workspace(self, workspace):
         settings = QSettings()
         self.current_workspace = workspace
@@ -307,7 +291,7 @@ class MerginPlugin:
         if self.has_browser_item():
             self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager)
 
-    def chose_active_workspace(self, use_gui_if_fail=False):
+    def chose_active_workspace(self):
         server_type = self.mc.server_type()
         if server_type == "old":
             self.current_workspace = self.mc.username()
@@ -316,23 +300,17 @@ class MerginPlugin:
             self.current_workspace = self.mc.global_namespace()
             return
 
-        self.update_available_workspaces()
         settings = QSettings()
-        last_workspace = settings.value("Mergin/lastUsedWorkspace", "", str)
-        if not self.server_workspaces:
+        previous_workspace = settings.value("Mergin/lastUsedWorkspace", "", str)
+        workspaces = self.mc.workspaces_list()
+        if not workspaces:
             self.show_no_workspaces_dialog()
             workspace = None
-        elif last_workspace in self.server_workspaces:
-            workspace = last_workspace
-        elif len(self.server_workspaces) == 1 or not use_gui_if_fail:
-            workspace = self.server_workspaces[0]
+        elif previous_workspace in workspaces:
+            workspace = previous_workspace
         else:
-            dlg = WorkspaceSelectionDialog(self)
-            while not dlg.exec_():
-                pass
-            workspace = dlg.getWorkspace()
-            settings.setValue("Mergin/lastUsedWorkspace", str(workspace))
-        self.current_workspace = workspace
+            workspace = workspaces[0]["name"]
+        self.set_current_workspace(workspace)
 
     def post_login(self):
         """Groups actions that needs to be done when auth information changes"""
@@ -367,8 +345,18 @@ class MerginPlugin:
             return
 
         user_info = self.mc.user_info()
+        try:
+            workspaces = self.mc.workspaces_list()
+        except (URLError, ClientError) as e:
+            ns = self.mc.global_namespace()
+            workspaces = []  # todo: handle bad server response?
+            if ns:
+                workspaces.append(ns)
+            else:
+                workspaces = None
+
         wizard = NewMerginProjectWizard(
-            self.manager, username=user_info["username"], user_organisations=user_info.get("organisations", [])
+            self.manager, user_info=user_info, workspaces=workspaces, default_workspace=self.current_workspace
         )
         if not wizard.exec_():
             return  # cancelled
@@ -386,13 +374,17 @@ class MerginPlugin:
 
     def switch_workspace(self):
         """Open new Switch workspace dialog"""
-        self.update_available_workspaces()
-        if not self.server_workspaces:
+        try:
+            workspaces = self.mc.workspaces_list()
+        except (URLError, ClientError) as e:
+            return  # Server does not support workspaces
+
+        if not workspaces:
             self.show_no_workspaces_dialog()
             self.current_workspace = None
             return
 
-        dlg = WorkspaceSelectionDialog(self)
+        dlg = WorkspaceSelectionDialog(workspaces, self.open_configured_url)
         if not dlg.exec_():
             return
 
@@ -567,6 +559,8 @@ class MerginRemoteProjectItem(QgsDataItem):
             workspaces = []  # todo: handle bad server response?
             if ns:
                 workspaces.append(ns)
+            else:
+                workspaces = None
 
         dlg = CloneProjectDialog(
             user_info=user_info, workspaces=workspaces, default_workspace=self.project["namespace"]
@@ -729,6 +723,8 @@ class MerginLocalProjectItem(QgsDirectoryItem):
             workspaces = []  # todo: handle bad server response?
             if ns:
                 workspaces.append(ns)
+            else:
+                workspaces = None
 
         dlg = CloneProjectDialog(
             user_info=user_info, workspaces=workspaces, default_workspace=self.project["namespace"]
