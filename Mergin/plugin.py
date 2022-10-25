@@ -368,10 +368,6 @@ class MerginPlugin:
         """Synchronise current Mergin Maps project."""
         self.manager.project_status(self.mergin_proj_dir)
 
-    def find_project(self):
-        """Open new Find Mergin Maps project dialog"""
-        raise NotImplementedError
-
     def switch_workspace(self):
         """Open new Switch workspace dialog"""
         try:
@@ -390,10 +386,6 @@ class MerginPlugin:
 
         workspace = dlg.getWorkspace()
         self.set_current_workspace(workspace)
-
-    def explore_public_projects(self):
-        """Open new Explore public Mergin Maps projects dialog"""
-        raise NotImplementedError
 
     def on_qgis_project_changed(self):
         """
@@ -950,14 +942,8 @@ class MerginRootItem(QgsDataCollectionItem):
         action_create = QAction(QIcon(icon_path("square-plus.svg")), "Create new project", parent)
         action_create.triggered.connect(self.plugin.create_new_project)
 
-        action_find = QAction(QIcon(icon_path("search.svg")), "Find project", parent)
-        action_find.triggered.connect(self.plugin.find_project)
-
         action_switch = QAction(QIcon(icon_path("replace.svg")), "Switch workspace", parent)
         action_switch.triggered.connect(self.plugin.switch_workspace)
-
-        action_explore = QAction(QIcon(icon_path("explore.svg")), "Explore public projects", parent)
-        action_explore.triggered.connect(self.plugin.explore_public_projects)
 
         actions = [action_configure]
         if self.mc:
@@ -967,14 +953,10 @@ class MerginRootItem(QgsDataCollectionItem):
             elif server_type == "ee":
                 actions.append(action_refresh)
                 actions.append(action_create)
-                actions.append(action_find)
                 actions.append(action_switch)
-                actions.append(action_explore)
             elif server_type == "ce":
                 actions.append(action_refresh)
                 actions.append(action_create)
-                actions.append(action_find)
-                actions.append(action_explore)
         return actions
 
 
