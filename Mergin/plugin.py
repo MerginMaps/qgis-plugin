@@ -295,14 +295,14 @@ class MerginPlugin:
 
         settings = QSettings()
         previous_workspace = settings.value("Mergin/lastUsedWorkspace", "", str)
-        workspaces = self.mc.workspaces_list()
+        workspaces = [w["name"] for w in self.mc.workspaces_list()]
         if not workspaces:
             self.show_no_workspaces_dialog()
             workspace = None
         elif previous_workspace in workspaces:
             workspace = previous_workspace
         else:
-            workspace = workspaces[0]["name"]
+            workspace = workspaces[0]
         self.set_current_workspace(workspace)
 
     def post_login(self):
