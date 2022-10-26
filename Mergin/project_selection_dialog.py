@@ -5,6 +5,7 @@ from qgis.PyQt.QtCore import QSize, QSortFilterProxyModel, QStringListModel, Qt,
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QPixmap, QPainter, QStandardItemModel, QStandardItem, QFont, QFontMetrics
 
+from .mergin.merginproject import MerginProject
 from .utils import (
     icon_path,
     mergin_project_local_path,
@@ -61,9 +62,17 @@ class ProjectSelectionDialog(QDialog):
             project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
             local_proj_path = mergin_project_local_path(project_name)
             if local_proj_path is None or not os.path.exists(local_proj_path):
-                item.setData("Remote", Qt.UserRole + 1)
+                item.setData("Not downloaded", Qt.UserRole + 1)
             else:
-                item.setData("Local", Qt.UserRole + 1)
+                mp = MerginProject(local_proj_path)
+                local_changes = mp.get_push_changes()
+                if local_changes["added"] or local_changes["updated"]:
+                    item.setData("Local changes waiting to be pushed", Qt.UserRole + 1)
+                elif mp.metadata["version"] < project["version"]:  # todo: proper compare
+                    item.setData("Update available", Qt.UserRole + 1)
+                else:
+                    item.setData("Up to date", Qt.UserRole + 1)
+
 
             self.model.appendRow(item)
 
