@@ -31,6 +31,7 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .workspace_selection_dialog import WorkspaceSelectionDialog
+from .project_selection_dialog import ProjectSelectionDialog
 from .create_project_wizard import NewMerginProjectWizard
 from .clone_project_dialog import CloneProjectDialog
 from .diff_dialog import DiffViewerDialog
@@ -370,7 +371,18 @@ class MerginPlugin:
 
     def find_project(self):
         """Open new Find Mergin Maps project dialog"""
-        raise NotImplementedError
+        try:
+            projects = self.mc.projects_list(
+                flag=None,
+                namespace=self.current_workspace,
+                order_params="name_asc",
+            )
+        except (URLError, ClientError) as e:
+            return  # Server does not support workspaces
+
+        dlg = ProjectSelectionDialog(projects)
+        if not dlg.exec_():
+            return
 
     def switch_workspace(self):
         """Open new Switch workspace dialog"""
