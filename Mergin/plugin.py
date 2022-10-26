@@ -340,6 +340,10 @@ class MerginPlugin:
         user_info = self.mc.user_info()
         try:
             workspaces = self.mc.workspaces_list()
+            if not workspaces:
+                self.show_no_workspaces_dialog()
+                self.current_workspace = None
+                return
         except (URLError, ClientError) as e:
             ns = self.mc.global_namespace()
             workspaces = []  # todo: handle bad server response?
@@ -825,7 +829,10 @@ class MerginRootItem(QgsDataCollectionItem):
             self.setName(self.base_name)
             return self.createChildrenGroups()
 
-        name = f"{self.base_name} [{self.workspace}]"
+        if self.workspace:
+            name = f"{self.base_name} [{self.workspace}]"
+        else:
+            name = self.base_name
         self.setName(name)
         return self.createChildrenProjects()
 
