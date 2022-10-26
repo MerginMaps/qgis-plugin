@@ -62,13 +62,6 @@ from .processing.provider import MerginProvider
 MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
 os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
 
-try:
-    import pydevd_pycharm
-
-    pydevd_pycharm.settrace("localhost", port=6667, stdoutToServer=True, stderrToServer=True, suspend=False)
-except:
-    pass
-
 
 class MerginPlugin:
     def __init__(self, iface):
@@ -380,7 +373,8 @@ class MerginPlugin:
             self.current_workspace = None
             return
 
-        dlg = WorkspaceSelectionDialog(workspaces, self.open_configured_url)
+        dlg = WorkspaceSelectionDialog(workspaces)
+        dlg.manage_workspaces_clicked.connect(self.open_configured_url)
         if not dlg.exec_():
             return
 
