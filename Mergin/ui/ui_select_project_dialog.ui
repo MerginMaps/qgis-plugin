@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>393</width>
-    <height>432</height>
+    <width>502</width>
+    <height>586</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -40,6 +40,9 @@
      </property>
      <property name="text">
       <string>Open project</string>
+     </property>
+     <property name="autoDefault">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -83,6 +86,9 @@
      <property name="text">
       <string>Create new project</string>
      </property>
+     <property name="autoDefault">
+      <bool>false</bool>
+     </property>
     </widget>
    </item>
   </layout>
@@ -99,6 +105,12 @@
    <header>.project_selection_dialog</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>line_edit</tabstop>
+  <tabstop>project_list</tabstop>
+  <tabstop>open_project_btn</tabstop>
+  <tabstop>new_project_btn</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

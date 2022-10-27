@@ -1,9 +1,9 @@
 import os
 import posixpath
 from qgis.PyQt.QtWidgets import QDialog, QListView, QAbstractItemDelegate, QStyle
-from qgis.PyQt.QtCore import QSize, QSortFilterProxyModel, QAbstractListModel, Qt, QModelIndex, QRect, QMargins, pyqtSignal
+from qgis.PyQt.QtCore import QSize, QSortFilterProxyModel, QAbstractListModel, Qt, QModelIndex, QRect, QMargins, pyqtSignal, QEvent
 from qgis.PyQt import uic
-from qgis.PyQt.QtGui import QPixmap, QPainter, QStandardItemModel, QStandardItem, QFont, QFontMetrics
+from qgis.PyQt.QtGui import QPixmap, QPainter, QStandardItemModel, QStandardItem, QFont, QFontMetrics, QIcon, QKeyEvent
 
 from .mergin.merginproject import MerginProject
 from .utils import (
@@ -138,10 +138,10 @@ class ProjectItemDelegate(QAbstractItemDelegate):
         painter.drawText(nameRect, Qt.AlignLeading, index.data(Qt.DisplayRole))
         painter.setFont(option.font)
         painter.drawText(infoRect, Qt.AlignLeading, index.data(ProjectsModel.STATUS))
-        painter.drawRect(iconRect)
         icon = index.data(ProjectsModel.ICON)
         if icon:
-            painter.drawPixmap(iconRect, QPixmap(icon_path(icon)))
+            icon = QIcon(icon_path(icon))
+            icon.paint(painter, iconRect)
         painter.restore()
 
 
@@ -208,4 +208,3 @@ class ProjectSelectionDialog(QDialog):
 
     def enable_workspace_switching(self, enable):
         self.ui.switch_workspace_label.setVisible(enable)
-
