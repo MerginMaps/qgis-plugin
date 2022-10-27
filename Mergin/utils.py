@@ -1259,3 +1259,11 @@ def package_datum_grids(dest_dir):
     if dest_dir is not None:
         os.makedirs(dest_dir, exist_ok=True)
         copy_datum_shift_grids(dest_dir)
+
+
+def compare_versions(first, second):
+    """
+    Compares two version strings and returns an integer less than, equal to,
+    or greater than zero if first is less than, equal to, or greater than second.
+    """
+    return int(first[1:]) - int(second[1:])

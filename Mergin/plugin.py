@@ -381,6 +381,13 @@ class MerginPlugin:
             return  # Server does not support workspaces
 
         dlg = ProjectSelectionDialog(projects)
+        dlg.new_project_clicked.connect(self.create_new_project)
+        dlg.switch_workspace_clicked.connect(self.switch_workspace)
+        dlg.open_project_clicked.connect(self.manager.open_project)
+
+        workspaces = self.mc.workspaces_list()
+        dlg.enable_workspace_switching(len(workspaces) > 1)
+
         if not dlg.exec_():
             return
 

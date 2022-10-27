@@ -15,7 +15,7 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="4" column="0">
-    <widget class="QListView" name="project_list"/>
+    <widget class="ProjectListView" name="project_list"/>
    </item>
    <item row="2" column="0">
     <widget class="QLabel" name="label">
@@ -60,9 +60,12 @@
     </widget>
    </item>
    <item row="6" column="0">
-    <widget class="QLabel" name="label_2">
+    <widget class="QLabel" name="switch_workspace_label">
      <property name="text">
-      <string>Looking for a project from a different workspace? Click here to switch workspace</string>
+      <string>Looking for a project from a different workspace? &lt;a href=&quot;null&quot;&gt;Click here to switch workspace&lt;/a&gt;</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::TextBrowserInteraction</set>
      </property>
     </widget>
    </item>
@@ -89,6 +92,11 @@
    <class>QgsFilterLineEdit</class>
    <extends>QLineEdit</extends>
    <header>qgsfilterlineedit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ProjectListView</class>
+   <extends>QListView</extends>
+   <header>.project_selection_dialog</header>
   </customwidget>
  </customwidgets>
  <resources/>
