@@ -1,7 +1,17 @@
 import os
 import posixpath
 from qgis.PyQt.QtWidgets import QDialog, QListView, QAbstractItemDelegate, QStyle
-from qgis.PyQt.QtCore import QSize, QSortFilterProxyModel, QAbstractListModel, Qt, QModelIndex, QRect, QMargins, pyqtSignal, QEvent
+from qgis.PyQt.QtCore import (
+    QSize,
+    QSortFilterProxyModel,
+    QAbstractListModel,
+    Qt,
+    QModelIndex,
+    QRect,
+    QMargins,
+    pyqtSignal,
+    QEvent,
+)
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QPixmap, QPainter, QStandardItemModel, QStandardItem, QFont, QFontMetrics, QIcon, QKeyEvent
 
@@ -35,6 +45,7 @@ class ProjectListView(QListView):
 
 class ProjectsModel(QAbstractListModel):
 
+    PROJECT = Qt.UserRole
     NAME = Qt.UserRole + 1
     NAMESPACE = Qt.UserRole + 2
     FULLNAME = Qt.UserRole + 3
@@ -54,6 +65,8 @@ class ProjectsModel(QAbstractListModel):
 
     def data(self, index, role):
         project = self.projects[index.row()]
+        if role == ProjectsModel.PROJECT:
+            return project
         if role == ProjectsModel.NAME:
             return project["name"]
         if role == ProjectsModel.NAMESPACE:
@@ -61,7 +74,7 @@ class ProjectsModel(QAbstractListModel):
         if role == ProjectsModel.VERSION:
             return project["version"]
         if role == ProjectsModel.ISLOCAL:
-            local_proj_path = self.locaProjectPath()
+            local_proj_path = self.localProjectPath()
             return local_proj_path and os.path.exists(local_proj_path)
         if role == ProjectsModel.STATUS:
             return self.status(project)
@@ -102,23 +115,29 @@ class ProjectItemDelegate(QAbstractItemDelegate):
     def __init__(self):
         super(ProjectItemDelegate, self).__init__()
 
-    def sizeHint(self, option: 'QStyleOptionViewItem', index: QModelIndex) -> QSize:
+    def sizeHint(self, option: "QStyleOptionViewItem", index: QModelIndex) -> QSize:
         fm = QFontMetrics(option.font)
         return QSize(150, fm.height() * 3 + fm.leading())
 
-    def paint(self, painter: QPainter, option: 'QStyleOptionViewItem', index: QModelIndex) -> None:
+    def paint(self, painter: QPainter, option: "QStyleOptionViewItem", index: QModelIndex) -> None:
         nameFont = QFont(option.font)
         fm = QFontMetrics(nameFont)
         padding = fm.lineSpacing() // 2
         nameFont.setWeight(QFont.Weight.Bold)
 
-
         nameRect = QRect(option.rect)
         nameRect.setLeft(nameRect.left() + padding)
         nameRect.setTop(nameRect.top() + padding)
-        nameRect.setRight(nameRect.right() - 50 )
+        nameRect.setRight(nameRect.right() - 50)
         nameRect.setHeight(fm.lineSpacing())
-        infoRect = fm.boundingRect(nameRect.left(), nameRect.bottom() + fm.leading(), nameRect.width(), 0, Qt.AlignLeading, index.data(ProjectsModel.STATUS))
+        infoRect = fm.boundingRect(
+            nameRect.left(),
+            nameRect.bottom() + fm.leading(),
+            nameRect.width(),
+            0,
+            Qt.AlignLeading,
+            index.data(ProjectsModel.STATUS),
+        )
         infoRect.setTop(infoRect.bottom() - fm.lineSpacing())
         infoRect.setHeight(fm.lineSpacing())
         borderRect = QRect(option.rect.marginsRemoved(QMargins(4, 4, 4, 4)))
@@ -128,7 +147,7 @@ class ProjectItemDelegate(QAbstractItemDelegate):
 
         painter.save()
         if option.state & QStyle.State_Selected:
-            painter.fillRect(borderRect, option.palette.highlight());
+            painter.fillRect(borderRect, option.palette.highlight())
         painter.drawRect(borderRect)
         painter.setFont(nameFont)
         painter.drawText(nameRect, Qt.AlignLeading, index.data(Qt.DisplayRole))
@@ -146,6 +165,7 @@ class ProjectSelectionDialog(QDialog):
     new_project_clicked = pyqtSignal()
     switch_workspace_clicked = pyqtSignal()
     open_project_clicked = pyqtSignal(str)
+    download_project_clicked = pyqtSignal(dict)
 
     def __init__(self, projects):
         QDialog.__init__(self)
@@ -170,14 +190,14 @@ class ProjectSelectionDialog(QDialog):
         self.ui.line_edit.textChanged.connect(self.proxy.setFilterFixedString)
         self.ui.line_edit.setFocus()
 
-        self.ui.open_project_btn.setEnabled(False)
+        # self.ui.open_project_btn.setEnabled(False)
         self.ui.open_project_btn.clicked.connect(self.on_open_project_clicked)
         self.ui.new_project_btn.clicked.connect(self.on_new_project_clicked)
         self.ui.switch_workspace_label.linkActivated.connect(self.on_switch_workspace_clicked)
 
     def on_current_changed(self, index):
         project_path = self.proxy.data(index, ProjectsModel.DIRECTORY)
-        self.ui.open_project_btn.setEnabled(bool(project_path))
+        # self.ui.open_project_btn.setEnabled(bool(project_path))
 
     def on_open_project_clicked(self):
         index = self.ui.project_list.selectedIndex()
@@ -186,6 +206,9 @@ class ProjectSelectionDialog(QDialog):
 
         project_path = self.proxy.data(index, ProjectsModel.DIRECTORY)
         if not project_path:
+            project = self.proxy.data(index, ProjectsModel.PROJECT)
+            self.close()
+            self.download_project_clicked.emit(project)
             return
 
         self.close()

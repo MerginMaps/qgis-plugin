@@ -384,6 +384,7 @@ class MerginPlugin:
         dlg.new_project_clicked.connect(self.create_new_project)
         dlg.switch_workspace_clicked.connect(self.switch_workspace)
         dlg.open_project_clicked.connect(self.manager.open_project)
+        dlg.download_project_clicked.connect(self.manager.download_project)
 
         workspaces = self.mc.workspaces_list()
         dlg.enable_workspace_switching(len(workspaces) > 1)
@@ -516,55 +517,8 @@ class MerginRemoteProjectItem(QgsDataItem):
             self.mc = None
 
     def download(self):
-        settings = QSettings()
-        last_parent_dir = settings.value("Mergin/lastUsedDownloadDir", str(Path.home()))
-        parent_dir = QFileDialog.getExistingDirectory(None, "Open Directory", last_parent_dir, QFileDialog.ShowDirsOnly)
-        if not parent_dir:
-            return
-        settings.setValue("Mergin/lastUsedDownloadDir", parent_dir)
-        target_dir = os.path.abspath(os.path.join(parent_dir, self.project["name"]))
-        if os.path.exists(target_dir):
-            QMessageBox.warning(
-                None,
-                "Download Project",
-                "The target directory already exists:\n" + target_dir + "\n\nPlease select a different directory.",
-            )
-            return
-
-        dlg = SyncDialog()
-        dlg.download_start(self.mc, target_dir, self.project_name)
-        dlg.exec_()  # blocks until completion / failure / cancellation
-        if dlg.exception:
-            if isinstance(dlg.exception, (URLError, ValueError)):
-                QgsApplication.messageLog().logMessage("Mergin Maps plugin: " + str(dlg.exception))
-                msg = (
-                    "Failed to download your project {}.\n"
-                    "Please make sure your Mergin Maps settings are correct".format(self.project_name)
-                )
-                QMessageBox.critical(None, "Project download", msg, QMessageBox.Close)
-            elif isinstance(dlg.exception, LoginError):
-                login_error_message(dlg.exception)
-            else:
-                unhandled_exception_message(
-                    dlg.exception_details(),
-                    "Project download",
-                    f"Failed to download project {self.project_name} due to an unhandled exception.",
-                )
-            return
-        if not dlg.is_complete:
-            return  # either it has been cancelled or an error has been thrown
-
-        settings.setValue("Mergin/localProjects/{}/path".format(self.project_name), target_dir)
-        self.path = target_dir
-        msg = "Your project {} has been successfully downloaded. " "Do you want to open project file?".format(
-            self.project_name
-        )
-        btn_reply = QMessageBox.question(
-            None, "Project download", msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
-        )
-        if btn_reply == QMessageBox.Yes:
-            self.open_project()
-        self.parent().reload()
+        self.project_manager.download_project(self.project)
+        return
 
     def open_project(self):
         self.project_manager.open_project(self.path)
