@@ -52,9 +52,6 @@ class ProjectsModel(QAbstractListModel):
     def rowCount(self, parent=None, *args, **kwargs):
         return len(self.projects)
 
-    # def index(self, row, column):
-    #     return self.createIndex(row, 0)
-
     def data(self, index, role):
         project = self.projects[index.row()]
         if role == ProjectsModel.NAME:
@@ -87,8 +84,7 @@ class ProjectsModel(QAbstractListModel):
         return mergin_project_local_path(project_name)
 
     def status(self, project):
-        project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
-        local_proj_path = mergin_project_local_path(project_name)
+        local_proj_path = self.localProjectPath(project)
         if local_proj_path is None or not os.path.exists(local_proj_path):
             return "Not downloaded"
 
