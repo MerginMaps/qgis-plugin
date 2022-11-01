@@ -1,5 +1,6 @@
 import os
 import posixpath
+from enum import Enum, auto
 from qgis.PyQt.QtWidgets import QDialog, QListView, QAbstractItemDelegate, QStyle
 from qgis.PyQt.QtCore import (
     QSize,
@@ -42,6 +43,13 @@ class ProjectListView(QListView):
             return QModelIndex()
 
 
+class SyncStatus(Enum):
+    UP_TO_DATE = auto()
+    NOT_DOWNLOADED = auto()
+    LOCAL_CHANGES = auto()
+    REMOTE_CHANGES = auto()
+
+
 class ProjectsModel(QAbstractListModel):
 
     PROJECT = Qt.UserRole + 1
@@ -67,18 +75,25 @@ class ProjectsModel(QAbstractListModel):
         if role == ProjectsModel.NAMESPACE:
             return project["namespace"]
         if role == ProjectsModel.STATUS:
-            return self.status(project)
+            status = self.status(project)
+            if status == SyncStatus.NOT_DOWNLOADED:
+                return "Not downloaded"
+            elif status == SyncStatus.LOCAL_CHANGES:
+                return "Local changes waiting to be pushed"
+            elif status == SyncStatus.REMOTE_CHANGES:
+                return "Update available"
+            else:  # status == SyncStatus.UP_TO_DATE:
+                return "Up to date"
+
         if role == ProjectsModel.LOCAL_DIRECTORY:
             return self.localProjectPath(project)
         if role == ProjectsModel.ICON:
             status = self.status(project)
             icon = ""
-            if status == "Not downloaded":
+            if status == SyncStatus.NOT_DOWNLOADED:
                 icon = "cloud-download.svg"
-            elif status == "Local changes waiting to be pushed":
+            elif status in (SyncStatus.LOCAL_CHANGES, SyncStatus.REMOTE_CHANGES):
                 icon = "refresh.svg"
-            elif status == "Update available":
-                icon = "refresh"
             return icon
         return project["name"]
 
@@ -89,16 +104,16 @@ class ProjectsModel(QAbstractListModel):
     def status(self, project):
         local_proj_path = self.localProjectPath(project)
         if local_proj_path is None or not os.path.exists(local_proj_path):
-            return "Not downloaded"
+            return SyncStatus.NOT_DOWNLOADED
 
         mp = MerginProject(local_proj_path)
         local_changes = mp.get_push_changes()
         if local_changes["added"] or local_changes["updated"]:
-            return "Local changes waiting to be pushed"
+            return SyncStatus.LOCAL_CHANGES
         elif compare_versions(project["version"], mp.metadata["version"]) > 0:
-            return "Update available"
+            return SyncStatus.REMOTE_CHANGES
         else:
-            return "Up to date"
+            return SyncStatus.UP_TO_DATE
 
 
 class ProjectItemDelegate(QAbstractItemDelegate):
