@@ -63,13 +63,6 @@ from .processing.provider import MerginProvider
 MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
 os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
 
-try:
-    import pydevd_pycharm
-
-    pydevd_pycharm.settrace("localhost", port=6667, stdoutToServer=True, stderrToServer=True, suspend=False)
-except:
-    pass
-
 
 class MerginPlugin:
     def __init__(self, iface):
@@ -303,14 +296,14 @@ class MerginPlugin:
 
         settings = QSettings()
         previous_workspace = settings.value("Mergin/lastUsedWorkspace", "", str)
-        workspaces = self.mc.workspaces_list()
+        workspaces = [w["name"] for w in self.mc.workspaces_list()]
         if not workspaces:
             self.show_no_workspaces_dialog()
             workspace = None
         elif previous_workspace in workspaces:
             workspace = previous_workspace
         else:
-            workspace = workspaces[0]["name"]
+            workspace = workspaces[0]
         self.set_current_workspace(workspace)
 
     def post_login(self):
@@ -348,6 +341,10 @@ class MerginPlugin:
         user_info = self.mc.user_info()
         try:
             workspaces = self.mc.workspaces_list()
+            if not workspaces:
+                self.show_no_workspaces_dialog()
+                self.current_workspace = None
+                return
         except (URLError, ClientError) as e:
             ns = self.mc.global_namespace()
             workspaces = []  # todo: handle bad server response?
@@ -404,7 +401,8 @@ class MerginPlugin:
             self.current_workspace = None
             return
 
-        dlg = WorkspaceSelectionDialog(workspaces, self.open_configured_url)
+        dlg = WorkspaceSelectionDialog(workspaces)
+        dlg.manage_workspaces_clicked.connect(self.open_configured_url)
         if not dlg.exec_():
             return
 
@@ -826,7 +824,10 @@ class MerginRootItem(QgsDataCollectionItem):
             self.setName(self.base_name)
             return self.createChildrenGroups()
 
-        name = f"{self.base_name} [{self.workspace}]"
+        if self.workspace:
+            name = f"{self.base_name} [{self.workspace}]"
+        else:
+            name = self.base_name
         self.setName(name)
         return self.createChildrenProjects()
 
