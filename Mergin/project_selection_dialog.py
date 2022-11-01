@@ -10,10 +10,9 @@ from qgis.PyQt.QtCore import (
     QRect,
     QMargins,
     pyqtSignal,
-    QEvent,
 )
 from qgis.PyQt import uic
-from qgis.PyQt.QtGui import QPixmap, QPainter, QStandardItemModel, QStandardItem, QFont, QFontMetrics, QIcon, QKeyEvent
+from qgis.PyQt.QtGui import QPixmap, QPainter, QFont, QFontMetrics, QIcon
 
 from .mergin.merginproject import MerginProject
 from .utils import (
@@ -45,16 +44,12 @@ class ProjectListView(QListView):
 
 class ProjectsModel(QAbstractListModel):
 
-    PROJECT = Qt.UserRole
-    NAME = Qt.UserRole + 1
-    NAMESPACE = Qt.UserRole + 2
-    FULLNAME = Qt.UserRole + 3
-    ISLOCAL = Qt.UserRole + 4
-    FILEPATH = Qt.UserRole + 5
-    VERSION = Qt.UserRole + 6
-    STATUS = Qt.UserRole + 7
-    DIRECTORY = Qt.UserRole + 8
-    ICON = Qt.UserRole + 9
+    PROJECT = Qt.UserRole + 1
+    NAME = Qt.UserRole + 2
+    NAMESPACE = Qt.UserRole + 3
+    STATUS = Qt.UserRole + 4
+    LOCAL_DIRECTORY = Qt.UserRole + 5
+    ICON = Qt.UserRole + 6
 
     def __init__(self, projects):
         super(ProjectsModel, self).__init__()
@@ -71,14 +66,9 @@ class ProjectsModel(QAbstractListModel):
             return project["name"]
         if role == ProjectsModel.NAMESPACE:
             return project["namespace"]
-        if role == ProjectsModel.VERSION:
-            return project["version"]
-        if role == ProjectsModel.ISLOCAL:
-            local_proj_path = self.localProjectPath()
-            return local_proj_path and os.path.exists(local_proj_path)
         if role == ProjectsModel.STATUS:
             return self.status(project)
-        if role == ProjectsModel.DIRECTORY:
+        if role == ProjectsModel.LOCAL_DIRECTORY:
             return self.localProjectPath(project)
         if role == ProjectsModel.ICON:
             status = self.status(project)
@@ -112,8 +102,9 @@ class ProjectsModel(QAbstractListModel):
 
 
 class ProjectItemDelegate(QAbstractItemDelegate):
-    def __init__(self):
+    def __init__(self, show_namespace=False):
         super(ProjectItemDelegate, self).__init__()
+        self.show_namespace = show_namespace
 
     def sizeHint(self, option: "QStyleOptionViewItem", index: QModelIndex) -> QSize:
         fm = QFontMetrics(option.font)
@@ -150,7 +141,11 @@ class ProjectItemDelegate(QAbstractItemDelegate):
             painter.fillRect(borderRect, option.palette.highlight())
         painter.drawRect(borderRect)
         painter.setFont(nameFont)
-        painter.drawText(nameRect, Qt.AlignLeading, index.data(Qt.DisplayRole))
+        if self.show_namespace:
+            text = '{} / {}'.format(index.data(ProjectsModel.NAMESPACE), index.data(ProjectsModel.NAME))
+        else:
+            text = index.data(ProjectsModel.NAME)
+        painter.drawText(nameRect, Qt.AlignLeading, text)
         painter.setFont(option.font)
         painter.drawText(infoRect, Qt.AlignLeading, index.data(ProjectsModel.STATUS))
         icon = index.data(ProjectsModel.ICON)
@@ -179,32 +174,31 @@ class ProjectSelectionDialog(QDialog):
         self.proxy.setSourceModel(self.model)
         self.proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
 
+        self.ui.project_list.setItemDelegate(ProjectItemDelegate())
         self.ui.project_list.setModel(self.proxy)
-        delegate = ProjectItemDelegate()
-        self.ui.project_list.setItemDelegate(delegate)
+        self.ui.project_list.setCurrentIndex(self.proxy.index(0, 0))
         self.ui.project_list.doubleClicked.connect(self.on_double_click)
         self.ui.project_list.currentIndexChanged.connect(self.on_current_changed)
 
         self.ui.line_edit.setShowSearchIcon(True)
-        self.ui.line_edit.setVisible(len(projects) >= 5)
         self.ui.line_edit.textChanged.connect(self.proxy.setFilterFixedString)
         self.ui.line_edit.setFocus()
 
-        # self.ui.open_project_btn.setEnabled(False)
+        self.ui.open_project_btn.setEnabled(bool(projects))
         self.ui.open_project_btn.clicked.connect(self.on_open_project_clicked)
+
         self.ui.new_project_btn.clicked.connect(self.on_new_project_clicked)
         self.ui.switch_workspace_label.linkActivated.connect(self.on_switch_workspace_clicked)
 
     def on_current_changed(self, index):
-        project_path = self.proxy.data(index, ProjectsModel.DIRECTORY)
-        # self.ui.open_project_btn.setEnabled(bool(project_path))
+        self.ui.open_project_btn.setEnabled(index.isValid())
 
     def on_open_project_clicked(self):
         index = self.ui.project_list.selectedIndex()
         if not index.isValid():
             return
 
-        project_path = self.proxy.data(index, ProjectsModel.DIRECTORY)
+        project_path = self.proxy.data(index, ProjectsModel.LOCAL_DIRECTORY)
         if not project_path:
             project = self.proxy.data(index, ProjectsModel.PROJECT)
             self.close()
@@ -214,6 +208,9 @@ class ProjectSelectionDialog(QDialog):
         self.close()
         self.open_project_clicked.emit(project_path)
 
+    def on_double_click(self, index):
+        self.on_open_project_clicked()
+
     def on_new_project_clicked(self):
         self.close()
         self.new_project_clicked.emit()
@@ -222,8 +219,20 @@ class ProjectSelectionDialog(QDialog):
         self.close()
         self.switch_workspace_clicked.emit()
 
-    def on_double_click(self, index):
-        self.on_open_project_clicked()
-
     def enable_workspace_switching(self, enable):
         self.ui.switch_workspace_label.setVisible(enable)
+
+    def enable_new_project(self, enable):
+        self.ui.new_project_btn.setVisible(enable)
+
+
+class PublicProjectSelectionDialog(ProjectSelectionDialog):
+    def __init__(self, projects):
+        super(PublicProjectSelectionDialog, self).__init__(projects)
+
+        self.setWindowTitle("Explore public projects")
+        self.ui.label.setText("Explore public community projects")
+
+        self.ui.project_list.setItemDelegate(ProjectItemDelegate(show_namespace=True))
+        self.enable_workspace_switching(False)
+        self.enable_new_project(False)

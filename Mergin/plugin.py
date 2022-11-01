@@ -31,7 +31,7 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .workspace_selection_dialog import WorkspaceSelectionDialog
-from .project_selection_dialog import ProjectSelectionDialog
+from .project_selection_dialog import ProjectSelectionDialog, PublicProjectSelectionDialog
 from .create_project_wizard import NewMerginProjectWizard
 from .clone_project_dialog import CloneProjectDialog
 from .diff_dialog import DiffViewerDialog
@@ -413,7 +413,21 @@ class MerginPlugin:
 
     def explore_public_projects(self):
         """Open new Explore public Mergin Maps projects dialog"""
-        raise NotImplementedError
+        try:
+            projects = self.mc.projects_list(
+                flag=None,
+                order_params="namespace_asc,name_asc",
+            )
+        except (URLError, ClientError) as e:
+            return
+
+        projects = [p for p in projects if p["access"]["public"]]
+        dlg = PublicProjectSelectionDialog(projects)
+        dlg.open_project_clicked.connect(self.manager.open_project)
+        dlg.download_project_clicked.connect(self.manager.download_project)
+
+        if not dlg.exec_():
+            return
 
     def on_qgis_project_changed(self):
         """
