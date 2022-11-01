@@ -157,7 +157,7 @@ class ProjectItemDelegate(QAbstractItemDelegate):
         painter.drawRect(borderRect)
         painter.setFont(nameFont)
         if self.show_namespace:
-            text = '{} / {}'.format(index.data(ProjectsModel.NAMESPACE), index.data(ProjectsModel.NAME))
+            text = "{} / {}".format(index.data(ProjectsModel.NAMESPACE), index.data(ProjectsModel.NAME))
         else:
             text = index.data(ProjectsModel.NAME)
         painter.drawText(nameRect, Qt.AlignLeading, text)
