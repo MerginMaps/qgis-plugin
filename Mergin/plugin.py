@@ -386,8 +386,12 @@ class MerginPlugin:
         dlg.open_project_clicked.connect(self.manager.open_project)
         dlg.download_project_clicked.connect(self.manager.download_project)
 
-        workspaces = self.mc.workspaces_list()
-        dlg.enable_workspace_switching(len(workspaces) > 1)
+        try:
+            workspaces = self.mc.workspaces_list()
+            dlg.enable_workspace_switching(len(workspaces) > 1)
+        except:
+            pass
+
         dlg.exec_()
 
     def switch_workspace(self):
