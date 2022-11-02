@@ -224,13 +224,19 @@ class MerginPlugin:
         self.enable_toolbar_actions()
         self.post_login()
 
-    def open_configured_url(self):
-        """Opens configured Mergin Maps server url in default browser"""
+    def open_configured_url(self, path=None):
+        """Opens configured Mergin Maps server url in default browser
+        Use optional parameter path to go directly to a specific page, eg. /workspaces"""
         if self.mc is None:
             url = QUrl("https://merginmaps.com")
         else:
             url = QUrl(self.mc.url)
 
+        if path:
+            url_path = url.path()
+            while url_path.endswith("/"):
+                url_path = url_path.removesuffix("/")
+            url.setPath(f'{url_path}{path}')
         QDesktopServices.openUrl(url)
 
     def enable_toolbar_actions(self, enable=None):

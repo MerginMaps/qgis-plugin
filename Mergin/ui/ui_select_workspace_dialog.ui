@@ -14,6 +14,12 @@
    <string>Select workspace</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="2" column="0">
+    <widget class="QgsFilterLineEdit" name="line_edit"/>
+   </item>
+   <item row="3" column="0">
+    <widget class="QListView" name="workspace_list"/>
+   </item>
    <item row="1" column="0">
     <widget class="QLabel" name="label">
      <property name="text">
@@ -22,7 +28,7 @@
     </widget>
    </item>
    <item row="4" column="0" alignment="Qt::AlignHCenter">
-    <widget class="QPushButton" name="manage_workspaces">
+    <widget class="QPushButton" name="select_workspace_btn">
      <property name="minimumSize">
       <size>
        <width>200</width>
@@ -36,7 +42,10 @@
       </size>
      </property>
      <property name="text">
-      <string>Manage Workspaces</string>
+      <string>Select workspace</string>
+     </property>
+     <property name="default">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -59,11 +68,15 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="0">
-    <widget class="QgsFilterLineEdit" name="line_edit"/>
-   </item>
-   <item row="3" column="0">
-    <widget class="QListView" name="workspace_list"/>
+   <item row="5" column="0">
+    <widget class="QLabel" name="manage_workspaces_label">
+     <property name="text">
+      <string>Want to manage your workspaces? &lt;a href=&quot;null&quot;&gt;Click here to go to Mergin Maps web&lt;/a&gt;</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::TextBrowserInteraction</set>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
