@@ -952,6 +952,7 @@ class MerginRootItem(QgsDataCollectionItem):
             server_type = self.mc.server_type()
             if server_type == "old":
                 actions.append(action_create)
+                actions.append(action_explore)
             elif server_type == "ee":
                 actions.append(action_refresh)
                 actions.append(action_create)

@@ -95,7 +95,7 @@ class ProjectsModel(QAbstractListModel):
             elif status in (SyncStatus.LOCAL_CHANGES, SyncStatus.REMOTE_CHANGES):
                 icon = "refresh.svg"
             return icon
-        return project["name"]
+        return "{} / {}".format(project["namespace"], project["name"])
 
     def localProjectPath(self, project):
         project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
@@ -157,7 +157,7 @@ class ProjectItemDelegate(QAbstractItemDelegate):
         painter.drawRect(borderRect)
         painter.setFont(nameFont)
         if self.show_namespace:
-            text = "{} / {}".format(index.data(ProjectsModel.NAMESPACE), index.data(ProjectsModel.NAME))
+            text = index.data(Qt.DisplayRole)
         else:
             text = index.data(ProjectsModel.NAME)
         painter.drawText(nameRect, Qt.AlignLeading, text)
