@@ -369,13 +369,16 @@ class MerginPlugin:
     def find_project(self):
         """Open new Find Mergin Maps project dialog"""
         try:
+            QgsApplication.instance().setOverrideCursor(Qt.WaitCursor)
             projects = self.mc.projects_list(
                 flag=None,
                 namespace=self.current_workspace,
                 order_params="name_asc",
             )
         except (URLError, ClientError) as e:
-            return  # Server does not support workspaces
+            return
+        finally:
+            QgsApplication.instance().restoreOverrideCursor()
 
         dlg = ProjectSelectionDialog(projects)
         dlg.new_project_clicked.connect(self.create_new_project)
@@ -385,9 +388,7 @@ class MerginPlugin:
 
         workspaces = self.mc.workspaces_list()
         dlg.enable_workspace_switching(len(workspaces) > 1)
-
-        if not dlg.exec_():
-            return
+        dlg.exec_()
 
     def switch_workspace(self):
         """Open new Switch workspace dialog"""
@@ -412,20 +413,21 @@ class MerginPlugin:
     def explore_public_projects(self):
         """Open new Explore public Mergin Maps projects dialog"""
         try:
+            QgsApplication.instance().setOverrideCursor(Qt.WaitCursor)
             projects = self.mc.projects_list(
                 flag=None,
                 order_params="namespace_asc,name_asc",
             )
+            projects = [p for p in projects if p["access"]["public"]]
         except (URLError, ClientError) as e:
             return
+        finally:
+            QgsApplication.instance().restoreOverrideCursor()
 
-        projects = [p for p in projects if p["access"]["public"]]
         dlg = PublicProjectSelectionDialog(projects)
         dlg.open_project_clicked.connect(self.manager.open_project)
         dlg.download_project_clicked.connect(self.manager.download_project)
-
-        if not dlg.exec_():
-            return
+        dlg.exec_()
 
     def on_qgis_project_changed(self):
         """
