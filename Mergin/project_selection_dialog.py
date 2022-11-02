@@ -181,7 +181,7 @@ class ProjectSelectionDialog(QDialog):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self, "Mergin")
 
-        self.ui.label_logo.setPixmap(QPixmap(icon_path("mm_icon_positive_no_padding.svg", True)))
+        self.ui.label_logo.setPixmap(QPixmap(icon_path("mm_logo.svg", False)))
 
         self.model = ProjectsModel(projects)
 

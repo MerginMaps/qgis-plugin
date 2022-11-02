@@ -14,17 +14,43 @@
    <string>Find project</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="4" column="0">
+   <item row="6" column="0">
     <widget class="ProjectListView" name="project_list"/>
    </item>
-   <item row="2" column="0">
+   <item row="8" column="0">
+    <widget class="QLabel" name="switch_workspace_label">
+     <property name="text">
+      <string>Looking for a project from a different workspace? &lt;a href=&quot;null&quot;&gt;Click here to switch workspace&lt;/a&gt;</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::TextBrowserInteraction</set>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QPushButton" name="new_project_btn">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>Create new project</string>
+     </property>
+     <property name="autoDefault">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
     <widget class="QLabel" name="label">
      <property name="text">
       <string>Select a project to work with</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="0" alignment="Qt::AlignHCenter">
+   <item row="7" column="0" alignment="Qt::AlignHCenter">
     <widget class="QPushButton" name="open_project_btn">
      <property name="minimumSize">
       <size>
@@ -46,9 +72,9 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="0">
+   <item row="1" column="0" alignment="Qt::AlignHCenter">
     <widget class="QLabel" name="label_logo">
-     <property name="minimumSize">
+     <property name="maximumSize">
       <size>
        <width>256</width>
        <height>76</height>
@@ -57,39 +83,16 @@
      <property name="text">
       <string>mmLabel</string>
      </property>
+     <property name="scaledContents">
+      <bool>true</bool>
+     </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
      </property>
     </widget>
    </item>
-   <item row="6" column="0">
-    <widget class="QLabel" name="switch_workspace_label">
-     <property name="text">
-      <string>Looking for a project from a different workspace? &lt;a href=&quot;null&quot;&gt;Click here to switch workspace&lt;/a&gt;</string>
-     </property>
-     <property name="textInteractionFlags">
-      <set>Qt::TextBrowserInteraction</set>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0">
+   <item row="5" column="0">
     <widget class="QgsFilterLineEdit" name="line_edit"/>
-   </item>
-   <item row="1" column="0">
-    <widget class="QPushButton" name="new_project_btn">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="text">
-      <string>Create new project</string>
-     </property>
-     <property name="autoDefault">
-      <bool>false</bool>
-     </property>
-    </widget>
    </item>
   </layout>
  </widget>
