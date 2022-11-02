@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Select workspace</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0">
@@ -40,9 +40,9 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="0">
+   <item row="0" column="0" alignment="Qt::AlignHCenter">
     <widget class="QLabel" name="label_logo">
-     <property name="minimumSize">
+     <property name="maximumSize">
       <size>
        <width>256</width>
        <height>76</height>
@@ -50,6 +50,9 @@
      </property>
      <property name="text">
       <string>mmLabel</string>
+     </property>
+     <property name="scaledContents">
+      <bool>true</bool>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>

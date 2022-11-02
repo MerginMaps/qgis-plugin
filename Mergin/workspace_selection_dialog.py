@@ -19,7 +19,8 @@ class WorkspaceSelectionDialog(QDialog):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
 
-        self.ui.label_logo.setPixmap(QPixmap(icon_path("mm_icon_positive_no_padding.svg", True)))
+        self.ui.label_logo.setPixmap(QPixmap(icon_path("mm_logo.svg", False)))
+
         self.workspace = None
 
         workspaces_names = [w["name"] for w in workspaces]
