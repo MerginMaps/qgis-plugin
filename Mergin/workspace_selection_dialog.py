@@ -1,14 +1,89 @@
 import os
-from qgis.PyQt.QtWidgets import QDialog
-from qgis.PyQt.QtCore import QSortFilterProxyModel, QStringListModel, Qt, pyqtSignal, QModelIndex
+from qgis.PyQt.QtWidgets import QDialog, QAbstractItemDelegate, QStyle
+from qgis.PyQt.QtCore import (
+    QSortFilterProxyModel,
+    QAbstractListModel,
+    Qt,
+    pyqtSignal,
+    QModelIndex,
+    QSize,
+    QRect,
+    QMargins,
+)
 from qgis.PyQt import uic
-from qgis.PyQt.QtGui import QPixmap
+from qgis.PyQt.QtGui import QPixmap, QFontMetrics, QFont
 
 from .utils import (
     icon_path,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_select_workspace_dialog.ui")
+
+
+class WorkspacesModel(QAbstractListModel):
+    def __init__(self, workspaces):
+        super(WorkspacesModel, self).__init__()
+        self.workspaces = workspaces
+
+    def rowCount(self, parent=None, *args, **kwargs):
+        return len(self.workspaces)
+
+    def data(self, index, role):
+        workspace = self.workspaces[index.row()]
+        if role == Qt.UserRole:
+            return workspace
+        if role == Qt.ToolTipRole:
+            name = workspace["name"]
+            desc = workspace["description"] or ""
+            count = workspace["project_count"]
+            return "Workspace: {}\nDescription: {}\nProjects: {}".format(name, desc, count)
+        return workspace["name"]
+
+
+class WorkspaceItemDelegate(QAbstractItemDelegate):
+    def __init__(self):
+        super(WorkspaceItemDelegate, self).__init__()
+
+    def sizeHint(self, option, index):
+        fm = QFontMetrics(option.font)
+        return QSize(150, fm.height() * 3 + fm.leading())
+
+    def paint(self, painter, option, index):
+        workspace = index.data(Qt.UserRole)
+        description = workspace["description"]
+        if description:
+            description = description.replace("\n", " ")
+        nameFont = QFont(option.font)
+        fm = QFontMetrics(nameFont)
+        padding = fm.lineSpacing() // 2
+        nameFont.setWeight(QFont.Weight.Bold)
+
+        nameRect = QRect(option.rect)
+        nameRect.setLeft(nameRect.left() + padding)
+        nameRect.setTop(nameRect.top() + padding)
+        nameRect.setRight(nameRect.right() - 50)
+        nameRect.setHeight(fm.lineSpacing())
+        infoRect = fm.boundingRect(
+            nameRect.left(),
+            nameRect.bottom() + fm.leading(),
+            nameRect.width(),
+            0,
+            Qt.AlignLeading,
+            description,
+        )
+        infoRect.setTop(infoRect.bottom() - fm.lineSpacing())
+        infoRect.setHeight(fm.lineSpacing())
+        borderRect = QRect(option.rect.marginsRemoved(QMargins(4, 4, 4, 4)))
+
+        painter.save()
+        if option.state & QStyle.State_Selected:
+            painter.fillRect(borderRect, option.palette.highlight())
+        painter.drawRect(borderRect)
+        painter.setFont(nameFont)
+        painter.drawText(nameRect, Qt.AlignLeading, workspace["name"])
+        painter.setFont(option.font)
+        painter.drawText(infoRect, Qt.AlignLeading, description)
+        painter.restore()
 
 
 class WorkspaceSelectionDialog(QDialog):
@@ -23,13 +98,13 @@ class WorkspaceSelectionDialog(QDialog):
 
         self.workspace = None
 
-        workspaces_names = [w["name"] for w in workspaces]
-        self.model = QStringListModel(workspaces_names)
+        self.model = WorkspacesModel(workspaces)
 
         self.proxy = QSortFilterProxyModel()
         self.proxy.setSourceModel(self.model)
         self.proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
 
+        self.ui.workspace_list.setItemDelegate(WorkspaceItemDelegate())
         self.ui.workspace_list.setModel(self.proxy)
         self.ui.workspace_list.doubleClicked.connect(self.on_double_click)
 
@@ -49,7 +124,7 @@ class WorkspaceSelectionDialog(QDialog):
     def on_manage_workspaces_clicked(self):
         self.manage_workspaces_clicked.emit("/workspaces")
 
-    def getWorkspace(self):
+    def get_workspace(self):
         return self.workspace
 
     def accept(self):
@@ -60,5 +135,5 @@ class WorkspaceSelectionDialog(QDialog):
         if not index.isValid():
             return
 
-        self.workspace = self.proxy.data(index, Qt.DisplayRole)
+        self.workspace = self.proxy.data(index, Qt.UserRole)
         QDialog.accept(self)

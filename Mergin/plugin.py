@@ -75,7 +75,7 @@ class MerginPlugin:
         self.mergin_proj_dir = None
         self.mc = None
         self.manager = None
-        self.current_workspace = None
+        self.current_workspace_name = None
         self.provider = MerginProvider()
         self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
         self.toolbar.setToolTip("Mergin Maps Toolbar")
@@ -237,7 +237,7 @@ class MerginPlugin:
             url_path = url.path()
             while url_path.endswith("/"):
                 url_path = url_path.removesuffix("/")
-            url.setPath(f'{url_path}{path}')
+            url.setPath(f"{url_path}{path}")
         QDesktopServices.openUrl(url)
 
     def enable_toolbar_actions(self, enable=None):
@@ -286,28 +286,30 @@ class MerginPlugin:
 
     def set_current_workspace(self, workspace):
         settings = QSettings()
-        self.current_workspace = workspace
-        settings.setValue("Mergin/lastUsedWorkspace", str(workspace))
+        self.current_workspace_name = workspace.get("name", None)
+        settings.setValue("Mergin/lastUsedWorkspaceId", workspace.get("id", None))
         if self.has_browser_item():
             self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager)
 
     def chose_active_workspace(self):
         server_type = self.mc.server_type()
         if server_type == "old":
-            self.current_workspace = self.mc.username()
+            self.current_workspace_name = self.mc.username()
             return
         if server_type == "ce":
-            self.current_workspace = self.mc.global_namespace()
+            self.current_workspace_name = self.mc.global_namespace()
             return
 
         settings = QSettings()
-        previous_workspace = settings.value("Mergin/lastUsedWorkspace", "", str)
-        workspaces = [w["name"] for w in self.mc.workspaces_list()]
+        previous_workspace = settings.value("Mergin/lastUsedWorkspaceId", None, int)
+        workspaces = self.mc.workspaces_list()
+        workspace = None
+        for ws in workspaces:
+            if previous_workspace == ws["id"]:
+                workspace = ws
+
         if not workspaces:
             self.show_no_workspaces_dialog()
-            workspace = None
-        elif previous_workspace in workspaces:
-            workspace = previous_workspace
         else:
             workspace = workspaces[0]
         self.set_current_workspace(workspace)
@@ -349,7 +351,7 @@ class MerginPlugin:
             workspaces = self.mc.workspaces_list()
             if not workspaces:
                 self.show_no_workspaces_dialog()
-                self.current_workspace = None
+                self.current_workspace_name = None
                 return
         except (URLError, ClientError) as e:
             ns = self.mc.global_namespace()
@@ -360,7 +362,7 @@ class MerginPlugin:
                 workspaces = None
 
         wizard = NewMerginProjectWizard(
-            self.manager, user_info=user_info, workspaces=workspaces, default_workspace=self.current_workspace
+            self.manager, user_info=user_info, workspaces=workspaces, default_workspace=self.current_workspace_name
         )
         if not wizard.exec_():
             return  # cancelled
@@ -381,7 +383,7 @@ class MerginPlugin:
 
         if not workspaces:
             self.show_no_workspaces_dialog()
-            self.current_workspace = None
+            self.current_workspace_name = None
             return
 
         dlg = WorkspaceSelectionDialog(workspaces)
@@ -389,7 +391,7 @@ class MerginPlugin:
         if not dlg.exec_():
             return
 
-        workspace = dlg.getWorkspace()
+        workspace = dlg.get_workspace()
         self.set_current_workspace(workspace)
 
     def on_qgis_project_changed(self):
@@ -810,7 +812,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.fetch_more_item = None
         self.filter = flag
         self.base_name = self.name()
-        self.workspace = self.plugin.current_workspace
+        self.workspace = self.plugin.current_workspace_name
 
     def update_client_and_manager(self, mc=None, manager=None, err=None):
         """Update Mergin client and project manager - used when starting or after a config change."""
@@ -818,7 +820,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.project_manager = manager
         self.error = err
         self.projects = []
-        self.workspace = self.plugin.current_workspace
+        self.workspace = self.plugin.current_workspace_name
         # We need to depopulate() so that child groups are refreshed (eg when changing user on old server)
         self.depopulate()
         # We need to refresh() so that changing from an empty workspace repopulates entries
