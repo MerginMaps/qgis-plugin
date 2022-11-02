@@ -9,6 +9,7 @@ import os
 import shutil
 from pathlib import Path
 import posixpath
+from functools import partial
 from qgis.PyQt.QtCore import pyqtSignal, QTimer, QUrl, QSettings, Qt
 from qgis.PyQt.QtGui import QIcon, QDesktopServices, QPixmap
 from qgis.core import (
@@ -280,7 +281,7 @@ class MerginPlugin:
         msg_box = QMessageBox(QMessageBox.Critical, "You do not have any workspace", msg, QMessageBox.Close)
         create_button = msg_box.addButton("Create workspace", msg_box.ActionRole)
         create_button.clicked.disconnect()
-        create_button.clicked.connect(self.open_configured_url)
+        create_button.clicked.connect(partial(self.open_configured_url, "/workspaces"))
         msg_box.exec_()
 
     def set_current_workspace(self, workspace):
