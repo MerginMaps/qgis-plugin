@@ -121,11 +121,11 @@ class ProjectItemDelegate(QAbstractItemDelegate):
         super(ProjectItemDelegate, self).__init__()
         self.show_namespace = show_namespace
 
-    def sizeHint(self, option: "QStyleOptionViewItem", index: QModelIndex) -> QSize:
+    def sizeHint(self, option, index):
         fm = QFontMetrics(option.font)
         return QSize(150, fm.height() * 3 + fm.leading())
 
-    def paint(self, painter: QPainter, option: "QStyleOptionViewItem", index: QModelIndex) -> None:
+    def paint(self, painter, option, index):
         nameFont = QFont(option.font)
         fm = QFontMetrics(nameFont)
         padding = fm.lineSpacing() // 2
