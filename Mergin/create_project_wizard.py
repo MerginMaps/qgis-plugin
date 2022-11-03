@@ -116,7 +116,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
             for ws in self.parent.workspaces:
                 try:
                     # Check if server is ee offering per workspace permissions
-                    is_writable = self.parent.user_info["id"] in ws["writers"]
+                    is_writable = self.parent.user_info["id"] in ws["owners"] + ws["admins"]
                     self.project_owner_cbo.addItem(ws["name"], is_writable)
                 except (KeyError, TypeError):
                     # Server is ce, we'll ask for forgiveness instead of permission
@@ -131,7 +131,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
             self.project_owner_cbo.addItem(username, True)
             self.projectNamespaceLabel.setText("Owner")
             for o in user_organisations:
-                if user_organisations[o] in ["admin", "owner"]:
+                if user_organisations[o] in ["owner", "admin", "writer"]:
                     self.project_owner_cbo.addItem(o, True)
 
     def setup_browsing(self, question=None, current_proj=False, field=None):
@@ -410,6 +410,14 @@ class NewMerginProjectWizard(QWizard):
     """Wizard for creating new Mergin Maps project."""
 
     def __init__(self, project_manager, user_info, workspaces=[], default_workspace=None, parent=None):
+        """Create a wizard for new Mergin Maps project
+
+        :param project_manager: MerginProjectsManager instance
+        :param user_info: The user_info dictionary as returned from server
+        :param workspaces: List of available workspaces dictionaries as returned from the server
+        Skip this param if the server does not support workspaces. Namespaces/organizations will be used instead
+        :param default_workspace: Optionally, the name of the current workspace so it can be pre-selected in the list
+        """
         super().__init__(parent)
         self.iface = iface
         self.settings = QSettings()

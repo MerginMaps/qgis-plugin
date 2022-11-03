@@ -8,7 +8,16 @@ ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_cl
 
 
 class CloneProjectDialog(QDialog):
+    """Dialog for cloning remote projects. Allows selection of workspace/namespace and project name"""
+
     def __init__(self, user_info, workspaces=[], default_workspace=None):
+        """Create a dialog for cloning remote projects
+
+        :param user_info: The user_info dictionary as returned from server
+        :param workspaces: List of available workspaces dictionaries as returned from the server
+        Skip this param if the server does not support workspaces. Namespaces/organizations will be used instead
+        :param default_workspace: Optionally, the name of the current workspace so it can be pre-selected in the list
+        """
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
@@ -18,7 +27,7 @@ class CloneProjectDialog(QDialog):
             for ws in workspaces:
                 try:
                     # Check if server is ee offering per workspace permissions
-                    is_writable = user_info["id"] in ws["writers"]
+                    is_writable = user_info["id"] in ws["owners"] + ws["admins"]
                     self.ui.projectNamespace.addItem(ws["name"], is_writable)
                 except (KeyError, TypeError):
                     # Server is ce, we'll ask for forgiveness instead of write permission
@@ -31,7 +40,7 @@ class CloneProjectDialog(QDialog):
             self.ui.projectNamespace.addItem(username, True)
             self.ui.projectNamespaceLabel.setText("Owner")
             for o in user_organisations:
-                if user_organisations[o] in ["admin", "owner"]:
+                if user_organisations[o] in ["owner", "admin", "writer"]:
                     self.ui.projectNamespace.addItem(o, True)
 
         self.ui.projectNamespace.currentTextChanged.connect(self.workspace_changed)
