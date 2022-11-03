@@ -236,7 +236,7 @@ class MerginPlugin:
         if path:
             url_path = url.path()
             while url_path.endswith("/"):
-                url_path = url_path.removesuffix("/")
+                url_path = url_path[:-1]
             url.setPath(f"{url_path}{path}")
         QDesktopServices.openUrl(url)
 
