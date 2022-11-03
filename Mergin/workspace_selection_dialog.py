@@ -106,6 +106,8 @@ class WorkspaceSelectionDialog(QDialog):
 
         self.ui.workspace_list.setItemDelegate(WorkspaceItemDelegate())
         self.ui.workspace_list.setModel(self.proxy)
+        selectionModel = self.ui.workspace_list.selectionModel()
+        selectionModel.selectionChanged.connect(self.on_selection_changed)
         self.ui.workspace_list.doubleClicked.connect(self.on_double_click)
 
         self.ui.line_edit.setShowSearchIcon(True)
@@ -114,6 +116,14 @@ class WorkspaceSelectionDialog(QDialog):
 
         self.ui.select_workspace_btn.clicked.connect(self.on_select_workspace_clicked)
         self.ui.manage_workspaces_label.linkActivated.connect(self.on_manage_workspaces_clicked)
+
+    def on_selection_changed(self, selected, deselected):
+        try:
+            index = selected.indexes()[0]
+        except IndexError:
+            index = QModelIndex()
+
+        self.ui.select_workspace_btn.setEnabled(index.isValid())
 
     def on_select_workspace_clicked(self):
         self.accept()
