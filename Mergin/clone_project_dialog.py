@@ -35,10 +35,10 @@ class CloneProjectDialog(QDialog):
                     self.ui.projectNamespace.addItem(ws, is_writable)
         else:
             # This means server is old and uses namespaces
+            self.ui.projectNamespaceLabel.setText("Owner")
             username = user_info["username"]
             user_organisations = user_info.get("organisations", [])
             self.ui.projectNamespace.addItem(username, True)
-            self.ui.projectNamespaceLabel.setText("Owner")
             for o in user_organisations:
                 if user_organisations[o] in ["owner", "admin", "writer"]:
                     self.ui.projectNamespace.addItem(o, True)
@@ -64,7 +64,7 @@ class CloneProjectDialog(QDialog):
         if is_writable:
             msg = ""
         else:
-            msg = "You do not have write permissions for this workspace"
+            msg = "You do not have permissions to create a project in this workspace!"
         self.ui.edit_project_name.setToolTip(msg)
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setToolTip(msg)
         self.ui.warningMessageLabel.setVisible(not is_writable)

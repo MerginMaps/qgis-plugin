@@ -99,6 +99,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         self.path_ledit.setReadOnly(True)
         self.path_ledit.textChanged.connect(self.check_input)
         self.project_name_ledit.textChanged.connect(self.check_input)
+        self.project_owner_cbo.currentTextChanged.connect(self.check_input)
 
     def nextId(self):
         return -1
@@ -126,10 +127,10 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
 
         else:
             # This means server is old and uses namespaces
+            self.projectNamespaceLabel.setText("Owner")
             username = self.parent.user_info["username"]
             user_organisations = self.parent.user_info.get("organisations", [])
             self.project_owner_cbo.addItem(username, True)
-            self.projectNamespaceLabel.setText("Owner")
             for o in user_organisations:
                 if user_organisations[o] in ["owner", "admin", "writer"]:
                     self.project_owner_cbo.addItem(o, True)
@@ -174,6 +175,9 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
     def check_input(self):
         """Check if entered path is not already a Mergin Maps project dir and has at most a single QGIS project file."""
         # TODO: check if the project exists on the server
+        if not self.project_owner_cbo.currentData(Qt.UserRole):
+            self.create_warning("You do not have permissions to create a project in this workspace!")
+            return
         proj_name = self.project_name_ledit.text()
         if not proj_name:
             self.create_warning("Project name missing!")
