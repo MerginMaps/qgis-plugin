@@ -99,6 +99,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         self.path_ledit.setReadOnly(True)
         self.path_ledit.textChanged.connect(self.check_input)
         self.project_name_ledit.textChanged.connect(self.check_input)
+        self.project_owner_cbo.currentTextChanged.connect(self.check_input)
 
     def nextId(self):
         return -1
@@ -116,7 +117,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
             for ws in self.parent.workspaces:
                 try:
                     # Check if server is ee offering per workspace permissions
-                    is_writable = self.parent.user_info["id"] in ws["writers"]
+                    is_writable = self.parent.user_info["id"] in ws["owners"] + ws["admins"]
                     self.project_owner_cbo.addItem(ws["name"], is_writable)
                 except (KeyError, TypeError):
                     # Server is ce, we'll ask for forgiveness instead of permission
@@ -126,12 +127,12 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
 
         else:
             # This means server is old and uses namespaces
+            self.projectNamespaceLabel.setText("Owner")
             username = self.parent.user_info["username"]
             user_organisations = self.parent.user_info.get("organisations", [])
             self.project_owner_cbo.addItem(username, True)
-            self.projectNamespaceLabel.setText("Owner")
             for o in user_organisations:
-                if user_organisations[o] in ["admin", "owner"]:
+                if user_organisations[o] in ["owner", "admin", "writer"]:
                     self.project_owner_cbo.addItem(o, True)
 
     def setup_browsing(self, question=None, current_proj=False, field=None):
@@ -174,6 +175,9 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
     def check_input(self):
         """Check if entered path is not already a Mergin Maps project dir and has at most a single QGIS project file."""
         # TODO: check if the project exists on the server
+        if not self.project_owner_cbo.currentData(Qt.UserRole):
+            self.create_warning("You do not have permissions to create a project in this workspace!")
+            return
         proj_name = self.project_name_ledit.text()
         if not proj_name:
             self.create_warning("Project name missing!")
@@ -410,6 +414,14 @@ class NewMerginProjectWizard(QWizard):
     """Wizard for creating new Mergin Maps project."""
 
     def __init__(self, project_manager, user_info, workspaces=[], default_workspace=None, parent=None):
+        """Create a wizard for new Mergin Maps project
+
+        :param project_manager: MerginProjectsManager instance
+        :param user_info: The user_info dictionary as returned from server
+        :param workspaces: List of available workspaces dictionaries as returned from the server
+        Skip this param if the server does not support workspaces. Namespaces/organizations will be used instead
+        :param default_workspace: Optionally, the name of the current workspace so it can be pre-selected in the list
+        """
         super().__init__(parent)
         self.iface = iface
         self.settings = QSettings()
