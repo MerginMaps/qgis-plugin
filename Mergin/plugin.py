@@ -64,6 +64,13 @@ from .processing.provider import MerginProvider
 MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
 os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
 
+try:
+    import pydevd_pycharm
+
+    pydevd_pycharm.settrace("localhost", port=6667, stdoutToServer=True, stderrToServer=True, suspend=False)
+except:
+    pass
+
 
 class MerginPlugin:
     def __init__(self, iface):
@@ -378,19 +385,7 @@ class MerginPlugin:
 
     def find_project(self):
         """Open new Find Mergin Maps project dialog"""
-        try:
-            QgsApplication.instance().setOverrideCursor(Qt.WaitCursor)
-            projects = self.mc.projects_list(
-                flag=None,
-                namespace=self.current_workspace,
-                order_params="name_asc",
-            )
-        except (URLError, ClientError) as e:
-            return
-        finally:
-            QgsApplication.instance().restoreOverrideCursor()
-
-        dlg = ProjectSelectionDialog(projects)
+        dlg = ProjectSelectionDialog(self.mc, self.current_workspace_name)
         dlg.new_project_clicked.connect(self.create_new_project)
         dlg.switch_workspace_clicked.connect(self.switch_workspace)
         dlg.open_project_clicked.connect(self.manager.open_project)
@@ -426,19 +421,7 @@ class MerginPlugin:
 
     def explore_public_projects(self):
         """Open new Explore public Mergin Maps projects dialog"""
-        try:
-            QgsApplication.instance().setOverrideCursor(Qt.WaitCursor)
-            projects = self.mc.projects_list(
-                flag=None,
-                order_params="namespace_asc,name_asc",
-            )
-            projects = [p for p in projects if p["access"]["public"]]
-        except (URLError, ClientError) as e:
-            return
-        finally:
-            QgsApplication.instance().restoreOverrideCursor()
-
-        dlg = PublicProjectSelectionDialog(projects)
+        dlg = PublicProjectSelectionDialog(self.mc)
         dlg.open_project_clicked.connect(self.manager.open_project)
         dlg.download_project_clicked.connect(self.manager.download_project)
         dlg.exec_()

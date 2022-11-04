@@ -1,46 +1,32 @@
 import os
 import posixpath
 from enum import Enum, auto
-from qgis.PyQt.QtWidgets import QDialog, QListView, QAbstractItemDelegate, QStyle
+from urllib.error import URLError
+from qgis.PyQt.QtWidgets import QDialog, QAbstractItemDelegate, QStyle
 from qgis.PyQt.QtCore import (
     QSize,
     QSortFilterProxyModel,
-    QAbstractListModel,
     Qt,
     QModelIndex,
     QRect,
     QMargins,
     pyqtSignal,
+    QTimer,
 )
 from qgis.PyQt import uic
-from qgis.PyQt.QtGui import QPixmap, QPainter, QFont, QFontMetrics, QIcon
-
+from qgis.PyQt.QtGui import QPixmap, QFont, QFontMetrics, QIcon, QStandardItem, QStandardItemModel
+from qgis.core import (
+    QgsApplication,
+)
 from .mergin.merginproject import MerginProject
 from .utils import (
     icon_path,
     mergin_project_local_path,
     compare_versions,
+    ClientError,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_select_project_dialog.ui")
-
-
-class ProjectListView(QListView):
-
-    currentIndexChanged = pyqtSignal(QModelIndex)
-
-    def __init__(self, parent):
-        super(ProjectListView, self).__init__(parent)
-
-    def currentChanged(self, current, previous):
-        super(ProjectListView, self).currentChanged(current, previous)
-        self.currentIndexChanged.emit(current)
-
-    def selectedIndex(self):
-        try:
-            return self.selectedIndexes()[0]
-        except IndexError:
-            return QModelIndex()
 
 
 class SyncStatus(Enum):
@@ -50,7 +36,7 @@ class SyncStatus(Enum):
     REMOTE_CHANGES = auto()
 
 
-class ProjectsModel(QAbstractListModel):
+class ProjectsModel(QStandardItemModel):
 
     PROJECT = Qt.UserRole + 1
     NAME = Qt.UserRole + 2
@@ -59,50 +45,55 @@ class ProjectsModel(QAbstractListModel):
     LOCAL_DIRECTORY = Qt.UserRole + 5
     ICON = Qt.UserRole + 6
 
-    def __init__(self, projects):
+    def __init__(self, projects=None):
         super(ProjectsModel, self).__init__()
-        self.projects = projects
+        if projects:
+            self.appendProjects(projects)
 
-    def rowCount(self, parent=None, *args, **kwargs):
-        return len(self.projects)
+    def appendProjects(self, projects):
+        for item in self.createItems(projects):
+            self.appendRow(item)
 
-    def data(self, index, role):
-        project = self.projects[index.row()]
-        if role == ProjectsModel.PROJECT:
-            return project
-        if role == ProjectsModel.NAME:
-            return project["name"]
-        if role == ProjectsModel.NAMESPACE:
-            return project["namespace"]
-        if role == ProjectsModel.STATUS:
-            status = self.status(project)
+    @staticmethod
+    def createItems(projects):
+        items = []
+        for project in projects:
+            item = QStandardItem(project["name"])
+
+            status = ProjectsModel.status(project)
             if status == SyncStatus.NOT_DOWNLOADED:
-                return "Not downloaded"
+                status_string = "Not downloaded"
             elif status == SyncStatus.LOCAL_CHANGES:
-                return "Local changes waiting to be pushed"
+                status_string = "Local changes waiting to be pushed"
             elif status == SyncStatus.REMOTE_CHANGES:
-                return "Update available"
+                status_string = "Update available"
             else:  # status == SyncStatus.UP_TO_DATE:
-                return "Up to date"
+                status_string = "Up to date"
 
-        if role == ProjectsModel.LOCAL_DIRECTORY:
-            return self.localProjectPath(project)
-        if role == ProjectsModel.ICON:
-            status = self.status(project)
             icon = ""
             if status == SyncStatus.NOT_DOWNLOADED:
                 icon = "cloud-download.svg"
             elif status in (SyncStatus.LOCAL_CHANGES, SyncStatus.REMOTE_CHANGES):
                 icon = "refresh.svg"
-            return icon
-        return "{} / {}".format(project["namespace"], project["name"])
 
-    def localProjectPath(self, project):
+            item.setData("{} / {}".format(project["namespace"], project["name"]), Qt.DisplayRole)
+            item.setData(project, ProjectsModel.PROJECT)
+            item.setData(project["name"], ProjectsModel.NAME)
+            item.setData(project["namespace"], ProjectsModel.NAMESPACE)
+            item.setData(status_string, ProjectsModel.STATUS)
+            item.setData(ProjectsModel.localProjectPath(project), ProjectsModel.LOCAL_DIRECTORY)
+            item.setData(icon, ProjectsModel.ICON)
+            items.append(item)
+        return items
+
+    @staticmethod
+    def localProjectPath(project):
         project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
         return mergin_project_local_path(project_name)
 
-    def status(self, project):
-        local_proj_path = self.localProjectPath(project)
+    @staticmethod
+    def status(project):
+        local_proj_path = ProjectsModel.localProjectPath(project)
         if local_proj_path is None or not os.path.exists(local_proj_path):
             return SyncStatus.NOT_DOWNLOADED
 
@@ -149,7 +140,7 @@ class ProjectItemDelegate(QAbstractItemDelegate):
         borderRect = QRect(option.rect.marginsRemoved(QMargins(4, 4, 4, 4)))
         iconRect = QRect(borderRect)
         iconRect.setLeft(nameRect.right())
-        iconRect = iconRect.marginsRemoved(QMargins(10, 10, 10, 10))
+        iconRect = iconRect.marginsRemoved(QMargins(12, 12, 12, 12))
 
         painter.save()
         if option.state & QStyle.State_Selected:
@@ -177,45 +168,101 @@ class ProjectSelectionDialog(QDialog):
     open_project_clicked = pyqtSignal(str)
     download_project_clicked = pyqtSignal(dict)
 
-    def __init__(self, projects):
+    def __init__(self, mc, workspace_name):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self, "Mergin")
 
         self.ui.label_logo.setPixmap(QPixmap(icon_path("mm_logo.svg", False)))
 
-        self.model = ProjectsModel(projects)
+        self.mc = mc
+        self.current_workspace_name = workspace_name
 
-        self.proxy = QSortFilterProxyModel()
-        self.proxy.setSourceModel(self.model)
-        self.proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.fetched_projects_number = 0
+        self.total_projects_number = 0
+        self.need_to_fetch_more = False
+        self.text_change_timer = QTimer()
+        self.text_change_timer.setSingleShot(True)
+        self.text_change_timer.setInterval(500)
+        self.text_change_timer.timeout.connect(self.fetch_from_server)
 
+        self.request_page = 1
+        self.model = ProjectsModel()
         self.ui.project_list.setItemDelegate(ProjectItemDelegate())
-        self.ui.project_list.setModel(self.proxy)
-        self.ui.project_list.setCurrentIndex(self.proxy.index(0, 0))
+        self.ui.project_list.setModel(self.model)
+        selectionModel = self.ui.project_list.selectionModel()
+        selectionModel.selectionChanged.connect(self.on_selection_changed)
         self.ui.project_list.doubleClicked.connect(self.on_double_click)
-        self.ui.project_list.currentIndexChanged.connect(self.on_current_changed)
+        self.ui.project_list.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
 
         self.ui.line_edit.setShowSearchIcon(True)
-        self.ui.line_edit.textChanged.connect(self.proxy.setFilterFixedString)
+        self.ui.line_edit.textChanged.connect(self.on_text_changed)
         self.ui.line_edit.setFocus()
 
-        self.ui.open_project_btn.setEnabled(bool(projects))
         self.ui.open_project_btn.clicked.connect(self.on_open_project_clicked)
 
         self.ui.new_project_btn.clicked.connect(self.on_new_project_clicked)
         self.ui.switch_workspace_label.linkActivated.connect(self.on_switch_workspace_clicked)
 
-    def on_current_changed(self, index):
+        self.text_change_timer.start()
+
+    def on_scrollbar_changed(self, val):
+        if not self.need_to_fetch_more:
+            return
+
+        if self.ui.project_list.verticalScrollBar().maximum() <= val:
+            self.fetch_from_server()
+
+    def on_text_changed(self, text):
+        self.text_change_timer.start()
+        self.request_page = 1
+
+    def fetch_from_server(self):
+        name = self.ui.line_edit.text()
+        try:
+            QgsApplication.instance().setOverrideCursor(Qt.WaitCursor)
+            projects = self.mc.paginated_projects_list(
+                flag=None,
+                namespace=self.current_workspace_name,
+                order_params="namespace_asc,name_asc",
+                name=name,
+                page=self.request_page,
+            )
+            if self.request_page == 1:
+                self.model.clear()
+                self.fetched_projects_number = 0
+            self.model.appendProjects(projects["projects"])
+
+            self.fetched_projects_number += len(projects["projects"])
+            self.total_projects_number = projects["count"]
+            if self.total_projects_number > self.fetched_projects_number:
+                self.request_page += 1
+                self.need_to_fetch_more = True
+            else:
+                self.need_to_fetch_more = False
+
+        except (URLError, ClientError) as e:
+            return
+        finally:
+            QgsApplication.instance().restoreOverrideCursor()
+
+    def on_selection_changed(self, selected, deselected):
+        try:
+            index = selected.indexes()[0]
+        except IndexError:
+            index = QModelIndex()
         self.ui.open_project_btn.setEnabled(index.isValid())
 
     def on_open_project_clicked(self):
-        index = self.ui.project_list.selectedIndex()
+        try:
+            index = self.ui.project_list.selectedIndexes()[0]
+        except IndexError:
+            index = QModelIndex()
         if not index.isValid():
             return
 
-        project_path = self.proxy.data(index, ProjectsModel.LOCAL_DIRECTORY)
+        project_path = self.model.data(index, ProjectsModel.LOCAL_DIRECTORY)
         if not project_path:
-            project = self.proxy.data(index, ProjectsModel.PROJECT)
+            project = self.model.data(index, ProjectsModel.PROJECT)
             self.close()
             self.download_project_clicked.emit(project)
             return
@@ -242,8 +289,8 @@ class ProjectSelectionDialog(QDialog):
 
 
 class PublicProjectSelectionDialog(ProjectSelectionDialog):
-    def __init__(self, projects):
-        super(PublicProjectSelectionDialog, self).__init__(projects)
+    def __init__(self, mc):
+        super(PublicProjectSelectionDialog, self).__init__(mc, workspace_name="")
 
         self.setWindowTitle("Explore public projects")
         self.ui.label.setText("Explore public community projects")
