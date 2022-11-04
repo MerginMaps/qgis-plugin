@@ -308,10 +308,11 @@ class MerginPlugin:
         for ws in workspaces:
             if previous_workspace == ws["id"]:
                 workspace = ws
+                break
 
         if not workspaces:
             self.show_no_workspaces_dialog()
-        else:
+        elif not workspace:
             workspace = workspaces[0]
         self.set_current_workspace(workspace)
 
