@@ -204,6 +204,7 @@ class ProjectSelectionDialog(QDialog):
         self.ui.line_edit.textChanged.connect(self.on_text_changed)
         self.ui.line_edit.setFocus()
 
+        self.ui.open_project_btn.setEnabled(False)
         self.ui.open_project_btn.clicked.connect(self.on_open_project_clicked)
 
         self.ui.new_project_btn.clicked.connect(self.on_new_project_clicked)
@@ -239,8 +240,9 @@ class ProjectSelectionDialog(QDialog):
             )
             self.proxy.setFilterFixedString("")
             if self.request_page == 1:
-                self.model.clear()
+                self.ui.project_list.clearSelection()
                 self.ui.project_list.scrollToTop()
+                self.model.clear()
                 self.fetched_projects_number = 0
             self.model.appendProjects(projects["projects"])
 
