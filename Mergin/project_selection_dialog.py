@@ -179,6 +179,7 @@ class ProjectSelectionDialog(QDialog):
 
         self.fetched_projects_number = 0
         self.total_projects_number = 0
+        self.current_search_term = ""
         self.need_to_fetch_more = False
         self.text_change_timer = QTimer()
         self.text_change_timer.setSingleShot(True)
@@ -187,8 +188,13 @@ class ProjectSelectionDialog(QDialog):
 
         self.request_page = 1
         self.model = ProjectsModel()
+
+        self.proxy = QSortFilterProxyModel()
+        self.proxy.setSourceModel(self.model)
+        self.proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+
         self.ui.project_list.setItemDelegate(ProjectItemDelegate())
-        self.ui.project_list.setModel(self.model)
+        self.ui.project_list.setModel(self.proxy)
         selectionModel = self.ui.project_list.selectionModel()
         selectionModel.selectionChanged.connect(self.on_selection_changed)
         self.ui.project_list.doubleClicked.connect(self.on_double_click)
@@ -213,22 +219,28 @@ class ProjectSelectionDialog(QDialog):
             self.fetch_from_server()
 
     def on_text_changed(self, text):
+        if not self.need_to_fetch_more and text.startswith(self.current_search_term):
+            self.proxy.setFilterFixedString(text)
+            return
+
         self.text_change_timer.start()
         self.request_page = 1
 
     def fetch_from_server(self):
-        name = self.ui.line_edit.text()
+        self.current_search_term = self.ui.line_edit.text()
         try:
             QgsApplication.instance().setOverrideCursor(Qt.WaitCursor)
             projects = self.mc.paginated_projects_list(
                 flag=None,
                 namespace=self.current_workspace_name,
                 order_params="namespace_asc,name_asc",
-                name=name,
+                name=self.current_search_term,
                 page=self.request_page,
             )
+            self.proxy.setFilterFixedString("")
             if self.request_page == 1:
                 self.model.clear()
+                self.ui.project_list.scrollToTop()
                 self.fetched_projects_number = 0
             self.model.appendProjects(projects["projects"])
 
@@ -260,9 +272,9 @@ class ProjectSelectionDialog(QDialog):
         if not index.isValid():
             return
 
-        project_path = self.model.data(index, ProjectsModel.LOCAL_DIRECTORY)
+        project_path = self.proxy.data(index, ProjectsModel.LOCAL_DIRECTORY)
         if not project_path:
-            project = self.model.data(index, ProjectsModel.PROJECT)
+            project = self.proxy.data(index, ProjectsModel.PROJECT)
             self.close()
             self.download_project_clicked.emit(project)
             return
