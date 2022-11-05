@@ -873,10 +873,11 @@ class MerginRootItem(QgsDataCollectionItem):
         try:
             resp = self.project_manager.mc.paginated_projects_list(
                 flag=self.filter,
-                namespace=self.workspace,
+                only_namespace=self.workspace,
                 page=page,
                 per_page=per_page,
-                order_params="namespace_asc,name_asc",
+                # todo: switch back to "namespace_asc,name_asc" as it currently crashes ee.dev and ce.dev
+                order_params="name_asc",
             )
             self.projects += resp["projects"]
             self.total_projects_count = int(resp["count"]) if is_number(resp["count"]) else 0

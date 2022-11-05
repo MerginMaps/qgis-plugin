@@ -12,6 +12,7 @@ from qgis.PyQt.QtCore import (
     QMargins,
     pyqtSignal,
     QTimer,
+    QThread,
 )
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QPixmap, QFont, QFontMetrics, QIcon, QStandardItem, QStandardItemModel
@@ -161,6 +162,49 @@ class ProjectItemDelegate(QAbstractItemDelegate):
         painter.restore()
 
 
+class ResultFetcher(QThread):
+    """
+    Class to handle fetching paginated server searches in background worker thread
+    """
+
+    finished = pyqtSignal(dict)
+
+    def __init__(self, mc, namespace, page, name):
+        """
+        ResultFetcher constructor
+
+        :param mc: MerginClient instance
+        :param namespace: namespace to filter by
+        :param page: results page to fetch
+        :param name: name to filter by
+        """
+        super(ResultFetcher, self).__init__()
+        self.mc = mc
+        self.namespace = namespace
+        self.page = page
+        self.name = name
+
+    def isFetchingNextPage(self):
+        return self.page > 1
+
+    def run(self):
+        try:
+            projects = self.mc.paginated_projects_list(
+                flag=None,
+                only_namespace=self.namespace,
+                # todo: switch back to "namespace_asc,name_asc" as it currently crashes ee.dev and ce.dev
+                order_params="name_asc",
+                name=self.name,
+                page=self.page,
+            )
+            if self.isInterruptionRequested():
+                return
+            self.finished.emit(projects)
+
+        except (URLError, ClientError) as e:
+            return
+
+
 class ProjectSelectionDialog(QDialog):
 
     new_project_clicked = pyqtSignal()
@@ -180,15 +224,15 @@ class ProjectSelectionDialog(QDialog):
         self.fetched_projects_number = 0
         self.total_projects_number = 0
         self.current_search_term = ""
-        self.need_to_fetch_more = False
+        self.need_to_fetch_next_page = False
+        self.request_page = 1
         self.text_change_timer = QTimer()
         self.text_change_timer.setSingleShot(True)
         self.text_change_timer.setInterval(500)
         self.text_change_timer.timeout.connect(self.fetch_from_server)
+        self.fetcher = None
 
-        self.request_page = 1
         self.model = ProjectsModel()
-
         self.proxy = QSortFilterProxyModel()
         self.proxy.setSourceModel(self.model)
         self.proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
@@ -212,65 +256,72 @@ class ProjectSelectionDialog(QDialog):
 
         self.text_change_timer.start()
 
-    def on_scrollbar_changed(self, val):
-        if not self.need_to_fetch_more:
-            return
+    def fetch_from_server(self, fetch_next_page=False):
+        self.proxy.setFilterFixedString("")
+        if not fetch_next_page:
+            self.request_page = 1
+            self.ui.project_list.clearSelection()
+            self.ui.project_list.scrollToTop()
+            self.model.clear()
+            self.fetched_projects_number = 0
+            self.total_projects_number = 0
 
-        if self.ui.project_list.verticalScrollBar().maximum() <= val:
-            self.fetch_from_server()
+        if self.fetcher and self.fetcher.isRunning():
+            if fetch_next_page and self.fetcher.isFetchingNextPage():
+                # We only want one fetch_next_page request at a time
+                return
+            else:
+                # Let's replace the existing request with the new one
+                self.fetcher.requestInterruption()
+                QgsApplication.instance().restoreOverrideCursor()
 
-    def on_text_changed(self, text):
-        if not self.need_to_fetch_more and text.startswith(self.current_search_term):
-            self.proxy.setFilterFixedString(text)
-            return
-
-        self.text_change_timer.start()
-        self.request_page = 1
-
-    def fetch_from_server(self):
         self.current_search_term = self.ui.line_edit.text()
-        try:
-            QgsApplication.instance().setOverrideCursor(Qt.WaitCursor)
-            projects = self.mc.paginated_projects_list(
-                flag=None,
-                namespace=self.current_workspace_name,
-                order_params="namespace_asc,name_asc",
-                name=self.current_search_term,
-                page=self.request_page,
-            )
-            self.proxy.setFilterFixedString("")
-            if self.request_page == 1:
-                self.ui.project_list.clearSelection()
-                self.ui.project_list.scrollToTop()
-                self.model.clear()
-                self.fetched_projects_number = 0
-            self.model.appendProjects(projects["projects"])
+        self.fetcher = ResultFetcher(self.mc, self.current_workspace_name, self.request_page, self.current_search_term)
+        self.fetcher.finished.connect(self.handle_server_response)
+        QgsApplication.instance().setOverrideCursor(Qt.WaitCursor)
+        self.fetcher.start()
 
+    def handle_server_response(self, projects):
+        try:
             self.fetched_projects_number += len(projects["projects"])
             self.total_projects_number = projects["count"]
             if self.total_projects_number > self.fetched_projects_number:
                 self.request_page += 1
-                self.need_to_fetch_more = True
+                self.need_to_fetch_next_page = True
             else:
-                self.need_to_fetch_more = False
+                self.need_to_fetch_next_page = False
 
-        except (URLError, ClientError) as e:
+            self.model.appendProjects(projects["projects"])
+        except KeyError:
+            pass
+        QgsApplication.instance().restoreOverrideCursor()
+
+    def on_scrollbar_changed(self, value):
+        if not self.need_to_fetch_next_page:
             return
-        finally:
-            QgsApplication.instance().restoreOverrideCursor()
+
+        if self.ui.project_list.verticalScrollBar().maximum() <= value:
+            self.fetch_from_server(fetch_next_page=True)
+
+    def on_text_changed(self, text):
+        if (
+            self.fetcher
+            and not self.fetcher.isRunning()
+            and not self.need_to_fetch_next_page
+            and text.startswith(self.current_search_term)
+        ):
+            # We already have all results from server, let's filter locally
+            self.proxy.setFilterFixedString(text)
+            return
+
+        self.text_change_timer.start()
 
     def on_selection_changed(self, selected, deselected):
-        try:
-            index = selected.indexes()[0]
-        except IndexError:
-            index = QModelIndex()
+        index = self.selectedIndex()
         self.ui.open_project_btn.setEnabled(index.isValid())
 
     def on_open_project_clicked(self):
-        try:
-            index = self.ui.project_list.selectedIndexes()[0]
-        except IndexError:
-            index = QModelIndex()
+        index = self.selectedIndex()
         if not index.isValid():
             return
 
@@ -300,6 +351,13 @@ class ProjectSelectionDialog(QDialog):
 
     def enable_new_project(self, enable):
         self.ui.new_project_btn.setVisible(enable)
+
+    def selectedIndex(self):
+        try:
+            index = self.ui.project_list.selectedIndexes()[0]
+        except IndexError:
+            index = QModelIndex()
+        return index
 
 
 class PublicProjectSelectionDialog(ProjectSelectionDialog):
