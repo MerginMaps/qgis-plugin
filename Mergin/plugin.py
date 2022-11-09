@@ -288,7 +288,7 @@ class MerginPlugin:
         """
         Sets the current workspace
 
-        :param workspace: Dict containing workspace's "name" and "id" keys 
+        :param workspace: Dict containing workspace's "name" and "id" keys
         """
         settings = QSettings()
         self.current_workspace_name = workspace.get("name", None)
