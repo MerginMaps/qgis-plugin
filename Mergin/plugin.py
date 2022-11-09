@@ -200,7 +200,7 @@ class MerginPlugin:
         try:
             if self.mc is None:
                 self.mc = create_mergin_client()
-            self.chose_active_workspace()
+            self.choose_active_workspace()
             self.manager = MerginProjectsManager(self.mc)
         except (URLError, ClientError, LoginError):
             error = "Plugin not configured or \nQGIS master password not set up"
@@ -285,13 +285,22 @@ class MerginPlugin:
         msg_box.exec_()
 
     def set_current_workspace(self, workspace):
+        """
+        Sets the current workspace
+
+        :param workspace: Dict containing workspace's "name" and "id" keys 
+        """
         settings = QSettings()
         self.current_workspace_name = workspace.get("name", None)
         settings.setValue("Mergin/lastUsedWorkspaceId", workspace.get("id", None))
         if self.has_browser_item():
             self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager)
 
-    def chose_active_workspace(self):
+    def choose_active_workspace(self):
+        """
+        Called after connecting to server.
+        Chooses and sets the current workspace based on workspace availability and last used workspace.
+        """
         user_info = self.mc.user_info()
         workspaces = user_info.get("workspaces", None)
         if not workspaces:
