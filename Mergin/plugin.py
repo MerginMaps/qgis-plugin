@@ -293,27 +293,37 @@ class MerginPlugin:
             self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager)
 
     def chose_active_workspace(self):
-        server_type = self.mc.server_type()
-        if server_type == "old":
-            self.current_workspace_name = self.mc.username()
-            return
-        if server_type == "ce":
-            self.current_workspace_name = self.mc.global_namespace()
+        user_info = self.mc.user_info()
+        workspaces = user_info.get("workspaces", None)
+        if not workspaces:
+            if workspaces is None:
+                # server is old, does not support workspaces
+                self.current_workspace_name = self.mc.username()
+                return
+            else:
+                # User has no workspaces
+                self.show_no_workspaces_dialog()
+                self.current_workspace_name = None
+                return
+
+        if len(workspaces) == 1:
+            self.set_current_workspace(workspaces[0])
             return
 
         settings = QSettings()
         previous_workspace = settings.value("Mergin/lastUsedWorkspaceId", None, int)
-        workspaces = self.mc.workspaces_list()
         workspace = None
         for ws in workspaces:
             if previous_workspace == ws["id"]:
                 workspace = ws
                 break
 
-        if not workspaces:
-            self.show_no_workspaces_dialog()
-        elif not workspace:
-            workspace = workspaces[0]
+        if not workspace:
+            for ws in workspaces:
+                if user_info["preferred_workspace"] == ws["id"]:
+                    workspace = ws
+                    break
+
         self.set_current_workspace(workspace)
 
     def post_login(self):
@@ -349,22 +359,14 @@ class MerginPlugin:
             return
 
         user_info = self.mc.user_info()
-        try:
-            workspaces = self.mc.workspaces_list()
-            if not workspaces:
-                self.show_no_workspaces_dialog()
-                self.current_workspace_name = None
-                return
-        except (URLError, ClientError) as e:
-            ns = self.mc.global_namespace()
-            workspaces = []  # todo: handle bad server response?
-            if ns:
-                workspaces.append(ns)
-            else:
-                workspaces = None
+        workspaces = user_info.get("workspaces", None)
+        if not workspaces and workspaces is not None:
+            self.show_no_workspaces_dialog()
+            self.current_workspace_name = None
+            return
 
         wizard = NewMerginProjectWizard(
-            self.manager, user_info=user_info, workspaces=workspaces, default_workspace=self.current_workspace_name
+            self.manager, user_info=user_info, default_workspace=self.current_workspace_name
         )
         if not wizard.exec_():
             return  # cancelled
@@ -529,19 +531,9 @@ class MerginRemoteProjectItem(QgsDataItem):
 
     def clone_remote_project(self):
         user_info = self.mc.user_info()
-        try:
-            workspaces = self.mc.workspaces_list()
-        except (URLError, ClientError) as e:
-            ns = self.mc.global_namespace()
-            workspaces = []  # todo: handle bad server response?
-            if ns:
-                workspaces.append(ns)
-            else:
-                workspaces = None
+        workspaces = user_info.get("workspaces", None)
 
-        dlg = CloneProjectDialog(
-            user_info=user_info, workspaces=workspaces, default_workspace=self.project["namespace"]
-        )
+        dlg = CloneProjectDialog(user_info=user_info, default_workspace=self.project["namespace"])
         if not dlg.exec_():
             return  # cancelled
         try:
@@ -693,19 +685,9 @@ class MerginLocalProjectItem(QgsDirectoryItem):
 
     def clone_remote_project(self):
         user_info = self.mc.user_info()
-        try:
-            workspaces = self.mc.workspaces_list()
-        except (URLError, ClientError) as e:
-            ns = self.mc.global_namespace()
-            workspaces = []  # todo: handle bad server response?
-            if ns:
-                workspaces.append(ns)
-            else:
-                workspaces = None
+        workspaces = user_info.get("workspaces", None)
 
-        dlg = CloneProjectDialog(
-            user_info=user_info, workspaces=workspaces, default_workspace=self.project["namespace"]
-        )
+        dlg = CloneProjectDialog(user_info=user_info, default_workspace=self.project["namespace"])
 
         if not dlg.exec_():
             return  # cancelled

@@ -10,12 +10,10 @@ ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_cl
 class CloneProjectDialog(QDialog):
     """Dialog for cloning remote projects. Allows selection of workspace/namespace and project name"""
 
-    def __init__(self, user_info, workspaces=[], default_workspace=None):
+    def __init__(self, user_info, default_workspace=None):
         """Create a dialog for cloning remote projects
 
         :param user_info: The user_info dictionary as returned from server
-        :param workspaces: List of available workspaces dictionaries as returned from the server
-        Skip this param if the server does not support workspaces. Namespaces/organizations will be used instead
         :param default_workspace: Optionally, the name of the current workspace so it can be pre-selected in the list
         """
         QDialog.__init__(self)
@@ -23,16 +21,12 @@ class CloneProjectDialog(QDialog):
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
         self.ui.buttonBox.accepted.connect(self.accept_dialog)
 
+        workspaces = user_info.get("workspaces", None)
         if workspaces is not None:
             for ws in workspaces:
-                try:
-                    # Check if server is ee offering per workspace permissions
-                    is_writable = user_info["id"] in ws["owners"] + ws["admins"]
-                    self.ui.projectNamespace.addItem(ws["name"], is_writable)
-                except (KeyError, TypeError):
-                    # Server is ce, we'll ask for forgiveness instead of write permission
-                    is_writable = True
-                    self.ui.projectNamespace.addItem(ws, is_writable)
+                is_writable = ws.get("role", "owner") in ["owner", "admin", "writer"]
+                self.ui.projectNamespace.addItem(ws["name"], is_writable)
+
         else:
             # This means server is old and uses namespaces
             self.ui.projectNamespaceLabel.setText("Owner")
@@ -48,8 +42,7 @@ class CloneProjectDialog(QDialog):
 
         # disable widgets if default workspace is read only
         self.workspace_changed()
-        if default_workspace:
-            self.ui.projectNamespace.setCurrentText(default_workspace)
+        self.ui.projectNamespace.setCurrentText(default_workspace)
 
         # these are the variables used by the caller
         self.project_name = None

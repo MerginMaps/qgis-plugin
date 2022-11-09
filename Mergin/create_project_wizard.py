@@ -115,15 +115,8 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
     def populate_namespace_cbo(self):
         if self.parent.workspaces is not None:
             for ws in self.parent.workspaces:
-                try:
-                    # Check if server is ee offering per workspace permissions
-                    is_writable = self.parent.user_info["id"] in ws["owners"] + ws["admins"]
-                    self.project_owner_cbo.addItem(ws["name"], is_writable)
-                except (KeyError, TypeError):
-                    # Server is ce, we'll ask for forgiveness instead of permission
-                    is_writable = True
-                    self.project_owner_cbo.addItem(ws, is_writable)
-            self.project_owner_cbo.setCurrentText(self.parent.default_workspace)
+                is_writable = ws.get("role", "owner") in ["owner", "admin", "writer"]
+                self.project_owner_cbo.addItem(ws["name"], is_writable)
 
         else:
             # This means server is old and uses namespaces
@@ -134,6 +127,8 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
             for o in user_organisations:
                 if user_organisations[o] in ["owner", "admin", "writer"]:
                     self.project_owner_cbo.addItem(o, True)
+
+        self.project_owner_cbo.setCurrentText(self.parent.default_workspace)
 
     def setup_browsing(self, question=None, current_proj=False, field=None):
         """This will setup label and signals for browse button."""
@@ -413,13 +408,11 @@ class PackagingPage(ui_pack_page, base_pack_page):
 class NewMerginProjectWizard(QWizard):
     """Wizard for creating new Mergin Maps project."""
 
-    def __init__(self, project_manager, user_info, workspaces=[], default_workspace=None, parent=None):
+    def __init__(self, project_manager, user_info, default_workspace=None, parent=None):
         """Create a wizard for new Mergin Maps project
 
         :param project_manager: MerginProjectsManager instance
         :param user_info: The user_info dictionary as returned from server
-        :param workspaces: List of available workspaces dictionaries as returned from the server
-        Skip this param if the server does not support workspaces. Namespaces/organizations will be used instead
         :param default_workspace: Optionally, the name of the current workspace so it can be pre-selected in the list
         """
         super().__init__(parent)
@@ -431,7 +424,7 @@ class NewMerginProjectWizard(QWizard):
         self.project_manager = project_manager
         self.username = user_info["username"]
         self.user_organisations = user_info.get("organisations", [])
-        self.workspaces = workspaces
+        self.workspaces = user_info.get("workspaces", None)
         self.default_workspace = default_workspace
         self.user_info = user_info
 
