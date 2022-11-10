@@ -381,6 +381,7 @@ class MerginPlugin:
         if self.has_browser_item():
             # make sure the item has the link between remote and local project we have just added
             self.data_item_provider.root_item.depopulate()
+            self.data_item_provider.root_item.reload()
 
     def current_project_sync(self):
         """Synchronise current Mergin Maps project."""
