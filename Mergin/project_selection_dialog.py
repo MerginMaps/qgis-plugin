@@ -100,7 +100,7 @@ class ProjectsModel(QStandardItemModel):
 
         mp = MerginProject(local_proj_path)
         local_changes = mp.get_push_changes()
-        if local_changes["added"] or local_changes["updated"]:
+        if local_changes["added"] or local_changes["removed"] or local_changes["updated"]:
             return SyncStatus.LOCAL_CHANGES
         elif compare_versions(project["version"], mp.metadata["version"]) > 0:
             return SyncStatus.REMOTE_CHANGES
