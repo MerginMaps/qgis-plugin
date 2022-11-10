@@ -308,24 +308,22 @@ class MerginPlugin:
             if workspaces is None:
                 # server is old, does not support workspaces
                 self.current_workspace_name = self.mc.username()
-                return
             else:
                 # User has no workspaces
                 self.show_no_workspaces_dialog()
                 self.current_workspace_name = None
-                return
-
-        if len(workspaces) == 1:
-            self.set_current_workspace(workspaces[0])
             return
 
-        settings = QSettings()
-        previous_workspace = settings.value("Mergin/lastUsedWorkspaceId", None, int)
-        workspace = None
-        for ws in workspaces:
-            if previous_workspace == ws["id"]:
-                workspace = ws
-                break
+        if len(workspaces) == 1:
+            workspace = workspaces[0]
+        else:
+            settings = QSettings()
+            previous_workspace = settings.value("Mergin/lastUsedWorkspaceId", None, int)
+            workspace = None
+            for ws in workspaces:
+                if previous_workspace == ws["id"]:
+                    workspace = ws
+                    break
 
         if not workspace:
             for ws in workspaces:
@@ -805,7 +803,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.fetch_more_item = None
         self.filter = flag
         self.base_name = self.name()
-        self.workspace = self.plugin.current_workspace_name
+        self.updateName()
 
     def update_client_and_manager(self, mc=None, manager=None, err=None):
         """Update Mergin client and project manager - used when starting or after a config change."""
@@ -813,11 +811,20 @@ class MerginRootItem(QgsDataCollectionItem):
         self.project_manager = manager
         self.error = err
         self.projects = []
-        self.workspace = self.plugin.current_workspace_name
+        self.updateName()
         # We need to depopulate() so that child groups are refreshed (eg when changing user on old server)
         self.depopulate()
         # We need to refresh() so that changing from an empty workspace repopulates entries
         self.refresh()
+
+    def updateName(self):
+        if self.mc.server_type() == ServerType.OLD:
+            name = self.base_name
+        elif self.plugin.current_workspace_name:
+            name = f"{self.base_name} [{self.plugin.current_workspace_name}]"
+        else:
+            name = self.base_name
+        self.setName(name)
 
     def createChildren(self):
         if self.error or self.mc is None:
@@ -828,14 +835,8 @@ class MerginRootItem(QgsDataCollectionItem):
             return [error_item]
 
         if self.mc.server_type() == ServerType.OLD:
-            self.setName(self.base_name)
             return self.createChildrenGroups()
 
-        if self.workspace:
-            name = f"{self.base_name} [{self.workspace}]"
-        else:
-            name = self.base_name
-        self.setName(name)
         return self.createChildrenProjects()
 
     def createChildrenProjects(self):
@@ -881,14 +882,14 @@ class MerginRootItem(QgsDataCollectionItem):
             error_item = QgsErrorItem(self, "Failed to log in. Please check the configuration", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
-        if not self.workspace:
+        if not self.plugin.current_workspace_name:
             error_item = QgsErrorItem(self, "No workspace available", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
         try:
             resp = self.project_manager.mc.paginated_projects_list(
                 flag=self.filter,
-                only_namespace=self.workspace,
+                only_namespace=self.plugin.current_workspace_name,
                 page=page,
                 per_page=per_page,
                 # todo: switch back to "namespace_asc,name_asc" as it currently crashes ee.dev and ce.dev
