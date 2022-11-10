@@ -119,24 +119,19 @@ class ProjectItemDelegate(QAbstractItemDelegate):
 
     def paint(self, painter, option, index):
         nameFont = QFont(option.font)
+        nameFont.setWeight(QFont.Weight.Bold)
         fm = QFontMetrics(nameFont)
         padding = fm.lineSpacing() // 2
-        nameFont.setWeight(QFont.Weight.Bold)
 
         nameRect = QRect(option.rect)
         nameRect.setLeft(nameRect.left() + padding)
         nameRect.setTop(nameRect.top() + padding)
         nameRect.setRight(nameRect.right() - 50)
         nameRect.setHeight(fm.lineSpacing())
-        infoRect = fm.boundingRect(
-            nameRect.left(),
-            nameRect.bottom() + fm.leading(),
-            nameRect.width(),
-            0,
-            Qt.AlignLeading,
-            index.data(ProjectsModel.STATUS),
-        )
-        infoRect.setTop(infoRect.bottom() - fm.lineSpacing())
+        infoRect = QRect(option.rect)
+        infoRect.setLeft(infoRect.left() + padding)
+        infoRect.setTop(infoRect.bottom() - padding - fm.lineSpacing())
+        infoRect.setRight(infoRect.right() - 50)
         infoRect.setHeight(fm.lineSpacing())
         borderRect = QRect(option.rect.marginsRemoved(QMargins(4, 4, 4, 4)))
         iconRect = QRect(borderRect)
@@ -152,9 +147,12 @@ class ProjectItemDelegate(QAbstractItemDelegate):
             text = index.data(Qt.DisplayRole)
         else:
             text = index.data(ProjectsModel.NAME)
-        painter.drawText(nameRect, Qt.AlignLeading, text)
+        elided_text = fm.elidedText(text, Qt.ElideRight, nameRect.width())
+        painter.drawText(nameRect, Qt.AlignLeading, elided_text)
         painter.setFont(option.font)
-        painter.drawText(infoRect, Qt.AlignLeading, index.data(ProjectsModel.STATUS))
+        fm = QFontMetrics(QFont(option.font))
+        elided_status = fm.elidedText(index.data(ProjectsModel.STATUS), Qt.ElideRight, infoRect.width())
+        painter.drawText(infoRect, Qt.AlignLeading, elided_status)
         icon = index.data(ProjectsModel.ICON)
         if icon:
             icon = QIcon(icon_path(icon))
