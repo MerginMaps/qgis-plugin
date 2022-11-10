@@ -54,9 +54,9 @@ class WorkspaceItemDelegate(QAbstractItemDelegate):
         if description:
             description = description.replace("\n", " ")
         nameFont = QFont(option.font)
+        nameFont.setWeight(QFont.Weight.Bold)
         fm = QFontMetrics(nameFont)
         padding = fm.lineSpacing() // 2
-        nameFont.setWeight(QFont.Weight.Bold)
 
         nameRect = QRect(option.rect)
         nameRect.setLeft(nameRect.left() + padding)
@@ -77,6 +77,7 @@ class WorkspaceItemDelegate(QAbstractItemDelegate):
         painter.setFont(nameFont)
         painter.drawText(nameRect, Qt.AlignLeading, workspace["name"])
         painter.setFont(option.font)
+        fm = QFontMetrics(QFont(option.font))
         elided_description = fm.elidedText(description, Qt.ElideRight, infoRect.width())
         painter.drawText(infoRect, Qt.AlignLeading, elided_description)
         painter.restore()
