@@ -39,6 +39,7 @@ from .project_settings_widget import MerginProjectConfigFactory
 from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
 from .utils import (
+    ServerType,
     ClientError,
     LoginError,
     check_mergin_subdirs,
@@ -826,7 +827,7 @@ class MerginRootItem(QgsDataCollectionItem):
             sip.transferto(error_item, self)
             return [error_item]
 
-        if self.mc.server_type() == "old":
+        if self.mc.server_type() == ServerType.OLD:
             self.setName(self.base_name)
             return self.createChildrenGroups()
 
@@ -951,15 +952,15 @@ class MerginRootItem(QgsDataCollectionItem):
         actions = [action_configure]
         if self.mc:
             server_type = self.mc.server_type()
-            if server_type == "old":
+            if server_type == ServerType.OLD:
                 actions.append(action_create)
-            elif server_type == "ee":
+            elif server_type == ServerType.CE:
+                actions.append(action_refresh)
+                actions.append(action_create)
+            elif server_type in (ServerType.EE, ServerType.SAAS):
                 actions.append(action_refresh)
                 actions.append(action_create)
                 actions.append(action_switch)
-            elif server_type == "ce":
-                actions.append(action_refresh)
-                actions.append(action_create)
         return actions
 
 
