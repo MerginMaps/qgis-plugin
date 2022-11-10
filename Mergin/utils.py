@@ -51,7 +51,7 @@ from .mergin.merginproject import MerginProject
 
 
 try:
-    from .mergin.client import MerginClient, ClientError, LoginError, InvalidProject
+    from .mergin.client import MerginClient, ClientError, LoginError, InvalidProject, ServerType
     from .mergin.client_pull import (
         download_project_async,
         download_project_is_running,
@@ -78,7 +78,7 @@ except ImportError:
     this_dir = os.path.dirname(os.path.realpath(__file__))
     path = os.path.join(this_dir, "mergin_client.whl")
     sys.path.append(path)
-    from mergin.client import MerginClient, ClientError, InvalidProject, LoginError
+    from mergin.client import MerginClient, ClientError, InvalidProject, LoginError, ServerType
     from mergin.client_pull import (
         download_project_async,
         download_project_is_running,

@@ -40,6 +40,7 @@ from .project_settings_widget import MerginProjectConfigFactory
 from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
 from .utils import (
+    ServerType,
     ClientError,
     LoginError,
     check_mergin_subdirs,
@@ -104,6 +105,9 @@ class MerginPlugin:
 
         self.initProcessing()
 
+        self.data_item_provider = DataItemProvider(self)
+        QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
+
         self.create_manager()
 
         self.add_action(
@@ -142,12 +146,6 @@ class MerginPlugin:
         self.enable_toolbar_actions()
 
         self.post_login()
-
-        self.data_item_provider = DataItemProvider(self)
-        QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
-        # related to https://github.com/MerginMaps/qgis-mergin-plugin/issues/3
-        # if self.iface.browserModel().initialized():
-        #     self.iface.browserModel().reload()
 
         # register custom mergin widget in project properties
         self.mergin_project_config_factory = MerginProjectConfigFactory()
@@ -295,6 +293,7 @@ class MerginPlugin:
         self.current_workspace_name = workspace.get("name", None)
         settings.setValue("Mergin/lastUsedWorkspaceId", workspace.get("id", None))
         if self.has_browser_item():
+            self.data_item_provider.root_item.setWorkspaceName(self.current_workspace_name)
             self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager)
 
     def choose_active_workspace(self):
@@ -308,24 +307,24 @@ class MerginPlugin:
             if workspaces is None:
                 # server is old, does not support workspaces
                 self.current_workspace_name = self.mc.username()
-                return
             else:
                 # User has no workspaces
                 self.show_no_workspaces_dialog()
                 self.current_workspace_name = None
-                return
-
-        if len(workspaces) == 1:
-            self.set_current_workspace(workspaces[0])
+            if self.has_browser_item():
+                self.data_item_provider.root_item.setWorkspaceName(None)
             return
 
-        settings = QSettings()
-        previous_workspace = settings.value("Mergin/lastUsedWorkspaceId", None, int)
-        workspace = None
-        for ws in workspaces:
-            if previous_workspace == ws["id"]:
-                workspace = ws
-                break
+        if len(workspaces) == 1:
+            workspace = workspaces[0]
+        else:
+            settings = QSettings()
+            previous_workspace = settings.value("Mergin/lastUsedWorkspaceId", None, int)
+            workspace = None
+            for ws in workspaces:
+                if previous_workspace == ws["id"]:
+                    workspace = ws
+                    break
 
         if not workspace:
             for ws in workspaces:
@@ -781,7 +780,13 @@ class MerginRootItem(QgsDataCollectionItem):
         self.fetch_more_item = None
         self.filter = flag
         self.base_name = self.name()
-        self.workspace = self.plugin.current_workspace_name
+
+    def setWorkspaceName(self, workspace_name):
+        if workspace_name:
+            name = f"{self.base_name} [{workspace_name}]"
+        else:
+            name = self.base_name
+        self.setName(name)
 
     def update_client_and_manager(self, mc=None, manager=None, err=None):
         """Update Mergin client and project manager - used when starting or after a config change."""
@@ -789,7 +794,6 @@ class MerginRootItem(QgsDataCollectionItem):
         self.project_manager = manager
         self.error = err
         self.projects = []
-        self.workspace = self.plugin.current_workspace_name
         # We need to depopulate() so that child groups are refreshed (eg when changing user on old server)
         self.depopulate()
         # We need to refresh() so that changing from an empty workspace repopulates entries
@@ -803,15 +807,9 @@ class MerginRootItem(QgsDataCollectionItem):
             sip.transferto(error_item, self)
             return [error_item]
 
-        if self.mc.server_type() == "old":
-            self.setName(self.base_name)
+        if self.mc.server_type() == ServerType.OLD:
             return self.createChildrenGroups()
 
-        if self.workspace:
-            name = f"{self.base_name} [{self.workspace}]"
-        else:
-            name = self.base_name
-        self.setName(name)
         return self.createChildrenProjects()
 
     def createChildrenProjects(self):
@@ -857,14 +855,14 @@ class MerginRootItem(QgsDataCollectionItem):
             error_item = QgsErrorItem(self, "Failed to log in. Please check the configuration", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
-        if not self.workspace:
+        if not self.plugin.current_workspace_name:
             error_item = QgsErrorItem(self, "No workspace available", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
         try:
             resp = self.project_manager.mc.paginated_projects_list(
                 flag=self.filter,
-                only_namespace=self.workspace,
+                only_namespace=self.plugin.current_workspace_name,
                 page=page,
                 per_page=per_page,
                 # todo: switch back to "namespace_asc,name_asc" as it currently crashes ee.dev and ce.dev
@@ -934,19 +932,19 @@ class MerginRootItem(QgsDataCollectionItem):
         actions = [action_configure]
         if self.mc:
             server_type = self.mc.server_type()
-            if server_type == "old":
+            if server_type == ServerType.OLD:
                 actions.append(action_create)
                 actions.append(action_explore)
-            elif server_type == "ee":
+            elif server_type == ServerType.CE:
+                actions.append(action_refresh)
+                actions.append(action_create)
+                actions.append(action_find)
+                actions.append(action_explore)
+            elif server_type in (ServerType.EE, ServerType.SAAS):
                 actions.append(action_refresh)
                 actions.append(action_create)
                 actions.append(action_find)
                 actions.append(action_switch)
-                actions.append(action_explore)
-            elif server_type == "ce":
-                actions.append(action_refresh)
-                actions.append(action_create)
-                actions.append(action_find)
                 actions.append(action_explore)
         return actions
 
