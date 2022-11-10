@@ -114,6 +114,7 @@ class WorkspaceSelectionDialog(QDialog):
         self.ui.line_edit.setVisible(len(workspaces) >= 5)
         self.ui.line_edit.textChanged.connect(self.proxy.setFilterFixedString)
 
+        self.ui.select_workspace_btn.setEnabled(False)
         self.ui.select_workspace_btn.clicked.connect(self.on_select_workspace_clicked)
         self.ui.manage_workspaces_label.linkActivated.connect(self.on_manage_workspaces_clicked)
 
