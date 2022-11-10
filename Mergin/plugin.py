@@ -105,9 +105,6 @@ class MerginPlugin:
 
         self.initProcessing()
 
-        self.data_item_provider = DataItemProvider(self)
-        QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
-
         self.create_manager()
 
         self.add_action(
@@ -146,6 +143,12 @@ class MerginPlugin:
         self.enable_toolbar_actions()
 
         self.post_login()
+
+        self.data_item_provider = DataItemProvider(self)
+        QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
+        # related to https://github.com/MerginMaps/qgis-mergin-plugin/issues/3
+        # if self.iface.browserModel().initialized():
+        #     self.iface.browserModel().reload()
 
         # register custom mergin widget in project properties
         self.mergin_project_config_factory = MerginProjectConfigFactory()
@@ -293,7 +296,6 @@ class MerginPlugin:
         self.current_workspace_name = workspace.get("name", None)
         settings.setValue("Mergin/lastUsedWorkspaceId", workspace.get("id", None))
         if self.has_browser_item():
-            self.data_item_provider.root_item.setWorkspaceName(self.current_workspace_name)
             self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager)
 
     def choose_active_workspace(self):
@@ -311,8 +313,6 @@ class MerginPlugin:
                 # User has no workspaces
                 self.show_no_workspaces_dialog()
                 self.current_workspace_name = None
-            if self.has_browser_item():
-                self.data_item_provider.root_item.setWorkspaceName(None)
             return
 
         if len(workspaces) == 1:
@@ -780,13 +780,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.fetch_more_item = None
         self.filter = flag
         self.base_name = self.name()
-
-    def setWorkspaceName(self, workspace_name):
-        if workspace_name:
-            name = f"{self.base_name} [{workspace_name}]"
-        else:
-            name = self.base_name
-        self.setName(name)
+        self.updateName()
 
     def update_client_and_manager(self, mc=None, manager=None, err=None):
         """Update Mergin client and project manager - used when starting or after a config change."""
@@ -794,10 +788,20 @@ class MerginRootItem(QgsDataCollectionItem):
         self.project_manager = manager
         self.error = err
         self.projects = []
+        self.updateName()
         # We need to depopulate() so that child groups are refreshed (eg when changing user on old server)
         self.depopulate()
         # We need to refresh() so that changing from an empty workspace repopulates entries
         self.refresh()
+
+    def updateName(self):
+        if self.mc.server_type() == ServerType.OLD:
+            name = self.base_name
+        elif self.plugin.current_workspace_name:
+            name = f"{self.base_name} [{self.plugin.current_workspace_name}]"
+        else:
+            name = self.base_name
+        self.setName(name)
 
     def createChildren(self):
         if self.error or self.mc is None:
