@@ -32,6 +32,7 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .workspace_selection_dialog import WorkspaceSelectionDialog
+from .project_selection_dialog import ProjectSelectionDialog, PublicProjectSelectionDialog
 from .create_project_wizard import NewMerginProjectWizard
 from .clone_project_dialog import CloneProjectDialog
 from .diff_dialog import DiffViewerDialog
@@ -385,6 +386,22 @@ class MerginPlugin:
         """Synchronise current Mergin Maps project."""
         self.manager.project_status(self.mergin_proj_dir)
 
+    def find_project(self):
+        """Open new Find Mergin Maps project dialog"""
+        dlg = ProjectSelectionDialog(self.mc, self.current_workspace_name)
+        dlg.new_project_clicked.connect(self.create_new_project)
+        dlg.switch_workspace_clicked.connect(self.switch_workspace)
+        dlg.open_project_clicked.connect(self.manager.open_project)
+        dlg.download_project_clicked.connect(self.manager.download_project)
+
+        try:
+            workspaces = self.mc.workspaces_list()
+            dlg.enable_workspace_switching(len(workspaces) > 1)
+        except:
+            pass
+
+        dlg.exec_()
+
     def switch_workspace(self):
         """Open new Switch workspace dialog"""
         try:
@@ -404,6 +421,13 @@ class MerginPlugin:
 
         workspace = dlg.get_workspace()
         self.set_current_workspace(workspace)
+
+    def explore_public_projects(self):
+        """Open new Explore public Mergin Maps projects dialog"""
+        dlg = PublicProjectSelectionDialog(self.mc)
+        dlg.open_project_clicked.connect(self.manager.open_project)
+        dlg.download_project_clicked.connect(self.manager.download_project)
+        dlg.exec_()
 
     def on_qgis_project_changed(self):
         """
@@ -507,55 +531,8 @@ class MerginRemoteProjectItem(QgsDataItem):
             self.mc = None
 
     def download(self):
-        settings = QSettings()
-        last_parent_dir = settings.value("Mergin/lastUsedDownloadDir", str(Path.home()))
-        parent_dir = QFileDialog.getExistingDirectory(None, "Open Directory", last_parent_dir, QFileDialog.ShowDirsOnly)
-        if not parent_dir:
-            return
-        settings.setValue("Mergin/lastUsedDownloadDir", parent_dir)
-        target_dir = os.path.abspath(os.path.join(parent_dir, self.project["name"]))
-        if os.path.exists(target_dir):
-            QMessageBox.warning(
-                None,
-                "Download Project",
-                "The target directory already exists:\n" + target_dir + "\n\nPlease select a different directory.",
-            )
-            return
-
-        dlg = SyncDialog()
-        dlg.download_start(self.mc, target_dir, self.project_name)
-        dlg.exec_()  # blocks until completion / failure / cancellation
-        if dlg.exception:
-            if isinstance(dlg.exception, (URLError, ValueError)):
-                QgsApplication.messageLog().logMessage("Mergin Maps plugin: " + str(dlg.exception))
-                msg = (
-                    "Failed to download your project {}.\n"
-                    "Please make sure your Mergin Maps settings are correct".format(self.project_name)
-                )
-                QMessageBox.critical(None, "Project download", msg, QMessageBox.Close)
-            elif isinstance(dlg.exception, LoginError):
-                login_error_message(dlg.exception)
-            else:
-                unhandled_exception_message(
-                    dlg.exception_details(),
-                    "Project download",
-                    f"Failed to download project {self.project_name} due to an unhandled exception.",
-                )
-            return
-        if not dlg.is_complete:
-            return  # either it has been cancelled or an error has been thrown
-
-        settings.setValue("Mergin/localProjects/{}/path".format(self.project_name), target_dir)
-        self.path = target_dir
-        msg = "Your project {} has been successfully downloaded. " "Do you want to open project file?".format(
-            self.project_name
-        )
-        btn_reply = QMessageBox.question(
-            None, "Project download", msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
-        )
-        if btn_reply == QMessageBox.Yes:
-            self.open_project()
-        self.parent().reload()
+        self.project_manager.download_project(self.project)
+        return
 
     def open_project(self):
         self.project_manager.open_project(self.path)
@@ -947,21 +924,32 @@ class MerginRootItem(QgsDataCollectionItem):
         action_create = QAction(QIcon(icon_path("square-plus.svg")), "Create new project", parent)
         action_create.triggered.connect(self.plugin.create_new_project)
 
+        action_find = QAction(QIcon(icon_path("search.svg")), "Find project", parent)
+        action_find.triggered.connect(self.plugin.find_project)
+
         action_switch = QAction(QIcon(icon_path("replace.svg")), "Switch workspace", parent)
         action_switch.triggered.connect(self.plugin.switch_workspace)
+
+        action_explore = QAction(QIcon(icon_path("explore.svg")), "Explore public projects", parent)
+        action_explore.triggered.connect(self.plugin.explore_public_projects)
 
         actions = [action_configure]
         if self.mc:
             server_type = self.mc.server_type()
             if server_type == ServerType.OLD:
                 actions.append(action_create)
+                actions.append(action_explore)
             elif server_type == ServerType.CE:
                 actions.append(action_refresh)
                 actions.append(action_create)
+                actions.append(action_find)
+                actions.append(action_explore)
             elif server_type in (ServerType.EE, ServerType.SAAS):
                 actions.append(action_refresh)
                 actions.append(action_create)
+                actions.append(action_find)
                 actions.append(action_switch)
+                actions.append(action_explore)
         return actions
 
 
