@@ -63,15 +63,10 @@ class WorkspaceItemDelegate(QAbstractItemDelegate):
         nameRect.setTop(nameRect.top() + padding)
         nameRect.setRight(nameRect.right() - 50)
         nameRect.setHeight(fm.lineSpacing())
-        infoRect = fm.boundingRect(
-            nameRect.left(),
-            nameRect.bottom() + fm.leading(),
-            nameRect.width(),
-            0,
-            Qt.AlignLeading,
-            description,
-        )
-        infoRect.setTop(infoRect.bottom() - fm.lineSpacing())
+        infoRect = QRect(option.rect)
+        infoRect.setLeft(infoRect.left() + padding)
+        infoRect.setTop(infoRect.bottom() - padding - fm.lineSpacing())
+        infoRect.setRight(infoRect.right() - padding)
         infoRect.setHeight(fm.lineSpacing())
         borderRect = QRect(option.rect.marginsRemoved(QMargins(4, 4, 4, 4)))
 
@@ -82,7 +77,8 @@ class WorkspaceItemDelegate(QAbstractItemDelegate):
         painter.setFont(nameFont)
         painter.drawText(nameRect, Qt.AlignLeading, workspace["name"])
         painter.setFont(option.font)
-        painter.drawText(infoRect, Qt.AlignLeading, description)
+        elided_description = fm.elidedText(description, Qt.ElideRight, infoRect.width())
+        painter.drawText(infoRect, Qt.AlignLeading, elided_description)
         painter.restore()
 
 
@@ -114,6 +110,7 @@ class WorkspaceSelectionDialog(QDialog):
         self.ui.line_edit.setVisible(len(workspaces) >= 5)
         self.ui.line_edit.textChanged.connect(self.proxy.setFilterFixedString)
 
+        self.ui.select_workspace_btn.setEnabled(False)
         self.ui.select_workspace_btn.clicked.connect(self.on_select_workspace_clicked)
         self.ui.manage_workspaces_label.linkActivated.connect(self.on_manage_workspaces_clicked)
 
