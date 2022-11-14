@@ -912,6 +912,9 @@ class MerginRootItem(QgsDataCollectionItem):
         self.refresh()
 
     def reload(self):
+        if not self.plugin.current_workspace_name:
+            self.plugin.choose_active_workspace()
+
         self.projects = []
         self.refresh()
 
