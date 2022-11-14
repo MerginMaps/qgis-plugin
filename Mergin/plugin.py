@@ -867,7 +867,7 @@ class MerginRootItem(QgsDataCollectionItem):
         try:
             resp = self.project_manager.mc.paginated_projects_list(
                 flag=self.filter,
-                only_namespace=self.plugin.current_workspace_name,
+                only_namespace=None if self.filter else self.plugin.current_workspace_name,
                 page=page,
                 per_page=per_page,
                 # todo: switch back to "namespace_asc,name_asc" as it currently crashes ee.dev and ce.dev
