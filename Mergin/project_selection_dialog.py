@@ -42,9 +42,10 @@ class ProjectsModel(QStandardItemModel):
     PROJECT = Qt.UserRole + 1
     NAME = Qt.UserRole + 2
     NAMESPACE = Qt.UserRole + 3
-    STATUS = Qt.UserRole + 4
-    LOCAL_DIRECTORY = Qt.UserRole + 5
-    ICON = Qt.UserRole + 6
+    NAME_WITH_NAMESPACE = Qt.UserRole + 4
+    STATUS = Qt.UserRole + 5
+    LOCAL_DIRECTORY = Qt.UserRole + 6
+    ICON = Qt.UserRole + 7
 
     def __init__(self, projects=None):
         super(ProjectsModel, self).__init__()
@@ -77,7 +78,9 @@ class ProjectsModel(QStandardItemModel):
             elif status in (SyncStatus.LOCAL_CHANGES, SyncStatus.REMOTE_CHANGES):
                 icon = "refresh.svg"
 
-            item.setData("{} / {}".format(project["namespace"], project["name"]), Qt.DisplayRole)
+            name_with_namespace = f"{project['namespace']}/{project['name']}"
+            item.setData(name_with_namespace, Qt.DisplayRole)
+            item.setData(name_with_namespace, ProjectsModel.NAME_WITH_NAMESPACE)
             item.setData(project, ProjectsModel.PROJECT)
             item.setData(project["name"], ProjectsModel.NAME)
             item.setData(project["namespace"], ProjectsModel.NAMESPACE)
@@ -144,7 +147,7 @@ class ProjectItemDelegate(QAbstractItemDelegate):
         painter.drawRect(borderRect)
         painter.setFont(nameFont)
         if self.show_namespace:
-            text = index.data(Qt.DisplayRole)
+            text = index.data(ProjectsModel.NAME_WITH_NAMESPACE)
         else:
             text = index.data(ProjectsModel.NAME)
         elided_text = fm.elidedText(text, Qt.ElideRight, nameRect.width())
@@ -233,6 +236,7 @@ class ProjectSelectionDialog(QDialog):
         self.model = ProjectsModel()
         self.proxy = QSortFilterProxyModel()
         self.proxy.setSourceModel(self.model)
+        self.proxy.setFilterRole(ProjectsModel.NAME)
         self.proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
 
         self.ui.project_list.setItemDelegate(ProjectItemDelegate())
@@ -368,3 +372,4 @@ class PublicProjectSelectionDialog(ProjectSelectionDialog):
         self.ui.project_list.setItemDelegate(ProjectItemDelegate(show_namespace=True))
         self.enable_workspace_switching(False)
         self.enable_new_project(False)
+        self.proxy.setFilterRole(ProjectsModel.NAME_WITH_NAMESPACE)
