@@ -77,7 +77,7 @@ class MerginPlugin:
         self.mergin_proj_dir = None
         self.mc = None
         self.manager = None
-        self.current_workspace_name = None
+        self.current_workspace_name = None  # This is None if the server does not support workspaces
         self.provider = MerginProvider()
         self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
         self.toolbar.setToolTip("Mergin Maps Toolbar")
@@ -308,7 +308,7 @@ class MerginPlugin:
         if not workspaces:
             if workspaces is None:
                 # server is old, does not support workspaces
-                self.current_workspace_name = self.mc.username()
+                self.current_workspace_name = None
             else:
                 # User has no workspaces
                 self.show_no_workspaces_dialog()
@@ -373,9 +373,11 @@ class MerginPlugin:
             self.current_workspace_name = None
             return
 
-        wizard = NewMerginProjectWizard(
-            self.manager, user_info=user_info, default_workspace=self.current_workspace_name
-        )
+        default_workspace = self.current_workspace_name
+        if self.mc.server_type() == ServerType.OLD:
+            default_workspace = user_info["username"]
+
+        wizard = NewMerginProjectWizard(self.manager, user_info=user_info, default_workspace=default_workspace)
         if not wizard.exec_():
             return  # cancelled
         if self.has_browser_item():
@@ -540,7 +542,6 @@ class MerginRemoteProjectItem(QgsDataItem):
 
     def clone_remote_project(self):
         user_info = self.mc.user_info()
-        workspaces = user_info.get("workspaces", None)
 
         dlg = CloneProjectDialog(user_info=user_info, default_workspace=self.project["namespace"])
         if not dlg.exec_():
@@ -694,7 +695,6 @@ class MerginLocalProjectItem(QgsDirectoryItem):
 
     def clone_remote_project(self):
         user_info = self.mc.user_info()
-        workspaces = user_info.get("workspaces", None)
 
         dlg = CloneProjectDialog(user_info=user_info, default_workspace=self.project["namespace"])
 
@@ -860,7 +860,7 @@ class MerginRootItem(QgsDataCollectionItem):
             error_item = QgsErrorItem(self, "Failed to log in. Please check the configuration", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
-        if not self.plugin.current_workspace_name:
+        if self.mc.server_type() != ServerType.OLD and not self.plugin.current_workspace_name:
             error_item = QgsErrorItem(self, "No workspace available", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
