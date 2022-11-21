@@ -1,9 +1,11 @@
 import os
 from urllib.parse import urlparse
+from pathlib import Path
+import posixpath
 
-from qgis.core import QgsProject, Qgis
+from qgis.core import QgsProject, Qgis, QgsApplication
 from qgis.utils import iface
-from qgis.PyQt.QtWidgets import QMessageBox, QApplication, QPushButton
+from qgis.PyQt.QtWidgets import QMessageBox, QApplication, QPushButton, QFileDialog
 from qgis.PyQt.QtCore import QSettings, Qt, QTimer
 from urllib.error import URLError
 
@@ -363,14 +365,21 @@ class MerginProjectsManager(object):
 
     def get_mergin_browser_groups(self):
         """
-        Return browser tree items of Mergin Maps provider. These should be the 3 projects groups, or Error item, if
+        Return browser tree items of Mergin Maps provider. These should be the 2 projects groups, or Error item, if
         the plugin is not properly configured.
         """
         browser_model = self.iface.browserModel()
         root_idx = browser_model.findPath("Mergin Maps")
         if not root_idx.isValid():
             return {}
-        group_items = [browser_model.dataItem(browser_model.index(i, 0, parent=root_idx)) for i in range(3)]
+        group_items = []
+        for i in range(browser_model.rowCount(root_idx)):
+            item = browser_model.dataItem(browser_model.index(i, 0, parent=root_idx))
+            try:
+                if item.isMerginGroupItem():
+                    group_items.append(item)
+            except AttributeError as e:
+                pass
         return {i.path().replace("/Mergin", ""): i for i in group_items}
 
     def report_conflicts(self, conflicts):
@@ -425,3 +434,62 @@ class MerginProjectsManager(object):
         # we have to wait a bit to let the OS (Windows) release lock on the GPKG files
         # otherwise attempt to resolve unfinished pull will fail
         QTimer.singleShot(delay, lambda: self.resolve_unfinished_pull(project_dir, True))
+
+    def download_project(self, project):
+        project_name = posixpath.join(project["namespace"], project["name"])  # we need posix path for server API calls
+        settings = QSettings()
+        last_parent_dir = settings.value("Mergin/lastUsedDownloadDir", str(Path.home()))
+        parent_dir = QFileDialog.getExistingDirectory(None, "Open Directory", last_parent_dir, QFileDialog.ShowDirsOnly)
+        if not parent_dir:
+            return
+        settings.setValue("Mergin/lastUsedDownloadDir", parent_dir)
+        target_dir = os.path.abspath(os.path.join(parent_dir, project["name"]))
+        if os.path.exists(target_dir):
+            QMessageBox.warning(
+                None,
+                "Download Project",
+                "The target directory already exists:\n" + target_dir + "\n\nPlease select a different directory.",
+            )
+            return
+
+        dlg = SyncDialog()
+        dlg.download_start(self.mc, target_dir, project_name)
+        dlg.exec_()  # blocks until completion / failure / cancellation
+        if dlg.exception:
+            if isinstance(dlg.exception, (URLError, ValueError)):
+                QgsApplication.messageLog().logMessage("Mergin Maps plugin: " + str(dlg.exception))
+                msg = (
+                    "Failed to download your project {}.\n"
+                    "Please make sure your Mergin Maps settings are correct".format(project_name)
+                )
+                QMessageBox.critical(None, "Project download", msg, QMessageBox.Close)
+            elif isinstance(dlg.exception, LoginError):
+                login_error_message(dlg.exception)
+            else:
+                unhandled_exception_message(
+                    dlg.exception_details(),
+                    "Project download",
+                    f"Failed to download project {project_name} due to an unhandled exception.",
+                )
+            return
+        if not dlg.is_complete:
+            return  # either it has been cancelled or an error has been thrown
+
+        settings.setValue("Mergin/localProjects/{}/path".format(project_name), target_dir)
+        msg = "Your project {} has been successfully downloaded. Do you want to open project file?".format(project_name)
+        btn_reply = QMessageBox.question(
+            None, "Project download", msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+        )
+        if btn_reply == QMessageBox.Yes:
+            self.open_project(target_dir)
+
+        # reload the two browser groups (in case server is old)
+        groups = self.get_mergin_browser_groups()
+        for group in groups:
+            groups[group].reload()
+
+        # reload the Mergin Maps browser entry (in case server is ee/ce)
+        browser_model = self.iface.browserModel()
+        root_idx = browser_model.findPath("Mergin Maps")
+        item = browser_model.dataItem(root_idx)
+        item.reload()

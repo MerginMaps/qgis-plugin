@@ -87,7 +87,10 @@ class ProjectStatusDialog(QDialog):
     def _get_info_text(self, has_files_to_replace, has_write_permissions, has_unfinished_pull):
         msg = []
         if not has_write_permissions:
-            msg.append(f"You don't have writing permissions to this project. Changes won't be synced!")
+            msg.append(
+                f"You don't have writing permissions to this project. Changes won't be synced!\n"
+                f"You may package the current project to a writable workspace instead, by selecting Create New Project."
+            )
 
         if has_files_to_replace:
             msg.append(
@@ -97,7 +100,7 @@ class ProjectStatusDialog(QDialog):
 
         if has_unfinished_pull:
             msg.append(
-                f"The previous pull has not finished completely: status " f"of some files may be reported incorrectly."
+                f"The previous pull has not finished completely: status of some files may be reported incorrectly."
             )
 
         return msg
