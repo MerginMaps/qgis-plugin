@@ -160,6 +160,8 @@ class test_utils(unittest.TestCase):
             ("lutra", False),
             ("merginmaps", False),
             ("mergin", False),
+            ("admin", False),
+            ("sales", False),
         ]
 
         for t in test_cases:
