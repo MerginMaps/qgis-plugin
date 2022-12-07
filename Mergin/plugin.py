@@ -77,7 +77,8 @@ class MerginPlugin:
         self.mergin_proj_dir = None
         self.mc = None
         self.manager = None
-        self.current_workspace_name = None  # This is None if the server does not support workspaces
+        # current_workspace is a dict with "name" and "id" keys, empty dict() if the server does not support workspaces
+        self.current_workspace = dict()
         self.provider = MerginProvider()
         self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
         self.toolbar.setToolTip("Mergin Maps Toolbar")
@@ -293,7 +294,7 @@ class MerginPlugin:
         :param workspace: Dict containing workspace's "name" and "id" keys
         """
         settings = QSettings()
-        self.current_workspace_name = workspace.get("name", None)
+        self.current_workspace = workspace
         settings.setValue("Mergin/lastUsedWorkspaceId", workspace.get("id", None))
         if self.has_browser_item():
             self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager)
@@ -308,11 +309,11 @@ class MerginPlugin:
         if not workspaces:
             if workspaces is None:
                 # server is old, does not support workspaces
-                self.current_workspace_name = None
+                self.current_workspace = dict()
             else:
                 # User has no workspaces
                 self.show_no_workspaces_dialog()
-                self.current_workspace_name = None
+                self.current_workspace = dict()
             return
 
         if len(workspaces) == 1:
@@ -370,10 +371,10 @@ class MerginPlugin:
         workspaces = user_info.get("workspaces", None)
         if not workspaces and workspaces is not None:
             self.show_no_workspaces_dialog()
-            self.current_workspace_name = None
+            self.current_workspace = dict()
             return
 
-        default_workspace = self.current_workspace_name
+        default_workspace = self.current_workspace.get("name", None)
         if self.mc.server_type() == ServerType.OLD:
             default_workspace = user_info["username"]
 
@@ -391,7 +392,7 @@ class MerginPlugin:
 
     def find_project(self):
         """Open new Find Mergin Maps project dialog"""
-        dlg = ProjectSelectionDialog(self.mc, self.current_workspace_name)
+        dlg = ProjectSelectionDialog(self.mc, self.current_workspace.get("name", None))
         dlg.new_project_clicked.connect(self.create_new_project)
         dlg.switch_workspace_clicked.connect(self.switch_workspace)
         dlg.open_project_clicked.connect(self.manager.open_project)
@@ -414,7 +415,7 @@ class MerginPlugin:
 
         if not workspaces:
             self.show_no_workspaces_dialog()
-            self.current_workspace_name = None
+            self.current_workspace = dict()
             return
 
         dlg = WorkspaceSelectionDialog(workspaces)
@@ -798,8 +799,8 @@ class MerginRootItem(QgsDataCollectionItem):
     def updateName(self):
         if self.mc.server_type() == ServerType.OLD:
             name = self.base_name
-        elif self.plugin.current_workspace_name:
-            name = f"{self.base_name} [{self.plugin.current_workspace_name}]"
+        elif self.plugin.current_workspace.get("name", None):
+            name = f"{self.base_name} [{self.plugin.current_workspace['name']}]"
         else:
             name = self.base_name
         self.setName(name)
@@ -860,14 +861,14 @@ class MerginRootItem(QgsDataCollectionItem):
             error_item = QgsErrorItem(self, "Failed to log in. Please check the configuration", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
-        if self.mc.server_type() != ServerType.OLD and not self.plugin.current_workspace_name:
+        if self.mc.server_type() != ServerType.OLD and not self.plugin.current_workspace:
             error_item = QgsErrorItem(self, "No workspace available", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
         try:
             resp = self.project_manager.mc.paginated_projects_list(
                 flag=self.filter,
-                only_namespace=None if self.filter else self.plugin.current_workspace_name,
+                only_namespace=None if self.filter else self.plugin.current_workspace.get("name", None),
                 page=page,
                 per_page=per_page,
                 # todo: switch back to "namespace_asc,name_asc" as it currently crashes ee.dev and ce.dev
@@ -912,7 +913,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.refresh()
 
     def reload(self):
-        if not self.plugin.current_workspace_name:
+        if not self.plugin.current_workspace:
             self.plugin.choose_active_workspace()
 
         self.projects = []
