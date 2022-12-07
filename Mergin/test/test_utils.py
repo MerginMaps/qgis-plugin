@@ -162,6 +162,8 @@ class test_utils(unittest.TestCase):
             ("mergin", False),
             ("admin", False),
             ("sales", False),
+            ("測試", True),
+            ("מִבְחָן", True),
         ]
 
         for t in test_cases:
