@@ -295,9 +295,27 @@ class MerginPlugin:
         """
         settings = QSettings()
         self.current_workspace = workspace
-        settings.setValue("Mergin/lastUsedWorkspaceId", workspace.get("id", None))
+        workspace_id = self.current_workspace.get("id", None)
+        settings.setValue("Mergin/lastUsedWorkspaceId", workspace_id)
         if self.has_browser_item():
             self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager)
+
+        if self.mc.server_type == ServerType.SaaS and workspace_id:
+            # check action required flag
+            service_response = self.mc.workspace_service(workspace_id)
+
+            if service_response and type(service_response) is dict:
+                requires_action = service_response.get("action_required", False)
+
+                if requires_action:
+                    iface.messageBar().pushMessage(
+                        "Mergin Maps",
+                        "Your attention is required.&nbsp;Please visit the "
+                        f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required'>"
+                        "Mergin dashboard</a>",
+                        level=Qgis.Critical,
+                        duration=0,
+                    )
 
     def choose_active_workspace(self):
         """
@@ -338,6 +356,9 @@ class MerginPlugin:
     def post_login(self):
         """Groups actions that needs to be done when auth information changes"""
         if not self.mc:
+            return
+
+        if self.mc.server_type != ServerType.OLD:
             return
 
         settings = QSettings()
