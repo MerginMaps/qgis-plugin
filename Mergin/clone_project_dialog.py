@@ -2,6 +2,8 @@ import os
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QApplication, QMessageBox
 from qgis.PyQt import uic
 
+from .utils import is_valid_name
+
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_clone_project.ui")
 
 
@@ -23,7 +25,12 @@ class CloneProjectDialog(QDialog):
         self.project_namespace = None
 
     def text_changed(self):
-        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(bool(self.ui.edit_project_name.text()))
+        proj_name = self.ui.edit_project_name.text()
+        if not is_valid_name(proj_name):
+            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
+            QMessageBox.warning(self, "Clone Project", "Incorrect project name!")
+        else:
+            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(bool(proj_name))
 
     def accept_dialog(self):
         self.project_name = self.ui.edit_project_name.text()
