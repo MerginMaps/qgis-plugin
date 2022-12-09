@@ -23,14 +23,18 @@ class CloneProjectDialog(QDialog):
         # these are the variables used by the caller
         self.project_name = None
         self.project_namespace = None
+        self.invalid = False
 
     def text_changed(self):
         proj_name = self.ui.edit_project_name.text()
         if not is_valid_name(proj_name):
             self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
-            QMessageBox.warning(self, "Clone Project", "Incorrect project name!")
+            if not self.invalid:
+                QMessageBox.warning(self, "Clone Project", "Incorrect project name!")
+            self.invalid = True
         else:
             self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(bool(proj_name))
+            self.invalid = False
 
     def accept_dialog(self):
         self.project_name = self.ui.edit_project_name.text()
