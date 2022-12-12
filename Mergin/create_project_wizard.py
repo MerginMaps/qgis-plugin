@@ -25,6 +25,7 @@ from .utils import (
     PackagingError,
     save_current_project,
     package_datum_grids,
+    is_valid_name,
 )
 
 base_dir = os.path.dirname(__file__)
@@ -162,7 +163,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         if not proj_name:
             self.create_warning("Project name missing!")
             return
-        if "\\" in proj_name or os.sep in proj_name:
+        if not is_valid_name(proj_name):
             self.create_warning("Incorrect project name!")
             return
 

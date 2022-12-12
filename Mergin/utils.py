@@ -12,6 +12,7 @@ import urllib.request
 import tempfile
 import json
 import glob
+import re
 
 from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
@@ -1259,3 +1260,17 @@ def package_datum_grids(dest_dir):
     if dest_dir is not None:
         os.makedirs(dest_dir, exist_ok=True)
         copy_datum_shift_grids(dest_dir)
+
+
+def is_valid_name(name):
+    """
+    Check if name is a valid project/namespace name
+    """
+    return (
+        re.match(
+            r".*[\@\#\$\%\^\&\*\(\)\{\}\[\]\?\'\"`,;\:\+\=\~\\\/\|\<\>].*|^[\s^\.].*$|^CON$|^PRN$|^AUX$|^NUL$|^COM\d$|^LPT\d|^support$|^helpdesk$|^merginmaps$|^lutraconsulting$|^mergin$|^lutra$|^input$|^admin$|^sales$",
+            name,
+            re.IGNORECASE,
+        )
+        is None
+    )
