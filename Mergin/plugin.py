@@ -773,6 +773,19 @@ class FetchMoreItem(QgsDataItem):
         return True
 
 
+class CreateNewProjectItem(QgsDataItem):
+    """Data item to represent an action to create a new project."""
+
+    def __init__(self, parent):
+        self.parent = parent
+        QgsDataItem.__init__(self, QgsDataItem.Collection, parent, "Create new project...", "")
+        self.setIcon(QIcon(icon_path("square-plus.svg")))
+
+    def handleDoubleClick(self):
+        self.parent.new_project()
+        return True
+
+
 class MerginRootItem(QgsDataCollectionItem):
     """Mergin root data containing project groups item with configuration dialog."""
 
@@ -801,6 +814,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.projects = []
         self.total_projects_count = None
         self.fetch_more_item = None
+        self.create_new_project_item = None
         self.filter = flag
         self.base_name = self.name()
         self.updateName()
@@ -812,10 +826,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.error = err
         self.projects = []
         self.updateName()
-        # We need to depopulate() so that child groups are refreshed (eg when changing user on old server)
         self.depopulate()
-        # We need to refresh() so that changing from an empty workspace repopulates entries
-        self.refresh()
 
     def updateName(self):
         name = self.base_name
@@ -859,6 +870,11 @@ class MerginRootItem(QgsDataCollectionItem):
         self.set_fetch_more_item()
         if self.fetch_more_item is not None:
             items.append(self.fetch_more_item)
+        if not items and self.mc.server_type() != ServerType.OLD:
+            self.create_new_project_item = CreateNewProjectItem(self)
+            self.create_new_project_item.setState(QgsDataItem.Populated)
+            sip.transferto(self.create_new_project_item, self)
+            items.append(self.create_new_project_item)
         return items
 
     def createChildrenGroups(self):
@@ -941,6 +957,10 @@ class MerginRootItem(QgsDataCollectionItem):
         self.projects = []
         self.refresh()
 
+    def new_project(self):
+        """Start the Create new project wizard"""
+        self.plugin.create_new_project()
+
     def actions(self, parent):
         action_configure = QAction(QIcon(icon_path("settings.svg")), "Configure", parent)
         action_configure.triggered.connect(self.plugin.configure)
@@ -949,7 +969,7 @@ class MerginRootItem(QgsDataCollectionItem):
         action_refresh.triggered.connect(self.reload)
 
         action_create = QAction(QIcon(icon_path("square-plus.svg")), "Create new project", parent)
-        action_create.triggered.connect(self.plugin.create_new_project)
+        action_create.triggered.connect(self.new_project)
 
         action_find = QAction(QIcon(icon_path("search.svg")), "Find project", parent)
         action_find.triggered.connect(self.plugin.find_project)
@@ -1002,7 +1022,7 @@ class MerginGroupItem(MerginRootItem):
             actions.append(action_fetch_more)
         if self.name().startswith("My projects"):
             action_create = QAction(QIcon(icon_path("square-plus.svg")), "Create new project", parent)
-            action_create.triggered.connect(self.plugin.create_new_project)
+            action_create.triggered.connect(self.new_project)
             actions.append(action_create)
         return actions
 
