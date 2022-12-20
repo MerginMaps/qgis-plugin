@@ -300,7 +300,7 @@ class MerginPlugin:
         if self.has_browser_item():
             self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager)
 
-        if self.mc.server_type == ServerType.SaaS and workspace_id:
+        if self.mc.server_type() == ServerType.SAAS and workspace_id:
             # check action required flag
             service_response = self.mc.workspace_service(workspace_id)
 
@@ -358,7 +358,7 @@ class MerginPlugin:
         if not self.mc:
             return
 
-        if self.mc.server_type != ServerType.OLD:
+        if self.mc.server_type() != ServerType.OLD:
             return
 
         settings = QSettings()
@@ -818,12 +818,13 @@ class MerginRootItem(QgsDataCollectionItem):
         self.refresh()
 
     def updateName(self):
-        if self.mc.server_type() == ServerType.OLD:
-            name = self.base_name
-        elif self.plugin.current_workspace.get("name", None):
-            name = f"{self.base_name} [{self.plugin.current_workspace['name']}]"
-        else:
-            name = self.base_name
+        name = self.base_name
+        try:
+            if self.mc.server_type() != ServerType.OLD and self.plugin.current_workspace.get("name", None):
+                name = f"{self.base_name} [{self.plugin.current_workspace['name']}]"
+        except AttributeError:
+            # self.mc might not be set yet
+            pass
         self.setName(name)
 
     def createChildren(self):
