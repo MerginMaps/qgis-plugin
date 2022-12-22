@@ -77,7 +77,8 @@ class MerginPlugin:
         self.mergin_proj_dir = None
         self.mc = None
         self.manager = None
-        self.current_workspace_name = None  # This is None if the server does not support workspaces
+        # current_workspace is a dict with "name" and "id" keys, empty dict() if the server does not support workspaces
+        self.current_workspace = dict()
         self.provider = MerginProvider()
         self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
         self.toolbar.setToolTip("Mergin Maps Toolbar")
@@ -293,10 +294,28 @@ class MerginPlugin:
         :param workspace: Dict containing workspace's "name" and "id" keys
         """
         settings = QSettings()
-        self.current_workspace_name = workspace.get("name", None)
-        settings.setValue("Mergin/lastUsedWorkspaceId", workspace.get("id", None))
+        self.current_workspace = workspace
+        workspace_id = self.current_workspace.get("id", None)
+        settings.setValue("Mergin/lastUsedWorkspaceId", workspace_id)
         if self.has_browser_item():
             self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager)
+
+        if self.mc.server_type() == ServerType.SAAS and workspace_id:
+            # check action required flag
+            service_response = self.mc.workspace_service(workspace_id)
+
+            if service_response and type(service_response) is dict:
+                requires_action = service_response.get("action_required", False)
+
+                if requires_action:
+                    iface.messageBar().pushMessage(
+                        "Mergin Maps",
+                        "Your attention is required.&nbsp;Please visit the "
+                        f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required'>"
+                        "Mergin dashboard</a>",
+                        level=Qgis.Critical,
+                        duration=0,
+                    )
 
     def choose_active_workspace(self):
         """
@@ -308,11 +327,11 @@ class MerginPlugin:
         if not workspaces:
             if workspaces is None:
                 # server is old, does not support workspaces
-                self.current_workspace_name = None
+                self.current_workspace = dict()
             else:
                 # User has no workspaces
                 self.show_no_workspaces_dialog()
-                self.current_workspace_name = None
+                self.current_workspace = dict()
             return
 
         if len(workspaces) == 1:
@@ -337,6 +356,9 @@ class MerginPlugin:
     def post_login(self):
         """Groups actions that needs to be done when auth information changes"""
         if not self.mc:
+            return
+
+        if self.mc.server_type() != ServerType.OLD:
             return
 
         settings = QSettings()
@@ -370,10 +392,10 @@ class MerginPlugin:
         workspaces = user_info.get("workspaces", None)
         if not workspaces and workspaces is not None:
             self.show_no_workspaces_dialog()
-            self.current_workspace_name = None
+            self.current_workspace = dict()
             return
 
-        default_workspace = self.current_workspace_name
+        default_workspace = self.current_workspace.get("name", None)
         if self.mc.server_type() == ServerType.OLD:
             default_workspace = user_info["username"]
 
@@ -391,7 +413,7 @@ class MerginPlugin:
 
     def find_project(self):
         """Open new Find Mergin Maps project dialog"""
-        dlg = ProjectSelectionDialog(self.mc, self.current_workspace_name)
+        dlg = ProjectSelectionDialog(self.mc, self.current_workspace.get("name", None))
         dlg.new_project_clicked.connect(self.create_new_project)
         dlg.switch_workspace_clicked.connect(self.switch_workspace)
         dlg.open_project_clicked.connect(self.manager.open_project)
@@ -414,7 +436,7 @@ class MerginPlugin:
 
         if not workspaces:
             self.show_no_workspaces_dialog()
-            self.current_workspace_name = None
+            self.current_workspace = dict()
             return
 
         dlg = WorkspaceSelectionDialog(workspaces)
@@ -751,6 +773,19 @@ class FetchMoreItem(QgsDataItem):
         return True
 
 
+class CreateNewProjectItem(QgsDataItem):
+    """Data item to represent an action to create a new project."""
+
+    def __init__(self, parent):
+        self.parent = parent
+        QgsDataItem.__init__(self, QgsDataItem.Collection, parent, "Create new project...", "")
+        self.setIcon(QIcon(icon_path("square-plus.svg")))
+
+    def handleDoubleClick(self):
+        self.parent.new_project()
+        return True
+
+
 class MerginRootItem(QgsDataCollectionItem):
     """Mergin root data containing project groups item with configuration dialog."""
 
@@ -779,6 +814,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.projects = []
         self.total_projects_count = None
         self.fetch_more_item = None
+        self.create_new_project_item = None
         self.filter = flag
         self.base_name = self.name()
         self.updateName()
@@ -790,18 +826,16 @@ class MerginRootItem(QgsDataCollectionItem):
         self.error = err
         self.projects = []
         self.updateName()
-        # We need to depopulate() so that child groups are refreshed (eg when changing user on old server)
         self.depopulate()
-        # We need to refresh() so that changing from an empty workspace repopulates entries
-        self.refresh()
 
     def updateName(self):
-        if self.mc.server_type() == ServerType.OLD:
-            name = self.base_name
-        elif self.plugin.current_workspace_name:
-            name = f"{self.base_name} [{self.plugin.current_workspace_name}]"
-        else:
-            name = self.base_name
+        name = self.base_name
+        try:
+            if self.mc.server_type() != ServerType.OLD and self.plugin.current_workspace.get("name", None):
+                name = f"{self.base_name} [{self.plugin.current_workspace['name']}]"
+        except AttributeError:
+            # self.mc might not be set yet
+            pass
         self.setName(name)
 
     def createChildren(self):
@@ -836,6 +870,11 @@ class MerginRootItem(QgsDataCollectionItem):
         self.set_fetch_more_item()
         if self.fetch_more_item is not None:
             items.append(self.fetch_more_item)
+        if not items and self.mc.server_type() != ServerType.OLD:
+            self.create_new_project_item = CreateNewProjectItem(self)
+            self.create_new_project_item.setState(QgsDataItem.Populated)
+            sip.transferto(self.create_new_project_item, self)
+            items.append(self.create_new_project_item)
         return items
 
     def createChildrenGroups(self):
@@ -860,14 +899,14 @@ class MerginRootItem(QgsDataCollectionItem):
             error_item = QgsErrorItem(self, "Failed to log in. Please check the configuration", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
-        if self.mc.server_type() != ServerType.OLD and not self.plugin.current_workspace_name:
+        if self.mc.server_type() != ServerType.OLD and not self.plugin.current_workspace:
             error_item = QgsErrorItem(self, "No workspace available", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
         try:
             resp = self.project_manager.mc.paginated_projects_list(
                 flag=self.filter,
-                only_namespace=None if self.filter else self.plugin.current_workspace_name,
+                only_namespace=None if self.filter else self.plugin.current_workspace.get("name", None),
                 page=page,
                 per_page=per_page,
                 # todo: switch back to "namespace_asc,name_asc" as it currently crashes ee.dev and ce.dev
@@ -912,11 +951,15 @@ class MerginRootItem(QgsDataCollectionItem):
         self.refresh()
 
     def reload(self):
-        if not self.plugin.current_workspace_name:
+        if not self.plugin.current_workspace:
             self.plugin.choose_active_workspace()
 
         self.projects = []
         self.refresh()
+
+    def new_project(self):
+        """Start the Create new project wizard"""
+        self.plugin.create_new_project()
 
     def actions(self, parent):
         action_configure = QAction(QIcon(icon_path("settings.svg")), "Configure", parent)
@@ -926,7 +969,7 @@ class MerginRootItem(QgsDataCollectionItem):
         action_refresh.triggered.connect(self.reload)
 
         action_create = QAction(QIcon(icon_path("square-plus.svg")), "Create new project", parent)
-        action_create.triggered.connect(self.plugin.create_new_project)
+        action_create.triggered.connect(self.new_project)
 
         action_find = QAction(QIcon(icon_path("search.svg")), "Find project", parent)
         action_find.triggered.connect(self.plugin.find_project)
@@ -979,7 +1022,7 @@ class MerginGroupItem(MerginRootItem):
             actions.append(action_fetch_more)
         if self.name().startswith("My projects"):
             action_create = QAction(QIcon(icon_path("square-plus.svg")), "Create new project", parent)
-            action_create.triggered.connect(self.plugin.create_new_project)
+            action_create.triggered.connect(self.new_project)
             actions.append(action_create)
         return actions
 
