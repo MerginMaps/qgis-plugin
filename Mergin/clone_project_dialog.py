@@ -4,6 +4,8 @@ from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QApplica
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt import uic
 
+from .utils import is_valid_name
+
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_clone_project.ui")
 
 
@@ -37,32 +39,37 @@ class CloneProjectDialog(QDialog):
                 if user_organisations[o] in ["owner", "admin", "writer"]:
                     self.ui.projectNamespace.addItem(o, True)
 
-        self.ui.projectNamespace.currentTextChanged.connect(self.workspace_changed)
-        self.ui.edit_project_name.textChanged.connect(self.text_changed)
+        self.ui.projectNamespace.currentTextChanged.connect(self.validate_input)
+        self.ui.edit_project_name.textChanged.connect(self.validate_input)
 
         # disable widgets if default workspace is read only
-        self.workspace_changed()
+        self.validate_input()
         self.ui.projectNamespace.setCurrentText(default_workspace)
 
         # these are the variables used by the caller
         self.project_name = None
         self.project_namespace = None
+        self.invalid = False
 
-    def text_changed(self):
-        enabled = bool(self.ui.edit_project_name.text()) and not self.ui.warningMessageLabel.isVisible()
-        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(enabled)
-
-    def workspace_changed(self):
+    def validate_input(self):
         is_writable = bool(self.ui.projectNamespace.currentData(Qt.UserRole))
-        if is_writable:
-            msg = ""
-        else:
+        if not is_writable:
             msg = "You do not have permissions to create a project in this workspace!"
+            self.ui.edit_project_name.setEnabled(False)
+        else:
+            msg = ""
+            self.ui.edit_project_name.setEnabled(True)
+
+            proj_name = self.ui.edit_project_name.text()
+            if not is_valid_name(proj_name):
+                msg = "Incorrect project name!"
+
         self.ui.edit_project_name.setToolTip(msg)
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setToolTip(msg)
-        self.ui.warningMessageLabel.setVisible(not is_writable)
+        has_error = bool(msg)
+        self.ui.warningMessageLabel.setVisible(has_error)
         self.ui.warningMessageLabel.setText(msg)
-        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(is_writable and bool(self.ui.edit_project_name.text()))
+        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(not has_error)
 
     def accept_dialog(self):
         self.project_name = self.ui.edit_project_name.text()

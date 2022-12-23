@@ -13,7 +13,7 @@ from qgis.core import (
 )
 
 from qgis.testing import start_app, unittest
-from Mergin.utils import same_schema, get_datum_shift_grids
+from Mergin.utils import same_schema, get_datum_shift_grids, is_valid_name
 
 test_data_path = os.path.join(os.path.dirname(__file__), "data")
 
@@ -89,6 +89,85 @@ class test_utils(unittest.TestCase):
         grids = get_datum_shift_grids()
         self.assertEqual(len(grids), 1)
         self.assertTrue("uk_os_OSTN15_NTv2_OSGBtoETRS.tif" in grids or "OSTN15_NTv2_OSGBtoETRS.gsb" in grids)
+
+    def test_name_validation(self):
+        test_cases = [
+            ("project", True),
+            ("ProJect", True),
+            ("Pro123ject", True),
+            ("123PROJECT", True),
+            ("PROJECT", True),
+            ("project ", True),
+            ("pro ject", True),
+            ("proj-ect", True),
+            ("-project", True),
+            ("proj_ect", True),
+            ("proj.ect", True),
+            ("proj!ect", True),
+            (" project", False),
+            (".project", False),
+            ("proj~ect", False),
+            ("pro\ject", False),
+            ("pro/ject", False),
+            ("pro|ject", False),
+            ("pro+ject", False),
+            ("pro=ject", False),
+            ("pro>ject", False),
+            ("pro<ject", False),
+            ("pro@ject", False),
+            ("pro#ject", False),
+            ("pro$ject", False),
+            ("pro%ject", False),
+            ("pro^ject", False),
+            ("pro&ject", False),
+            ("pro*ject", False),
+            ("pro?ject", False),
+            ("pro:ject", False),
+            ("pro;ject", False),
+            ("pro,ject", False),
+            ("pro`ject", False),
+            ("pro'ject", False),
+            ('pro"ject', False),
+            ("projectz", True),
+            ("projectZ", True),
+            ("project0", True),
+            ("pro(ject", False),
+            ("pro)ject", False),
+            ("pro{ject", False),
+            ("pro}ject", False),
+            ("pro[ject", False),
+            ("pro]ject", False),
+            ("pro]ject", False),
+            ("CON", False),
+            ("NUL", False),
+            ("NULL", True),
+            ("PRN", False),
+            ("LPT0", False),
+            ("lpt0", False),
+            ("LPT1", False),
+            ("lpt1", False),
+            ("COM1", False),
+            ("com1", False),
+            ("AUX", False),
+            ("AuX", False),
+            ("projAUXect", True),
+            ("CONproject", True),
+            ("projectCON", True),
+            ("support", False),
+            ("helpdesk", False),
+            ("input", False),
+            ("lutraconsulting", False),
+            ("lutra", False),
+            ("merginmaps", False),
+            ("mergin", False),
+            ("admin", False),
+            ("sales", False),
+            ("測試", True),
+            ("מִבְחָן", True),
+        ]
+
+        for t in test_cases:
+            self.assertEqual(is_valid_name(t[0]), t[1])
 
 
 if __name__ == "__main__":
