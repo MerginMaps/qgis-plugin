@@ -12,6 +12,7 @@ import urllib.request
 import tempfile
 import json
 import glob
+import re
 
 from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
@@ -1267,3 +1268,17 @@ def compare_versions(first, second):
     or greater than zero if first is less than, equal to, or greater than second.
     """
     return int(first[1:]) - int(second[1:])
+
+
+def is_valid_name(name):
+    """
+    Check if name is a valid project/namespace name
+    """
+    return (
+        re.match(
+            r".*[\@\#\$\%\^\&\*\(\)\{\}\[\]\?\'\"`,;\:\+\=\~\\\/\|\<\>].*|^[\s^\.].*$|^CON$|^PRN$|^AUX$|^NUL$|^COM\d$|^LPT\d|^support$|^helpdesk$|^merginmaps$|^lutraconsulting$|^mergin$|^lutra$|^input$|^admin$|^sales$",
+            name,
+            re.IGNORECASE,
+        )
+        is None
+    )
