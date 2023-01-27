@@ -17,7 +17,7 @@ from qgis.PyQt.QtCore import (
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QPixmap, QFont, QFontMetrics, QIcon, QStandardItem, QStandardItemModel
 
-from .mergin.client import MerginProject, InvalidProject
+from .mergin.client import MerginProject, InvalidProject, ServerType
 from .utils import (
     icon_path,
     mergin_project_local_path,
@@ -192,14 +192,20 @@ class ResultFetcher(QThread):
 
     def run(self):
         try:
-            projects = self.mc.paginated_projects_list(
-                flag=None,
-                only_namespace=self.namespace,
-                # todo: switch back to "namespace_asc,name_asc" as it currently crashes ee.dev and ce.dev
-                order_params="name_asc",
-                name=self.name,
-                page=self.page,
-            )
+            if self.mc.server_type() == ServerType.OLD:
+                projects = self.mc.paginated_projects_list(
+                    order_params="namespace_asc,name_asc",
+                    name=self.name,
+                    page=self.page,
+                )
+            else:
+                projects = self.mc.paginated_projects_list(
+                    only_namespace=self.namespace,
+                    only_public=False if self.namespace else True,
+                    order_params="workspace_asc,name_asc",
+                    name=self.name,
+                    page=self.page,
+                )
             if self.isInterruptionRequested():
                 return
             self.finished.emit(projects)
@@ -366,7 +372,7 @@ class ProjectSelectionDialog(QDialog):
 
 class PublicProjectSelectionDialog(ProjectSelectionDialog):
     def __init__(self, mc):
-        super(PublicProjectSelectionDialog, self).__init__(mc, workspace_name="")
+        super(PublicProjectSelectionDialog, self).__init__(mc, workspace_name=None)
 
         self.setWindowTitle("Explore public projects")
         self.ui.label.setText("Explore public community projects")

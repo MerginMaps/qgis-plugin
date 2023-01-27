@@ -904,14 +904,20 @@ class MerginRootItem(QgsDataCollectionItem):
             sip.transferto(error_item, self)
             return [error_item]
         try:
-            resp = self.project_manager.mc.paginated_projects_list(
-                flag=self.filter,
-                only_namespace=None if self.filter else self.plugin.current_workspace.get("name", None),
-                page=page,
-                per_page=per_page,
-                # todo: switch back to "namespace_asc,name_asc" as it currently crashes ee.dev and ce.dev
-                order_params="name_asc",
-            )
+            if self.mc.server_type() == ServerType.OLD:
+                resp = self.project_manager.mc.paginated_projects_list(
+                    flag=self.filter,
+                    page=page,
+                    per_page=per_page,
+                    order_params="namespace_asc,name_asc",
+                )
+            else:
+                resp = self.project_manager.mc.paginated_projects_list(
+                    only_namespace=self.plugin.current_workspace.get("name", None),
+                    page=page,
+                    per_page=per_page,
+                    order_params="name_asc",
+                )
             self.projects += resp["projects"]
             self.total_projects_count = int(resp["count"]) if is_number(resp["count"]) else 0
         except URLError:
