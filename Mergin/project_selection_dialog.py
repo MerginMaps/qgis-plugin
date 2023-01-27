@@ -19,7 +19,7 @@ from qgis.PyQt.QtGui import QPixmap, QFont, QFontMetrics, QIcon, QStandardItem, 
 from qgis.core import (
     QgsApplication,
 )
-from .mergin.merginproject import MerginProject
+from .mergin.client import MerginProject, InvalidProject
 from .utils import (
     icon_path,
     mergin_project_local_path,
@@ -101,14 +101,18 @@ class ProjectsModel(QStandardItemModel):
         if local_proj_path is None or not os.path.exists(local_proj_path):
             return SyncStatus.NOT_DOWNLOADED
 
-        mp = MerginProject(local_proj_path)
-        local_changes = mp.get_push_changes()
-        if local_changes["added"] or local_changes["removed"] or local_changes["updated"]:
-            return SyncStatus.LOCAL_CHANGES
-        elif compare_versions(project["version"], mp.metadata["version"]) > 0:
-            return SyncStatus.REMOTE_CHANGES
-        else:
-            return SyncStatus.UP_TO_DATE
+        try:
+            mp = MerginProject(local_proj_path)
+            local_changes = mp.get_push_changes()
+            if local_changes["added"] or local_changes["removed"] or local_changes["updated"]:
+                return SyncStatus.LOCAL_CHANGES
+            elif compare_versions(project["version"], mp.metadata["version"]) > 0:
+                return SyncStatus.REMOTE_CHANGES
+            else:
+                return SyncStatus.UP_TO_DATE
+        except InvalidProject:
+            # Local project is somehow broken
+            return SyncStatus.NOT_DOWNLOADED
 
 
 class ProjectItemDelegate(QAbstractItemDelegate):
