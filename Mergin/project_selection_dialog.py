@@ -16,9 +16,7 @@ from qgis.PyQt.QtCore import (
 )
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QPixmap, QFont, QFontMetrics, QIcon, QStandardItem, QStandardItemModel
-from qgis.core import (
-    QgsApplication,
-)
+
 from .mergin.client import MerginProject, InvalidProject
 from .utils import (
     icon_path,
@@ -279,12 +277,12 @@ class ProjectSelectionDialog(QDialog):
             else:
                 # Let's replace the existing request with the new one
                 self.fetcher.requestInterruption()
-                QgsApplication.instance().restoreOverrideCursor()
+                self.ui.line_edit.setShowSpinner(False)
 
         self.current_search_term = self.ui.line_edit.text()
         self.fetcher = ResultFetcher(self.mc, self.current_workspace_name, self.request_page, self.current_search_term)
         self.fetcher.finished.connect(self.handle_server_response)
-        QgsApplication.instance().setOverrideCursor(Qt.WaitCursor)
+        self.ui.line_edit.setShowSpinner(True)
         self.fetcher.start()
 
     def handle_server_response(self, projects):
@@ -300,7 +298,7 @@ class ProjectSelectionDialog(QDialog):
             self.model.appendProjects(projects["projects"])
         except KeyError:
             pass
-        QgsApplication.instance().restoreOverrideCursor()
+        self.ui.line_edit.setShowSpinner(False)
 
     def on_scrollbar_changed(self, value):
         if not self.need_to_fetch_next_page:
