@@ -100,6 +100,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         self.path_ledit.setReadOnly(True)
         self.path_ledit.textChanged.connect(self.check_input)
         self.project_name_ledit.textChanged.connect(self.check_input)
+        self.project_owner_cbo.currentTextChanged.connect(self.check_input)
 
     def nextId(self):
         return -1
@@ -113,11 +114,22 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
             self.for_current_proj = False
 
     def populate_namespace_cbo(self):
-        self.project_owner_cbo.addItem(self.parent.username)
-        if self.parent.user_organisations:
-            self.project_owner_cbo.addItems(
-                [o for o in self.parent.user_organisations if self.parent.user_organisations[o] in ["admin", "owner"]]
-            )
+        if self.parent.workspaces is not None:
+            for ws in self.parent.workspaces:
+                is_writable = ws.get("role", "owner") in ["owner", "admin", "writer"]
+                self.project_owner_cbo.addItem(ws["name"], is_writable)
+
+        else:
+            # This means server is old and uses namespaces
+            self.projectNamespaceLabel.setText("Owner")
+            username = self.parent.user_info["username"]
+            user_organisations = self.parent.user_info.get("organisations", [])
+            self.project_owner_cbo.addItem(username, True)
+            for o in user_organisations:
+                if user_organisations[o] in ["owner", "admin", "writer"]:
+                    self.project_owner_cbo.addItem(o, True)
+
+        self.project_owner_cbo.setCurrentText(self.parent.default_workspace)
 
     def setup_browsing(self, question=None, current_proj=False, field=None):
         """This will setup label and signals for browse button."""
@@ -159,6 +171,9 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
     def check_input(self):
         """Check if entered path is not already a Mergin Maps project dir and has at most a single QGIS project file."""
         # TODO: check if the project exists on the server
+        if not self.project_owner_cbo.currentData(Qt.UserRole):
+            self.create_warning("You do not have permissions to create a project in this workspace!")
+            return
         proj_name = self.project_name_ledit.text()
         if not proj_name:
             self.create_warning("Project name missing!")
@@ -394,7 +409,13 @@ class PackagingPage(ui_pack_page, base_pack_page):
 class NewMerginProjectWizard(QWizard):
     """Wizard for creating new Mergin Maps project."""
 
-    def __init__(self, project_manager, username, user_organisations=None, parent=None):
+    def __init__(self, project_manager, user_info, default_workspace=None, parent=None):
+        """Create a wizard for new Mergin Maps project
+
+        :param project_manager: MerginProjectsManager instance
+        :param user_info: The user_info dictionary as returned from server
+        :param default_workspace: Optionally, the name of the current workspace so it can be pre-selected in the list
+        """
         super().__init__(parent)
         self.iface = iface
         self.settings = QSettings()
@@ -402,8 +423,11 @@ class NewMerginProjectWizard(QWizard):
         self.setWizardStyle(QWizard.ClassicStyle)
         self.setDefaultProperty("QComboBox", "currentText", QComboBox.currentTextChanged)
         self.project_manager = project_manager
-        self.username = username
-        self.user_organisations = user_organisations
+        self.username = user_info["username"]
+        self.user_organisations = user_info.get("organisations", [])
+        self.workspaces = user_info.get("workspaces", None)
+        self.default_workspace = default_workspace
+        self.user_info = user_info
 
         self.init_page = InitPage(self)
         self.setPage(INIT_PAGE, self.init_page)

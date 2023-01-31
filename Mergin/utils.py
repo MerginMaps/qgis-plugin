@@ -52,7 +52,7 @@ from .mergin.merginproject import MerginProject
 
 
 try:
-    from .mergin.client import MerginClient, ClientError, LoginError, InvalidProject
+    from .mergin.client import MerginClient, ClientError, LoginError, InvalidProject, ServerType
     from .mergin.client_pull import (
         download_project_async,
         download_project_is_running,
@@ -79,7 +79,7 @@ except ImportError:
     this_dir = os.path.dirname(os.path.realpath(__file__))
     path = os.path.join(this_dir, "mergin_client.whl")
     sys.path.append(path)
-    from mergin.client import MerginClient, ClientError, InvalidProject, LoginError
+    from mergin.client import MerginClient, ClientError, InvalidProject, LoginError, ServerType
     from mergin.client_pull import (
         download_project_async,
         download_project_is_running,
@@ -1260,6 +1260,14 @@ def package_datum_grids(dest_dir):
     if dest_dir is not None:
         os.makedirs(dest_dir, exist_ok=True)
         copy_datum_shift_grids(dest_dir)
+
+
+def compare_versions(first, second):
+    """
+    Compares two version strings and returns an integer less than, equal to,
+    or greater than zero if first is less than, equal to, or greater than second.
+    """
+    return int(first[1:]) - int(second[1:])
 
 
 def is_valid_name(name):
