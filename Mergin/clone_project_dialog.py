@@ -61,7 +61,9 @@ class CloneProjectDialog(QDialog):
             self.ui.edit_project_name.setEnabled(True)
 
             proj_name = self.ui.edit_project_name.text()
-            if not is_valid_name(proj_name):
+            if not proj_name:
+                msg = "Project name missing!"
+            elif not is_valid_name(proj_name):
                 msg = "Incorrect project name!"
 
         self.ui.edit_project_name.setToolTip(msg)

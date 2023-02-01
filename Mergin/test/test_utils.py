@@ -164,6 +164,7 @@ class test_utils(unittest.TestCase):
             ("sales", False),
             ("測試", True),
             ("מִבְחָן", True),
+            ("", False),
         ]
 
         for t in test_cases:
