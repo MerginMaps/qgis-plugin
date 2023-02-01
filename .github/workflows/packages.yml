@@ -1,7 +1,7 @@
 name: Build Mergin Plugin Packages
 env:
   MERGIN_CLIENT_VER: "0.8.0"
-  GEODIFF_VER: "1.0.6"
+  GEODIFF_VER: "2.0.1"
   PYTHON_VER: "38"
   PLUGIN_NAME: Mergin
 
