@@ -26,7 +26,6 @@ ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_sy
 
 
 class SyncDialog(QDialog):
-
     # possible operations
     DOWNLOAD = 1  # initial download of a project
     PUSH = 2  # synchronization - push
@@ -129,7 +128,6 @@ class SyncDialog(QDialog):
         try:
             is_running = download_project_is_running(self.job)
         except Exception as e:
-
             self.timer.stop()
 
             # also try to cancel the job so that we do not need to wait for other workers
@@ -200,7 +198,6 @@ class SyncDialog(QDialog):
         try:
             is_running = push_project_is_running(self.job)
         except Exception as e:
-
             self.timer.stop()
 
             # also try to cancel the job so that we do not need to wait for other workers
@@ -271,7 +268,6 @@ class SyncDialog(QDialog):
         try:
             is_running = pull_project_is_running(self.job)
         except Exception as e:
-
             self.timer.stop()
 
             # also try to cancel the job so that we do not need to wait for other workers

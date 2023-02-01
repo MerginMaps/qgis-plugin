@@ -25,7 +25,6 @@ ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_st
 
 
 class ProjectStatusDialog(QDialog):
-
     icons = {
         "added": "plus.svg",
         "removed": "trash.svg",

@@ -36,7 +36,6 @@ class SyncStatus(Enum):
 
 
 class ProjectsModel(QStandardItemModel):
-
     PROJECT = Qt.UserRole + 1
     NAME = Qt.UserRole + 2
     NAMESPACE = Qt.UserRole + 3
@@ -215,7 +214,6 @@ class ResultFetcher(QThread):
 
 
 class ProjectSelectionDialog(QDialog):
-
     new_project_clicked = pyqtSignal()
     switch_workspace_clicked = pyqtSignal()
     open_project_clicked = pyqtSignal(str)

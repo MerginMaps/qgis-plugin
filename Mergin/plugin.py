@@ -175,7 +175,6 @@ class MerginPlugin:
         checked=False,
         always_on=True,
     ):
-
         icon = QIcon(icon_path(icon_name))
         action = QAction(icon, text, self.iface.mainWindow())
         action.triggered.connect(callback)

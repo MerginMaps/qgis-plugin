@@ -35,7 +35,6 @@ from ...utils import (
 
 
 class ExtractLocalChanges(QgsProcessingAlgorithm):
-
     PROJECT_DIR = "PROJECT_DIR"
     LAYER = "LAYER"
     OUTPUT = "OUTPUT"
