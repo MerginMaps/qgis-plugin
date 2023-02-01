@@ -11,7 +11,12 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2022.6
+changelog=2023.1
+  - Add support for workspaces (#466)
+  - Better validation of project names (#474)
+  - Add window to explore public projects (#469)
+  - Fix crash during synchronization with geotagged photos (#461)
+  <p>2022.6
   - Add validation for required datum shift grids (#444)
   - Package required datum shift grids (#184)
   - Better support for dark themes (#434)
