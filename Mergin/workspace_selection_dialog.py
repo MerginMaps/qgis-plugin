@@ -84,7 +84,6 @@ class WorkspaceItemDelegate(QAbstractItemDelegate):
 
 
 class WorkspaceSelectionDialog(QDialog):
-
     manage_workspaces_clicked = pyqtSignal(str)
 
     def __init__(self, workspaces):

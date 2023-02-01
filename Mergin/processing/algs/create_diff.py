@@ -33,7 +33,6 @@ from ...utils import (
 
 
 class CreateDiff(QgsProcessingAlgorithm):
-
     PROJECT_DIR = "PROJECT_DIR"
     LAYER = "LAYER"
     START_VERSION = "START_VERSION"

@@ -16,7 +16,6 @@ from ...utils import icon_path, create_mergin_client, create_report, ClientError
 
 
 class CreateReport(QgsProcessingAlgorithm):
-
     PROJECT_DIR = "PROJECT_DIR"
     START_VERSION = "START_VERSION"
     END_VERSION = "END_VERSION"
