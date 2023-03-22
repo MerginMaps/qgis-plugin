@@ -444,13 +444,27 @@ class MerginProjectsManager(object):
             return
         settings.setValue("Mergin/lastUsedDownloadDir", parent_dir)
         target_dir = os.path.abspath(os.path.join(parent_dir, project["name"]))
+        downloaded = False
         if os.path.exists(target_dir):
-            QMessageBox.warning(
-                None,
-                "Download Project",
-                "The target directory already exists:\n" + target_dir + "\n\nPlease select a different directory.",
+            #check name
+            mp = MerginProject(target_dir)
+            try:
+                existing_project_name = mp.metadata["name"]
+                dialog_text = f"project: {existing_project_name}"
+            except InvalidProject as e:
+                dialog_text = "UNKNOWN PROJECT"
+            conflictDir = QMessageBox.question(
+                None,"Download Project", f"The target directory already exists for {dialog_text}.\n Do you want to use this directory\n and its current content?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
             )
-            return
+            if conflictDir == QMessageBox.Yes:
+                self.sync_project(target_dir,project_name)
+                return
+            else:
+                reuseProjDir = QMessageBox.question(
+                None,"Download Project", f"Do you want to replace the content of this directory for {dialog_text}?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+                )
+                if reuseProjDir == QMessageBox.No:
+                    return
 
         dlg = SyncDialog()
         dlg.download_start(self.mc, target_dir, project_name)
