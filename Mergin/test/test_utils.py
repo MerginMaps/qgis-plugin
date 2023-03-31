@@ -3,6 +3,7 @@
 import os
 import json
 import copy
+import tempfile
 
 from qgis.core import (
     QgsProject,
@@ -10,10 +11,11 @@ from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransformContext,
     QgsVectorLayer,
+    QgsWkbTypes,
 )
 
 from qgis.testing import start_app, unittest
-from Mergin.utils import same_schema, get_datum_shift_grids, is_valid_name
+from Mergin.utils import same_schema, get_datum_shift_grids, is_valid_name, create_tracking_layer
 
 test_data_path = os.path.join(os.path.dirname(__file__), "data")
 
@@ -169,6 +171,30 @@ class test_utils(unittest.TestCase):
 
         for t in test_cases:
             self.assertEqual(is_valid_name(t[0]), t[1])
+
+    def test_create_tracking_layer(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = create_tracking_layer(temp_dir)
+
+            self.assertTrue(os.path.exists(file_path))
+            dir_name, file_name = os.path.split(file_path)
+            self.assertEqual(file_name, "tracking_layer.gpkg")
+
+            layer = QgsVectorLayer(file_path, "", "ogr")
+            self.assertTrue(layer.isValid())
+            self.assertEqual(layer.wkbType(), QgsWkbTypes.LineStringZM)
+
+            fields = layer.fields()
+            self.assertEqual(len(fields), 5)
+            self.assertEqual(fields[0].name(), "fid")
+            self.assertEqual(fields[1].name(), "tracking_start_time")
+            self.assertEqual(fields[1].type(), QVariant.DateTime)
+            self.assertEqual(fields[2].name(), "tracking_end_time")
+            self.assertEqual(fields[2].type(), QVariant.DateTime)
+            self.assertEqual(fields[3].name(), "total_distance")
+            self.assertEqual(fields[3].type(), QVariant.Double)
+            self.assertEqual(fields[4].name(), "tracked_by")
+            self.assertEqual(fields[4].type(), QVariant.String)
 
 
 if __name__ == "__main__":

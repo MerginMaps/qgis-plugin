@@ -16,7 +16,7 @@ import re
 
 from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
-from qgis.PyQt.QtGui import QPalette
+from qgis.PyQt.QtGui import QPalette, QColor
 
 from qgis.core import (
     NULL,
@@ -50,6 +50,14 @@ from qgis.core import (
     QgsFeature,
     QgsFeatureRequest,
     QgsExpression,
+    QgsSingleSymbolRenderer,
+    QgsLineSymbol,
+    QgsSymbolLayerUtils,
+    QgsField,
+    QgsFields,
+    QgsWkbTypes,
+    QgsCoordinateTransformContext,
+    QgsDefaultValue,
 )
 
 from .mergin.utils import int_version
@@ -1343,6 +1351,72 @@ def evaluate_expression(expression, layer):
     return exp.evaluate(context)
 
 
+def create_tracking_layer(project_path):
+    """
+    Creates a GPKG layer for tracking in Input
+    """
+    filename = get_unique_filename(os.path.join(project_path, "tracking_layer.gpkg"))
+
+    fields = QgsFields()
+    fields.append(QgsField("tracking_start_time", QVariant.DateTime))
+    fields.append(QgsField("tracking_end_time", QVariant.DateTime))
+    fields.append(QgsField("total_distance", QVariant.Double))
+    fields.append(QgsField("tracked_by", QVariant.String))
+
+    options = QgsVectorFileWriter.SaveVectorOptions()
+    options.driverName = "GPKG"
+    options.layerName = "tracking_layer"
+
+    writer = QgsVectorFileWriter.create(
+        filename,
+        fields,
+        QgsWkbTypes.LineStringZM,
+        QgsCoordinateReferenceSystem("EPSG:4326"),
+        QgsCoordinateTransformContext(),
+        options,
+    )
+    del writer
+
+    return filename
+
+def setup_tracking_layer(layer):
+    """
+    Configures tracking layer:
+     - set default values for fields
+     - apply default styling
+    """
+    idx = layer.fields().indexFromName("tracking_start_time")
+    start_time_default = QgsDefaultValue()
+    start_time_default.setExpression("@tracking_start_time")
+    layer.setDefaultValueDefinition(idx, start_time_default)
+
+    idx = layer.fields().indexFromName("tracking_end_time")
+    end_time_default = QgsDefaultValue()
+    end_time_default.setExpression("@tracking_end_time")
+    layer.setDefaultValueDefinition(idx, end_time_default)
+
+    idx = layer.fields().indexFromName("total_distance")
+    distance_default = QgsDefaultValue()
+    distance_default.setExpression("$length")
+    layer.setDefaultValueDefinition(idx, distance_default)
+
+    idx = layer.fields().indexFromName("tracked_by")
+    user_default = QgsDefaultValue()
+    user_default.setExpression("@mergin_username")
+    layer.setDefaultValueDefinition(idx, user_default)
+
+    symbol = QgsLineSymbol.createSimple(
+        {
+            "capstyle": "square",
+            "joinstyle": "bevel",
+            "line_style": "solid",
+            "line_width": "0.35",
+            "line_width_unit": "MM",
+            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFA500")),
+        }
+    )
+    layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+
 def prefix_for_relative_path(mode, home_path, target_dir):
     """
     Resolves path of an image for a field with ExternalResource widget type.
@@ -1357,3 +1431,15 @@ def prefix_for_relative_path(mode, home_path, target_dir):
         return target_dir
     else:
         return ""
+
+    symbol = QgsLineSymbol.createSimple(
+        {
+            "capstyle": "square",
+            "joinstyle": "bevel",
+            "line_style": "solid",
+            "line_width": "0.35",
+            "line_width_unit": "MM",
+            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFA500")),
+        }
+    )
+    layer.setRenderer(QgsSingleSymbolRenderer(symbol))
