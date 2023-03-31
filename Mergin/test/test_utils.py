@@ -5,6 +5,7 @@ import json
 import copy
 import tempfile
 
+from qgis.PyQt.QtCore import QVariant
 from qgis.core import (
     QgsProject,
     QgsDatumTransform,
