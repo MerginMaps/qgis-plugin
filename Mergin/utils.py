@@ -1386,7 +1386,7 @@ def setup_tracking_layer(layer):
      - apply default styling
     """
     idx = layer.fields().indexFromName("fid")
-    cfg = QgsEditorWidgetSetup('Hidden', {})
+    cfg = QgsEditorWidgetSetup("Hidden", {})
     layer.setEditorWidgetSetup(idx, cfg)
 
     idx = layer.fields().indexFromName("tracking_start_time")
