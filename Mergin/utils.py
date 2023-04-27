@@ -1385,6 +1385,10 @@ def setup_tracking_layer(layer):
      - set default values for fields
      - apply default styling
     """
+    idx = layer.fields().indexFromName("fid")
+    cfg = QgsEditorWidgetSetup('Hidden', {})
+    layer.setEditorWidgetSetup(idx, cfg)
+
     idx = layer.fields().indexFromName("tracking_start_time")
     start_time_default = QgsDefaultValue()
     start_time_default.setExpression("@tracking_start_time")
@@ -1397,7 +1401,7 @@ def setup_tracking_layer(layer):
 
     idx = layer.fields().indexFromName("total_distance")
     distance_default = QgsDefaultValue()
-    distance_default.setExpression("$length")
+    distance_default.setExpression("round($length, 2)")
     layer.setDefaultValueDefinition(idx, distance_default)
 
     idx = layer.fields().indexFromName("tracked_by")
