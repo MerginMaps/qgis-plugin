@@ -80,12 +80,14 @@ class MerginPlugin:
         # current_workspace is a dict with "name" and "id" keys, empty dict() if the server does not support workspaces
         self.current_workspace = dict()
         self.provider = MerginProvider()
-        self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
-        self.toolbar.setToolTip("Mergin Maps Toolbar")
-        self.toolbar.setObjectName("MerginMapsToolbar")
 
-        self.iface.projectRead.connect(self.on_qgis_project_changed)
-        self.iface.newProjectCreated.connect(self.on_qgis_project_changed)
+        if self.iface is not None:
+            self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
+            self.toolbar.setToolTip("Mergin Maps Toolbar")
+            self.toolbar.setObjectName("MerginMapsToolbar")
+
+            self.iface.projectRead.connect(self.on_qgis_project_changed)
+            self.iface.newProjectCreated.connect(self.on_qgis_project_changed)
 
         settings = QSettings()
         QgsExpressionContextUtils.setGlobalVariable("mergin_username", settings.value("Mergin/username", ""))
@@ -108,40 +110,41 @@ class MerginPlugin:
 
         self.create_manager()
 
-        self.add_action(
-            icon_path("mm_icon_positive_no_padding.svg"),
-            text="Mergin Maps",
-            callback=self.open_configured_url,
-            add_to_menu=True,
-            add_to_toolbar=self.toolbar,
-        )
-        self.add_action(
-            "settings.svg",
-            text="Configure Mergin Maps Plugin",
-            callback=self.configure,
-            add_to_menu=True,
-            add_to_toolbar=self.toolbar,
-        )
-        self.add_action(
-            "square-plus.svg",
-            text="Create Mergin Maps Project",
-            callback=self.create_new_project,
-            add_to_menu=False,
-            add_to_toolbar=self.toolbar,
-            enabled=False,
-            always_on=False,
-        )
-        self.add_action(
-            "refresh.svg",
-            text="Synchronise Mergin Maps Project",
-            callback=self.current_project_sync,
-            add_to_menu=False,
-            add_to_toolbar=self.toolbar,
-            enabled=False,
-            always_on=False,
-        )
+        if self.iface is not None:
+            self.add_action(
+                icon_path("mm_icon_positive_no_padding.svg"),
+                text="Mergin Maps",
+                callback=self.open_configured_url,
+                add_to_menu=True,
+                add_to_toolbar=self.toolbar,
+            )
+            self.add_action(
+                "settings.svg",
+                text="Configure Mergin Maps Plugin",
+                callback=self.configure,
+                add_to_menu=True,
+                add_to_toolbar=self.toolbar,
+            )
+            self.add_action(
+                "square-plus.svg",
+                text="Create Mergin Maps Project",
+                callback=self.create_new_project,
+                add_to_menu=False,
+                add_to_toolbar=self.toolbar,
+                enabled=False,
+                always_on=False,
+            )
+            self.add_action(
+                "refresh.svg",
+                text="Synchronise Mergin Maps Project",
+                callback=self.current_project_sync,
+                add_to_menu=False,
+                add_to_toolbar=self.toolbar,
+                enabled=False,
+                always_on=False,
+            )
 
-        self.enable_toolbar_actions()
+            self.enable_toolbar_actions()
 
         self.post_login()
 
@@ -151,15 +154,16 @@ class MerginPlugin:
         # if self.iface.browserModel().initialized():
         #     self.iface.browserModel().reload()
 
-        # register custom mergin widget in project properties
-        self.mergin_project_config_factory = MerginProjectConfigFactory()
-        self.iface.registerProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
+        if self.iface is not None:
+            # register custom mergin widget in project properties
+            self.mergin_project_config_factory = MerginProjectConfigFactory()
+            self.iface.registerProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
 
-        # add layer context menu action for checking local changes
-        self.action_show_changes = QAction("Show Local Changes", self.iface.mainWindow())
-        self.action_show_changes.setIcon(QIcon(icon_path("file-diff.svg")))
-        self.iface.addCustomActionForLayerType(self.action_show_changes, "", QgsMapLayer.VectorLayer, True)
-        self.action_show_changes.triggered.connect(self.view_local_changes)
+            # add layer context menu action for checking local changes
+            self.action_show_changes = QAction("Show Local Changes", self.iface.mainWindow())
+            self.action_show_changes.setIcon(QIcon(icon_path("file-diff.svg")))
+            self.iface.addCustomActionForLayerType(self.action_show_changes, "", QgsMapLayer.VectorLayer, True)
+            self.action_show_changes.triggered.connect(self.view_local_changes)
 
     def add_action(
         self,
@@ -465,9 +469,19 @@ class MerginPlugin:
             self.enable_toolbar_actions()
 
     def unload(self):
-        # Disconnect Mergin related signals
-        self.iface.projectRead.disconnect(self.on_qgis_project_changed)
-        self.iface.newProjectCreated.disconnect(self.on_qgis_project_changed)
+        if self.iface is not None:
+            # Disconnect Mergin related signals
+            self.iface.projectRead.disconnect(self.on_qgis_project_changed)
+            self.iface.newProjectCreated.disconnect(self.on_qgis_project_changed)
+
+            for action in self.actions:
+                self.iface.removePluginMenu(self.menu, action)
+                self.iface.removeToolBarIcon(action)
+            del self.toolbar
+
+            self.iface.removeCustomActionForLayerType(self.action_show_changes)
+
+            self.iface.unregisterProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
 
         remove_project_variables()
         QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
@@ -477,14 +491,6 @@ class MerginPlugin:
         # this is crashing qgis on exit
         # self.iface.browserModel().reload()
 
-        for action in self.actions:
-            self.iface.removePluginMenu(self.menu, action)
-            self.iface.removeToolBarIcon(action)
-        del self.toolbar
-
-        self.iface.removeCustomActionForLayerType(self.action_show_changes)
-
-        self.iface.unregisterProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
         QgsApplication.processingRegistry().removeProvider(self.provider)
 
     def view_local_changes(self):
