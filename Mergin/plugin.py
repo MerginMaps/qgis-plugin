@@ -61,6 +61,7 @@ from .utils import (
 
 from .mergin.merginproject import MerginProject
 from .processing.provider import MerginProvider
+import processing
 
 MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
 os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
@@ -164,6 +165,12 @@ class MerginPlugin:
             self.action_show_changes.setIcon(QIcon(icon_path("file-diff.svg")))
             self.iface.addCustomActionForLayerType(self.action_show_changes, "", QgsMapLayer.VectorLayer, True)
             self.action_show_changes.triggered.connect(self.view_local_changes)
+
+            # add layer context menu action for downloading vector tiles
+            self.action_export_mbtiles = QAction("Export to MBTiles", self.iface.mainWindow())
+            self.action_export_mbtiles.setIcon(QIcon(icon_path("file-export.svg")))
+            self.iface.addCustomActionForLayerType(self.action_export_mbtiles, "", QgsMapLayer.VectorTileLayer, True)
+            self.action_export_mbtiles.triggered.connect(self.export_vector_tiles)
 
     def add_action(
         self,
@@ -536,6 +543,18 @@ class MerginPlugin:
                     break
         dlg_diff_viewer.show()
         dlg_diff_viewer.exec_()
+
+    def export_vector_tiles(self):
+        selected_layers = self.iface.layerTreeView().selectedLayersRecursive()
+        params = {}
+        for layer in selected_layers:
+            if layer.type() != QgsMapLayer.VectorTileLayer:
+                continue
+
+            params["INPUT"] = layer
+            break
+
+        processing.execAlgorithmDialog("mergin:downloadvectortiles", params)
 
 
 class MerginRemoteProjectItem(QgsDataItem):
