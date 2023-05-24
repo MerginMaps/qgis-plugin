@@ -45,6 +45,8 @@ from qgis.core import (
     QgsSettings,
     QgsDatumTransform,
     QgsProjUtils,
+    QgsDataSourceUri,
+    QgsVectorTileLayer,
 )
 
 from .mergin.utils import int_version
@@ -520,10 +522,18 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     crs.createFromString("EPSG:3857")
     new_project.setCrs(crs)
     new_project.setFileName(project_path)
-    osm_url = "crs=EPSG:3857&type=xyz&zmin=0&zmax=19&url=http://tile.openstreetmap.org/{z}/{x}/{y}.png"
-    osm_layer = QgsRasterLayer(osm_url, "OpenStreetMap", "wms")
-    new_project.addMapLayer(osm_layer)
-
+    ds_uri = QgsDataSourceUri()
+    ds_uri.setParam("type", "xyz")
+    ds_uri.setParam("url", "https://vtiles.dev.merginmaps.com/data/v3/{z}/{x}/{y}.pbf")
+    ds_uri.setParam("zmin", "0")
+    ds_uri.setParam("zmax", "14")
+    ds_uri.setParam("styleUrl", "https://vtiles.dev.merginmaps.com/styles/basic-preview-global/style.json")
+    vt_layer = QgsVectorTileLayer(bytes(ds_uri.encodedUri()).decode(), "OpenMapTiles (OSM)")
+    vt_layer.loadDefaultStyle()
+    metadata = vt_layer.metadata()
+    metadata.setRights(["© OpenMapTiles © OpenStreetMap contributors"])
+    vt_layer.setMetadata(metadata)
+    new_project.addMapLayer(vt_layer)
     mem_uri = "Point?crs=epsg:3857"
     mem_layer = QgsVectorLayer(mem_uri, "Survey points", "memory")
     res = mem_layer.dataProvider().addAttributes(
