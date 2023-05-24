@@ -154,6 +154,7 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
 
         self.tile_limit = self.parameterAsInt(parameters, self.TILE_LIMIT, context)
 
+        self.attribution = layer.metadata().rights()
         self.style_document = QDomDocument("qgis")
         error_msg = layer.exportNamedStyle(self.style_document)
         if error_msg != "":
@@ -248,6 +249,9 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
         if tile_layer.isValid():
             if context.project():
                 err = tile_layer.importNamedStyle(self.style_document)
+                metadata = tile_layer.metadata()
+                metadata.setRights(self.rights)
+                tile_layer.setMetadata(metadata)
                 context.project().addMapLayer(tile_layer)
         return {self.OUTPUT: self.output_file_path}
 
