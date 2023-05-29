@@ -125,6 +125,8 @@ PACKABLE_PROVIDERS = ("ogr", "gdal", "delimitedtext", "gpx", "postgres", "memory
 
 PROJS_PER_PAGE = 50
 
+TILES_URL = "https://vtiles.merginmaps.com"
+
 
 class PackagingError(Exception):
     pass
@@ -524,10 +526,10 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     new_project.setFileName(project_path)
     ds_uri = QgsDataSourceUri()
     ds_uri.setParam("type", "xyz")
-    ds_uri.setParam("url", "https://vtiles.dev.merginmaps.com/data/v3/{z}/{x}/{y}.pbf")
+    ds_uri.setParam("url", f"{TILES_URL}/data/v3/{z}/{x}/{y}.pbf")
     ds_uri.setParam("zmin", "0")
     ds_uri.setParam("zmax", "14")
-    ds_uri.setParam("styleUrl", "https://vtiles.dev.merginmaps.com/styles/basic-preview-global/style.json")
+    ds_uri.setParam("styleUrl", f"{TILES_URL}/styles/basic-preview-global/style.json")
     vt_layer = QgsVectorTileLayer(bytes(ds_uri.encodedUri()).decode(), "OpenMapTiles (OSM)")
     vt_layer.loadDefaultStyle()
     metadata = vt_layer.metadata()
