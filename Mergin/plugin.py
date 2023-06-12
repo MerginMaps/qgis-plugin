@@ -39,6 +39,7 @@ from .diff_dialog import DiffViewerDialog
 from .project_settings_widget import MerginProjectConfigFactory
 from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
+from .configure_sync_wizard import DbSyncConfigWizard
 from .utils import (
     ServerType,
     ClientError,
@@ -142,6 +143,13 @@ class MerginPlugin:
                 add_to_toolbar=self.toolbar,
                 enabled=False,
                 always_on=False,
+            )
+            self.action_db_sync_wizard = self.add_action(
+                "database-cog.svg",
+                text="Configure DB sync",
+                callback=self.configure_db_sync,
+                add_to_menu=True,
+                add_to_toolbar=None,
             )
 
             self.enable_toolbar_actions()
@@ -277,6 +285,32 @@ class MerginPlugin:
             self.mc = dlg.writeSettings()
             self.on_config_changed()
             self.show_browser_panel()
+
+    def configure_db_sync(self):
+        """Open db-sync setup wizard."""
+        project_path = QgsProject.instance().homePath()
+        if not project_path:
+            iface.messageBar().pushMessage("Mergin", "Project is not saved, please save project first", Qgis.Warning)
+            return
+
+        if not check_mergin_subdirs(project_path):
+            iface.messageBar().pushMessage(
+                "Mergin", "Current project is not a Mergin project. Please open a Mergin project first.", Qgis.Warning
+            )
+            return
+
+        mp = MerginProject(project_path)
+        try:
+            project_name = mp.metadata["name"]
+        except InvalidProject as e:
+            iface.messageBar().pushMessage(
+                "Mergin", "Current project is not a Mergin project. Please open a Mergin project first.", Qgis.Warning
+            )
+            return
+
+        wizard = DbSyncConfigWizard(project_name)
+        if not wizard.exec_():
+            return
 
     def show_no_workspaces_dialog(self):
         msg = (
