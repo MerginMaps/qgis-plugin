@@ -12,6 +12,7 @@ test_data_path = os.path.join(os.path.dirname(__file__), "data")
 class test_help(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         start_app()
 
     def test_help_urls(self):
