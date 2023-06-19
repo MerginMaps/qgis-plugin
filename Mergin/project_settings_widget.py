@@ -15,7 +15,7 @@ from qgis.core import (
 )
 from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
 from .attachment_fields_model import AttachmentFieldsModel
-from .utils import icon_path, mergin_project_local_path, prefix_for_relative_path, resolve_target_dir, create_tracking_layer, setup_tracking_layer
+from .utils import icon_path, mergin_project_local_path, prefix_for_relative_path, resolve_target_dir, create_tracking_layer, set_tracking_layer_flags
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
 ProjectConfigUiWidget, _ = uic.loadUiType(ui_file)
@@ -209,16 +209,15 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         # check if tracking layer already exists
         tracking_layer_id, ok = QgsProject.instance().readEntry("Mergin", "PositionTracking/TrackingLayer")
         if tracking_layer_id != "" and tracking_layer_id in QgsProject.instance().mapLayers():
-            # tracking layer already exists in the project, not need to do anything
+            # tracking layer already exists in the project, make sure it has correct flags
+            layer = QgsProject.instance().mapLayers()[tracking_layer_id]
+            if layer is not None and layer.isValid():
+                set_tracking_layer_flags(layer)
             return
 
         # tracking layer does not exists or was removed from the project
         # create a new layer and add it as a tracking layer
-        layer_path = create_tracking_layer(QgsProject.instance().absolutePath())
-        layer = QgsVectorLayer(layer_path, "tracking_layer", "ogr")
-        added_layer = QgsProject.instance().addMapLayer(layer)
-        setup_tracking_layer(added_layer)
-        QgsProject.instance().writeEntry("Mergin", "PositionTracking/TrackingLayer", added_layer.id())
+        create_tracking_layer(QgsProject.instance().absolutePath())
 
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())

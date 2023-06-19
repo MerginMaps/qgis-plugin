@@ -58,6 +58,7 @@ from qgis.core import (
     QgsWkbTypes,
     QgsCoordinateTransformContext,
     QgsDefaultValue,
+    QgsMapLayer,
 )
 
 from .mergin.utils import int_version
@@ -1377,6 +1378,11 @@ def create_tracking_layer(project_path):
     )
     del writer
 
+    layer = QgsVectorLayer(filename, "tracking_layer", "ogr")
+    setup_tracking_layer(layer)
+    QgsProject.instance().addMapLayer(layer)
+    QgsProject.instance().writeEntry("Mergin", "PositionTracking/TrackingLayer", layer.id())
+
     return filename
 
 def setup_tracking_layer(layer):
@@ -1447,3 +1453,12 @@ def prefix_for_relative_path(mode, home_path, target_dir):
         }
     )
     layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+    set_tracking_layer_flags(layer)
+
+
+def set_tracking_layer_flags(layer):
+    """
+    Resets flags for tracking layer to make it searchable and identifiable
+    """
+    layer.setReadOnly(False)
+    layer.setFlags(QgsMapLayer.LayerFlag(QgsMapLayer.Identifiable + QgsMapLayer.Searchable + QgsMapLayer.Removable))
