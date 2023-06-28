@@ -5,6 +5,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QFileDialog
 from qgis.core import QgsProject
 from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
+from .attachment_fields_model import AttachmentFieldsModel
 from .utils import icon_path, mergin_project_local_path
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -56,6 +57,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         else:
             self.selective_sync_group.setEnabled(False)
 
+        self.model = AttachmentFieldsModel()
+        self.list_fields.setModel(self.model)
+        self.list_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
+        self.edit_photo_expression.expressionChanged.connect(self.save_expression)
+
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
             None, "Select directory", self.local_project_dir, QFileDialog.ShowDirsOnly
@@ -90,7 +96,36 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         with open(self.config_file, "w") as f:
             json.dump(config, f, indent=2)
 
+    def save_expression(self, expression):
+        if not self.list_fields.selectionModel().hasSelection():
+            return
+        index = self.list_fields.selectionModel().selectedIndexes()[0]
+        if index.isValid():
+            item = self.model.itemFromIndex(index)
+            item.setData(self.edit_photo_expression.expression(), AttachmentFieldsModel.EXPRESSION)
+
+    def update_expression_edit(self, current, previous):
+        item = self.model.itemFromIndex(current)
+        exp = item.data(AttachmentFieldsModel.EXPRESSION)
+        layer_id = item.data(AttachmentFieldsModel.LAYER_ID)
+        layer = QgsProject.instance().mapLayer(layer_id)
+        if layer and layer.isValid():
+            self.edit_photo_expression.setLayer(layer)
+
+        self.edit_photo_expression.blockSignals(True)
+        self.edit_photo_expression.setExpression(exp if exp else "")
+        self.edit_photo_expression.blockSignals(False)
+
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
         QgsProject.instance().writeEntry("Mergin", "Snapping", self.cmb_snapping_mode.currentData())
+        for i in range(self.model.rowCount()):
+            index = self.model.index(i, 0)
+            if index.isValid():
+                item = self.model.itemFromIndex(index)
+                layer_id = item.data(AttachmentFieldsModel.LAYER_ID)
+                field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
+                expression = item.data(AttachmentFieldsModel.EXPRESSION)
+                QgsProject.instance().writeEntry("Mergin", f"PhotoNaming/{layer_id}/{field_name}", expression)
+
         self.save_config_file()
