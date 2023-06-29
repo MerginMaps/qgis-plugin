@@ -4,7 +4,6 @@ from qgis.core import QgsProject, QgsMapLayer
 
 
 class AttachmentFieldsModel(QStandardItemModel):
-
     LAYER_ID = Qt.UserRole + 1
     FIELD_NAME = Qt.UserRole + 2
     EXPRESSION = Qt.UserRole + 3
