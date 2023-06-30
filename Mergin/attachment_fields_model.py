@@ -11,6 +11,10 @@ class AttachmentFieldsModel(QStandardItemModel):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self.setHorizontalHeaderLabels(["Layer", "Field"])
+
+        parent_item = self.invisibleRootItem()
+
         layers = QgsProject.instance().mapLayers()
         for layer_id, layer in layers.items():
             if layer.type() != QgsMapLayer.VectorLayer:
@@ -24,9 +28,10 @@ class AttachmentFieldsModel(QStandardItemModel):
                 if not widget_setup.config().get("DocumentViewer", 1):
                     continue
 
-                item = QStandardItem(f"{layer.name()} - {field.name()}")
-                item.setData(layer_id, AttachmentFieldsModel.LAYER_ID)
-                item.setData(field.name(), AttachmentFieldsModel.FIELD_NAME)
+                item_layer = QStandardItem(f"{layer.name()}")
+                item_field = QStandardItem(f"{field.name()}")
+                item_field.setData(layer_id, AttachmentFieldsModel.LAYER_ID)
+                item_field.setData(field.name(), AttachmentFieldsModel.FIELD_NAME)
                 exp, ok = QgsProject.instance().readEntry("Mergin", f"PhotoNaming/{layer_id}/{field.name()}")
-                item.setData(exp, AttachmentFieldsModel.EXPRESSION)
-                self.appendRow(item)
+                item_field.setData(exp, AttachmentFieldsModel.EXPRESSION)
+                parent_item.appendRow([item_layer, item_field])

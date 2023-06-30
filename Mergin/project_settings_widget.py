@@ -58,8 +58,8 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             self.selective_sync_group.setEnabled(False)
 
         self.model = AttachmentFieldsModel()
-        self.list_fields.setModel(self.model)
-        self.list_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
+        self.tree_fields.setModel(self.model)
+        self.tree_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
         self.edit_photo_expression.expressionChanged.connect(self.save_expression)
 
     def get_sync_dir(self):
@@ -97,15 +97,15 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             json.dump(config, f, indent=2)
 
     def save_expression(self, expression):
-        if not self.list_fields.selectionModel().hasSelection():
+        if not self.tree_fields.selectionModel().hasSelection():
             return
-        index = self.list_fields.selectionModel().selectedIndexes()[0]
+        index = self.tree_fields.selectionModel().selectedIndexes()[0]
         if index.isValid():
-            item = self.model.itemFromIndex(index)
+            item = self.model.item(index.row(), 1)
             item.setData(self.edit_photo_expression.expression(), AttachmentFieldsModel.EXPRESSION)
 
     def update_expression_edit(self, current, previous):
-        item = self.model.itemFromIndex(current)
+        item = self.model.item(current.row(), 1)
         exp = item.data(AttachmentFieldsModel.EXPRESSION)
         layer_id = item.data(AttachmentFieldsModel.LAYER_ID)
         layer = QgsProject.instance().mapLayer(layer_id)
@@ -120,7 +120,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
         QgsProject.instance().writeEntry("Mergin", "Snapping", self.cmb_snapping_mode.currentData())
         for i in range(self.model.rowCount()):
-            index = self.model.index(i, 0)
+            index = self.model.index(i, 1)
             if index.isValid():
                 item = self.model.itemFromIndex(index)
                 layer_id = item.data(AttachmentFieldsModel.LAYER_ID)
