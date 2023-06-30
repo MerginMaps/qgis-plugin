@@ -3,7 +3,14 @@ import os
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QFileDialog
-from qgis.core import QgsProject
+from qgis.core import (
+    QgsProject,
+    QgsExpressionContext,
+    QgsExpressionContextUtils,
+    QgsFeature,
+    QgsFeatureRequest,
+    QgsExpression,
+)
 from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
 from .attachment_fields_model import AttachmentFieldsModel
 from .utils import icon_path, mergin_project_local_path
@@ -60,7 +67,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.model = AttachmentFieldsModel()
         self.tree_fields.setModel(self.model)
         self.tree_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
-        self.edit_photo_expression.expressionChanged.connect(self.save_expression)
+        self.edit_photo_expression.expressionChanged.connect(self.expression_changed)
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
@@ -96,25 +103,57 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         with open(self.config_file, "w") as f:
             json.dump(config, f, indent=2)
 
-    def save_expression(self, expression):
+    def expression_changed(self, expression):
         if not self.tree_fields.selectionModel().hasSelection():
             return
         index = self.tree_fields.selectionModel().selectedIndexes()[0]
+        layer = None
         if index.isValid():
             item = self.model.item(index.row(), 1)
             item.setData(self.edit_photo_expression.expression(), AttachmentFieldsModel.EXPRESSION)
+            layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
+
+        self.update_preview(expression, layer)
 
     def update_expression_edit(self, current, previous):
         item = self.model.item(current.row(), 1)
         exp = item.data(AttachmentFieldsModel.EXPRESSION)
-        layer_id = item.data(AttachmentFieldsModel.LAYER_ID)
-        layer = QgsProject.instance().mapLayer(layer_id)
+        layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
         if layer and layer.isValid():
             self.edit_photo_expression.setLayer(layer)
 
         self.edit_photo_expression.blockSignals(True)
         self.edit_photo_expression.setExpression(exp if exp else "")
         self.edit_photo_expression.blockSignals(False)
+        self.update_preview(exp, layer)
+
+    def update_preview(self, expression, layer):
+        if expression == "":
+            self.label_preview.setText("")
+
+        context = None
+        if layer and layer.isValid():
+            context = layer.createExpressionContext()
+            f = QgsFeature()
+            layer.getFeatures(QgsFeatureRequest().setLimit(1)).nextFeature(f)
+            context.setFeature(f)
+        else:
+            context = QgsExpressionContext()
+            context.appendScope(QgsExpressionContextUtils.globalScope())
+            context.appendScope(QgsExpressionContextUtils.projectScope(QgsProject.instance()))
+
+        exp = QgsExpression(expression)
+        exp.prepare(context)
+        if exp.hasParserError():
+            self.label_preview.setText(f"<i>{exp.parserErrorString()}</i>")
+            return
+
+        val = exp.evaluate(context)
+        if exp.hasEvalError():
+            self.label_preview.setText(f"<i>{exp.evalErrorString()}</i>")
+            return
+
+        self.label_preview.setText(f"<i>{val}</i>")
 
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())

@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>535</width>
-    <height>516</height>
+    <height>615</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -165,20 +165,34 @@
       <string>Photo attachment</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_5">
-      <item row="2" column="1">
-       <spacer name="verticalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
+      <item row="0" column="0" rowspan="5">
+       <widget class="QTreeView" name="tree_fields">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>40</height>
-         </size>
-        </property>
-       </spacer>
+       </widget>
       </item>
       <item row="1" column="1">
+       <widget class="QLabel" name="label_7">
+        <property name="text">
+         <string>Preview</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QLabel" name="label_preview">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1" colspan="2">
+       <widget class="QgsExpressionLineEdit" name="edit_photo_expression" native="true"/>
+      </item>
+      <item row="2" column="1" colspan="2">
        <widget class="QLabel" name="label_6">
         <property name="text">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -191,11 +205,18 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <widget class="QgsExpressionLineEdit" name="edit_photo_expression" native="true"/>
-      </item>
-      <item row="0" column="0" rowspan="4">
-       <widget class="QTreeView" name="tree_fields"/>
+      <item row="3" column="1" colspan="2">
+       <spacer name="verticalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
     </widget>
@@ -206,7 +227,7 @@
   <customwidget>
    <class>QgsExpressionLineEdit</class>
    <extends>QWidget</extends>
-   <header>qgis.gui</header>
+   <header>qgsexpressionlineedit.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
