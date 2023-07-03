@@ -13,7 +13,7 @@ from qgis.core import (
 )
 from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
 from .attachment_fields_model import AttachmentFieldsModel
-from .utils import icon_path, mergin_project_local_path
+from .utils import icon_path, mergin_project_local_path, prefix_for_relative_path, resolve_target_dir
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
 ProjectConfigUiWidget, _ = uic.loadUiType(ui_file)
@@ -108,16 +108,19 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             return
         index = self.attachment_fields.selectionModel().selectedIndexes()[0]
         layer = None
+        field_name = None
         if index.isValid():
             item = self.attachments_model.item(index.row(), 1)
             item.setData(self.edit_photo_expression.expression(), AttachmentFieldsModel.EXPRESSION)
             layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
+            field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
 
-        self.update_preview(expression, layer)
+        self.update_preview(expression, layer, field_name)
 
     def update_expression_edit(self, current, previous):
         item = self.attachments_model.item(current.row(), 1)
         exp = item.data(AttachmentFieldsModel.EXPRESSION)
+        field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
         layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
         if layer and layer.isValid():
             self.edit_photo_expression.setLayer(layer)
@@ -125,18 +128,20 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.edit_photo_expression.blockSignals(True)
         self.edit_photo_expression.setExpression(exp if exp else "")
         self.edit_photo_expression.blockSignals(False)
-        self.update_preview(exp, layer)
+        self.update_preview(exp, layer, field_name)
 
-    def update_preview(self, expression, layer):
+    def update_preview(self, expression, layer, field_name):
         if expression == "":
             self.label_preview.setText("")
+            return
 
         context = None
         if layer and layer.isValid():
             context = layer.createExpressionContext()
             f = QgsFeature()
             layer.getFeatures(QgsFeatureRequest().setLimit(1)).nextFeature(f)
-            context.setFeature(f)
+            if f.isValid():
+                context.setFeature(f)
         else:
             context = QgsExpressionContext()
             context.appendScope(QgsExpressionContextUtils.globalScope())
@@ -153,13 +158,21 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             self.label_preview.setText(f"<i>{exp.evalErrorString()}</i>")
             return
 
-        self.label_preview.setText(f"<i>{val}</i>")
+        config = layer.fields().field(field_name).editorWidgetSetup().config()
+        target_dir = resolve_target_dir(layer, config)
+        prefix = prefix_for_relative_path(
+            config.get("RelativeStorage", 0), QgsProject.instance().homePath(), target_dir
+        )
+        if prefix:
+            self.label_preview.setText(f"<i>{prefix.removeprefix(QgsProject.instance().homePath())}/{val}.jpg</i>")
+        else:
+            self.label_preview.setText(f"<i>{val}.jpg</i>")
 
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
         QgsProject.instance().writeEntry("Mergin", "Snapping", self.cmb_snapping_mode.currentData())
-        for i in range(self.model.rowCount()):
-            index = self.model.index(i, 1)
+        for i in range(self.attachments_model.rowCount()):
+            index = self.attachments_model.index(i, 1)
             if index.isValid():
                 item = self.attachments_model.itemFromIndex(index)
                 layer_id = item.data(AttachmentFieldsModel.LAYER_ID)

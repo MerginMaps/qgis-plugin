@@ -47,6 +47,9 @@ from qgis.core import (
     QgsProjUtils,
     QgsDataSourceUri,
     QgsVectorTileLayer,
+    QgsFeature,
+    QgsFeatureRequest,
+    QgsExpression,
 )
 
 from .mergin.utils import int_version
@@ -1298,3 +1301,59 @@ def is_valid_name(name):
         )
         is None
     )
+
+
+def resolve_target_dir(layer, widget_config):
+    """
+    Evaluates the "default path" for attachment widget. The following order is used:
+     - evaluate default path expression if defined,
+     - use default path value if not empty,
+     - use project home folder
+    """
+    project_home = QgsProject.instance().homePath()
+    collection = widget_config.get("PropertyCollection")
+    props = None
+    if collection:
+        props = collection.get("properties")
+
+    expression = None
+    if props:
+        root_path = props.get("propertyRootPath")
+        expression = root_path.get("expression")
+
+    if expression:
+        return evaluate_expression(expression, layer)
+
+    default_root = widget_config.get("DefaultRoot")
+    return default_root if default_root else project_home
+
+
+def evaluate_expression(expression, layer):
+    """
+    Evaluates expression, layer is used to define expression context scopes
+    and get a feature.
+    """
+    context = layer.createExpressionContext()
+    f = QgsFeature()
+    layer.getFeatures(QgsFeatureRequest().setLimit(1)).nextFeature(f)
+    if f.isValid():
+        context.setFeature(f)
+
+    exp = QgsExpression(expression)
+    return exp.evaluate(context)
+
+
+def prefix_for_relative_path(mode, home_path, target_dir):
+    """
+    Resolves path of an image for a field with ExternalResource widget type.
+    Returns prefix which has to be added to the field's value to obtain working path to load the image.
+    param relativeStorageMode: storage mode used by the widget
+    param home_path: project path
+    param target_dir: default path in the widget configuration
+    """
+    if mode == 1:  # relative to project
+        return home_path
+    elif mode == 2:  # relative to defaultRoot defined in the widget config
+        return target_dir
+    else:
+        return ""
