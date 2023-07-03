@@ -64,9 +64,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         else:
             self.selective_sync_group.setEnabled(False)
 
-        self.model = AttachmentFieldsModel()
-        self.tree_fields.setModel(self.model)
-        self.tree_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
+        self.attachments_model = AttachmentFieldsModel()
+        self.attachment_fields.setModel(self.attachments_model)
+        self.attachment_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
         self.edit_photo_expression.expressionChanged.connect(self.expression_changed)
 
     def get_sync_dir(self):
@@ -104,19 +104,19 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             json.dump(config, f, indent=2)
 
     def expression_changed(self, expression):
-        if not self.tree_fields.selectionModel().hasSelection():
+        if not self.attachment_fields.selectionModel().hasSelection():
             return
-        index = self.tree_fields.selectionModel().selectedIndexes()[0]
+        index = self.attachment_fields.selectionModel().selectedIndexes()[0]
         layer = None
         if index.isValid():
-            item = self.model.item(index.row(), 1)
+            item = self.attachments_model.item(index.row(), 1)
             item.setData(self.edit_photo_expression.expression(), AttachmentFieldsModel.EXPRESSION)
             layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
 
         self.update_preview(expression, layer)
 
     def update_expression_edit(self, current, previous):
-        item = self.model.item(current.row(), 1)
+        item = self.attachments_model.item(current.row(), 1)
         exp = item.data(AttachmentFieldsModel.EXPRESSION)
         layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
         if layer and layer.isValid():
@@ -161,7 +161,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         for i in range(self.model.rowCount()):
             index = self.model.index(i, 1)
             if index.isValid():
-                item = self.model.itemFromIndex(index)
+                item = self.attachments_model.itemFromIndex(index)
                 layer_id = item.data(AttachmentFieldsModel.LAYER_ID)
                 field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
                 expression = item.data(AttachmentFieldsModel.EXPRESSION)
