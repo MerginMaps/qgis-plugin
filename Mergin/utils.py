@@ -125,7 +125,7 @@ PACKABLE_PROVIDERS = ("ogr", "gdal", "delimitedtext", "gpx", "postgres", "memory
 
 PROJS_PER_PAGE = 50
 
-TILES_URL = "https://vtiles.merginmaps.com"
+TILES_URL = "https://tiles.merginmaps.com"
 
 
 class PackagingError(Exception):
