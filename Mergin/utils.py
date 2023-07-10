@@ -45,6 +45,8 @@ from qgis.core import (
     QgsSettings,
     QgsDatumTransform,
     QgsProjUtils,
+    QgsDataSourceUri,
+    QgsVectorTileLayer,
 )
 
 from .mergin.utils import int_version
@@ -122,6 +124,8 @@ QGIS_FILE_BASED_PROVIDERS = (
 PACKABLE_PROVIDERS = ("ogr", "gdal", "delimitedtext", "gpx", "postgres", "memory")
 
 PROJS_PER_PAGE = 50
+
+TILES_URL = "https://tiles.merginmaps.com"
 
 
 class PackagingError(Exception):
@@ -520,10 +524,18 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     crs.createFromString("EPSG:3857")
     new_project.setCrs(crs)
     new_project.setFileName(project_path)
-    osm_url = "crs=EPSG:3857&type=xyz&zmin=0&zmax=19&url=http://tile.openstreetmap.org/{z}/{x}/{y}.png"
-    osm_layer = QgsRasterLayer(osm_url, "OpenStreetMap", "wms")
-    new_project.addMapLayer(osm_layer)
-
+    ds_uri = QgsDataSourceUri()
+    ds_uri.setParam("type", "xyz")
+    ds_uri.setParam("url", f"{TILES_URL}/data/default/{{z}}/{{x}}/{{y}}.pbf")
+    ds_uri.setParam("zmin", "0")
+    ds_uri.setParam("zmax", "14")
+    ds_uri.setParam("styleUrl", f"{TILES_URL}/styles/default.json")
+    vt_layer = QgsVectorTileLayer(bytes(ds_uri.encodedUri()).decode(), "OpenMapTiles (OSM)")
+    vt_layer.loadDefaultStyle()
+    metadata = vt_layer.metadata()
+    metadata.setRights(["© OpenMapTiles © OpenStreetMap contributors"])
+    vt_layer.setMetadata(metadata)
+    new_project.addMapLayer(vt_layer)
     mem_uri = "Point?crs=epsg:3857"
     mem_layer = QgsVectorLayer(mem_uri, "Survey points", "memory")
     res = mem_layer.dataProvider().addAttributes(
@@ -775,7 +787,11 @@ def update_datasource(layer, new_path):
     """Updates layer datasource, so the layer is loaded from the new location"""
     options = QgsDataProvider.ProviderOptions()
     options.layerName = layer.name()
-    if layer.dataProvider().name() == "vectortile":
+    if layer.dataProvider().name() == "mbtilesvectortiles":
+        # For 3.31 and master
+        layer.setDataSource(f"url={new_path}&type=mbtiles", layer.name(), layer.dataProvider().name(), options)
+    elif layer.dataProvider().name() == "vectortile":
+        # For 3.22
         layer.setDataSource(f"url={new_path}&type=mbtiles", layer.name(), layer.dataProvider().name(), options)
     elif layer.dataProvider().name() == "wms":
         layer.setDataSource(f"url=file://{new_path}&type=mbtiles", layer.name(), layer.dataProvider().name(), options)
