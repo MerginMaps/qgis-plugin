@@ -14,7 +14,6 @@ test_data_path = os.path.join(os.path.dirname(__file__), "data")
 class test_packaging(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        super().setUpClass()
         start_app()
 
     def test_copy_raster(self):
