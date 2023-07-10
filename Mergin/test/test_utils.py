@@ -21,7 +21,6 @@ test_data_path = os.path.join(os.path.dirname(__file__), "data")
 class test_utils(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        super().setUpClass()
         start_app()
 
     def tearDown(self):
