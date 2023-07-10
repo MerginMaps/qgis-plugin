@@ -25,9 +25,6 @@ class AttachmentFieldsModel(QStandardItemModel):
                 if widget_setup.type() != "ExternalResource":
                     continue
 
-                if not widget_setup.config().get("DocumentViewer", 1):
-                    continue
-
                 item_layer = QStandardItem(f"{layer.name()}")
                 if layer.renderer().type() == "singleSymbol":
                     icon = QgsSymbolLayerUtils.symbolPreviewIcon(layer.renderer().symbol(), QSize(16, 16))
