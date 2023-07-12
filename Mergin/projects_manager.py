@@ -47,6 +47,18 @@ class MerginProjectsManager(object):
             return False if check_result == UnsavedChangesStrategy.HasUnsavedChanges else True
         return True  # not a Mergin project
 
+    def refreshBrowser(self):
+        # reload the two browser groups (in case server is old)
+        groups = self.get_mergin_browser_groups()
+        for group in groups:
+            groups[group].reload()
+
+        # reload the Mergin Maps browser entry (in case server is ee/ce)
+        browser_model = self.iface.browserModel()
+        root_idx = browser_model.findPath("Mergin Maps")
+        item = browser_model.dataItem(root_idx)
+        item.reload()
+
     def open_project(self, project_dir):
         if not project_dir:
             return
@@ -185,11 +197,11 @@ class MerginProjectsManager(object):
         except LoginError as e:
             login_error_message(e)
 
-    def check_project_server(self, project_dir, inform_user=True):
+    def check_project_server(self, project_dir, inform_user=True, validate_local=True ):
         """Check if the project was created for current plugin Mergin Maps server."""
         proj_server = None
         for path, owner, name, server in get_local_mergin_projects_info():
-            if not same_dir(path, project_dir):
+            if not same_dir(path, project_dir)  and validate_local:
                 continue
             proj_server = server
             break
@@ -214,7 +226,7 @@ class MerginProjectsManager(object):
             QMessageBox.critical(None, "Mergin Maps", info)
         return False
 
-    def sync_project(self, project_dir, project_name=None):
+    def sync_project(self, project_dir, project_name=None, check_path=True):
         if not project_dir:
             return
         if not self.unsaved_changes_check(project_dir):
@@ -227,7 +239,7 @@ class MerginProjectsManager(object):
                 msg = f"Failed to sync project:\n\n{str(e)}"
                 QMessageBox.critical(None, "Project syncing", msg, QMessageBox.Close)
                 return
-        if not self.check_project_server(project_dir):
+        if not self.check_project_server(project_dir, validate_local=check_path):
             return
 
         # check whether project is in the unfinished pull state and if
@@ -457,7 +469,12 @@ class MerginProjectsManager(object):
                 None,"Download Project", f"The target directory already exists for {dialog_text}.\n Do you want to use this directory\n and its current content?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
             )
             if conflictDir == QMessageBox.Yes:
-                self.sync_project(target_dir,project_name)
+                self.sync_project(target_dir,project_name,check_path=False)
+                settings = QSettings()
+                server_url = self.mc.url.rstrip("/")
+                settings.setValue(f"Mergin/localProjects/{project_name}/path", parent_dir)
+                settings.setValue(f"Mergin/localProjects/{project_name}/server", server_url)
+                self.refreshBrowser()
                 return
             else:
                 reuseProjDir = QMessageBox.question(
@@ -497,13 +514,5 @@ class MerginProjectsManager(object):
         if btn_reply == QMessageBox.Yes:
             self.open_project(target_dir)
 
-        # reload the two browser groups (in case server is old)
-        groups = self.get_mergin_browser_groups()
-        for group in groups:
-            groups[group].reload()
+        self.refreshBrowser()
 
-        # reload the Mergin Maps browser entry (in case server is ee/ce)
-        browser_model = self.iface.browserModel()
-        root_idx = browser_model.findPath("Mergin Maps")
-        item = browser_model.dataItem(root_idx)
-        item.reload()
