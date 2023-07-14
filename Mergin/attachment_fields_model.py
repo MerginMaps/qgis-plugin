@@ -1,6 +1,14 @@
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem
 from qgis.PyQt.QtCore import Qt, QSize
-from qgis.core import QgsProject, QgsMapLayer, QgsSymbolLayerUtils, QgsIconUtils
+from qgis.core import QgsProject, QgsMapLayer, QgsSymbolLayerUtils
+
+# QgsIconUtils only available since QGIS >= 3.20
+try:
+    from qgis.core import QgsIconUtils
+
+    has_icon_utils = True
+except ImportError:
+    has_icon_utils = False
 
 
 class AttachmentFieldsModel(QStandardItemModel):
@@ -29,7 +37,7 @@ class AttachmentFieldsModel(QStandardItemModel):
                 if layer.renderer().type() == "singleSymbol":
                     icon = QgsSymbolLayerUtils.symbolPreviewIcon(layer.renderer().symbol(), QSize(16, 16))
                     item_layer.setIcon(icon)
-                else:
+                elif has_icon_utils:
                     item_layer.setIcon(QgsIconUtils.iconForLayer(layer))
 
                 item_field = QStandardItem(f"{field.name()}")
