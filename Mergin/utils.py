@@ -17,7 +17,6 @@ import re
 from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
 from qgis.PyQt.QtGui import QPalette, QColor
-
 from qgis.core import (
     NULL,
     Qgis,
@@ -63,7 +62,6 @@ from qgis.core import (
 
 from .mergin.utils import int_version
 from .mergin.merginproject import MerginProject
-
 
 try:
     from .mergin.client import MerginClient, ClientError, LoginError, InvalidProject, ServerType
@@ -1351,6 +1349,33 @@ def evaluate_expression(expression, layer):
     exp = QgsExpression(expression)
     return exp.evaluate(context)
 
+def prefix_for_relative_path(mode, home_path, target_dir):
+    """
+    Resolves path of an image for a field with ExternalResource widget type.
+    Returns prefix which has to be added to the field's value to obtain working path to load the image.
+    param relativeStorageMode: storage mode used by the widget
+    param home_path: project path
+    param target_dir: default path in the widget configuration
+    """
+    if mode == 1:  # relative to project
+        return home_path
+    elif mode == 2:  # relative to defaultRoot defined in the widget config
+        return target_dir
+    else:
+        return ""
+
+    symbol = QgsLineSymbol.createSimple(
+        {
+            "capstyle": "square",
+            "joinstyle": "bevel",
+            "line_style": "solid",
+            "line_width": "0.35",
+            "line_width_unit": "MM",
+            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFA500")),
+        }
+    )
+    layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+    set_tracking_layer_flags(layer)
 
 def create_tracking_layer(project_path):
     """
@@ -1426,35 +1451,6 @@ def setup_tracking_layer(layer):
         }
     )
     layer.setRenderer(QgsSingleSymbolRenderer(symbol))
-
-def prefix_for_relative_path(mode, home_path, target_dir):
-    """
-    Resolves path of an image for a field with ExternalResource widget type.
-    Returns prefix which has to be added to the field's value to obtain working path to load the image.
-    param relativeStorageMode: storage mode used by the widget
-    param home_path: project path
-    param target_dir: default path in the widget configuration
-    """
-    if mode == 1:  # relative to project
-        return home_path
-    elif mode == 2:  # relative to defaultRoot defined in the widget config
-        return target_dir
-    else:
-        return ""
-
-    symbol = QgsLineSymbol.createSimple(
-        {
-            "capstyle": "square",
-            "joinstyle": "bevel",
-            "line_style": "solid",
-            "line_width": "0.35",
-            "line_width_unit": "MM",
-            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFA500")),
-        }
-    )
-    layer.setRenderer(QgsSingleSymbolRenderer(symbol))
-    set_tracking_layer_flags(layer)
-
 
 def set_tracking_layer_flags(layer):
     """
