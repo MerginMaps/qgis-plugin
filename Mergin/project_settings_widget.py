@@ -11,11 +11,18 @@ from qgis.core import (
     QgsFeature,
     QgsFeatureRequest,
     QgsExpression,
-    QgsVectorLayer
+    QgsVectorLayer,
 )
 from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
 from .attachment_fields_model import AttachmentFieldsModel
-from .utils import icon_path, mergin_project_local_path, prefix_for_relative_path, resolve_target_dir, create_tracking_layer, set_tracking_layer_flags
+from .utils import (
+    icon_path,
+    mergin_project_local_path,
+    prefix_for_relative_path,
+    resolve_target_dir,
+    create_tracking_layer,
+    set_tracking_layer_flags,
+)
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
 ProjectConfigUiWidget, _ = uic.loadUiType(ui_file)

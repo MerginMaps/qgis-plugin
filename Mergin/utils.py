@@ -1349,6 +1349,7 @@ def evaluate_expression(expression, layer):
     exp = QgsExpression(expression)
     return exp.evaluate(context)
 
+
 def prefix_for_relative_path(mode, home_path, target_dir):
     """
     Resolves path of an image for a field with ExternalResource widget type.
@@ -1376,6 +1377,7 @@ def prefix_for_relative_path(mode, home_path, target_dir):
     )
     layer.setRenderer(QgsSingleSymbolRenderer(symbol))
     set_tracking_layer_flags(layer)
+
 
 def create_tracking_layer(project_path):
     """
@@ -1409,6 +1411,7 @@ def create_tracking_layer(project_path):
     QgsProject.instance().writeEntry("Mergin", "PositionTracking/TrackingLayer", layer.id())
 
     return filename
+
 
 def setup_tracking_layer(layer):
     """
@@ -1451,6 +1454,7 @@ def setup_tracking_layer(layer):
         }
     )
     layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+
 
 def set_tracking_layer_flags(layer):
     """
