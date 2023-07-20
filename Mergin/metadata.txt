@@ -4,14 +4,16 @@ name=Mergin
 qgisMinimumVersion=3.16
 qgisMaximumVersion=3.99
 description=Handle Mergin Maps projects
-version=2023.2
+version=2023.2.1
 author=Lutra Consulting
 email=info@merginmaps.com
 about=Mergin Maps is a repository for storing and tracking changes to QGIS projects/data. It is linked with Mergin Maps Input (a QGIS mobile app). With this plugin, users can upload and sync their data to Mergin Maps service.
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2023.2
+changelog=2023.2.1
+  - fix error when listing geometry-less layers with attachments (#505)
+  <p>2023.2
   - use Lutra's vector tile layer for basemap (#497)
   - expression-based names for photos (#501)
   - check if iface is valid on plugin load (#495)
