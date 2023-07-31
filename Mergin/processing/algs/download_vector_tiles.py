@@ -25,6 +25,7 @@ from qgis.core import (
     QgsProcessingParameterNumber,
     QgsProcessingParameterExtent,
     QgsProcessingParameterFileDestination,
+    QgsMapLayerType,
 )
 
 from ...utils import icon_path
@@ -133,12 +134,8 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
         if layer is None:
             raise QgsProcessingException("Invalid input layer.")
 
-        if Qgis.versionInt() < 33000:
-            if layer.type() != Qgis.QgsMapLayerType.VectorTileLayer:
-                raise QgsProcessingException("Input layer is not a vector tile layer.")
-        else:
-            if layer.type() != Qgis.LayerType.VectorTileLayer:
-                raise QgsProcessingException("Input layer is not a vector tile layer.")
+        if layer.type() != QgsMapLayerType.VectorTileLayer:
+            raise QgsProcessingException("Input layer is not a vector tile layer.")
 
         ds_uri = QgsDataSourceUri()
         ds_uri.setEncodedUri(layer.source())
