@@ -133,8 +133,12 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
         if layer is None:
             raise QgsProcessingException("Invalid input layer.")
 
-        if layer.type() != Qgis.LayerType.VectorTileLayer:
-            raise QgsProcessingException("Input layer is not a vector tile layer.")
+        if Qgis.versionInt() < 33000:
+            if layer.type() != Qgis.QgsMapLayerType.VectorTileLayer:
+                raise QgsProcessingException("Input layer is not a vector tile layer.")
+        else:
+            if layer.type() != Qgis.LayerType.VectorTileLayer:
+                raise QgsProcessingException("Input layer is not a vector tile layer.")
 
         ds_uri = QgsDataSourceUri()
         ds_uri.setEncodedUri(layer.source())
