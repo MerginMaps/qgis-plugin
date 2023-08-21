@@ -2,7 +2,8 @@ import json
 import os
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QFileDialog
+from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtWidgets import QFileDialog, QMessageBox
 from qgis.core import (
     QgsProject,
     QgsExpressionContext,
@@ -10,10 +11,18 @@ from qgis.core import (
     QgsFeature,
     QgsFeatureRequest,
     QgsExpression,
+    QgsVectorLayer,
 )
 from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
 from .attachment_fields_model import AttachmentFieldsModel
-from .utils import icon_path, mergin_project_local_path, prefix_for_relative_path, resolve_target_dir
+from .utils import (
+    icon_path,
+    mergin_project_local_path,
+    prefix_for_relative_path,
+    resolve_target_dir,
+    create_tracking_layer,
+    set_tracking_layer_flags,
+)
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
 ProjectConfigUiWidget, _ = uic.loadUiType(ui_file)
@@ -54,6 +63,21 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         mode, ok = QgsProject.instance().readNumEntry("Mergin", "Snapping")
         idx = self.cmb_snapping_mode.findData(mode) if ok else 0
         self.cmb_snapping_mode.setCurrentIndex(idx if idx > 0 else 0)
+
+        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "PositionTracking/Enabled")
+        if ok:
+            self.chk_tracking_enabled.setChecked(enabled)
+        else:
+            self.chk_tracking_enabled.setChecked(False)
+        self.chk_tracking_enabled.stateChanged.connect(self.check_project)
+
+        self.cmb_tracking_precision.addItem("Best", 0)
+        self.cmb_tracking_precision.addItem("Normal", 1)
+        self.cmb_tracking_precision.addItem("Low", 2)
+
+        mode, ok = QgsProject.instance().readNumEntry("Mergin", "PositionTracking/UpdateFrequency")
+        idx = self.cmb_tracking_precision.findData(mode) if ok else 1
+        self.cmb_tracking_precision.setCurrentIndex(idx)
 
         self.local_project_dir = mergin_project_local_path()
 
@@ -168,9 +192,47 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         else:
             self.label_preview.setText(f"<i>{val}.jpg</i>")
 
+    def check_project(self, state):
+        """
+        Check whether project is saved and we can create tracking
+        layer for it.
+        """
+        if QgsProject.instance().absolutePath() == "":
+            QMessageBox.warning(
+                self,
+                "Project is not saved",
+                "It seems that your project is not saved yet, please save "
+                "project before enabling tracking as we need to know where "
+                "to place required files.",
+            )
+            self.chk_tracking_enabled.blockSignals(True)
+            self.chk_tracking_enabled.setCheckState(Qt.Unchecked)
+            self.chk_tracking_enabled.blockSignals(False)
+
+    def setup_tracking(self):
+        if self.chk_tracking_enabled.checkState() == Qt.Unchecked:
+            return
+
+        # check if tracking layer already exists
+        tracking_layer_id, ok = QgsProject.instance().readEntry("Mergin", "PositionTracking/TrackingLayer")
+        if tracking_layer_id != "" and tracking_layer_id in QgsProject.instance().mapLayers():
+            # tracking layer already exists in the project, make sure it has correct flags
+            layer = QgsProject.instance().mapLayers()[tracking_layer_id]
+            if layer is not None and layer.isValid():
+                set_tracking_layer_flags(layer)
+            return
+
+        # tracking layer does not exists or was removed from the project
+        # create a new layer and add it as a tracking layer
+        create_tracking_layer(QgsProject.instance().absolutePath())
+
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
         QgsProject.instance().writeEntry("Mergin", "Snapping", self.cmb_snapping_mode.currentData())
+        QgsProject.instance().writeEntry("Mergin", "PositionTracking/Enabled", self.chk_tracking_enabled.isChecked())
+        QgsProject.instance().writeEntry(
+            "Mergin", "PositionTracking/UpdateFrequency", self.cmb_tracking_precision.currentData()
+        )
         for i in range(self.attachments_model.rowCount()):
             index = self.attachments_model.index(i, 1)
             if index.isValid():
@@ -181,3 +243,4 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 QgsProject.instance().writeEntry("Mergin", f"PhotoNaming/{layer_id}/{field_name}", expression)
 
         self.save_config_file()
+        self.setup_tracking()

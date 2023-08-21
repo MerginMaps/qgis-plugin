@@ -16,8 +16,7 @@ import re
 
 from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
-from qgis.PyQt.QtGui import QPalette
-
+from qgis.PyQt.QtGui import QPalette, QColor
 from qgis.core import (
     NULL,
     Qgis,
@@ -50,11 +49,19 @@ from qgis.core import (
     QgsFeature,
     QgsFeatureRequest,
     QgsExpression,
+    QgsSingleSymbolRenderer,
+    QgsLineSymbol,
+    QgsSymbolLayerUtils,
+    QgsField,
+    QgsFields,
+    QgsWkbTypes,
+    QgsCoordinateTransformContext,
+    QgsDefaultValue,
+    QgsMapLayer,
 )
 
 from .mergin.utils import int_version
 from .mergin.merginproject import MerginProject
-
 
 try:
     from .mergin.client import MerginClient, ClientError, LoginError, InvalidProject, ServerType
@@ -1357,3 +1364,101 @@ def prefix_for_relative_path(mode, home_path, target_dir):
         return target_dir
     else:
         return ""
+
+    symbol = QgsLineSymbol.createSimple(
+        {
+            "capstyle": "square",
+            "joinstyle": "bevel",
+            "line_style": "solid",
+            "line_width": "0.35",
+            "line_width_unit": "MM",
+            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFA500")),
+        }
+    )
+    layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+    set_tracking_layer_flags(layer)
+
+
+def create_tracking_layer(project_path):
+    """
+    Creates a GPKG layer for tracking in Input
+    """
+    filename = get_unique_filename(os.path.join(project_path, "tracking_layer.gpkg"))
+
+    fields = QgsFields()
+    fields.append(QgsField("tracking_start_time", QVariant.DateTime))
+    fields.append(QgsField("tracking_end_time", QVariant.DateTime))
+    fields.append(QgsField("total_distance", QVariant.Double))
+    fields.append(QgsField("tracked_by", QVariant.String))
+
+    options = QgsVectorFileWriter.SaveVectorOptions()
+    options.driverName = "GPKG"
+    options.layerName = "tracking_layer"
+
+    writer = QgsVectorFileWriter.create(
+        filename,
+        fields,
+        QgsWkbTypes.LineStringZM,
+        QgsCoordinateReferenceSystem("EPSG:4326"),
+        QgsCoordinateTransformContext(),
+        options,
+    )
+    del writer
+
+    layer = QgsVectorLayer(filename, "tracking_layer", "ogr")
+    setup_tracking_layer(layer)
+    QgsProject.instance().addMapLayer(layer)
+    QgsProject.instance().writeEntry("Mergin", "PositionTracking/TrackingLayer", layer.id())
+
+    return filename
+
+
+def setup_tracking_layer(layer):
+    """
+    Configures tracking layer:
+     - set default values for fields
+     - apply default styling
+    """
+    idx = layer.fields().indexFromName("fid")
+    cfg = QgsEditorWidgetSetup("Hidden", {})
+    layer.setEditorWidgetSetup(idx, cfg)
+
+    idx = layer.fields().indexFromName("tracking_start_time")
+    start_time_default = QgsDefaultValue()
+    start_time_default.setExpression("@tracking_start_time")
+    layer.setDefaultValueDefinition(idx, start_time_default)
+
+    idx = layer.fields().indexFromName("tracking_end_time")
+    end_time_default = QgsDefaultValue()
+    end_time_default.setExpression("@tracking_end_time")
+    layer.setDefaultValueDefinition(idx, end_time_default)
+
+    idx = layer.fields().indexFromName("total_distance")
+    distance_default = QgsDefaultValue()
+    distance_default.setExpression("round($length, 2)")
+    layer.setDefaultValueDefinition(idx, distance_default)
+
+    idx = layer.fields().indexFromName("tracked_by")
+    user_default = QgsDefaultValue()
+    user_default.setExpression("@mergin_username")
+    layer.setDefaultValueDefinition(idx, user_default)
+
+    symbol = QgsLineSymbol.createSimple(
+        {
+            "capstyle": "square",
+            "joinstyle": "bevel",
+            "line_style": "solid",
+            "line_width": "0.35",
+            "line_width_unit": "MM",
+            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFA500")),
+        }
+    )
+    layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+
+
+def set_tracking_layer_flags(layer):
+    """
+    Resets flags for tracking layer to make it searchable and identifiable
+    """
+    layer.setReadOnly(False)
+    layer.setFlags(QgsMapLayer.LayerFlag(QgsMapLayer.Identifiable + QgsMapLayer.Searchable + QgsMapLayer.Removable))
