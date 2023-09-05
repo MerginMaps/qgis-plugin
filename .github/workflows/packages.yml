@@ -153,17 +153,19 @@ jobs:
         run: |
           cp -r mergin-py-client/mergin qgis-mergin-plugin/Mergin
           cd qgis-mergin-plugin/
-          find .
-          zip -r mergin.zip Mergin/ -x Mergin/__pycache__/\*
+          rsync -av --exclude='test' --exclude='/__pycache__/' --exclude='*/__pycache__/' Mergin/ ../Mergin
+          cd ..
+          zip -r9 mergin.zip Mergin/
 
       - uses: actions/upload-artifact@v2
         with:
-          path: qgis-mergin-plugin/mergin.zip
+          name: Mergin
+          path: Mergin/
 
       - name: upload asset on tagged release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: qgis-mergin-plugin/mergin.zip
+          files: mergin.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
