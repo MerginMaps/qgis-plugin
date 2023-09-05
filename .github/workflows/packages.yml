@@ -145,7 +145,7 @@ jobs:
         run: |
           cp pygeodiff-binaries/* mergin-py-client/mergin/deps/pygeodiff
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: qgis-mergin-plugin
 
