@@ -211,7 +211,7 @@ class ConfigFilePage(ui_config_page, base_config_page):
             f"    modified: {self.field('sync_schema')}\n"
             f"    base: {self.field('internal_schema')}\n"
             f"    mergin_project: {self.project_name}\n"
-            f"    sync_file: {self.field('sync_file')}\n"
+            f"    sync_file: {os.path.split(self.field('sync_file'))[1]}\n"
             f"daemon:\n"
             f"  sleep_time: 10\n"
         )
