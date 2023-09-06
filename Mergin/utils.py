@@ -687,7 +687,8 @@ def is_layer_packable(layer):
             # raster MBTiles use WMS provider even if this is a local file
             uri = QgsProviderRegistry.instance().decodeUri("wms", layer.source())
             return os.path.isfile(uri["path"]) if "path" in uri else False
-        elif provider_name == "vectortile":
+        # Since QGIS 3.31 provider name for mbtiles vector tiles has changed to "mbtilesvectortiles"
+        elif provider_name in ("vectortile", "mbtilesvectortiles"):
             uri = QgsProviderRegistry.instance().decodeUri("vectortile", layer.source())
             return os.path.isfile(uri["path"]) if "path" in uri else False
 
