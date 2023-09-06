@@ -212,7 +212,15 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
 
             step_feedback.setCurrentStep(zoom)
 
-            tiles = self.tile_matrix_set.tilesInRange(tile_range, zoom)
+            #tiles = self.tile_matrix_set.tilesInRange(tile_range, zoom)
+            tiles = list()
+            for row in range (tile_range.startRow(), tile_range.endRow() + 1):
+                for column in range(tile_range.startColumn(), tile_range.endColumn() + 1):
+                    if feedback.isCanceled():
+                        break
+                    tile = QgsTileXYZ(column, row, zoom)
+                    tiles.append(tile)
+
             step = 100 / len(tiles) if len(tiles) > 0 else 0
             for i, tile in enumerate(tiles):
                 if feedback.isCanceled():
