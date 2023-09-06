@@ -12,6 +12,7 @@ import posixpath
 from functools import partial
 from qgis.PyQt.QtCore import pyqtSignal, QTimer, QUrl, QSettings, Qt
 from qgis.PyQt.QtGui import QIcon, QDesktopServices, QPixmap
+from qgis.PyQt.QtWidgets import QDialog
 from qgis.core import (
     QgsApplication,
     QgsDataCollectionItem,
@@ -40,6 +41,7 @@ from .project_settings_widget import MerginProjectConfigFactory
 from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
 from .configure_sync_wizard import DbSyncConfigWizard
+from .remove_project_dialog import RemoveProjectDialog
 from .utils import (
     ServerType,
     ClientError,
@@ -654,10 +656,13 @@ class MerginRemoteProjectItem(QgsDataItem):
             group_items["My projects"].reload()
 
     def remove_remote_project(self):
-        msg = "Do you really want to remove project {} from server?".format(self.project_name)
-        btn_reply = QMessageBox.question(None, "Remove project", msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if btn_reply == QMessageBox.No:
+        dlg = RemoveProjectDialog(self.project_name)
+        if dlg.exec_() == QDialog.Rejected:
             return
+        # ~ msg = "Do you really want to remove project {} from server?".format(self.project_name)
+        # ~ btn_reply = QMessageBox.question(None, "Remove project", msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        # ~ if btn_reply == QMessageBox.No:
+        # ~ return
 
         try:
             self.mc.delete_project(self.project_name)
