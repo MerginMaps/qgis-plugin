@@ -26,6 +26,7 @@ from qgis.core import (
     QgsProcessingParameterExtent,
     QgsProcessingParameterFileDestination,
     QgsMapLayerType,
+    QgsTileXYZ,
 )
 
 from ...utils import icon_path
@@ -212,14 +213,19 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
 
             step_feedback.setCurrentStep(zoom)
 
-            #tiles = self.tile_matrix_set.tilesInRange(tile_range, zoom)
             tiles = list()
-            for row in range (tile_range.startRow(), tile_range.endRow() + 1):
-                for column in range(tile_range.startColumn(), tile_range.endColumn() + 1):
-                    if feedback.isCanceled():
-                        break
-                    tile = QgsTileXYZ(column, row, zoom)
-                    tiles.append(tile)
+            # tilesInRange() provides correct handling of "indexed" vector tile sets in vtpk and arcgis
+            # tile services. This method is not available in old QGIS version, so we use simplified
+            # approach adopted from the C++ code
+            if Qgis.versionInt() >= 33200:
+                tiles = self.tile_matrix_set.tilesInRange(tile_range, zoom)
+            else:
+                for row in range(tile_range.startRow(), tile_range.endRow() + 1):
+                    for column in range(tile_range.startColumn(), tile_range.endColumn() + 1):
+                        if feedback.isCanceled():
+                            break
+                        tile = QgsTileXYZ(column, row, zoom)
+                        tiles.append(tile)
 
             step = 100 / len(tiles) if len(tiles) > 0 else 0
             for i, tile in enumerate(tiles):
@@ -259,7 +265,7 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
             if context.project():
                 err = tile_layer.importNamedStyle(self.style_document)
                 metadata = tile_layer.metadata()
-                metadata.setRights(self.rights)
+                metadata.setRights(self.attribution)
                 tile_layer.setMetadata(metadata)
                 context.project().addMapLayer(tile_layer)
         return {self.OUTPUT: self.output_file_path}
