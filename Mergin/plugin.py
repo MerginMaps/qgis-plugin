@@ -169,8 +169,10 @@ class MerginPlugin:
             # add layer context menu action for downloading vector tiles
             self.action_export_mbtiles = QAction("Make available offline…", self.iface.mainWindow())
             self.action_export_mbtiles.setIcon(QIcon(icon_path("file-export.svg")))
-            self.iface.addCustomActionForLayerType(self.action_export_mbtiles, "", QgsMapLayer.VectorTileLayer, True)
+            self.iface.addCustomActionForLayerType(self.action_export_mbtiles, "", QgsMapLayer.VectorTileLayer, False)
             self.action_export_mbtiles.triggered.connect(self.export_vector_tiles)
+
+        QgsProject.instance().layersAdded.connect(self.add_context_menu_actions)
 
     def add_action(
         self,
@@ -474,6 +476,11 @@ class MerginPlugin:
         self.mergin_proj_dir = mergin_project_local_path()
         if self.mergin_proj_dir is not None:
             self.enable_toolbar_actions()
+
+    def add_context_menu_actions(self, layers):
+        for l in layers:
+            if l.dataProvider().name() == "xyzvectortiles":
+                self.iface.addCustomActionForLayer(self.action_export_mbtiles, l)
 
     def unload(self):
         if self.iface is not None:
