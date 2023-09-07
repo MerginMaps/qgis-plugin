@@ -478,8 +478,11 @@ class MerginPlugin:
             self.enable_toolbar_actions()
 
     def add_context_menu_actions(self, layers):
+        provider_names = ("vectortile")
+        if Qgis.versionInt() >= 33200:
+            provider_names = ("xyzvectortiles", "arcgisvectortileservice", "vtpkvectortiles")
         for l in layers:
-            if l.dataProvider().name() == "xyzvectortiles":
+            if l.dataProvider().name() in provider_names:
                 self.iface.addCustomActionForLayer(self.action_export_mbtiles, l)
 
     def unload(self):
