@@ -144,7 +144,6 @@ class test_validations(unittest.TestCase):
             data = f.read()
 
         svg = f"base64:{base64.b64encode(data.encode('utf-8')).decode('utf-8')}"
-        print("SVG", svg)
         symbol = QgsMarkerSymbol()
         symbol_layer = QgsSvgMarkerSymbolLayer(svg)
         symbol.changeSymbolLayer(0, symbol_layer)
