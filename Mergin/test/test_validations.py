@@ -1,10 +1,18 @@
 # -*- coding: utf-8 -*-
 
 import os
+import base64
 
 from qgis.PyQt.QtCore import QVariant
 
-from qgis.core import QgsVectorLayer, QgsField, QgsEditorWidgetSetup
+from qgis.core import (
+    QgsVectorLayer,
+    QgsField,
+    QgsEditorWidgetSetup,
+    QgsMarkerSymbol,
+    QgsSvgMarkerSymbolLayer,
+    QgsSvgMarkerSymbolLayer,
+)
 from qgis.testing import start_app, unittest
 
 from Mergin.validation import MerginProjectValidator, Warning, SingleLayerWarning
@@ -111,6 +119,37 @@ class test_validations(unittest.TestCase):
         self.assertEqual(issue.layer_id, "mem_1")
         self.assertEqual(issue.warning, Warning.ATTACHMENT_WRONG_EXPRESSION)
         validator.issues = []
+
+    def test_embedded_svg(self):
+        layer = QgsVectorLayer("Point", "test", "memory")
+        symbol = QgsMarkerSymbol()
+        symbol_layer = QgsSvgMarkerSymbolLayer(os.path.join(test_data_path, "transport_aerodrome.svg"))
+        symbol.changeSymbolLayer(0, symbol_layer)
+        layer.renderer().setSymbol(symbol)
+
+        validator = MerginProjectValidator()
+        validator.layers = {"mem_1": layer}
+        validator.editable = ["mem_1"]
+
+        validator.check_svgs_embedded()
+        self.assertTrue(len(validator.issues) == 1)
+        issue = validator.issues[0]
+        self.assertTrue(isinstance(issue, SingleLayerWarning))
+        self.assertEqual(issue.layer_id, "mem_1")
+        self.assertEqual(issue.warning, Warning.SVG_NOT_EMBEDDED)
+        validator.issues = []
+
+        data = None
+        with open(os.path.join(test_data_path, "transport_aerodrome.svg"), "r") as f:
+            data = f.read()
+
+        svg = f"base64:{base64.b64encode(data.encode('utf-8')).decode('utf-8')}"
+        symbol_layer = QgsSvgMarkerSymbolLayer(svg)
+        symbol.changeSymbolLayer(0, symbol_layer)
+        layer.renderer().setSymbol(symbol)
+
+        validator.check_svgs_embedded()
+        self.assertTrue(len(validator.issues) == 0)
 
 
 if __name__ == "__main__":
