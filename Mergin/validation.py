@@ -348,14 +348,19 @@ class MerginProjectValidator(object):
                     if sym_layer.layerType() != "SvgMarker":
                         continue
 
-                    if not sym_layer.path().startswith(self.qgis_proj_dir) and not sym_layer.path().startswith(
-                        "base64:"
-                    ):
-                        not_embedded = True
-                        break
+                    if self.qgis_proj_dir is not None:
+                        if not sym_layer.path().startswith(self.qgis_proj_dir) and not sym_layer.path().startswith(
+                            "base64:"
+                        ):
+                            not_embedded = True
+                            break
+                    else:
+                        if not sym_layer.path().startswith("base64:"):
+                            not_embedded = True
+                            break
 
                 if not_embedded:
-                    self.issues.append(SingleLayerWarning(layer.id(), Warning.SVG_NOT_EMBEDDED))
+                    self.issues.append(SingleLayerWarning(lid, Warning.SVG_NOT_EMBEDDED))
                     break
 
 
