@@ -10,6 +10,7 @@ from ..utils import icon_path
 from .algs.create_report import CreateReport
 from .algs.extract_local_changes import ExtractLocalChanges
 from .algs.create_diff import CreateDiff
+from .algs.download_vector_tiles import DownloadVectorTiles
 
 
 class MerginProvider(QgsProcessingProvider):
@@ -37,7 +38,7 @@ class MerginProvider(QgsProcessingProvider):
         return False
 
     def getAlgs(self):
-        algs = [CreateReport(), ExtractLocalChanges(), CreateDiff()]
+        algs = [CreateReport(), ExtractLocalChanges(), CreateDiff(), DownloadVectorTiles()]
 
         return algs
 
