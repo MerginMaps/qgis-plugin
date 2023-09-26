@@ -659,10 +659,6 @@ class MerginRemoteProjectItem(QgsDataItem):
         dlg = RemoveProjectDialog(self.project_name)
         if dlg.exec_() == QDialog.Rejected:
             return
-        # ~ msg = "Do you really want to remove project {} from server?".format(self.project_name)
-        # ~ btn_reply = QMessageBox.question(None, "Remove project", msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        # ~ if btn_reply == QMessageBox.No:
-        # ~ return
 
         try:
             self.mc.delete_project(self.project_name)
