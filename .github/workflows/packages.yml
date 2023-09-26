@@ -13,7 +13,7 @@ jobs:
     env:
       PY_PLATFORM: "manylinux2014_x86_64"
     steps:
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         name: Install Python
 
       - name: Download pygeodiff binaries
@@ -35,7 +35,7 @@ jobs:
           patchelf --replace-needed ${SQLITE_LIB} libsqlite3.so.0 ./pygeodiff-binaries/libpygeodiff-${GEODIFF_VER}-python.so
           patchelf --remove-rpath ./pygeodiff-binaries/libpygeodiff-${GEODIFF_VER}-python.so
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           path: ./pygeodiff-binaries/*.so
 
@@ -43,7 +43,7 @@ jobs:
     name: Extract geodiff binary windows
     runs-on: windows-latest
     steps:
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         name: Install Python
 
       - name: Install deps
@@ -63,7 +63,7 @@ jobs:
           unzip -o pygeodiff-$env:GEODIFF_VER-cp$env:PYTHON_VER-cp$env:PYTHON_VER-win_amd64.whl -d tmp64
           copy tmp64\pygeodiff\*.pyd pygeodiff-binaries\
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           path: ./pygeodiff-binaries/*.pyd
 
@@ -73,7 +73,7 @@ jobs:
     env:
       PY_PLATFORM: "macosx_10_9_x86_64"
     steps:
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         name: Install Python
 
       - name: Install deps
@@ -97,7 +97,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           path: ./pygeodiff-binaries/*.dylib
 
@@ -105,7 +105,7 @@ jobs:
     needs: [build_windows_binaries, build_linux_binary, build_macos_binary]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           repository: MerginMaps/mergin-py-client
           ref: ${{ env.MERGIN_CLIENT_VER }}
@@ -136,7 +136,7 @@ jobs:
             exit 1; # or just warning??
           fi
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: artifact
           path: pygeodiff-binaries
@@ -145,7 +145,7 @@ jobs:
         run: |
           cp pygeodiff-binaries/* mergin-py-client/mergin/deps/pygeodiff
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: qgis-mergin-plugin
 
@@ -153,17 +153,19 @@ jobs:
         run: |
           cp -r mergin-py-client/mergin qgis-mergin-plugin/Mergin
           cd qgis-mergin-plugin/
-          find .
-          zip -r mergin.zip Mergin/ -x Mergin/__pycache__/\*
+          rsync -av --exclude='test' --exclude='/__pycache__/' --exclude='*/__pycache__/' Mergin/ ../Mergin
+          cd ..
+          zip -r9 mergin.zip Mergin/
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
-          path: qgis-mergin-plugin/mergin.zip
+          name: Mergin
+          path: Mergin/
 
       - name: upload asset on tagged release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: qgis-mergin-plugin/mergin.zip
+          files: mergin.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
