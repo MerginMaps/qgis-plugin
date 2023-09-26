@@ -3,7 +3,7 @@ import re
 from enum import Enum
 from collections import defaultdict
 
-from qgis.core import QgsMapLayerType, QgsProject, QgsVectorDataProvider, QgsExpression
+from qgis.core import QgsMapLayerType, QgsProject, QgsVectorDataProvider, QgsExpression, QgsRenderContext
 
 from .help import MerginHelp
 from .utils import (
@@ -44,6 +44,7 @@ class Warning(Enum):
     QGIS_SNAPPING_NOT_ENABLED = 20
     MERGIN_SNAPPING_NOT_ENABLED = 21
     MISSING_DATUM_SHIFT_GRID = 22
+    SVG_NOT_EMBEDDED = 23
 
 
 class MultipleLayersWarning:
@@ -103,6 +104,7 @@ class MerginProjectValidator(object):
         self.check_field_names()
         self.check_snapping()
         self.check_datum_shift_grids()
+        self.check_svgs_embedded()
 
         return self.issues
 
@@ -167,7 +169,7 @@ class MerginProjectValidator(object):
                 self.issues.append(SingleLayerWarning(lid, Warning.EDITABLE_NON_GPKG))
 
     def check_saved_in_proj_dir(self):
-        """Check if layers saved in project"s directory."""
+        """Check if layers saved in project's directory."""
         for lid, layer in self.layers.items():
             if lid not in self.layers_by_prov["gdal"] + self.layers_by_prov["ogr"]:
                 continue
@@ -332,6 +334,35 @@ class MerginProjectValidator(object):
         if w.items:
             self.issues.append(w)
 
+    def check_svgs_embedded(self):
+        for lid, layer in self.layers.items():
+            if layer.type() != QgsMapLayerType.VectorLayer:
+                continue
+
+            context = QgsRenderContext()
+            renderer = layer.renderer()
+            symbols = renderer.symbols(context)
+            not_embedded = False
+            for sym in symbols:
+                for sym_layer in sym.symbolLayers():
+                    if sym_layer.layerType() != "SvgMarker":
+                        continue
+
+                    if self.qgis_proj_dir is not None:
+                        if not sym_layer.path().startswith(self.qgis_proj_dir) and not sym_layer.path().startswith(
+                            "base64:"
+                        ):
+                            not_embedded = True
+                            break
+                    else:
+                        if not sym_layer.path().startswith("base64:"):
+                            not_embedded = True
+                            break
+
+                if not_embedded:
+                    self.issues.append(SingleLayerWarning(lid, Warning.SVG_NOT_EMBEDDED))
+                    break
+
 
 def warning_display_string(warning_id):
     """Returns a display string for a corresponing warning"""
@@ -380,3 +411,5 @@ def warning_display_string(warning_id):
         return "Snapping is currently enabled in this QGIS project, but not enabled in Mergin Maps Input"
     elif warning_id == Warning.MISSING_DATUM_SHIFT_GRID:
         return "Required datum shift grid is missing, reprojection may not work correctly. <a href='#fix_datum_shift_grids'>Fix the issue.</a>"
+    elif warning_id == Warning.SVG_NOT_EMBEDDED:
+        return "SVGs used for layer styling are not embedded in the project file, as a result those symbols won't be displayed in Mergin Maps Input"
