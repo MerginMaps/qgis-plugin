@@ -44,9 +44,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-361</y>
+        <y>-422</y>
         <width>624</width>
-        <height>963</height>
+        <height>978</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -253,10 +253,36 @@
        <item>
         <widget class="QGroupBox" name="groupBox_2">
          <property name="title">
-          <string/>
+          <string>Position tracking</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_6">
-          <item row="2" column="0" colspan="3">
+          <item row="3" column="3" colspan="2">
+           <widget class="QComboBox" name="cmb_tracking_precision"/>
+          </item>
+          <item row="2" column="1" colspan="4">
+           <widget class="QLabel" name="label_9">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable position tracking&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="5">
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Tracking allows you to record position when working with this project. Tracks are stored in additional GeoPackage created automatically.&lt;/p&gt;&lt;p&gt;&lt;a href='https://merginmaps.com/docs/field/tracking'&gt;&lt;span style='text-decoration: underline; color:#0000ff;'&gt;Learn more here&lt;/span&gt;&lt;/a&gt; about tracking and how to start tracking in the mobile app.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="3">
            <widget class="QLabel" name="label_8">
             <property name="text">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style='font-weight:600'&gt;Choose precision level&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Best — best available accuracy, hight battery usage, more that 1 update per minute&lt;br&gt;Normal — optimised for battery life, ~1 update per minute or 100 m traveled&lt;br&gt;Low — best battery life option, ~1 update in 10 minutes or 1 km traveled&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -266,10 +292,7 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="3" colspan="2">
-           <widget class="QComboBox" name="cmb_tracking_precision"/>
-          </item>
-          <item row="0" column="4">
+          <item row="2" column="0">
            <widget class="QCheckBox" name="chk_tracking_enabled">
             <property name="minimumSize">
              <size>
@@ -285,29 +308,6 @@
             </property>
             <property name="text">
              <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0" colspan="5">
-           <widget class="QLabel" name="label_10">
-            <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Tracking allows you to record position when working with this project. Tracks are stored in additional GeoPackage created automatically.&lt;/p&gt;&lt;p&gt;&lt;a href='https://merginmaps.com/docs'&gt;&lt;span style='text-decoration: underline; color:#0000ff;'&gt;Learn more here&lt;/span&gt;&lt;/a&gt; about tracking and how to start tracking in the mobile app.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0" colspan="4">
-           <widget class="QLabel" name="label_9">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Enable tracking &lt;/span&gt;&lt;span style=&quot; font-weight:600; vertical-align:super;&quot;&gt;BETA&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
            </widget>
           </item>
