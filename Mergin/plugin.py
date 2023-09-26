@@ -841,6 +841,23 @@ class FetchMoreItem(QgsDataItem):
         return True
 
 
+class ErrorItem(QgsErrorItem):
+    """Data item used to report errors with double-click support."""
+
+    def __init__(self, parent, error, path, double_click_handler=None):
+        QgsErrorItem.__init__(self, parent, error, path)
+        self.parent = parent
+        self.handler = double_click_handler
+        self.setIcon(QIcon(icon_path("alert-triangle.svg")))
+
+    def handleDoubleClick(self):
+        if self.handler:
+            self.handler()
+            return True
+        else:
+            return False
+
+
 class CreateNewProjectItem(QgsDataItem):
     """Data item to represent an action to create a new project."""
 
@@ -908,8 +925,11 @@ class MerginRootItem(QgsDataCollectionItem):
 
     def createChildren(self):
         if self.error or self.mc is None:
-            self.error = self.error if self.error else "Not configured!"
-            error_item = QgsErrorItem(self, self.error, "Mergin/error")
+            handler = None
+            if not self.error:
+                handler = self.configure
+                self.error = "Double-click to configure…"
+            error_item = ErrorItem(self, self.error, "Mergin/error", handler)
             error_item.setIcon(QIcon(icon_path("alert-triangle.svg")))
             sip.transferto(error_item, self)
             return [error_item]
@@ -1034,6 +1054,9 @@ class MerginRootItem(QgsDataCollectionItem):
     def new_project(self):
         """Start the Create new project wizard"""
         self.plugin.create_new_project()
+
+    def configure(self):
+        self.plugin.configure()
 
     def actions(self, parent):
         action_configure = QAction(QIcon(icon_path("settings.svg")), "Configure", parent)
