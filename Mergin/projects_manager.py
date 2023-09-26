@@ -155,13 +155,14 @@ class MerginProjectsManager(object):
         if check_result == UnsavedChangesStrategy.HasUnsavedChanges:
             return
 
-        mp = MerginProject(project_dir)
         try:
+            mp = MerginProject(project_dir)
             project_name = mp.metadata["name"]
         except InvalidProject as e:
             msg = f"Failed to get project status:\n\n{str(e)}"
             QMessageBox.critical(None, "Project status", msg, QMessageBox.Close)
             return
+
         if not self.check_project_server(project_dir):
             return
         try:
