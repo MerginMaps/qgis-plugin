@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>174</height>
+    <height>249</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This wizard will create a configuration file for the Mergin Maps database sync tool for the currently opened project.&lt;/p&gt;&lt;p&gt;Please start by picking how the sync will be initialized&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mergin Maps DB Sync is a tool that takes care of two-way synchronisation between Mergin Maps and PostGIS databases. Read the description on &lt;a href=&quot;https://merginmaps.com/docs/dev/dbsync/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;https://merginmaps.com/docs/dev/dbsync/&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;This wizard will create a configuration file for the Mergin Maps database sync tool for the currently opened project.&lt;/p&gt;&lt;p&gt;Please start by picking how the sync will be initialized&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>

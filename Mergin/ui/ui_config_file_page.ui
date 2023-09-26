@@ -68,7 +68,7 @@
    <item>
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>See documentation on how to run the sync tool with generated configuration file</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;See &lt;a href=&quot;https://merginmaps.com/docs/dev/dbsync/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;documentation&lt;/span&gt;&lt;/a&gt; on how to run the sync tool with generated configuration file&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
