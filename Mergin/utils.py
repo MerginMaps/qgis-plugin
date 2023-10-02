@@ -798,7 +798,7 @@ def update_datasource(layer, new_path):
     """Updates layer datasource, so the layer is loaded from the new location"""
     options = QgsDataProvider.ProviderOptions()
     options.layerName = layer.name()
-    if layer.dataProvider().name() == "vectortile":
+    if layer.dataProvider().name() in ("vectortile", "mbtilesvectortiles"):
         layer.setDataSource(f"url={new_path}&type=mbtiles", layer.name(), layer.dataProvider().name(), options)
     elif layer.dataProvider().name() == "wms":
         layer.setDataSource(f"url=file://{new_path}&type=mbtiles", layer.name(), layer.dataProvider().name(), options)
