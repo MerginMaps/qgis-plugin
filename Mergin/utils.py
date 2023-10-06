@@ -1024,7 +1024,7 @@ def mergin_project_local_path(project_name=None):
     return None
 
 
-def icon_path(icon_filename, tabler_icon=True):
+def icon_path(icon_filename):
     icon_set = "white" if is_dark_theme() else "default"
     if tabler_icon:
         ipath = os.path.join(
@@ -1032,6 +1032,30 @@ def icon_path(icon_filename, tabler_icon=True):
         )
     else:
         ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, icon_filename)
+    return ipath
+
+
+def mm_logo_path():
+    if is_dark_theme():
+        icon_set = "white"
+        icon_filename = "MM_logo_HORIZ_COLOR_INVERSE_VECTOR.svg"
+    else:
+        icon_set = "default"
+        icon_filename = "MM_logo_HORIZ_COLOR_VECTOR.svg"
+
+    ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, icon_filename)
+    return ipath
+
+
+def mm_symbol_path():
+    if is_dark_theme():
+        icon_set = "white"
+        icon_filename = "MM_symbol_COLOR_INVERSE_small_padding.svg"
+    else:
+        icon_set = "default"
+        icon_filename = "MM_symbol_COLOR_small_padding.svg"
+
+    ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, icon_filename)
     return ipath
 
 

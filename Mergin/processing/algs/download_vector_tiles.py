@@ -29,7 +29,7 @@ from qgis.core import (
     QgsTileXYZ,
 )
 
-from ...utils import icon_path
+from ...utils import mm_symbol_path
 
 
 class MBTilesWriter:
@@ -105,7 +105,7 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
         return "Downloads vector tiles of the input vector tile layer and saves them in the local vector tile file."
 
     def icon(self):
-        return QIcon(icon_path("mm_icon_positive_no_padding.svg"))
+        return QIcon(mm_symbol_path())
 
     def __init__(self):
         super().__init__()

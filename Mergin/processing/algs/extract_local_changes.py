@@ -29,7 +29,7 @@ from ...diff import (
 )
 
 from ...utils import (
-    icon_path,
+    mm_symbol_path,
     check_mergin_subdirs,
 )
 
@@ -60,7 +60,7 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
         return "Extracts local changes made in the specific layer of the Mergin project to make it easier to revise changes."
 
     def icon(self):
-        return QIcon(icon_path("mm_icon_positive_no_padding.svg"))
+        return QIcon(mm_symbol_path())
 
     def __init__(self):
         super().__init__()

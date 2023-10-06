@@ -6,7 +6,7 @@ from qgis.PyQt.QtGui import QIcon
 
 from qgis.core import QgsProcessingProvider
 
-from ..utils import icon_path
+from ..utils import mm_symbol_path
 from .algs.create_report import CreateReport
 from .algs.extract_local_changes import ExtractLocalChanges
 from .algs.create_diff import CreateDiff
@@ -25,7 +25,7 @@ class MerginProvider(QgsProcessingProvider):
         return "Mergin Maps"
 
     def icon(self):
-        return QIcon(icon_path("mm_icon_positive_no_padding.svg"))
+        return QIcon(mm_symbol_path())
 
     def load(self):
         self.refreshAlgorithms()
