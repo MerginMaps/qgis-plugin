@@ -1026,12 +1026,7 @@ def mergin_project_local_path(project_name=None):
 
 def icon_path(icon_filename):
     icon_set = "white" if is_dark_theme() else "default"
-    if tabler_icon:
-        ipath = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "images", icon_set, "tabler_icons", icon_filename
-        )
-    else:
-        ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, icon_filename)
+    ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, "tabler_icons", icon_filename)
     return ipath
 
 

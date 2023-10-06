@@ -890,7 +890,7 @@ class MerginRootItem(QgsDataCollectionItem):
         if name != providerKey:
             providerKey = "/Mergin" + name
         QgsDataCollectionItem.__init__(self, parent, name, providerKey)
-        self.setIcon(mm_symbol_path())
+        self.setIcon(QIcon(mm_symbol_path()))
         self.setSortKey(order)
         self.plugin = plugin
         self.project_manager = plugin.manager

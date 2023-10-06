@@ -88,7 +88,7 @@ class WorkspaceSelectionDialog(QDialog):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
 
-        self.ui.label_logo.setPixmap(mm_logo_path())
+        self.ui.label_logo.setPixmap(QPixmap(mm_logo_path()))
 
         self.workspace = None
 
