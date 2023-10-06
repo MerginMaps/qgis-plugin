@@ -117,7 +117,7 @@ class MerginPlugin:
 
         if self.iface is not None:
             self.add_action(
-                mm_symbol_path(),
+                mm_symbol_path(with_no_padding=False),
                 text="Mergin Maps",
                 callback=self.open_configured_url,
                 add_to_menu=True,
