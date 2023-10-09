@@ -7,7 +7,7 @@ description=Handle Mergin Maps projects
 version=2023.4
 author=Lutra Consulting
 email=info@merginmaps.com
-about=Mergin Maps is a repository for storing and tracking changes to QGIS projects/data and has it's mobile app for field geo-surveys. With this plugin, users can upload and sync their data to Mergin Maps service.
+about=Mergin Maps is a repository for storing and tracking changes to QGIS projects/data and has its mobile app for field geo-surveys. With this plugin, users can upload and sync their data to Mergin Maps service.
 ; end of mandatory metadata
 
 ; start of optional metadata
