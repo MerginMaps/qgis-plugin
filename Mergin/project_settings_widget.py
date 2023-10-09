@@ -16,7 +16,7 @@ from qgis.core import (
 from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
 from .attachment_fields_model import AttachmentFieldsModel
 from .utils import (
-    icon_path,
+    mm_symbol_path,
     mergin_project_local_path,
     prefix_for_relative_path,
     resolve_target_dir,
@@ -33,7 +33,7 @@ class MerginProjectConfigFactory(QgsOptionsWidgetFactory):
         QgsOptionsWidgetFactory.__init__(self)
 
     def icon(self):
-        return QIcon(icon_path("mm_icon_positive_no_padding.svg"))
+        return QIcon(mm_symbol_path())
 
     def title(self):
         return "Mergin Maps"

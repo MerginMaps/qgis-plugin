@@ -26,7 +26,7 @@ from ...mergin.utils import get_versions_with_file_changes
 from ...diff import parse_db_schema, parse_diff, get_table_name, create_field_list, diff_table_to_features
 
 from ...utils import (
-    icon_path,
+    mm_symbol_path,
     create_mergin_client,
     check_mergin_subdirs,
 )
@@ -60,7 +60,7 @@ class CreateDiff(QgsProcessingAlgorithm):
         return "Extracts changes made between two versions of the layer of the Mergin project to make it easier to revise changes."
 
     def icon(self):
-        return QIcon(icon_path("mm_icon_positive_no_padding.svg"))
+        return QIcon(mm_symbol_path())
 
     def __init__(self):
         super().__init__()

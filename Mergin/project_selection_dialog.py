@@ -20,6 +20,7 @@ from qgis.PyQt.QtGui import QPixmap, QFont, QFontMetrics, QIcon, QStandardItem, 
 from .mergin.client import MerginProject, InvalidProject, ServerType
 from .utils import (
     icon_path,
+    mm_logo_path,
     mergin_project_local_path,
     compare_versions,
     ClientError,
@@ -223,7 +224,7 @@ class ProjectSelectionDialog(QDialog):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self, "Mergin")
 
-        self.ui.label_logo.setPixmap(QPixmap(icon_path("mm_logo.svg", False)))
+        self.ui.label_logo.setPixmap(QPixmap(mm_logo_path()))
 
         self.mc = mc
         self.current_workspace_name = workspace_name

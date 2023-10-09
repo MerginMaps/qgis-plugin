@@ -12,7 +12,7 @@ from qgis.core import (
     QgsProcessingParameterFileDestination,
 )
 
-from ...utils import icon_path, create_mergin_client, create_report, ClientError, InvalidProject
+from ...utils import mm_symbol_path, create_mergin_client, create_report, ClientError, InvalidProject
 
 
 class CreateReport(QgsProcessingAlgorithm):
@@ -40,7 +40,7 @@ class CreateReport(QgsProcessingAlgorithm):
         return "Exports changesets aggregates for Mergin Maps projects in given version range to a CSV file."
 
     def icon(self):
-        return QIcon(icon_path("mm_icon_positive_no_padding.svg"))
+        return QIcon(mm_symbol_path())
 
     def __init__(self):
         super().__init__()

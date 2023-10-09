@@ -13,9 +13,7 @@ from qgis.PyQt.QtCore import (
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QPixmap, QFontMetrics, QFont
 
-from .utils import (
-    icon_path,
-)
+from .utils import mm_logo_path
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_select_workspace_dialog.ui")
 
@@ -90,7 +88,7 @@ class WorkspaceSelectionDialog(QDialog):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
 
-        self.ui.label_logo.setPixmap(QPixmap(icon_path("mm_logo.svg", False)))
+        self.ui.label_logo.setPixmap(QPixmap(mm_logo_path()))
 
         self.workspace = None
 

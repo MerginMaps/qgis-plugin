@@ -51,6 +51,7 @@ from .utils import (
     find_qgis_files,
     get_mergin_auth,
     icon_path,
+    mm_symbol_path,
     is_number,
     login_error_message,
     mergin_project_local_path,
@@ -116,7 +117,7 @@ class MerginPlugin:
 
         if self.iface is not None:
             self.add_action(
-                icon_path("mm_icon_positive_no_padding.svg"),
+                mm_symbol_path(with_no_padding=False),
                 text="Mergin Maps",
                 callback=self.open_configured_url,
                 add_to_menu=True,
@@ -882,7 +883,6 @@ class MerginRootItem(QgsDataCollectionItem):
         parent=None,
         name="Mergin Maps",
         flag=None,
-        icon="mm_icon_positive_no_padding.svg",
         order=None,
         plugin=None,
     ):
@@ -890,7 +890,7 @@ class MerginRootItem(QgsDataCollectionItem):
         if name != providerKey:
             providerKey = "/Mergin" + name
         QgsDataCollectionItem.__init__(self, parent, name, providerKey)
-        self.setIcon(QIcon(icon_path(icon)))
+        self.setIcon(QIcon(mm_symbol_path()))
         self.setSortKey(order)
         self.plugin = plugin
         self.project_manager = plugin.manager

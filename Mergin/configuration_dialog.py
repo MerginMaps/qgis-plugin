@@ -24,7 +24,7 @@ from .utils import (
     get_plugin_version,
     get_qgis_proxy_config,
     test_server_connection,
-    icon_path,
+    mm_logo_path,
     is_dark_theme,
 )
 
@@ -49,7 +49,7 @@ class ConfigurationDialog(QDialog):
         if save_credentials:
             QgsApplication.authManager().setMasterPassword()
         url, username, password = get_mergin_auth()
-        self.ui.label_logo.setPixmap(QPixmap(icon_path("mm_logo.svg", False)))
+        self.ui.label_logo.setPixmap(QPixmap(mm_logo_path()))
         self.ui.merginURL.setText(url)
         self.ui.username.setText(username)
         self.ui.password.setText(password)
