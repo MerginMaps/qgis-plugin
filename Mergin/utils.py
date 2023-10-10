@@ -1042,7 +1042,7 @@ def mm_logo_path():
     return ipath
 
 
-def mm_symbol_path(with_no_padding=True):
+def mm_symbol_path():
     if is_dark_theme():
         icon_set = "white"
         icon_color = "COLOR_INVERSE"
@@ -1050,12 +1050,7 @@ def mm_symbol_path(with_no_padding=True):
         icon_set = "default"
         icon_color = "COLOR"
 
-    if with_no_padding:
-        icon_padding = "no_padding"
-    else:
-        icon_padding = "small_padding"
-
-    icon_filename = "MM_symbol_" + icon_color + "_" + icon_padding + ".svg"
+    icon_filename = "MM_symbol_" + icon_color + "_no_padding.svg"
     ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, icon_filename)
     return ipath
 
