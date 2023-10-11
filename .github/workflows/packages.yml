@@ -158,7 +158,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: Mergin
-          path: output/
+          path: mergin.zip
 
       - name: upload asset on tagged release
         uses: softprops/action-gh-release@v1
