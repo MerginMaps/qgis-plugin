@@ -153,14 +153,13 @@ jobs:
         run: |
           cp -r mergin-py-client/mergin qgis-mergin-plugin/Mergin
           cd qgis-mergin-plugin/
-          rsync -av --exclude='test' --exclude='/__pycache__/' --exclude='*/__pycache__/' Mergin/ ../Mergin
-          cd ..
-          zip -r9 mergin.zip Mergin/
+          rsync -av --exclude='test' --exclude='/__pycache__/' --exclude='*/__pycache__/' Mergin output
+          (cd output && zip -r9 ../mergin.zip Mergin/
 
       - uses: actions/upload-artifact@v3
         with:
           name: Mergin
-          path: Mergin/
+          path: output/
 
       - name: upload asset on tagged release
         uses: softprops/action-gh-release@v1
