@@ -339,8 +339,11 @@ class MerginProjectValidator(object):
             if layer.type() != QgsMapLayerType.VectorLayer:
                 continue
 
-            context = QgsRenderContext()
             renderer = layer.renderer()
+            if renderer is None:
+                continue
+
+            context = QgsRenderContext()
             symbols = renderer.symbols(context)
             not_embedded = False
             for sym in symbols:
