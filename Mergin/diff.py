@@ -27,9 +27,6 @@ from qgis.core import (
 
 from .utils import pygeodiff, get_schema
 
-geodiff = pygeodiff.GeoDiff()
-geodiff.set_maximum_logger_level(10)
-
 diff_layers_list = []
 
 
@@ -110,7 +107,7 @@ def parse_db_schema(db_file):
     return tables
 
 
-def parse_diff(diff_file):
+def parse_diff(geodiff, diff_file):
     """
     Parse binary GeoDiff changeset and return map of changes per table
     as follows
@@ -258,7 +255,7 @@ def get_table_name(layer):
     return table_name
 
 
-def get_local_changes(db_file, mp):
+def get_local_changes(geodiff, db_file, mp):
     """Creates changeset containing local changes in the given GPKG file."""
     f_name = os.path.split(db_file)[1]
     base_path = mp.fpath_meta(f_name)
@@ -274,15 +271,17 @@ def get_local_changes(db_file, mp):
 
 
 def make_local_changes_layer(mp, layer):
+    geodiff = pygeodiff.GeoDiff()
+
     layer_path = layer.source().split("|")[0]
     base_file = mp.fpath_meta(os.path.split(layer_path)[1])
-    diff_path = get_local_changes(layer_path, mp)
+    diff_path = get_local_changes(geodiff, layer_path, mp)
 
     if diff_path is None:
         return None, f"Failed to retrieve changes, as there is no base file for layer '{layer.name()}'"
 
     db_schema = parse_db_schema(layer_path)
-    diff = parse_diff(diff_path)
+    diff = parse_diff(geodiff, diff_path)
     table_name = get_table_name(layer)
 
     if not diff or table_name not in diff.keys():
