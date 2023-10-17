@@ -67,8 +67,33 @@ from .mergin.merginproject import MerginProject
 from .processing.provider import MerginProvider
 import processing
 
+from pyplugin_installer.qgsplugininstallerinstallingdialog import QgsPluginInstallerInstallingDialog
+
 MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
 os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
+
+# store method that will be monkeypatched
+_original_method = QgsPluginInstallerInstallingDialog.requestFinished
+
+
+def request_finished(self):
+    """
+    On Windows we need to release lock on geodiff library and unload plugin before
+    performing an update. See https://github.com/MerginMaps/qgis-mergin-plugin/issues/504
+    and https://github.com/MerginMaps/geodiff/issues/205
+    """
+    if self.plugin["id"] == "Mergin" and os.name == "nt":
+        from _ctypes import FreeLibrary
+        from .mergin.deps import pygeodiff
+
+        geodiff = pygeodiff.GeoDiff()
+        FreeLibrary(geodiff.clib.lib._handle)
+
+        from qgis.utils import unloadPlugin
+
+        res = unloadPlugin(self.plugin["id"])
+
+    _original_method(self)
 
 
 class MerginPlugin:
@@ -184,6 +209,11 @@ class MerginPlugin:
             self.action_export_mbtiles.triggered.connect(self.export_vector_tiles)
 
         QgsProject.instance().layersAdded.connect(self.add_context_menu_actions)
+
+        # monkeypatch plugin installer to allow unlocking geodiff library and unloading plugin before installing
+        # see https://github.com/MerginMaps/qgis-mergin-plugin/issues/504, https://github.com/MerginMaps/geodiff/issues/205
+        if os.name == "nt":
+            QgsPluginInstallerInstallingDialog.requestFinished = request_finished
 
     def add_action(
         self,
@@ -546,6 +576,10 @@ class MerginPlugin:
         # self.iface.browserModel().reload()
 
         QgsApplication.processingRegistry().removeProvider(self.provider)
+
+        # revert monkeypatching
+        if os.name == "nt":
+            QgsPluginInstallerInstallingDialog.requestFinished = _original_method
 
     def view_local_changes(self):
         project_path = QgsProject.instance().homePath()
