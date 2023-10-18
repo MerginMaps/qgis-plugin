@@ -67,33 +67,27 @@ from .mergin.merginproject import MerginProject
 from .processing.provider import MerginProvider
 import processing
 
-from pyplugin_installer.qgsplugininstallerinstallingdialog import QgsPluginInstallerInstallingDialog
+from pyplugin_installer.installer import QgsPluginInstaller
 
 MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
 os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
 
 # store method that will be monkeypatched
-_original_method = QgsPluginInstallerInstallingDialog.requestFinished
+_original_method = QgsPluginInstaller.installPlugin
 
 
-def request_finished(self):
+def install_plugin(self, key, quiet=False, stable=True):
     """
     On Windows we need to release lock on geodiff library and unload plugin before
     performing an update. See https://github.com/MerginMaps/qgis-mergin-plugin/issues/504
     and https://github.com/MerginMaps/geodiff/issues/205
     """
-    if self.plugin["id"] == "Mergin" and os.name == "nt":
-        from _ctypes import FreeLibrary
-        from .mergin.deps import pygeodiff
-
-        geodiff = pygeodiff.GeoDiff()
-        FreeLibrary(geodiff.clib.lib._handle)
-
+    if key == "Mergin" and os.name == "nt":
         from qgis.utils import unloadPlugin
 
-        res = unloadPlugin(self.plugin["id"])
+        unloadPlugin(key)
 
-    _original_method(self)
+    _original_method(self, key, quiet, stable)
 
 
 class MerginPlugin:
@@ -213,7 +207,7 @@ class MerginPlugin:
         # monkeypatch plugin installer to allow unlocking geodiff library and unloading plugin before installing
         # see https://github.com/MerginMaps/qgis-mergin-plugin/issues/504, https://github.com/MerginMaps/geodiff/issues/205
         if os.name == "nt":
-            QgsPluginInstallerInstallingDialog.requestFinished = request_finished
+            QgsPluginInstaller.installPlugin = install_plugin
 
     def add_action(
         self,
@@ -577,9 +571,15 @@ class MerginPlugin:
 
         QgsApplication.processingRegistry().removeProvider(self.provider)
 
-        # revert monkeypatching
+        # unlock geodiff library and revert monkeypatching
         if os.name == "nt":
-            QgsPluginInstallerInstallingDialog.requestFinished = _original_method
+            from _ctypes import FreeLibrary
+            from .mergin.deps import pygeodiff
+
+            geodiff = pygeodiff.GeoDiff()
+            FreeLibrary(geodiff.clib.lib._handle)
+
+        QgsPluginInstaller.installPlugin = _original_method
 
     def view_local_changes(self):
         project_path = QgsProject.instance().homePath()
