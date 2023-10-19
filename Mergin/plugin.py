@@ -573,17 +573,11 @@ class MerginPlugin:
 
         # unlock geodiff library and revert monkeypatching
         if os.name == "nt":
-            try:
-                lib_path = os.path.join(os.path.dirname(__file__), "mergin", "deps", "pygeodiff")
-                for f in os.listdir(lib_path):
-                    if f.lower().endswith(".pyd"):
-                        os.remove(os.path.join(lib_path, f))
-            except:
-                from _ctypes import FreeLibrary
-                from .mergin.deps import pygeodiff
+            from _ctypes import FreeLibrary
+            from .mergin.deps import pygeodiff
 
-                geodiff = pygeodiff.GeoDiff()
-                FreeLibrary(geodiff.clib.lib._handle)
+            geodiff = pygeodiff.GeoDiff()
+            FreeLibrary(geodiff.clib.lib._handle)
 
         QgsPluginInstaller.installPlugin = _original_method
 
