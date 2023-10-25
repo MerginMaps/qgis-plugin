@@ -17,7 +17,7 @@ from qgis.core import Qgis, QgsApplication, QgsProject
 from qgis.utils import OverrideCursor
 from .diff_dialog import DiffViewerDialog
 from .validation import MultipleLayersWarning, warning_display_string, MerginProjectValidator
-from .utils import is_versioned_file, icon_path, unsaved_project_check, UnsavedChangesStrategy
+from .utils import is_versioned_file, icon_path, unsaved_project_check, UnsavedChangesStrategy, create_mergin_client
 from .repair import fix_datum_shift_grids
 
 
@@ -82,6 +82,13 @@ class ProjectStatusDialog(QDialog):
                 self.ui.messageBar.pushWidget(lbl, Qgis.Warning)
 
             self.validate_project()
+
+            self.btn_reset_local_changes.clicked.connect(self.reset_local_changes)
+
+            if len(push_changes["added"]) > 0 or len(push_changes["removed"]) > 0 or len(push_changes["updated"]) > 0:
+                self.btn_reset_local_changes.setEnabled(True)
+            else:
+                self.btn_reset_local_changes.setEnabled(False)
 
     def _get_info_text(self, has_files_to_replace, has_write_permissions, has_unfinished_pull):
         msg = []
@@ -231,3 +238,18 @@ class ProjectStatusDialog(QDialog):
         else:
             self.show_validation_results(results)
             self.btn_sync.setStyleSheet("background-color: #ffc800")
+
+    def reset_local_changes(self):
+        btn_reply = QMessageBox.question(
+            None,
+            "Remove local changes",
+            "Local changes will be reverted to previous uploaded version. Some files might be removed or modified! Do you want to proceed?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes,
+        )
+        if btn_reply == QMessageBox.No:
+            return
+        mc = create_mergin_client()
+        mc.reset_local_changes(self.mp.dir)
+        QMessageBox.information(None, "Remove local changes", "Local changes have been reverted.")
+        self.close()
