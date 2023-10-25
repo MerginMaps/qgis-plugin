@@ -42,6 +42,7 @@ from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
 from .configure_sync_wizard import DbSyncConfigWizard
 from .remove_project_dialog import RemoveProjectDialog
+from .project_history_dock import ProjectHistoryDockWidget
 from .utils import (
     ServerType,
     ClientError,
@@ -155,6 +156,17 @@ class MerginPlugin:
                 add_to_menu=True,
                 add_to_toolbar=None,
             )
+            self.history_dock_action = self.add_action(
+                "history.svg",
+                text="Project History",
+                callback=self.toggle_project_history_dock,
+                add_to_menu=False,
+                add_to_toolbar=self.toolbar,
+                enabled=True,
+                always_on=True,
+                checkable=True,
+                checked=False,
+            )
 
             self.enable_toolbar_actions()
 
@@ -183,6 +195,11 @@ class MerginPlugin:
             self.iface.addCustomActionForLayerType(self.action_export_mbtiles, "", QgsMapLayer.VectorTileLayer, False)
             self.action_export_mbtiles.triggered.connect(self.export_vector_tiles)
 
+            self.history_dock_widget = ProjectHistoryDockWidget(self.mc)
+            self.iface.addDockWidget(Qt.RightDockWidgetArea, self.history_dock_widget)
+            self.history_dock_widget.hide()
+            self.history_dock_widget.visibilityChanged.connect(self.toggle_project_history_action)
+
         QgsProject.instance().layersAdded.connect(self.add_context_menu_actions)
 
     def add_action(
@@ -201,10 +218,13 @@ class MerginPlugin:
     ):
         icon = QIcon(icon_path(icon_name))
         action = QAction(icon, text, self.iface.mainWindow())
-        action.triggered.connect(callback)
-        action.setCheckable(checkable)
-        action.setChecked(checked)
-        action.setEnabled(enabled)
+        if checkable:
+            action.setCheckable(checkable)
+            action.setChecked(checked)
+            action.toggled.connect(callback)
+        else:
+            action.triggered.connect(callback)
+            action.setEnabled(enabled)
 
         if status_tip is not None:
             action.setStatusTip(status_tip)
@@ -323,6 +343,12 @@ class MerginPlugin:
         wizard = DbSyncConfigWizard(project_name)
         if not wizard.exec_():
             return
+
+    def toggle_project_history_dock(self, checked):
+        self.history_dock_widget.setUserVisible(checked)
+
+    def toggle_project_history_action(self, visible):
+        self.history_dock_action.setChecked(visible)
 
     def show_no_workspaces_dialog(self):
         msg = (
@@ -513,6 +539,8 @@ class MerginPlugin:
         self.mergin_proj_dir = mergin_project_local_path()
         if self.mergin_proj_dir is not None:
             self.enable_toolbar_actions()
+
+        self.history_dock_widget.set_project(self.mergin_proj_dir)
 
     def add_context_menu_actions(self, layers):
         provider_names = "vectortile"
