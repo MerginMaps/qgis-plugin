@@ -352,6 +352,10 @@ class MerginPlugin:
             )
             return
 
+        check_result = unsaved_project_check()
+        if check_result == UnsavedChangesStrategy.HasUnsavedChanges:
+            return
+
         dialog = ProjectUsePostgreConfigWizard(self.iface)
         if not dialog.exec():
             return
