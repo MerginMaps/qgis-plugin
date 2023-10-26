@@ -4,7 +4,12 @@ from dataclasses import dataclass, field
 import typing
 import re
 
-import psycopg2
+try:
+    import psycopg2
+
+    has_psycopg2 = True
+except ImportError:
+    has_psycopg2 = False
 
 from qgis.core import (
     QgsProject,
