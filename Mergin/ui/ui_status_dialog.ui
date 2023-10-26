@@ -63,6 +63,9 @@
    </item>
    <item row="4" column="1">
     <widget class="QPushButton" name="btn_reset_local_changes">
+     <property name="toolTip">
+      <string>This will revert all changes in your local project directory.</string>
+     </property>
      <property name="text">
       <string>Reset Changes</string>
      </property>
