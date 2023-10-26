@@ -83,6 +83,7 @@ class ProjectStatusDialog(QDialog):
 
             self.validate_project()
 
+            self.btn_reset_local_changes.setIcon(QIcon(icon_path("trash.svg")))
             self.btn_reset_local_changes.clicked.connect(self.reset_local_changes)
 
             if len(push_changes["added"]) > 0 or len(push_changes["removed"]) > 0 or len(push_changes["updated"]) > 0:
