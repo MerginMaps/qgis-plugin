@@ -64,7 +64,7 @@
    <item row="4" column="1">
     <widget class="QPushButton" name="btn_reset_local_changes">
      <property name="text">
-      <string>Reset Local Changes</string>
+      <string>Reset Changes</string>
      </property>
     </widget>
    </item>
