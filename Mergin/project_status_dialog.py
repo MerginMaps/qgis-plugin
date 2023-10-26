@@ -242,8 +242,8 @@ class ProjectStatusDialog(QDialog):
     def reset_local_changes(self):
         btn_reply = QMessageBox.question(
             None,
-            "Remove local changes",
-            "Local changes will be reverted to previous uploaded version. Some files might be removed or modified! Do you want to proceed?",
+            "Reset changes",
+            "All changes in your project directory will be reverted. Do you want to proceed?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes,
         )
