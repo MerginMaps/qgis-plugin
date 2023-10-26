@@ -1,6 +1,5 @@
 import os
 import yaml
-from dataclasses import dataclass, field
 import typing
 import re
 
@@ -36,25 +35,27 @@ DBSYNC_PAGE = 0
 QGS_PROJECT_PAGE = 1
 
 
-@dataclass
 class Connection:
-    driver: str
-    db_connection_info: str
-    db_schema: str
-    sync_file: str
+    def __init__(self, driver: str, db_connection_info: str, db_schema: str, sync_file: str) -> None:
+        self.driver = driver
+        self.db_connection_info = db_connection_info
+        self.db_schema = db_schema
+        self.sync_file = sync_file
+        self.valid: bool = False
+        self.db_tables: typing.List[str] = []
 
-    valid: bool = False
-    db_tables: typing.List[str] = field(init=False)
-
-    def __post_init__(self):
-        try:
-            conn = psycopg2.connect(self.db_connection_info)
-        except Exception as e:
-            return
-        cur = conn.cursor()
-        cur.execute(f"SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = '{self.db_schema}'")
-        self.db_tables = [x[0] for x in cur.fetchall()]
-        self.valid = True
+        if has_psycopg2:
+            try:
+                conn = psycopg2.connect(self.db_connection_info)
+            except Exception as e:
+                return
+            cur = conn.cursor()
+            cur.execute(f"SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = '{self.db_schema}'")
+            self.db_tables = [x[0] for x in cur.fetchall()]
+            self.valid = True
+            conn.close()
+        else:
+            self.valid = True
 
     def convert_to_postgresql_layer(self, gpkg_layer: QgsVectorLayer) -> None:
         layer_uri = gpkg_layer.dataProvider().dataSourceUri()
