@@ -247,7 +247,7 @@ class ProjectStatusDialog(QDialog):
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes,
         )
-        if btn_reply == QMessageBox.No:
+        if btn_reply != QMessageBox.Yes:
             return
         mc = create_mergin_client()
         mc.reset_local_changes(self.mp.dir)
