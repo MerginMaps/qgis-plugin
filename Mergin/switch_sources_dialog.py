@@ -2,6 +2,7 @@ import os
 import yaml
 import typing
 import re
+import pathlib
 
 try:
     import psycopg2
@@ -130,9 +131,9 @@ class QgsProjectSelectionPage(ui_select_qgsproject_page, base_select_qgsproject_
         self.selectQgisProject.fileChanged.connect(self.qgis_project)
 
     def qgis_project(self, path: str) -> None:
-        project_parent_folder = os.path.dirname(path)
+        folders = [x.name for x in pathlib.Path(path).parent.iterdir() if x.is_dir()]
 
-        if check_mergin_subdirs(project_parent_folder):
+        if ".mergin" in folders:
             QMessageBox.critical(
                 None,
                 "Bad project location",
