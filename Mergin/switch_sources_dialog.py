@@ -4,13 +4,6 @@ import typing
 import re
 import pathlib
 
-try:
-    import psycopg2
-
-    has_psycopg2 = True
-except ImportError:
-    has_psycopg2 = False
-
 from qgis.core import (
     QgsProject,
     QgsDataSourceUri,
@@ -42,21 +35,6 @@ class Connection:
         self.db_connection_info = db_connection_info
         self.db_schema = db_schema
         self.sync_file = sync_file
-        self.valid: bool = False
-        self.db_tables: typing.List[str] = []
-
-        if has_psycopg2:
-            try:
-                conn = psycopg2.connect(self.db_connection_info)
-            except Exception as e:
-                return
-            cur = conn.cursor()
-            cur.execute(f"SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = '{self.db_schema}'")
-            self.db_tables = [x[0] for x in cur.fetchall()]
-            self.valid = True
-            conn.close()
-        else:
-            self.valid = True
 
     def convert_to_postgresql_layer(self, gpkg_layer: QgsVectorLayer) -> None:
         layer_uri = gpkg_layer.dataProvider().dataSourceUri()
@@ -66,12 +44,11 @@ class Connection:
         if extract:
             layer_name = extract.group(1)
 
-            if layer_name in self.db_tables:
-                uri = QgsDataSourceUri(self.db_connection_info)
-                uri.setSchema(self.db_schema)
-                uri.setTable(layer_name)
-                uri.setGeometryColumn("geom")  # TODO should this be hardcoded?
-                gpkg_layer.setDataSource(uri.uri(), gpkg_layer.name(), "postgres")
+            uri = QgsDataSourceUri(self.db_connection_info)
+            uri.setSchema(self.db_schema)
+            uri.setTable(layer_name)
+            uri.setGeometryColumn("geom")  # TODO should this be hardcoded?
+            gpkg_layer.setDataSource(uri.uri(), gpkg_layer.name(), "postgres")
 
     def convert_to_gpkg_layer(self, postgresql_layer: QgsVectorLayer, gpkg_folder: str) -> None:
         gpkg = QgsVectorLayer(f"{gpkg_folder}/{self.sync_file}", "temp", "ogr")
