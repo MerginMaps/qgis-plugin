@@ -38,7 +38,16 @@ class DbSyncConfig:
             config = yaml.safe_load(stream)
 
             for conn in config["connections"]:
-                connection = Connection(conn["driver"], conn["conn_info"], conn["modified"], conn["sync_file"])
+                skip_tables = conn["skip_tables"]
+                if skip_tables is None:
+                    skip_tables = []
+                elif isinstance(skip_tables, str):
+                    skip_tables = [skip_tables]
+                elif not isinstance(skip_tables, typing.List):
+                    skip_tables = []
+                connection = Connection(
+                    conn["driver"], conn["conn_info"], conn["modified"], conn["sync_file"], skip_tables
+                )
                 self.connections.append(connection)
 
     def convert_gpkg_layers_to_postgis_sources(self, result_qgsproject_path: str):
@@ -63,11 +72,14 @@ class DbSyncConfig:
 
 
 class Connection:
-    def __init__(self, driver: str, db_connection_info: str, db_schema: str, sync_file: str) -> None:
+    def __init__(
+        self, driver: str, db_connection_info: str, db_schema: str, sync_file: str, skip_tables: typing.List[str]
+    ) -> None:
         self.driver = driver
         self.db_connection_info = db_connection_info
         self.db_schema = db_schema
         self.sync_file = sync_file
+        self.skip_tables = skip_tables
 
     def convert_to_postgresql_layer(self, gpkg_layer: QgsVectorLayer) -> None:
         layer_uri = gpkg_layer.dataProvider().dataSourceUri()
@@ -77,11 +89,12 @@ class Connection:
         if extract:
             layer_name = extract.group(1)
 
-            uri = QgsDataSourceUri(self.db_connection_info)
-            uri.setSchema(self.db_schema)
-            uri.setTable(layer_name)
-            uri.setGeometryColumn("geom")  # TODO should this be hardcoded?
-            gpkg_layer.setDataSource(uri.uri(), gpkg_layer.name(), "postgres")
+            if layer_name not in self.skip_tables:
+                uri = QgsDataSourceUri(self.db_connection_info)
+                uri.setSchema(self.db_schema)
+                uri.setTable(layer_name)
+                uri.setGeometryColumn("geom")  # TODO should this be hardcoded?
+                gpkg_layer.setDataSource(uri.uri(), gpkg_layer.name(), "postgres")
 
     def convert_to_gpkg_layer(self, postgresql_layer: QgsVectorLayer, gpkg_folder: str) -> None:
         gpkg = QgsVectorLayer(f"{gpkg_folder}/{self.sync_file}", "temp", "ogr")
