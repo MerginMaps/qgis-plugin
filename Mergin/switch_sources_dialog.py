@@ -22,7 +22,6 @@ from qgis.gui import QgsFileWidget, QgisInterface
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import QWizard, QLineEdit, QMessageBox
 
-from .utils import check_mergin_subdirs
 
 base_dir = os.path.dirname(__file__)
 ui_select_dbsync_page, base_select_dbsync_page = uic.loadUiType(
