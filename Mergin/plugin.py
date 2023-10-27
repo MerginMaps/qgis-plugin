@@ -47,6 +47,7 @@ from .utils import (
     ServerType,
     ClientError,
     LoginError,
+    InvalidProject,
     check_mergin_subdirs,
     create_mergin_client,
     find_qgis_files,
