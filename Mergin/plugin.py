@@ -360,13 +360,6 @@ class MerginPlugin:
         if not dialog.exec():
             return
 
-        if check_mergin_subdirs(dialog.new_project_parent_folder()):
-            iface.messageBar().pushMessage(
-                "Mergin",
-                "The updated project should not be saved within Mergin directory. Please move it elsewhere.",
-                Qgis.Warning,
-            )
-
     def show_no_workspaces_dialog(self):
         msg = (
             "Workspace is a place to store your projects and share them with your colleagues. "

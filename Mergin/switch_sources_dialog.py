@@ -19,8 +19,9 @@ from qgis.core import (
 )
 from qgis.gui import QgsFileWidget, QgisInterface
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import QWizard, QLineEdit
+from qgis.PyQt.QtWidgets import QWizard, QLineEdit, QMessageBox
 
+from .utils import check_mergin_subdirs
 
 base_dir = os.path.dirname(__file__)
 ui_select_dbsync_page, base_select_dbsync_page = uic.loadUiType(
@@ -129,6 +130,17 @@ class QgsProjectSelectionPage(ui_select_qgsproject_page, base_select_qgsproject_
         self.selectQgisProject.fileChanged.connect(self.qgis_project)
 
     def qgis_project(self, path: str) -> None:
+        project_parent_folder = os.path.dirname(path)
+
+        if check_mergin_subdirs(project_parent_folder):
+            QMessageBox.critical(
+                None,
+                "Bad project location",
+                "The updated project should not be saved within Mergin directory. Please select different location.",
+            )
+            self.selectQgisProject.lineEdit().clear()
+            return
+
         self.lqgsproject_file.setText(path)
 
 
@@ -183,9 +195,6 @@ class ProjectUsePostgreConfigWizard(QWizard):
                 )
         else:
             self.connections = []
-
-    def new_project_parent_folder(self) -> str:
-        return os.path.dirname(self.qgsproject_page.field("qgis_project"))
 
     def convert_gpkg_layers_to_postgis_sources(self, result_qgsproject_path: str):
         update_project = QgsProject()
