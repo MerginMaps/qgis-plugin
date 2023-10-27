@@ -29,6 +29,39 @@ DBSYNC_PAGE = 0
 QGS_PROJECT_PAGE = 1
 
 
+class DbSyncConfig:
+    def __init__(self, config_file_path: str, base_qgis_project_path: str) -> None:
+        self.qgis_project_path = base_qgis_project_path
+        self.connections = []
+
+        with open(config_file_path, mode="r", encoding="utf-8") as stream:
+            config = yaml.safe_load(stream)
+
+            for conn in config["connections"]:
+                connection = Connection(conn["driver"], conn["conn_info"], conn["modified"], conn["sync_file"])
+                self.connections.append(connection)
+
+    def convert_gpkg_layers_to_postgis_sources(self, result_qgsproject_path: str):
+        update_project = QgsProject()
+        update_project.read(self.qgis_project_path)
+
+        project_layers = update_project.mapLayers()
+
+        layer: QgsMapLayer
+
+        for layer_id in project_layers:
+            layer = update_project.mapLayer(layer_id)
+
+            for dbsync_connection in self.connections:
+                if (
+                    layer.dataProvider().name() == "ogr"
+                    and dbsync_connection.sync_file in layer.dataProvider().dataSourceUri()
+                ):
+                    dbsync_connection.convert_to_postgresql_layer(layer)
+
+        update_project.write(result_qgsproject_path)
+
+
 class Connection:
     def __init__(self, driver: str, db_connection_info: str, db_schema: str, sync_file: str) -> None:
         self.driver = driver
@@ -142,53 +175,8 @@ class ProjectUsePostgreConfigWizard(QWizard):
         self.setPage(QGS_PROJECT_PAGE, self.qgsproject_page)
 
     def accept(self) -> None:
-        self.read_connections(self.start_page.field("db_sync_file"))
+        dbsync = DbSyncConfig(self.start_page.field("db_sync_file"), self.qgis_project.fileName())
 
-        self.convert_gpkg_layers_to_postgis_sources(self.qgsproject_page.field("qgis_project"))
+        dbsync.convert_gpkg_layers_to_postgis_sources(self.qgsproject_page.field("qgis_project"))
 
         return super().accept()
-
-    def read_connections(self, path: str) -> None:
-        if path:
-            with open(path, mode="r", encoding="utf-8") as stream:
-                config = yaml.safe_load(stream)
-
-            self.connections = []
-            invalid_connections_info = []
-
-            for conn in config["connections"]:
-                connection = Connection(conn["driver"], conn["conn_info"], conn["modified"], conn["sync_file"])
-                if connection.valid:
-                    self.connections.append(connection)
-                else:
-                    invalid_connections_info.append(conn["conn_info"])
-
-            if invalid_connections_info:
-                self.iface.messageBar().pushMessage(
-                    "Mergin",
-                    f"Cannot connect to following databases: {'; '.join(invalid_connections_info)}.",
-                    level=Qgis.Critical,
-                    duration=0,
-                )
-        else:
-            self.connections = []
-
-    def convert_gpkg_layers_to_postgis_sources(self, result_qgsproject_path: str):
-        update_project = QgsProject()
-        update_project.read(self.qgis_project.fileName())
-
-        project_layers = update_project.mapLayers()
-
-        layer: QgsMapLayer
-
-        for layer_id in project_layers:
-            layer = update_project.mapLayer(layer_id)
-
-            for dbsync_connection in self.connections:
-                if (
-                    layer.dataProvider().name() == "ogr"
-                    and dbsync_connection.sync_file in layer.dataProvider().dataSourceUri()
-                ):
-                    dbsync_connection.convert_to_postgresql_layer(layer)
-
-        update_project.write(result_qgsproject_path)
