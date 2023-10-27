@@ -89,23 +89,23 @@ class Connection:
 class DBSyncConfigSelectionPage(ui_select_dbsync_page, base_select_dbsync_page):
     """Initial wizard page with selection od dbsync file selector."""
 
-    selectDbSyncConfig: QgsFileWidget
-    ldbsync_config_file: QLineEdit
+    select_db_sync_config: QgsFileWidget
+    hidden_dbsync_config_file: QLineEdit
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
         self.parent = parent
 
-        self.ldbsync_config_file.hide()
+        self.hidden_dbsync_config_file.hide()
 
-        self.registerField("db_sync_file*", self.ldbsync_config_file)
+        self.registerField("db_sync_file*", self.hidden_dbsync_config_file)
 
-        self.selectDbSyncConfig.setFilter("DBSync configuration files (*.yaml *.YAML)")
-        self.selectDbSyncConfig.fileChanged.connect(self.db_sync_config)
+        self.select_db_sync_config.setFilter("DBSync configuration files (*.yaml *.YAML)")
+        self.select_db_sync_config.fileChanged.connect(self.db_sync_config)
 
     def db_sync_config(self, path: str) -> None:
-        self.ldbsync_config_file.setText(path)
+        self.hidden_dbsync_config_file.setText(path)
 
     def nextId(self):
         return QGS_PROJECT_PAGE
@@ -114,21 +114,21 @@ class DBSyncConfigSelectionPage(ui_select_dbsync_page, base_select_dbsync_page):
 class QgsProjectSelectionPage(ui_select_qgsproject_page, base_select_qgsproject_page):
     """Wizard page with selection od QgsProject file selector."""
 
-    selectQgisProject: QgsFileWidget
-    lqgsproject_file: QLineEdit
+    select_qgis_project_name: QgsFileWidget
+    hidden_new_qgis_project_file: QLineEdit
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
         self.parent = parent
 
-        self.lqgsproject_file.hide()
+        self.hidden_new_qgis_project_file.hide()
 
-        self.registerField("qgis_project*", self.lqgsproject_file)
+        self.registerField("qgis_project*", self.hidden_new_qgis_project_file)
 
-        self.selectQgisProject.setFilter("QGIS files (*.qgz *.qgs *.QGZ *.QGS)")
-        self.selectQgisProject.setStorageMode(QgsFileWidget.StorageMode.SaveFile)
-        self.selectQgisProject.fileChanged.connect(self.qgis_project)
+        self.select_qgis_project_name.setFilter("QGIS files (*.qgz *.qgs *.QGZ *.QGS)")
+        self.select_qgis_project_name.setStorageMode(QgsFileWidget.StorageMode.SaveFile)
+        self.select_qgis_project_name.fileChanged.connect(self.qgis_project)
 
     def qgis_project(self, path: str) -> None:
         folders = [x.name for x in pathlib.Path(path).parent.iterdir() if x.is_dir()]
@@ -139,10 +139,10 @@ class QgsProjectSelectionPage(ui_select_qgsproject_page, base_select_qgsproject_
                 "Bad project location",
                 "The updated project should not be saved within Mergin directory. Please select different location.",
             )
-            self.selectQgisProject.lineEdit().clear()
+            self.select_qgis_project_name.lineEdit().clear()
             return
 
-        self.lqgsproject_file.setText(path)
+        self.hidden_new_qgis_project_file.setText(path)
 
 
 class ProjectUsePostgreConfigWizard(QWizard):

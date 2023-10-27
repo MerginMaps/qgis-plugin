@@ -35,10 +35,10 @@
     </widget>
    </item>
    <item>
-    <widget class="QgsFileWidget" name="selectDbSyncConfig"/>
+    <widget class="QgsFileWidget" name="select_db_sync_config"/>
    </item>
    <item>
-    <widget class="QLineEdit" name="ldbsync_config_file"/>
+    <widget class="QLineEdit" name="hidden_dbsync_config_file"/>
    </item>
    <item>
     <spacer name="verticalSpacer">

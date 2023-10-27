@@ -22,10 +22,10 @@
     </widget>
    </item>
    <item>
-    <widget class="QgsFileWidget" name="selectQgisProject"/>
+    <widget class="QgsFileWidget" name="select_qgis_project_name"/>
    </item>
    <item>
-    <widget class="QLineEdit" name="lqgsproject_file"/>
+    <widget class="QLineEdit" name="hidden_new_qgis_project_file"/>
    </item>
    <item>
     <spacer name="verticalSpacer">
