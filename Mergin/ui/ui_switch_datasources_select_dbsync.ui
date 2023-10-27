@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Layers from the current QGIS project that are stored in the synchronization file specified in the DBSync file will be updated to their corresponding layers that are stored in the updated schema of the PostgreSQL database.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Layers from the current QGIS project that are stored in the synchronization file specified in the DBSync file will be updated to their corresponding layers that are stored in the updated schema of the PostgreSQL.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>

@@ -133,14 +133,14 @@ class QgsProjectSelectionPage(ui_select_qgsproject_page, base_select_qgsproject_
 
 
 class ProjectUsePostgreConfigWizard(QWizard):
-    """Wizard for changing project layer sources from GPKG to Postgre DB."""
+    """Wizard for changing project layer sources from GPKG to PostgreSQL."""
 
     def __init__(self, iface: QgisInterface, parent=None):
         """Create a wizard"""
         super().__init__(parent)
 
         self.iface = iface
-        self.setWindowTitle("Create project with layers from Postgre Database")
+        self.setWindowTitle("Create project with layers from PostgreSQL")
 
         self.connections: typing.List[Connection] = []
 
