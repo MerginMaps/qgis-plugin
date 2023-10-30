@@ -6,6 +6,7 @@ from urllib.error import URLError
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QStandardItemModel, QStandardItem
 from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QSortFilterProxyModel
+from qgis.PyQt.QtWidgets import QMenu
 
 from qgis.gui import QgsDockWidget
 
@@ -18,10 +19,9 @@ ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_pr
 
 
 class VersionsModel(QStandardItemModel):
-    INT_VERSION = Qt.UserRole + 1
-    VERSION = Qt.UserRole + 2
-    AUTHOR = Qt.UserRole + 3
-    CREATED = Qt.UserRole + 4
+    VERSION = Qt.UserRole + 1
+    AUTHOR = Qt.UserRole + 2
+    CREATED = Qt.UserRole + 3
 
     def __init__(self, versions=None):
         super(VersionsModel, self).__init__()
@@ -37,8 +37,7 @@ class VersionsModel(QStandardItemModel):
         items = []
         for version in versions:
             item = QStandardItem(version["name"])
-            item.setData(int_version(version["name"]), VersionsModel.INT_VERSION)
-            item.setData(version["name"], VersionsModel.VERSION)
+            item.setData(int_version(version["name"]), VersionsModel.VERSION)
             item.setData(version["author"], VersionsModel.AUTHOR)
             item.setData(version["created"], VersionsModel.CREATED)
             items.append(item)
@@ -102,14 +101,20 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.model = VersionsModel()
         self.proxy = QSortFilterProxyModel()
         self.proxy.setSourceModel(self.model)
-        self.proxy.setSortRole(VersionsModel.INT_VERSION)
+        self.proxy.setSortRole(VersionsModel.VERSION)
 
         self.versions_list.setModel(self.proxy)
         self.versions_list.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
+        self.versions_list.customContextMenuRequested.connect(self.show_context_menu)
 
         self.update_ui()
 
     def update_ui(self):
+        if self.mc is None:
+            self.info_label.setText("Plugin is not configured.")
+            self.stackedWidget.setCurrentIndex(0)
+            return
+
         if self.project_path is None:
             self.info_label.setText("Current project is not saved. Project history is not available.")
             self.stackedWidget.setCurrentIndex(0)
@@ -173,3 +178,34 @@ class ProjectHistoryDockWidget(QgsDockWidget):
             self.model.appendVersions(versions)
         except KeyError:
             pass
+
+    def show_context_menu(self, pos):
+        index = self.versions_list.indexAt(pos)
+        print("index", index.row(), index.column())
+
+        if not index.isValid():
+            return
+
+        source_index = self.proxy.mapToSource(index)
+        print("source index", source_index.row(), source_index.column())
+        item = self.model.itemFromIndex(source_index)
+        print(item.text())
+
+        menu = QMenu()
+        view_details_action = menu.addAction("Version details")
+        view_details_action.setIcon(QIcon(icon_path("file-description.svg")))
+        #view_details_action.triggered.connect(self.version_details)
+        view_changes_action = menu.addAction("View changes")
+        view_changes_action.setIcon(QIcon(icon_path("file-diff.svg")))
+        #view_changes_action.triggered.connect(self.version_details)
+        download_action = menu.addAction("Download this version")
+        download_action.setIcon(QIcon(icon_path("cloud-download.svg")))
+        #download_action.triggered.connect(self.version_details)
+        revert_action = menu.addAction("Revert to this version")
+        revert_action.setIcon(QIcon(icon_path("arrow-back-up.svg")))
+        #revert_action.triggered.connect(self.version_details)
+        undo_action = menu.addAction("Undo changes in this version")
+        undo_action.setIcon(QIcon(icon_path("arrow-back-up.svg")))
+        #undo_action.triggered.connect(self.version_details)
+
+        menu.exec_(self.versions_tree.mapToGlobal(pos))

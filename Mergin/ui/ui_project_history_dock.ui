@@ -36,7 +36,7 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="page">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -55,7 +55,11 @@
       <widget class="QWidget" name="page_2">
        <layout class="QGridLayout" name="gridLayout">
         <item row="1" column="0" colspan="2">
-         <widget class="QListView" name="versions_list"/>
+         <widget class="QListView" name="versions_list">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+         </widget>
         </item>
         <item row="0" column="0">
          <widget class="QPushButton" name="filter_btn">
