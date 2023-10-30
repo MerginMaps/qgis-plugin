@@ -109,6 +109,10 @@ class ProjectHistoryDockWidget(QgsDockWidget):
 
         self.update_ui()
 
+    def set_mergin_client(self, mc):
+        self.mc = mc
+        self.update_ui()
+
     def update_ui(self):
         if self.mc is None:
             self.info_label.setText("Plugin is not configured.")

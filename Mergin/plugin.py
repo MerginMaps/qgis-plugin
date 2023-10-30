@@ -317,6 +317,7 @@ class MerginPlugin:
             self.mc = dlg.writeSettings()
             self.on_config_changed()
             self.show_browser_panel()
+            self.history_dock_widget.set_mergin_client(self.mc)
 
     def configure_db_sync(self):
         """Open db-sync setup wizard."""
