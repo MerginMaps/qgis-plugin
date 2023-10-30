@@ -9,11 +9,14 @@ from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QSortFilterProxyModel, QRe
 from qgis.PyQt.QtWidgets import QMenu, QAbstractItemDelegate, QStyle
 
 from qgis.gui import QgsDockWidget
+from qgis.utils import OverrideCursor
+
+from .version_details_dialog import VersionDetailsDialog
+from .utils import check_mergin_subdirs, icon_path, ClientError
 
 from .mergin.merginproject import MerginProject
 from .mergin.utils import int_version
 
-from .utils import check_mergin_subdirs, icon_path, ClientError
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_history_dock.ui")
 
@@ -243,11 +246,12 @@ class ProjectHistoryDockWidget(QgsDockWidget):
 
         source_index = self.proxy.mapToSource(index)
         item = self.model.itemFromIndex(source_index)
+        version = item.data(VersionsModel.VERSION)
 
         menu = QMenu()
         view_details_action = menu.addAction("Version details")
         view_details_action.setIcon(QIcon(icon_path("file-description.svg")))
-        view_details_action.triggered.connect(self.version_details)
+        view_details_action.triggered.connect(lambda: self.version_details(version))
         view_changes_action = menu.addAction("View changes")
         view_changes_action.setIcon(QIcon(icon_path("file-diff.svg")))
         view_changes_action.triggered.connect(self.view_changes)
@@ -263,8 +267,13 @@ class ProjectHistoryDockWidget(QgsDockWidget):
 
         menu.exec_(self.versions_list.mapToGlobal(pos))
 
-    def version_details(self):
-        pass
+    def version_details(self, version):
+        """Shows version information with full view of added/updated/removed files"""
+        with OverrideCursor(Qt.WaitCursor):
+            info = self.mc.project_version_info(self.project_full_name, version)
+
+        dlg = VersionDetailsDialog(version, info[0])
+        dlg.exec_()
 
     def view_changes(self):
         pass
