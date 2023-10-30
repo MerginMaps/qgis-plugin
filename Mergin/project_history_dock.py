@@ -4,9 +4,9 @@ import json
 from urllib.error import URLError
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtGui import QIcon, QStandardItemModel, QStandardItem
-from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QSortFilterProxyModel
-from qgis.PyQt.QtWidgets import QMenu
+from qgis.PyQt.QtGui import QIcon, QStandardItemModel, QStandardItem, QFont, QFontMetrics
+from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QSortFilterProxyModel, QRect, QMargins, QSize
+from qgis.PyQt.QtWidgets import QMenu, QAbstractItemDelegate, QStyle
 
 from qgis.gui import QgsDockWidget
 
@@ -42,6 +42,57 @@ class VersionsModel(QStandardItemModel):
             item.setData(version["created"], VersionsModel.CREATED)
             items.append(item)
         return items
+
+
+class VersionItemDelegate(QAbstractItemDelegate):
+    def __init__(self):
+        super(VersionItemDelegate, self).__init__()
+
+    def sizeHint(self, option, index):
+        fm = QFontMetrics(option.font)
+        return QSize(150, fm.height() * 2 + fm.leading())
+
+    def paint(self, painter, option, index):
+        font = QFont(option.font)
+        fm = QFontMetrics(font)
+        padding = fm.lineSpacing() // 2
+
+        w = QRect(option.rect).width()
+        dw = w // 5
+
+        versionRect = QRect(option.rect)
+        versionRect.setLeft(versionRect.left() + padding)
+        versionRect.setTop(versionRect.top() + padding)
+        versionRect.setRight(versionRect.left() + dw)
+        versionRect.setHeight(fm.lineSpacing())
+
+        authorRect = QRect(option.rect)
+        authorRect.setLeft(versionRect.right() + padding)
+        authorRect.setTop(authorRect.top() + padding)
+        authorRect.setRight(authorRect.left() + dw * 2)
+        authorRect.setHeight(fm.lineSpacing())
+
+        dateRect = QRect(option.rect)
+        dateRect.setLeft(authorRect.right() + padding)
+        dateRect.setTop(dateRect.top() + padding)
+        dateRect.setRight(dateRect.right() - padding)
+        dateRect.setHeight(fm.lineSpacing())
+
+        borderRect = QRect(option.rect.marginsRemoved(QMargins(4, 4, 4, 4)))
+
+        painter.save()
+        if option.state & QStyle.State_Selected:
+            painter.fillRect(borderRect, option.palette.highlight())
+        painter.drawRect(borderRect)
+
+        elided_text = fm.elidedText(index.data(), Qt.ElideRight, versionRect.width())
+        painter.drawText(versionRect, Qt.AlignLeading, elided_text)
+        elided_text = fm.elidedText(index.data(VersionsModel.AUTHOR), Qt.ElideRight, authorRect.width())
+        painter.drawText(authorRect, Qt.AlignLeading, elided_text)
+        elided_text = fm.elidedText(index.data(VersionsModel.CREATED), Qt.ElideRight, dateRect.width())
+        painter.drawText(dateRect, Qt.AlignLeading, elided_text)
+
+        painter.restore()
 
 
 class VersionsFetcher(QThread):
@@ -102,6 +153,8 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.proxy = QSortFilterProxyModel()
         self.proxy.setSourceModel(self.model)
         self.proxy.setSortRole(VersionsModel.VERSION)
+
+        self.versions_list.setItemDelegate(VersionItemDelegate())
 
         self.versions_list.setModel(self.proxy)
         self.versions_list.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
@@ -185,31 +238,42 @@ class ProjectHistoryDockWidget(QgsDockWidget):
 
     def show_context_menu(self, pos):
         index = self.versions_list.indexAt(pos)
-        print("index", index.row(), index.column())
-
         if not index.isValid():
             return
 
         source_index = self.proxy.mapToSource(index)
-        print("source index", source_index.row(), source_index.column())
         item = self.model.itemFromIndex(source_index)
-        print(item.text())
 
         menu = QMenu()
         view_details_action = menu.addAction("Version details")
         view_details_action.setIcon(QIcon(icon_path("file-description.svg")))
-        #view_details_action.triggered.connect(self.version_details)
+        view_details_action.triggered.connect(self.version_details)
         view_changes_action = menu.addAction("View changes")
         view_changes_action.setIcon(QIcon(icon_path("file-diff.svg")))
-        #view_changes_action.triggered.connect(self.version_details)
+        view_changes_action.triggered.connect(self.view_changes)
         download_action = menu.addAction("Download this version")
         download_action.setIcon(QIcon(icon_path("cloud-download.svg")))
-        #download_action.triggered.connect(self.version_details)
+        download_action.triggered.connect(self.download_version)
         revert_action = menu.addAction("Revert to this version")
         revert_action.setIcon(QIcon(icon_path("arrow-back-up.svg")))
-        #revert_action.triggered.connect(self.version_details)
+        revert_action.triggered.connect(self.revert_to_version)
         undo_action = menu.addAction("Undo changes in this version")
         undo_action.setIcon(QIcon(icon_path("arrow-back-up.svg")))
-        #undo_action.triggered.connect(self.version_details)
+        undo_action.triggered.connect(self.undo_changes)
 
-        menu.exec_(self.versions_tree.mapToGlobal(pos))
+        menu.exec_(self.versions_list.mapToGlobal(pos))
+
+    def version_details(self):
+        pass
+
+    def view_changes(self):
+        pass
+
+    def download_version(self):
+        pass
+
+    def revert_to_version(self):
+        pass
+
+    def undo_changes(self):
+        pass
