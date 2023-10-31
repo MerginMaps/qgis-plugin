@@ -9,10 +9,11 @@ from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QSortFilterProxyModel, QRe
 from qgis.PyQt.QtWidgets import QMenu, QAbstractItemDelegate, QStyle
 
 from qgis.gui import QgsDockWidget
-from qgis.utils import OverrideCursor
+from qgis.utils import OverrideCursor, iface
 
+from .diff_dialog import DiffViewerDialog
 from .version_details_dialog import VersionDetailsDialog
-from .utils import check_mergin_subdirs, icon_path, ClientError
+from .utils import check_mergin_subdirs, icon_path, ClientError, is_versioned_file
 
 from .mergin.merginproject import MerginProject
 from .mergin.utils import int_version
@@ -140,7 +141,10 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.ui = uic.loadUi(ui_file, self)
 
         self.filter_btn.setIcon(QIcon(icon_path("filter.svg")))
+        self.filter_btn.setEnabled(False)
         self.view_changes_btn.setIcon(QIcon(icon_path("file-diff.svg")))
+        self.view_changes_btn.setEnabled(False)
+        self.view_changes_btn.clicked.connect(self.show_changes)
 
         self.mc = mc
         self.mp = None
@@ -158,10 +162,12 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.proxy.setSortRole(VersionsModel.VERSION)
 
         self.versions_list.setItemDelegate(VersionItemDelegate())
-
         self.versions_list.setModel(self.proxy)
         self.versions_list.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
         self.versions_list.customContextMenuRequested.connect(self.show_context_menu)
+
+        selectionModel = self.versions_list.selectionModel()
+        selectionModel.selectionChanged.connect(self.on_selection_changed)
 
         self.update_ui()
 
@@ -239,6 +245,21 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         except KeyError:
             pass
 
+    def on_selection_changed(self, selected, deselected):
+        if selected:
+            index = selected.indexes()[0]
+            self.view_changes_btn.setEnabled(index.isValid())
+        else:
+            self.view_changes_btn.setEnabled(False)
+
+    def show_changes(self):
+        if self.versions_list.selectedIndexes():
+            index = self.versions_list.selectedIndexes()[0]
+            source_index = self.proxy.mapToSource(index)
+            item = self.model.itemFromIndex(source_index)
+            version = item.data(VersionsModel.VERSION)
+            self.view_changes(version)
+
     def show_context_menu(self, pos):
         index = self.versions_list.indexAt(pos)
         if not index.isValid():
@@ -254,7 +275,7 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         view_details_action.triggered.connect(lambda: self.version_details(version))
         view_changes_action = menu.addAction("View changes")
         view_changes_action.setIcon(QIcon(icon_path("file-diff.svg")))
-        view_changes_action.triggered.connect(self.view_changes)
+        view_changes_action.triggered.connect(lambda: self.view_changes(version))
         download_action = menu.addAction("Download this version")
         download_action.setIcon(QIcon(icon_path("cloud-download.svg")))
         download_action.triggered.connect(self.download_version)
@@ -275,8 +296,26 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         dlg = VersionDetailsDialog(version, info[0])
         dlg.exec_()
 
-    def view_changes(self):
-        pass
+    def view_changes(self, version):
+        """Shows comparison of changes in the version"""
+        with OverrideCursor(Qt.WaitCursor):
+            if not os.path.exists(os.path.join(self.project_path, ".mergin", ".cache", f"v{version}")):
+                info = self.mc.project_info(self.project_full_name, since=version)
+                files = [f for f in info["files"] if is_versioned_file(f["path"])]
+                if not files:
+                    iface.messageBar.pushMessage(
+                        "Mergin", "This version does not contain changes in the project layers.", Qgis.Info
+                    )
+                    return
+
+                for f in files:
+                    file_diffs = self.mc.download_file_diffs(self.project_path, f["path"], [f"v{version}"])
+                    full_gpkg = self.mp.fpath_cache(f["path"], version=f"v{version}")
+                    if not os.path.exists(full_gpkg):
+                        self.mc.download_file(self.project_path, f["path"], full_gpkg, f"v{version}")
+
+        dlg = DiffViewerDialog(version)
+        dlg.exec_()
 
     def download_version(self):
         pass
