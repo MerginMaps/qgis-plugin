@@ -900,7 +900,7 @@ def login_error_message(e):
     QMessageBox.critical(None, "Login failed", msg, QMessageBox.Close)
 
 
-def unhandled_exception_message(error_details, dialog_title, error_text):
+def unhandled_exception_message(error_details, dialog_title, error_text, log_file=None, username=None):
     msg = (
         error_text + "<p>This should not happen, "
         '<a href="https://github.com/MerginMaps/qgis-mergin-plugin/issues">'
@@ -910,7 +910,20 @@ def unhandled_exception_message(error_details, dialog_title, error_text):
     box.setIcon(QMessageBox.Critical)
     box.setWindowTitle(dialog_title)
     box.setText(msg)
-    box.setDetailedText(error_details)
+    if log_file is None:
+        box.setDetailedText(error_details)
+    else:
+        error_details = (
+            "An error occured during project synchronisation. The log was saved to "
+            f"{log_file}. Click 'Send logs' to send a diagnostic log to the developers "
+            "to help them determine the exact cause of the problem.\n\n"
+            "The log does not contain any of your data, only file names. "
+            "It would be useful if you also send a mail to support@merginmaps.com "
+            "and briefly describe the problem to add more context to the diagnostic log."
+        )
+        box.setDetailedText(error_details)
+        btn = box.addButton("Send logs", QMessageBox.ActionRole)
+        btn.clicked.connect(lambda: send_logs(username, log_file))
     box.exec_()
 
 
