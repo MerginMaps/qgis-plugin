@@ -48,6 +48,7 @@ class SyncDialog(QDialog):
         self.exception_tb = None
         self.is_complete = False
         self.job = None
+        self.log_file = None
 
         self.timer = QTimer(self)
         self.timer.setInterval(100)
@@ -72,6 +73,8 @@ class SyncDialog(QDialog):
             self.pull_cancel()
 
     def reset_operation(self, success, close, exception=None):
+        if self.job.failure_log_file is not None:
+            self.log_file = self.job.failure_log_file
         self.operation = None
         self.mergin_client = None
         self.target_dir = None

@@ -471,6 +471,8 @@ class MerginProjectsManager(object):
                     dlg.exception_details(),
                     "Project download",
                     f"Failed to download project {project_name} due to an unhandled exception.",
+                    dlg.log_file,
+                    self.mc.username(),
                 )
             return
         if not dlg.is_complete:
