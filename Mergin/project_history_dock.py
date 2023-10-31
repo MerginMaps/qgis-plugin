@@ -9,6 +9,7 @@ from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QSortFilterProxyModel, QRe
 from qgis.PyQt.QtWidgets import QMenu, QAbstractItemDelegate, QStyle
 
 from qgis.gui import QgsDockWidget
+from qgis.core import Qgis
 from qgis.utils import OverrideCursor, iface
 
 from .diff_dialog import DiffViewerDialog
@@ -300,15 +301,24 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         """Shows comparison of changes in the version"""
         with OverrideCursor(Qt.WaitCursor):
             if not os.path.exists(os.path.join(self.project_path, ".mergin", ".cache", f"v{version}")):
-                info = self.mc.project_info(self.project_full_name, since=version)
+                info = self.mc.project_info(self.project_full_name, version=f"v{version}")
                 files = [f for f in info["files"] if is_versioned_file(f["path"])]
                 if not files:
-                    iface.messageBar.pushMessage(
+                    iface.messageBar().pushMessage(
+                        "Mergin", "This version does not contain changes in the project layers.", Qgis.Info
+                    )
+                    return
+
+                has_history = any("diff" in f for f in files)
+                if not has_history:
+                    iface.messageBar().pushMessage(
                         "Mergin", "This version does not contain changes in the project layers.", Qgis.Info
                     )
                     return
 
                 for f in files:
+                    if "diff" not in f:
+                        continue
                     file_diffs = self.mc.download_file_diffs(self.project_path, f["path"], [f"v{version}"])
                     full_gpkg = self.mp.fpath_cache(f["path"], version=f"v{version}")
                     if not os.path.exists(full_gpkg):
