@@ -6,7 +6,7 @@ from urllib.error import URLError
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QStandardItemModel, QStandardItem, QFont, QFontMetrics
 from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QSortFilterProxyModel, QRect, QMargins, QSize
-from qgis.PyQt.QtWidgets import QMenu, QAbstractItemDelegate, QStyle
+from qgis.PyQt.QtWidgets import QMenu, QAbstractItemDelegate, QMessageBox
 
 from qgis.gui import QgsDockWidget
 from qgis.core import Qgis
@@ -304,15 +304,15 @@ class ProjectHistoryDockWidget(QgsDockWidget):
                 info = self.mc.project_info(self.project_full_name, version=f"v{version}")
                 files = [f for f in info["files"] if is_versioned_file(f["path"])]
                 if not files:
-                    iface.messageBar().pushMessage(
-                        "Mergin", "This version does not contain changes in the project layers.", Qgis.Info
+                    QMessageBox.information(
+                        None, "Mergin", "This version does not contain changes in the project layers."
                     )
                     return
 
                 has_history = any("diff" in f for f in files)
                 if not has_history:
-                    iface.messageBar().pushMessage(
-                        "Mergin", "This version does not contain changes in the project layers.", Qgis.Info
+                    QMessageBox.information(
+                        None, "Mergin", "This version does not contain changes in the project layers."
                     )
                     return
 
