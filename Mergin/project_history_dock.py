@@ -201,7 +201,7 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.update_ui()
 
     def get_project_history(self):
-        self.project_full_name = self.mp.metadata["name"]
+        self.project_full_name = self.mp.project_full_name()
         info = self.mc.project_info(self.project_full_name)
         self.last_project_version = info["version"]
 
