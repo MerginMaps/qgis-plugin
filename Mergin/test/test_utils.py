@@ -16,7 +16,14 @@ from qgis.core import (
 )
 
 from qgis.testing import start_app, unittest
-from Mergin.utils import same_schema, get_datum_shift_grids, is_valid_name, create_tracking_layer, format_size
+from Mergin.utils import (
+    same_schema,
+    get_datum_shift_grids,
+    is_valid_name,
+    create_tracking_layer,
+    format_size,
+    datetime_to_contextual_date,
+)
 
 test_data_path = os.path.join(os.path.dirname(__file__), "data")
 
@@ -207,6 +214,17 @@ class test_utils(unittest.TestCase):
         self.assertEqual(format_size(42580724), "40.61 MiB")
         self.assertEqual(format_size(16242182039), "15.13 GiB")
         self.assertEqual(format_size(5613973017836), "5.106 TiB")
+
+    def test_contextual_date(self):
+        self.assertEqual(contextual_date("2023-11-01T16:09:23Z", "2023-11-01T16:09:34Z"), "just now")
+        self.assertEqual(contextual_date("2023-11-01T16:09:23Z", "2023-11-01T16:10:34Z"), "1 minute ago")
+        self.assertEqual(contextual_date("2023-11-01T16:09:23Z", "2023-11-01T16:31:34Z"), "22 minutes ago")
+        self.assertEqual(contextual_date("2023-11-01T16:09:23Z", "2023-11-01T17:01:34Z"), "52 minutes ago")
+        self.assertEqual(contextual_date("2023-10-31T12:40:23Z", "2023-11-01T16:09:34Z"), "1 day ago")
+        self.assertEqual(contextual_date("2023-10-26T13:01:19Z", "2023-11-01T16:09:34Z"), "6 days ago")
+        self.assertEqual(contextual_date("2023-10-10T13:01:19Z", "2023-11-01T16:09:34Z"), "3 weeks ago")
+        self.assertEqual(contextual_date("2023-09-30T13:01:19Z", "2023-11-01T16:09:34Z"), "1 month ago")
+        self.assertEqual(contextual_date("2023-04-27T06:01:34Z", "2023-11-01T16:09:34Z"), "6 months ago")
 
 
 if __name__ == "__main__":
