@@ -6,7 +6,7 @@ from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem, QIcon
 
 from qgis.gui import QgsGui
 
-from .utils import is_versioned_file, icon_path
+from .utils import is_versioned_file, icon_path, format_size, format_datetime
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_version_details_dialog.ui")
 
@@ -20,12 +20,11 @@ class VersionDetailsDialog(QDialog):
         "table": "table.svg",
     }
 
-    def __init__(self, version, version_details, parent=None):
+    def __init__(self, version_details, parent=None):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
         QgsGui.instance().enableAutoGeometryRestore(self)
 
-        self.version = version
         self.version_details = version_details
 
         self.model = QStandardItemModel()
@@ -35,7 +34,13 @@ class VersionDetailsDialog(QDialog):
         self.tree_details.expandAll()
 
     def populate_details(self):
-        root_item = QStandardItem(f"Changes in version v{self.version}")
+        self.edit_version.setText(self.version_details["name"])
+        self.edit_author.setText(self.version_details["author"])
+        self.edit_project_size.setText(format_size(self.version_details["project_size"]))
+        self.edit_created.setText(format_datetime(self.version_details["created"]))
+        self.edit_user_agent.setText(self.version_details["user_agent"])
+
+        root_item = QStandardItem(f"Changes in version {self.version_details['name']}")
         self.model.appendRow(root_item)
         for category in self.version_details["changes"]:
             for item in self.version_details["changes"][category]:

@@ -16,7 +16,7 @@ from qgis.core import (
 )
 
 from qgis.testing import start_app, unittest
-from Mergin.utils import same_schema, get_datum_shift_grids, is_valid_name, create_tracking_layer
+from Mergin.utils import same_schema, get_datum_shift_grids, is_valid_name, create_tracking_layer, format_size
 
 test_data_path = os.path.join(os.path.dirname(__file__), "data")
 
@@ -196,6 +196,17 @@ class test_utils(unittest.TestCase):
             self.assertEqual(fields[3].type(), QVariant.Double)
             self.assertEqual(fields[4].name(), "tracked_by")
             self.assertEqual(fields[4].type(), QVariant.String)
+
+    def test_format_size(self):
+        self.assertEqual(format_size(0), "0 bytes")
+        self.assertEqual(format_size(1), "1 byte")
+        self.assertEqual(format_size(61), "1 bytes")
+        self.assertEqual(format_size(5127), "5.007 KiB")
+        self.assertEqual(format_size(37700), "36.82 KiB")
+        self.assertEqual(format_size(342383), "334.4 KiB")
+        self.assertEqual(format_size(42580724), "40.61 MiB")
+        self.assertEqual(format_size(16242182039), "15.13 GiB")
+        self.assertEqual(format_size(5613973017836), "5.106 TiB")
 
 
 if __name__ == "__main__":

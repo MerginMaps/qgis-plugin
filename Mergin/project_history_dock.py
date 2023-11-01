@@ -294,7 +294,7 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         with OverrideCursor(Qt.WaitCursor):
             info = self.mc.project_version_info(self.project_full_name, version)
 
-        dlg = VersionDetailsDialog(version, info[0])
+        dlg = VersionDetailsDialog(info[0])
         dlg.exec_()
 
     def view_changes(self, version):
