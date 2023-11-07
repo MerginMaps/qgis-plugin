@@ -3,7 +3,14 @@ import re
 from enum import Enum
 from collections import defaultdict
 
-from qgis.core import QgsMapLayerType, QgsProject, QgsVectorDataProvider, QgsExpression, QgsRenderContext
+from qgis.core import (
+    QgsMapLayerType,
+    QgsProject,
+    QgsVectorDataProvider,
+    QgsExpression,
+    QgsRenderContext,
+    QgsProviderRegistry,
+)
 
 from .help import MerginHelp
 from .utils import (
@@ -193,7 +200,15 @@ class MerginProjectValidator(object):
                 # might be vector tiles - no provider name
                 continue
             if dp_name in QGIS_NET_PROVIDERS + QGIS_DB_PROVIDERS:
-                w.items.append(layer.name())
+                # raster mbtiles are loaded using WMS provider, so we need to
+                # check whether this is a local file or remote service
+                if dp_name.lower() == "wms":
+                    uri = QgsProviderRegistry.instance().decodeUri("wms", layer.source())
+                    is_local = os.path.isfile(uri["path"]) if "path" in uri else False
+                    if not is_local:
+                        w.items.append(layer.name())
+                else:
+                    w.items.append(layer.name())
 
         if w.items:
             self.issues.append(w)
