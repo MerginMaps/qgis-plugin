@@ -350,6 +350,8 @@ class MerginPlugin:
 
     def toggle_project_history_action(self, visible):
         self.history_dock_action.setChecked(visible)
+        # load project history when dock becomes visible
+        self.history_dock_widget.update_ui()
 
     def show_no_workspaces_dialog(self):
         msg = (
@@ -486,6 +488,7 @@ class MerginPlugin:
     def current_project_sync(self):
         """Synchronise current Mergin Maps project."""
         self.manager.project_status(self.mergin_proj_dir)
+        self.history_dock_widget.get_project_history()
 
     def find_project(self):
         """Open new Find Mergin Maps project dialog"""

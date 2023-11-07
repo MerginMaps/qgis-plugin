@@ -14,7 +14,7 @@
    <set>Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
   </property>
   <property name="windowTitle">
-   <string>Project history</string>
+   <string>Mergin Maps history</string>
   </property>
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -55,20 +55,16 @@
       <widget class="QWidget" name="page_2">
        <layout class="QGridLayout" name="gridLayout">
         <item row="1" column="0" colspan="2">
-         <widget class="QListView" name="versions_list">
+         <widget class="QTreeView" name="versions_tree">
           <property name="contextMenuPolicy">
            <enum>Qt::CustomContextMenu</enum>
           </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QPushButton" name="filter_btn">
-          <property name="text">
-           <string>Filter</string>
+          <property name="rootIsDecorated">
+           <bool>false</bool>
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
+        <item row="0" column="0" colspan="2">
          <widget class="QPushButton" name="view_changes_btn">
           <property name="text">
            <string>View changes</string>

@@ -1505,7 +1505,7 @@ def contextual_date(date_string, start_date=None):
     'N hours/days/month ago'
     """
     dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
-    now = datetime.now() if start_date is None else datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.utcnow() if start_date is None else datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%SZ")
     delta = now - dt
     if delta.days > 365:
         years = now.year - dt.year - ((now.month, now.day) < (dt.month, dt.day))
