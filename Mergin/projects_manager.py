@@ -157,7 +157,7 @@ class MerginProjectsManager(object):
 
         try:
             mp = MerginProject(project_dir)
-            project_name = mp.metadata["name"]
+            project_name = mp.project_full_name()
         except InvalidProject as e:
             msg = f"Failed to get project status:\n\n{str(e)}"
             QMessageBox.critical(None, "Project status", msg, QMessageBox.Close)
@@ -223,7 +223,7 @@ class MerginProjectsManager(object):
         if project_name is None:
             mp = MerginProject(project_dir)
             try:
-                project_name = mp.metadata["name"]
+                project_name = mp.project_full_name()
             except InvalidProject as e:
                 msg = f"Failed to sync project:\n\n{str(e)}"
                 QMessageBox.critical(None, "Project syncing", msg, QMessageBox.Close)

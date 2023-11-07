@@ -988,9 +988,8 @@ def set_qgis_project_mergin_variables():
         if same_dir(path, qgis_project_path):
             try:
                 mp = MerginProject(path)
-                metadata = mp.metadata
-                write_project_variables(owner, name, metadata.get("name"), metadata.get("version"), server)
-                return metadata.get("name")
+                write_project_variables(owner, name, mp.project_full_name(), mp.version(), server)
+                return mp.project_full_name()
             except InvalidProject:
                 remove_project_variables()
     return None
