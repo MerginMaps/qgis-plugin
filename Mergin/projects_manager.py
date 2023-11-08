@@ -215,6 +215,32 @@ class MerginProjectsManager(object):
             QMessageBox.critical(None, "Mergin Maps", info)
         return False
 
+    def reset_local_changes(self, project_dir: str):
+        if not project_dir:
+            return
+        if not self.check_project_server(project_dir):
+            return
+        mp = MerginProject(project_dir)
+        try:
+            project_name = mp.metadata["name"]
+        except InvalidProject as e:
+            msg = f"Failed to reset local changes for project:\n\n{str(e)}"
+            QMessageBox.critical(None, "Project reset local changes", msg, QMessageBox.Close)
+            return
+
+        current_project_filename = QgsProject.instance().fileName()
+        current_project_path = os.path.normpath(QgsProject.instance().absolutePath())
+        if current_project_path == os.path.normpath(project_dir):
+            QgsProject.instance().clear()
+
+        try:
+            self.mc.reset_local_changes(project_dir)
+        except Exception as e:
+            msg = f"Failed to reset local changes:\n\n{str(e)}"
+            QMessageBox.critical(None, "Project reset local changes", msg, QMessageBox.Close)
+
+        QgsProject.instance().read(current_project_filename)
+
     def sync_project(self, project_dir, project_name=None):
         if not project_dir:
             return
