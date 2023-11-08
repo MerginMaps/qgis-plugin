@@ -33,6 +33,9 @@ class ProjectStatusDialog(QDialog):
         "table": "table.svg",
     }
 
+    # custom return value
+    RESET_CHANGES = 3
+
     def __init__(
         self,
         pull_changes,
@@ -250,7 +253,4 @@ class ProjectStatusDialog(QDialog):
         )
         if btn_reply != QMessageBox.Yes:
             return
-        mc = create_mergin_client()
-        mc.reset_local_changes(self.mp.dir)
-        QMessageBox.information(None, "Remove local changes", "Local changes have been reverted.")
-        self.close()
+        return self.done(self.RESET_CHANGES)
