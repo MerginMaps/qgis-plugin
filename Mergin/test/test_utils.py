@@ -22,7 +22,7 @@ from Mergin.utils import (
     is_valid_name,
     create_tracking_layer,
     format_size,
-    datetime_to_contextual_date,
+    contextual_date,
 )
 
 test_data_path = os.path.join(os.path.dirname(__file__), "data")
