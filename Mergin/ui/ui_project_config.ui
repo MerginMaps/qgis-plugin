@@ -288,7 +288,7 @@
           <item row="3" column="0" colspan="3">
            <widget class="QLabel" name="label_8">
             <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style='font-weight:600'&gt;Choose precision level&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Best — best available accuracy, hight battery usage, more that 1 update per minute&lt;br&gt;Normal — optimised for battery life, ~1 update per minute or 100 m traveled&lt;br&gt;Low — best battery life option, ~1 update in 10 minutes or 1 km traveled&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style='font-weight:600'&gt;Choose precision level&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Best — best available accuracy, high battery usage, more than 1 update per minute&lt;br&gt;Normal — optimised for battery life, ~1 update per minute or 100 m traveled&lt;br&gt;Low — best battery life option, ~1 update in 10 minutes or 1 km traveled&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
