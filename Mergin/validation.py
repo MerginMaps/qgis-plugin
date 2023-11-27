@@ -200,15 +200,12 @@ class MerginProjectValidator(object):
                 # might be vector tiles - no provider name
                 continue
             if dp_name in QGIS_NET_PROVIDERS + QGIS_DB_PROVIDERS:
-                # raster mbtiles are loaded using WMS provider, so we need to
-                # check whether this is a local file or remote service
-                if dp_name.lower() == "wms":
-                    uri = QgsProviderRegistry.instance().decodeUri("wms", layer.source())
-                    is_local = os.path.isfile(uri["path"]) if "path" in uri else False
-                    if not is_local:
-                        w.items.append(layer.name())
-                else:
+                if "type=mbtiles" not in layer.source():
                     w.items.append(layer.name())
+            else:
+                if layer.type() == QgsMapLayerType.VectorTileLayer:
+                    if "type=mbtiles" not in layer.source() and "type=vtpk" not in layer.source():
+                        w.items.append(layer.name())
 
         if w.items:
             self.issues.append(w)
