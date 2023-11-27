@@ -12,10 +12,15 @@ from qgis.core import (
     QgsMarkerSymbol,
     QgsSvgMarkerSymbolLayer,
     QgsSvgMarkerSymbolLayer,
+    QgsRasterLayer,
+    QgsVectorTileLayer,
+    QgsDataSourceUri,
 )
 from qgis.testing import start_app, unittest
 
 from Mergin.validation import MerginProjectValidator, Warning, SingleLayerWarning
+from Mergin.utils import TILES_URL
+
 
 test_data_path = os.path.join(os.path.dirname(__file__), "data")
 
@@ -153,6 +158,35 @@ class test_validations(unittest.TestCase):
         validator.editable = ["mem_1"]
         validator.check_svgs_embedded()
         self.assertTrue(len(validator.issues) == 0)
+
+    def test_local_mbtiles(self):
+        raster_tiles_path = os.path.join(test_data_path, "raster-tiles.mbtiles")
+        rt_layer = QgsRasterLayer(f"url=file://{raster_tiles_path}&type=mbtiles", "test_raster", "wms")
+        self.assertTrue(rt_layer.isValid())
+
+        vector_tiles_path = os.path.join(test_data_path, "vector-tiles.mbtiles")
+        vt_layer = QgsVectorTileLayer(f"url={vector_tiles_path}&type=mbtiles", "test_vector")
+        self.assertTrue(vt_layer.isValid())
+
+        validator = MerginProjectValidator()
+        validator.layers = {"test_raster": rt_layer, "test_vector": vt_layer}
+
+        validator.check_offline()
+        self.assertEqual(len(validator.issues), 0)
+        validator.issues = []
+
+        ds_uri = QgsDataSourceUri()
+        ds_uri.setParam("type", "xyz")
+        ds_uri.setParam("url", f"{TILES_URL}/data/default/{{z}}/{{x}}/{{y}}.pbf")
+        ds_uri.setParam("zmin", "0")
+        ds_uri.setParam("zmax", "14")
+        ds_uri.setParam("styleUrl", f"{TILES_URL}/styles/default.json")
+        vt_layer_online = QgsVectorTileLayer(bytes(ds_uri.encodedUri()).decode(), "test_vector_online")
+        self.assertTrue(vt_layer_online.isValid())
+
+        validator.layers["test_vector_online"] = vt_layer_online
+        validator.check_offline()
+        self.assertEqual(len(validator.issues), 1)
 
 
 if __name__ == "__main__":
