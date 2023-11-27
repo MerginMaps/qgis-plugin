@@ -194,18 +194,20 @@ class MerginProjectValidator(object):
         """Check if there are layers that might not be available when offline"""
         w = MultipleLayersWarning(Warning.NOT_FOR_OFFLINE)
         for lid, layer in self.layers.items():
-            try:
-                dp_name = layer.dataProvider().name()
-            except AttributeError:
-                # might be vector tiles - no provider name
+            # special check for vector tile layers because in QGIS < 3.22 they may not have data provider assigned
+            if layer.type() == QgsMapLayerType.VectorTileLayer:
+                # mbtiles/vtpk are always local files
+                if "type=mbtiles" in layer.source() or "type=vtpk" in layer.source():
+                    continue
+                w.items.append(layer.name())
                 continue
+
+            dp_name = layer.dataProvider().name()
             if dp_name in QGIS_NET_PROVIDERS + QGIS_DB_PROVIDERS:
-                if "type=mbtiles" not in layer.source():
-                    w.items.append(layer.name())
-            else:
-                if layer.type() == QgsMapLayerType.VectorTileLayer:
-                    if "type=mbtiles" not in layer.source() and "type=vtpk" not in layer.source():
-                        w.items.append(layer.name())
+                # raster tiles in mbtiles are always local files
+                if dp_name == "wms" and "type=mbtiles" in layer.source():
+                    continue
+                w.items.append(layer.name())
 
         if w.items:
             self.issues.append(w)
