@@ -17,7 +17,7 @@ from qgis.core import Qgis, QgsApplication, QgsProject
 from qgis.utils import OverrideCursor
 from .diff_dialog import DiffViewerDialog
 from .validation import MultipleLayersWarning, warning_display_string, MerginProjectValidator
-from .utils import is_versioned_file, icon_path, unsaved_project_check, UnsavedChangesStrategy, create_mergin_client
+from .utils import is_versioned_file, icon_path, unsaved_project_check, UnsavedChangesStrategy
 from .repair import fix_datum_shift_grids
 
 
