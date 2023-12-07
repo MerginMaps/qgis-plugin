@@ -33,6 +33,9 @@ class ProjectStatusDialog(QDialog):
         "table": "table.svg",
     }
 
+    # custom return value
+    RESET_CHANGES = 3
+
     def __init__(
         self,
         pull_changes,
@@ -82,6 +85,14 @@ class ProjectStatusDialog(QDialog):
                 self.ui.messageBar.pushWidget(lbl, Qgis.Warning)
 
             self.validate_project()
+
+            self.btn_reset_local_changes.setIcon(QIcon(icon_path("revert-changes.svg")))
+            self.btn_reset_local_changes.clicked.connect(self.reset_local_changes)
+
+            if len(push_changes["added"]) > 0 or len(push_changes["removed"]) > 0 or len(push_changes["updated"]) > 0:
+                self.btn_reset_local_changes.setEnabled(True)
+            else:
+                self.btn_reset_local_changes.setEnabled(False)
 
     def _get_info_text(self, has_files_to_replace, has_write_permissions, has_unfinished_pull):
         msg = []
@@ -231,3 +242,15 @@ class ProjectStatusDialog(QDialog):
         else:
             self.show_validation_results(results)
             self.btn_sync.setStyleSheet("background-color: #ffc800")
+
+    def reset_local_changes(self):
+        btn_reply = QMessageBox.question(
+            None,
+            "Reset changes",
+            "All changes in your project directory will be reverted. Do you want to proceed?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes,
+        )
+        if btn_reply != QMessageBox.Yes:
+            return
+        return self.done(self.RESET_CHANGES)

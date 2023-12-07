@@ -177,8 +177,12 @@ class MerginProjectsManager(object):
             # Sync button in the status dialog returns QDialog.Accepted
             # and Close button retuns QDialog::Rejected, so it dialog was
             # accepted we start sync
-            if dlg.exec_():
+            return_value = dlg.exec_()
+
+            if return_value == ProjectStatusDialog.Accepted:
                 self.sync_project(project_dir)
+            elif return_value == ProjectStatusDialog.RESET_CHANGES:
+                self.reset_local_changes(project_dir)
 
         except (URLError, ClientError, InvalidProject) as e:
             msg = f"Failed to get status for project {project_name}:\n\n{str(e)}"
@@ -214,6 +218,25 @@ class MerginProjectsManager(object):
             info += "You need to reconfigure Mergin Maps plugin to synchronise the project."
             QMessageBox.critical(None, "Mergin Maps", info)
         return False
+
+    def reset_local_changes(self, project_dir: str):
+        if not project_dir:
+            return
+        if not self.check_project_server(project_dir):
+            return
+
+        current_project_filename = QgsProject.instance().fileName()
+        current_project_path = os.path.normpath(QgsProject.instance().absolutePath())
+        if current_project_path == os.path.normpath(project_dir):
+            QgsProject.instance().clear()
+
+        try:
+            self.mc.reset_local_changes(project_dir)
+        except Exception as e:
+            msg = f"Failed to reset local changes:\n\n{str(e)}"
+            QMessageBox.critical(None, "Project reset local changes", msg, QMessageBox.Close)
+
+        self.open_project(os.path.dirname(current_project_filename))
 
     def sync_project(self, project_dir, project_name=None):
         if not project_dir:
