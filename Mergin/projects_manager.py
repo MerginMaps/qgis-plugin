@@ -83,9 +83,10 @@ class MerginProjectsManager(object):
         If project_dir is None, we are creating empty project without upload.
         """
 
+        full_project_name = "{}/{}".format(namespace, project_name)
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            self.mc.create_project(project_name, is_public, namespace)
+            self.mc.create_project(full_project_name, is_public)
         except Exception as e:
             QApplication.restoreOverrideCursor()
             QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + str(e))
@@ -100,11 +101,20 @@ class MerginProjectsManager(object):
             )
             return True
 
-        # let's do initial upload of the project data
+        # get project's metadata from the server and store it locally
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            project_info = self.mc.project_info(full_project_name)
+            MerginProject.write_metadata(project_dir, project_info)
+        except Exception as e:
+            QApplication.restoreOverrideCursor()
+            QMessageBox.critical(None, "Create Project", "Failed to initialize Mergin Maps project.\n" + str(e))
+            return False
 
+        QApplication.restoreOverrideCursor()
+
+        # let's do initial upload of the project data
         mp = MerginProject(project_dir)
-        full_project_name = "{}/{}".format(namespace, project_name)
-        mp.metadata = {"name": full_project_name, "version": "v0", "files": []}
         if not mp.inspect_files():
             QMessageBox.warning(None, "Create Project", "The project directory is empty - nothing to upload.")
             return True
