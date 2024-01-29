@@ -3,8 +3,14 @@
 ## Development/Testing
 Download python [client](https://github.com/MerginMaps/mergin-py-client) and
 link to qgis plugin:
-
+```
     ln -s <path-to-py-client>/mergin/ <path-to-mergin-qgis-plugin>/Mergin/mergin
+```
+
+Now link the plugin to your QGIS profile python, e.g. for MacOS
+```  
+    ln -s <path-to-py-client>/Mergin/ <path-to-QGIS-user-folder>/QGIS3/profiles/default/python/plugins/Mergin
+```
 
 ## Production
 
