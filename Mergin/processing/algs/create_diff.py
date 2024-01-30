@@ -122,7 +122,9 @@ class CreateDiff(QgsProcessingAlgorithm):
             mc.get_file_diff(project_dir, file_name, diff_file, f"v{start}", f"v{end}" if end else None)
         except KeyError:
             # see https://github.com/MerginMaps/python-api-client/issues/196
-            raise QgsProcessingException("The layer for given version range contains a version with changed data schema.")
+            raise QgsProcessingException(
+                "The layer for given version range contains a version with changed data schema."
+            )
 
         feedback.setProgress(20)
 
