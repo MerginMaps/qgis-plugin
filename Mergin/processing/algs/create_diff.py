@@ -22,6 +22,7 @@ from ..postprocessors import StylingPostProcessor
 
 from ...mergin.merginproject import MerginProject
 from ...mergin.utils import get_versions_with_file_changes
+from ...mergin.deps import pygeodiff
 
 from ...diff import parse_db_schema, parse_diff, get_table_name, create_field_list, diff_table_to_features
 
@@ -117,7 +118,12 @@ class CreateDiff(QgsProcessingAlgorithm):
         feedback.setProgress(10)
 
         diff_file = QgsProcessingUtils.generateTempFilename(file_name + ".diff")
-        mc.get_file_diff(project_dir, file_name, diff_file, f"v{start}", f"v{end}" if end else None)
+        try:
+            mc.get_file_diff(project_dir, file_name, diff_file, f"v{start}", f"v{end}" if end else None)
+        except KeyError:
+            # see https://github.com/MerginMaps/python-api-client/issues/196
+            raise QgsProcessingException("The layer for given version range contains a version with changed data schema.")
+
         feedback.setProgress(20)
 
         feedback.pushInfo("Parse schema…")
@@ -131,7 +137,8 @@ class CreateDiff(QgsProcessingAlgorithm):
         )
 
         feedback.pushInfo("Parse diff…")
-        diff = parse_diff(diff_file)
+        geodiff = pygeodiff.GeoDiff()
+        diff = parse_diff(geodiff, diff_file)
         feedback.setProgress(30)
 
         if diff and table_name in diff.keys():
