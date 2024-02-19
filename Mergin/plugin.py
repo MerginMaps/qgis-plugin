@@ -40,12 +40,14 @@ from .diff_dialog import DiffViewerDialog
 from .project_settings_widget import MerginProjectConfigFactory
 from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
+from .switch_sources_dialog import ProjectUsePostgreConfigWizard
 from .configure_sync_wizard import DbSyncConfigWizard
 from .remove_project_dialog import RemoveProjectDialog
 from .utils import (
     ServerType,
     ClientError,
     LoginError,
+    InvalidProject,
     check_mergin_subdirs,
     create_mergin_client,
     find_qgis_files,
@@ -155,7 +157,13 @@ class MerginPlugin:
                 add_to_menu=True,
                 add_to_toolbar=None,
             )
-
+            self.action_switch_sources = self.add_action(
+                "database-cog.svg",
+                text="Switch DBSync Sources",
+                callback=self.switch_sources,
+                add_to_menu=True,
+                add_to_toolbar=None,
+            )
             self.enable_toolbar_actions()
 
         self.post_login()
@@ -322,6 +330,35 @@ class MerginPlugin:
 
         wizard = DbSyncConfigWizard(project_name)
         if not wizard.exec_():
+            return
+
+    def switch_sources(self):
+        project_path = QgsProject.instance().homePath()
+        if not project_path:
+            iface.messageBar().pushMessage("Mergin", "Project is not saved, please save project first", Qgis.Warning)
+            return
+
+        if not check_mergin_subdirs(project_path):
+            iface.messageBar().pushMessage(
+                "Mergin", "Current project is not a Mergin project. Please open a Mergin project first.", Qgis.Warning
+            )
+            return
+
+        mp = MerginProject(project_path)
+        try:
+            project_name = mp.metadata["name"]
+        except InvalidProject as e:
+            iface.messageBar().pushMessage(
+                "Mergin", "Current project is not a Mergin project. Please open a Mergin project first.", Qgis.Warning
+            )
+            return
+
+        check_result = unsaved_project_check()
+        if check_result == UnsavedChangesStrategy.HasUnsavedChanges:
+            return
+
+        dialog = ProjectUsePostgreConfigWizard(self.iface)
+        if not dialog.exec():
             return
 
     def show_no_workspaces_dialog(self):
