@@ -487,7 +487,10 @@ class ProjectHistoryDockWidget(QgsDockWidget):
             return
 
         dlg = DiffViewerDialog(version)
-        dlg.exec_()
+        if dlg.diff_layers:
+            dlg.exec_()
+        else:
+            QMessageBox.information(None, "Mergin", "No changes to the current project layers for this version.")
 
     def download_version(self):
         """Download project files at the specific version"""
