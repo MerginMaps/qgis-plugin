@@ -329,6 +329,8 @@ def make_version_changes_layers(project_path, version):
             geodiff.schema("sqlite", "", gpkg_file, schema_file)
 
         changeset_file = find_changeset_file(f, version_dir)
+        if changeset_file is None:
+            continue
 
         with open(schema_file, encoding="utf-8") as fl:
             data = fl.read()
