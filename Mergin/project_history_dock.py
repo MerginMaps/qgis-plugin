@@ -409,8 +409,9 @@ class ProjectHistoryDockWidget(QgsDockWidget):
                 else:
                     self.need_to_fetch_next_page = False
 
-            self.model.set_current_version(self.mp.version())
+            self.mp = MerginProject(self.project_path)
             self.model.add_versions(versions)
+            self.model.set_current_version(self.mp.version())
         except KeyError:
             pass
 
