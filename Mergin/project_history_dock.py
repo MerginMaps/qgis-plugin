@@ -244,7 +244,6 @@ class ChangesetsDownloader(QThread):
             self.finished.emit("This version does not contain changes in the project layers.")
             return
 
-        change = False
         for f in files:
             if self.isInterruptionRequested():
                 return
@@ -252,17 +251,9 @@ class ChangesetsDownloader(QThread):
             if "diff" not in f:
                 continue
             file_diffs = self.mc.download_file_diffs(self.mp.dir, f["path"], [f"v{self.version}"])
-
-            if len(file_diffs) > 0:
-                change = True
-
             full_gpkg = self.mp.fpath_cache(f["path"], version=f"v{self.version}")
             if not os.path.exists(full_gpkg):
                 self.mc.download_file(self.mp.dir, f["path"], full_gpkg, f"v{self.version}")
-
-        if not change:
-            self.finished.emit("No changes to the current project layers for this version.")
-            return
 
         self.finished.emit("")
 
