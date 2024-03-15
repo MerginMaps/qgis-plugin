@@ -174,7 +174,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         if not self.project_owner_cbo.currentData(Qt.UserRole):
             self.create_warning("You do not have permissions to create a project in this workspace!")
             return
-        proj_name = self.project_name_ledit.text()
+        proj_name = self.project_name_ledit.text().strip()
         if not proj_name:
             self.create_warning("Project name missing!")
             return
