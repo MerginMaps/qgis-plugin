@@ -207,7 +207,7 @@ class test_utils(unittest.TestCase):
     def test_format_size(self):
         self.assertEqual(format_size(0), "0 bytes")
         self.assertEqual(format_size(1), "1 byte")
-        self.assertEqual(format_size(61), "1 bytes")
+        self.assertEqual(format_size(61), "61 bytes")
         self.assertEqual(format_size(5127), "5.007 KiB")
         self.assertEqual(format_size(37700), "36.82 KiB")
         self.assertEqual(format_size(342383), "334.4 KiB")
