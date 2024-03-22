@@ -13,6 +13,7 @@ import tempfile
 import json
 import glob
 import re
+import math
 
 from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
@@ -1491,3 +1492,51 @@ def set_tracking_layer_flags(layer):
     """
     layer.setReadOnly(False)
     layer.setFlags(QgsMapLayer.LayerFlag(QgsMapLayer.Identifiable + QgsMapLayer.Searchable + QgsMapLayer.Removable))
+
+
+def format_size(size):
+    """Formats size in bytes into a human-readable size string"""
+    if size == 0:
+        return "0 bytes"
+    if size == 1:
+        return "1 byte"
+
+    units = ["bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
+    order = int(math.log2(size) / 10.0)
+    return f"{size / (1 << (order * 10)):.4g} {units[order]}"
+
+
+def format_datetime(date_string):
+    """Formats datetime string returned by the server into human-readable format"""
+    dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
+    return dt.strftime("%a, %d %b %Y %H:%M:%S GMT")
+
+
+def contextual_date(date_string, start_date=None):
+    """Converts datetime string returned by the server into contextual duration string, e.g.
+    'N hours/days/month ago'
+    """
+    dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.utcnow() if start_date is None else datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%SZ")
+    delta = now - dt
+    if delta.days > 365:
+        years = now.year - dt.year - ((now.month, now.day) < (dt.month, dt.day))
+        return f"{years} {'years' if years > 1 else 'year'} ago"
+    elif delta.days > 31:
+        months = int(delta.days // 30.436875)
+        return f"{months} {'months' if months > 1 else 'month'} ago"
+    elif delta.days > 6:
+        weeks = int(delta.days // 7)
+        return f"{weeks} {'weeks' if weeks > 1 else 'week'} ago"
+
+    if delta.days < 1:
+        hours = delta.seconds // 3600
+        if hours < 1:
+            minutes = (delta.seconds // 60) % 60
+            if minutes <= 0:
+                return "just now"
+            return f"{minutes} {'minutes' if minutes > 1 else 'minute'} ago"
+
+        return f"{hours} {'hours' if hours > 1 else 'hour'} ago"
+
+    return f"{delta.days} {'days' if delta.days > 1 else 'day'} ago"
