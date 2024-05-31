@@ -43,10 +43,13 @@ class ProjectStatusDialog(QDialog):
         push_changes_summary,
         has_write_permissions,
         mergin_project=None,
+        project_permission=None,
         parent=None,
     ):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
+        self.project_permission = project_permission
+        self.push_changes = push_changes
 
         with OverrideCursor(Qt.WaitCursor):
             QgsGui.instance().enableAutoGeometryRestore(self)
@@ -229,11 +232,15 @@ class ProjectStatusDialog(QDialog):
             if msg is not None:
                 self.ui.messageBar.pushMessage("Mergin", f"Failed to fix issue: {msg}", Qgis.Warning)
                 return
+        if function_name == "#reset_qgs_file":
+            qgis_file = next(
+                (file["path"] for file in self.push_changes["updated"] if file["path"].lower().endswith(('.qgs', '.qgz'))))
+            self.reset_local_changes(qgis_file)
 
         self.validate_project()
 
     def validate_project(self):
-        validator = MerginProjectValidator(self.mp)
+        validator = MerginProjectValidator(self.mp, self.push_changes, self.project_permission)
         results = validator.run_checks()
         if not results:
             self.ui.lblWarnings.hide()
@@ -243,11 +250,16 @@ class ProjectStatusDialog(QDialog):
             self.show_validation_results(results)
             self.btn_sync.setStyleSheet("background-color: #ffc800")
 
-    def reset_local_changes(self):
+    def reset_local_changes(self, files_to_reset=None):
+        if files_to_reset:
+            self.files_to_reset = files_to_reset
+            text = f"Local changes to file '{files_to_reset}' will be discarded. Do you want to proceed?"
+        else:
+            text = "All changes in your project directory will be reverted. Do you want to proceed?"
         btn_reply = QMessageBox.question(
             None,
             "Reset changes",
-            "All changes in your project directory will be reverted. Do you want to proceed?",
+            text,
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes,
         )

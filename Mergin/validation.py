@@ -9,7 +9,6 @@ from qgis.core import (
     QgsVectorDataProvider,
     QgsExpression,
     QgsRenderContext,
-    QgsProviderRegistry,
 )
 
 from .help import MerginHelp
@@ -52,6 +51,7 @@ class Warning(Enum):
     MERGIN_SNAPPING_NOT_ENABLED = 21
     MISSING_DATUM_SHIFT_GRID = 22
     SVG_NOT_EMBEDDED = 23
+    EDITOR_PROJECT_FILE_CHANGE = 24
 
 
 class MultipleLayersWarning:
@@ -78,7 +78,7 @@ class SingleLayerWarning:
 class MerginProjectValidator(object):
     """Class for checking Mergin project validity and fixing the problems, if possible."""
 
-    def __init__(self, mergin_project=None):
+    def __init__(self, mergin_project=None, changes=None, project_permission=None):
         self.mp = mergin_project
         self.layers = None  # {layer_id: map layer}
         self.editable = None  # list of editable layers ids
@@ -88,6 +88,8 @@ class MerginProjectValidator(object):
         self.qgis_proj = None
         self.qgis_proj_path = None
         self.qgis_proj_dir = None
+        self.changes = changes
+        self.project_permission = project_permission
 
     def run_checks(self):
         if self.mp is None:
@@ -112,6 +114,7 @@ class MerginProjectValidator(object):
         self.check_snapping()
         self.check_datum_shift_grids()
         self.check_svgs_embedded()
+        self.check_editor_perms()
 
         return self.issues
 
@@ -380,9 +383,15 @@ class MerginProjectValidator(object):
                     self.issues.append(SingleLayerWarning(lid, Warning.SVG_NOT_EMBEDDED))
                     break
 
+    def check_editor_perms(self):
+        if self.project_permission == "editor":
+            for file in self.changes["updated"]:
+                if file["path"].lower().endswith(('.qgs', '.qgz')):
+                    self.issues.append(MultipleLayersWarning(Warning.EDITOR_PROJECT_FILE_CHANGE))
+
 
 def warning_display_string(warning_id):
-    """Returns a display string for a corresponing warning"""
+    """Returns a display string for a corresponding warning"""
     help_mgr = MerginHelp()
     if warning_id == Warning.PROJ_NOT_LOADED:
         return "The QGIS project is not loaded. Open it to allow validation"
@@ -430,3 +439,5 @@ def warning_display_string(warning_id):
         return "Required datum shift grid is missing, reprojection may not work correctly. <a href='#fix_datum_shift_grids'>Fix the issue.</a>"
     elif warning_id == Warning.SVG_NOT_EMBEDDED:
         return "SVGs used for layer styling are not embedded in the project file, as a result those symbols won't be displayed in Mergin Maps Input"
+    elif warning_id == Warning.EDITOR_PROJECT_FILE_CHANGE:
+        return "You don't have permission to edit QGS project file. Ask workspace admin to upgrade you permission or <a href='#reset_qgs_file'>reset QGS project file</a> to be able to sync data changes. This might involve deleting layers you created locally."

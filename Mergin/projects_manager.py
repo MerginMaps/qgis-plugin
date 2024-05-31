@@ -27,7 +27,6 @@ from .utils import (
 
 from .mergin.merginproject import MerginProject
 from .project_status_dialog import ProjectStatusDialog
-from .validation import MerginProjectValidator
 
 
 class MerginProjectsManager(object):
@@ -183,16 +182,17 @@ class MerginProjectsManager(object):
                 push_changes_summary,
                 self.mc.has_writing_permissions(project_name),
                 mp,
+                self.mc.project_info(project_name)["role"],
             )
             # Sync button in the status dialog returns QDialog.Accepted
-            # and Close button retuns QDialog::Rejected, so it dialog was
+            # and Close button returns QDialog::Rejected, so if dialog was
             # accepted we start sync
             return_value = dlg.exec_()
 
             if return_value == ProjectStatusDialog.Accepted:
                 self.sync_project(project_dir)
             elif return_value == ProjectStatusDialog.RESET_CHANGES:
-                self.reset_local_changes(project_dir)
+                self.reset_local_changes(project_dir, dlg.files_to_reset)
 
         except (URLError, ClientError, InvalidProject) as e:
             msg = f"Failed to get status for project {project_name}:\n\n{str(e)}"
@@ -229,7 +229,7 @@ class MerginProjectsManager(object):
             QMessageBox.critical(None, "Mergin Maps", info)
         return False
 
-    def reset_local_changes(self, project_dir: str):
+    def reset_local_changes(self, project_dir: str, files_to_reset=None):
         if not project_dir:
             return
         if not self.check_project_server(project_dir):
@@ -241,7 +241,7 @@ class MerginProjectsManager(object):
             QgsProject.instance().clear()
 
         try:
-            self.mc.reset_local_changes(project_dir)
+            self.mc.reset_local_changes(project_dir, files_to_reset)
         except Exception as e:
             msg = f"Failed to reset local changes:\n\n{str(e)}"
             QMessageBox.critical(None, "Project reset local changes", msg, QMessageBox.Close)
