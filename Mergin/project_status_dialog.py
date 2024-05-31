@@ -16,7 +16,7 @@ from qgis.gui import QgsGui
 from qgis.core import Qgis, QgsApplication, QgsProject
 from qgis.utils import OverrideCursor
 from .diff_dialog import DiffViewerDialog
-from .validation import MultipleLayersWarning, warning_display_string, MerginProjectValidator
+from .validation import MultipleLayersWarning, warning_display_string, MerginProjectValidator, SingleLayerWarning
 from .utils import is_versioned_file, icon_path, unsaved_project_check, UnsavedChangesStrategy
 from .repair import fix_datum_shift_grids
 
@@ -50,6 +50,7 @@ class ProjectStatusDialog(QDialog):
         self.ui = uic.loadUi(ui_file, self)
         self.project_permission = project_permission
         self.push_changes = push_changes
+        self.files_to_reset = None
 
         with OverrideCursor(Qt.WaitCursor):
             QgsGui.instance().enableAutoGeometryRestore(self)
@@ -178,15 +179,16 @@ class ProjectStatusDialog(QDialog):
         html = []
 
         # separate MultipleLayersWarning and SingleLayerWarning items
-        groups = dict()
-        for k, v in groupby(results, key=lambda x: "multi" if isinstance(x, MultipleLayersWarning) else "single"):
-            groups[k] = list(v)
+        groups = {
+            "single": [item for item in results if isinstance(item, SingleLayerWarning)],
+            "multi": [item for item in results if isinstance(item, MultipleLayersWarning)]
+        }
 
         # first add MultipleLayersWarnings. They are displayed using warning
         # string as a title and list of affected layers/items
         if "multi" in groups:
             for w in groups["multi"]:
-                issue = warning_display_string(w.id)
+                issue = warning_display_string(w.id, w.url)
                 html.append(f"<h3>{issue}</h3>")
                 if w.items:
                     items = []
@@ -205,7 +207,7 @@ class ProjectStatusDialog(QDialog):
                 html.append(f"<h3>{map_layers[lid].name()}</h3>")
                 items = []
                 for w in layers[lid]:
-                    items.append(f"<li>{warning_display_string(w.warning)}</li>")
+                    items.append(f"<li>{warning_display_string(w.warning, w.url)}</li>")
                 html.append(f"<ul>{''.join(items)}</ul>")
 
         self.txtWarnings.setHtml("".join(html))
@@ -226,16 +228,22 @@ class ProjectStatusDialog(QDialog):
         dlg_diff_viewer.exec_()
 
     def link_clicked(self, url):
-        function_name = url.toString()
+        # url may contain specific layer paths to reset
+        if "?" in url.toString():
+            function_name = url.toString().split("?")[0]
+            layer_path = url.toString().split("?")[-1]
+        else:
+            function_name = url.toString()
+            layer_path = None
         if function_name == "#fix_datum_shift_grids":
             msg = fix_datum_shift_grids(self.mp)
             if msg is not None:
                 self.ui.messageBar.pushMessage("Mergin", f"Failed to fix issue: {msg}", Qgis.Warning)
                 return
         if function_name == "#reset_qgs_file":
-            qgis_file = next(
-                (file["path"] for file in self.push_changes["updated"] if file["path"].lower().endswith(('.qgs', '.qgz'))))
-            self.reset_local_changes(qgis_file)
+            self.reset_local_changes(layer_path)
+        if function_name == "#reset_layer":
+            self.reset_local_changes(layer_path)
 
         self.validate_project()
 
