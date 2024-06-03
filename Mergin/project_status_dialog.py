@@ -228,7 +228,7 @@ class ProjectStatusDialog(QDialog):
         dlg_diff_viewer.exec_()
 
     def link_clicked(self, url):
-        # url may contain specific layer paths to reset
+        # url may contain specific layer path to reset
         if "?" in url.toString():
             function_name = url.toString().split("?")[0]
             layer_path = url.toString().split("?")[-1]
@@ -240,9 +240,7 @@ class ProjectStatusDialog(QDialog):
             if msg is not None:
                 self.ui.messageBar.pushMessage("Mergin", f"Failed to fix issue: {msg}", Qgis.Warning)
                 return
-        if function_name == "#reset_qgs_file":
-            self.reset_local_changes(layer_path)
-        if function_name == "#reset_layer":
+        if function_name == "#reset_file":
             self.reset_local_changes(layer_path)
 
         self.validate_project()

@@ -53,6 +53,7 @@ class Warning(Enum):
     SVG_NOT_EMBEDDED = 23
     EDITOR_PROJECT_FILE_CHANGE = 24
     EDITOR_NON_DIFFABLE_CHANGE = 25
+    JSON_CONFIG_CHANGE = 26
 
 class MultipleLayersWarning:
     """Class for warning which is associated with multiple layers.
@@ -388,27 +389,27 @@ class MerginProjectValidator(object):
 
     def check_editor_perms(self):
         if self.project_permission == "editor":
-            # check if project file has changed
-            for file in self.changes["updated"]:
+            # editor cannot change specific files - QGS project file, mergin-config.json file (e.g. selective sync changes)
+            for file in self.changes["updated"] or self.changes["added"] or self.changes["deleted"]:
                 if file["path"].lower().endswith(('.qgs', '.qgz')):
-                    url = f"#reset_qgs_file?{file['path']}"
+                    url = f"#reset_file?{file['path']}"
                     self.issues.append(MultipleLayersWarning(Warning.EDITOR_PROJECT_FILE_CHANGE, url))
-            # check changes are diff-based not override
+                elif file["path"].lower().endswith("mergin-config.json"):
+                    url = f"#reset_file?{file['path']}"
+                    self.issues.append(MultipleLayersWarning(Warning.JSON_CONFIG_CHANGE, url))
+            # check data changes are diff-based not override (e.g. schema change)
             for lid, layer in self.layers.items():
                 if lid not in self.editable:
                     continue
+                layer_path = layer.dataProvider().dataSourceUri().split("/")[-1]
+                url = f"#reset_file?{layer_path}"
                 dp = layer.dataProvider()
                 if dp.storageType() == "GPKG":
                     has_change, msg = has_schema_change(self.mp, layer)
                     if has_change:
-                        layer_path = layer.dataProvider().dataSourceUri().split("/")[-1]
-                        url = f"#reset_layer?{layer_path}"
                         self.issues.append(SingleLayerWarning(lid, Warning.EDITOR_NON_DIFFABLE_CHANGE, url))
                 else:
-                    layer_path = layer.dataProvider().dataSourceUri().split("/")[-1]
-                    url = f"#reset_layer?{layer_path}"
                     self.issues.append(SingleLayerWarning(lid, Warning.EDITOR_NON_DIFFABLE_CHANGE, url))
-            # TODO: check mergin-config.json has changed
 
 
 def warning_display_string(warning_id, url=None):
@@ -464,3 +465,5 @@ def warning_display_string(warning_id, url=None):
         return f"You don't have permission to edit QGS project file. Ask workspace admin to upgrade you permission or <a href='{url}'>reset QGS project file</a> to be able to sync data changes. This might involve deleting layers you created locally."
     elif warning_id == Warning.EDITOR_NON_DIFFABLE_CHANGE:
         return f"You don't have permission to edit layer schema. Ask workspace admin to upgrade you permission or <a href='{url}'>reset the layer</a> to be able to sync changes in other layers."
+    elif warning_id == Warning.JSON_CONFIG_CHANGE:
+        return f"You don't have permission to change the config file. <a href='{url}'>Reset the file</a> to be able to sync data changes."
