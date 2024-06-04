@@ -55,6 +55,7 @@ class Warning(Enum):
     EDITOR_NON_DIFFABLE_CHANGE = 25
     JSON_CONFIG_CHANGE = 26
 
+
 class MultipleLayersWarning:
     """Class for warning which is associated with multiple layers.
 
@@ -390,13 +391,15 @@ class MerginProjectValidator(object):
     def check_editor_perms(self):
         if self.project_permission == "editor":
             # editor cannot change specific files - QGS project file, mergin-config.json file (e.g. selective sync changes)
-            for file in self.changes["updated"] or self.changes["added"] or self.changes["deleted"]:
-                if file["path"].lower().endswith(('.qgs', '.qgz')):
-                    url = f"#reset_file?{file['path']}"
-                    self.issues.append(MultipleLayersWarning(Warning.EDITOR_PROJECT_FILE_CHANGE, url))
-                elif file["path"].lower().endswith("mergin-config.json"):
-                    url = f"#reset_file?{file['path']}"
-                    self.issues.append(MultipleLayersWarning(Warning.JSON_CONFIG_CHANGE, url))
+            for category in self.changes:
+                for file in self.changes[category]:
+                    path = file["path"]
+                    if path.lower().endswith((".qgs", ".qgz")):
+                        url = f"#reset_file?{path}"
+                        self.issues.append(MultipleLayersWarning(Warning.EDITOR_PROJECT_FILE_CHANGE, url))
+                    elif path.lower().endswith("mergin-config.json"):
+                        url = f"#reset_file?{path}"
+                        self.issues.append(MultipleLayersWarning(Warning.JSON_CONFIG_CHANGE, url))
             # check data changes are diff-based not override (e.g. schema change)
             for lid, layer in self.layers.items():
                 if lid not in self.editable:

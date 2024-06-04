@@ -181,7 +181,7 @@ class ProjectStatusDialog(QDialog):
         # separate MultipleLayersWarning and SingleLayerWarning items
         groups = {
             "single": [item for item in results if isinstance(item, SingleLayerWarning)],
-            "multi": [item for item in results if isinstance(item, MultipleLayersWarning)]
+            "multi": [item for item in results if isinstance(item, MultipleLayersWarning)],
         }
 
         # first add MultipleLayersWarnings. They are displayed using warning
