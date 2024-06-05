@@ -73,7 +73,7 @@ class MultipleLayersWarning:
 class SingleLayerWarning:
     """Class for warning which is associated with single layer."""
 
-    def __init__(self, layer_id, warning, url=""):
+    def __init__(self, layer_id, warning, url=None):
         self.layer_id = layer_id
         self.warning = warning
         self.url = url
@@ -402,10 +402,14 @@ class MerginProjectValidator(object):
                         self.issues.append(MultipleLayersWarning(Warning.JSON_CONFIG_CHANGE, url))
             # check data changes are diff-based not override (e.g. schema change)
             for lid, layer in self.layers.items():
-                if lid not in self.editable:
-                    continue
                 layer_path = layer.dataProvider().dataSourceUri().split("/")[-1]
                 url = f"#reset_file?{layer_path}"
+                if lid not in self.editable:
+                    if any(file["path"] in layer_path for file in self.changes["updated"]):
+                        # layer file deleted
+                        self.issues.append(SingleLayerWarning(lid, Warning.EDITOR_NON_DIFFABLE_CHANGE, url))
+                    else:
+                        continue
                 dp = layer.dataProvider()
                 if dp.storageType() == "GPKG":
                     has_change, msg = has_schema_change(self.mp, layer)
