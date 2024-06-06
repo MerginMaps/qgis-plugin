@@ -1,5 +1,6 @@
 import os
 from itertools import groupby
+from urllib.parse import urlparse, parse_qs
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import (
@@ -50,7 +51,7 @@ class ProjectStatusDialog(QDialog):
         self.ui = uic.loadUi(ui_file, self)
         self.project_permission = project_permission
         self.push_changes = push_changes
-        self.files_to_reset = None
+        self.file_to_reset = None
 
         with OverrideCursor(Qt.WaitCursor):
             QgsGui.instance().enableAutoGeometryRestore(self)
@@ -228,20 +229,15 @@ class ProjectStatusDialog(QDialog):
         dlg_diff_viewer.exec_()
 
     def link_clicked(self, url):
-        # url may contain specific layer path to reset
-        if "?" in url.toString():
-            function_name = url.toString().split("?")[0]
-            layer_path = url.toString().split("?")[-1]
-        else:
-            function_name = url.toString()
-            layer_path = None
-        if function_name == "#fix_datum_shift_grids":
+        parsed_url = urlparse(url.toString())
+        if parsed_url.path == "fix_datum_shift_grids":
             msg = fix_datum_shift_grids(self.mp)
             if msg is not None:
                 self.ui.messageBar.pushMessage("Mergin", f"Failed to fix issue: {msg}", Qgis.Warning)
                 return
-        if function_name == "#reset_file":
-            self.reset_local_changes(layer_path)
+        if parsed_url.path == "reset_file":
+            query_parameters = parse_qs(parsed_url.query)
+            self.reset_local_changes(query_parameters["layer"][0])
 
         self.validate_project()
 
@@ -256,10 +252,10 @@ class ProjectStatusDialog(QDialog):
             self.show_validation_results(results)
             self.btn_sync.setStyleSheet("background-color: #ffc800")
 
-    def reset_local_changes(self, files_to_reset=None):
-        if files_to_reset:
-            self.files_to_reset = files_to_reset
-            text = f"Local changes to file '{files_to_reset}' will be discarded. Do you want to proceed?"
+    def reset_local_changes(self, file_to_reset=None):
+        if file_to_reset:
+            self.file_to_reset = file_to_reset
+            text = f"Local changes to file '{file_to_reset}' will be discarded. Do you want to proceed?"
         else:
             text = "All changes in your project directory will be reverted. Do you want to proceed?"
         btn_reply = QMessageBox.question(

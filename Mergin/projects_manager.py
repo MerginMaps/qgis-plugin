@@ -192,7 +192,7 @@ class MerginProjectsManager(object):
             if return_value == ProjectStatusDialog.Accepted:
                 self.sync_project(project_dir)
             elif return_value == ProjectStatusDialog.RESET_CHANGES:
-                self.reset_local_changes(project_dir, dlg.files_to_reset)
+                self.reset_local_changes(project_dir, dlg.file_to_reset)
 
         except (URLError, ClientError, InvalidProject) as e:
             msg = f"Failed to get status for project {project_name}:\n\n{str(e)}"
@@ -242,6 +242,12 @@ class MerginProjectsManager(object):
 
         try:
             self.mc.reset_local_changes(project_dir, files_to_reset)
+            if files_to_reset:
+                msg = f"File {files_to_reset} was successfully reset"
+            else:
+                msg = "Project local changes were successfully reset"
+            QMessageBox.information(None, "Project reset local changes", msg, QMessageBox.Close)
+
         except Exception as e:
             msg = f"Failed to reset local changes:\n\n{str(e)}"
             QMessageBox.critical(None, "Project reset local changes", msg, QMessageBox.Close)

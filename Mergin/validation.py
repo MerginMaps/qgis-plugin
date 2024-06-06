@@ -21,6 +21,8 @@ from .utils import (
     project_grids_directory,
     QGIS_DB_PROVIDERS,
     QGIS_NET_PROVIDERS,
+    is_versioned_file,
+    get_layer_by_path,
 )
 
 INVALID_CHARS = re.compile('[\\\/\(\)\[\]\{\}"\n\r]')
@@ -94,7 +96,6 @@ class MerginProjectValidator(object):
         self.qgis_proj_dir = None
         self.changes = changes
         self.project_permission = project_permission
-        self.layers_to_reset = None
 
     def run_checks(self):
         if self.mp is None:
@@ -394,29 +395,19 @@ class MerginProjectValidator(object):
             for category in self.changes:
                 for file in self.changes[category]:
                     path = file["path"]
+                    url = f"reset_file?layer={path}"
                     if path.lower().endswith((".qgs", ".qgz")):
-                        url = f"#reset_file?{path}"
                         self.issues.append(MultipleLayersWarning(Warning.EDITOR_PROJECT_FILE_CHANGE, url))
                     elif path.lower().endswith("mergin-config.json"):
-                        url = f"#reset_file?{path}"
                         self.issues.append(MultipleLayersWarning(Warning.JSON_CONFIG_CHANGE, url))
-            # check data changes are diff-based not override (e.g. schema change)
-            for lid, layer in self.layers.items():
-                layer_path = layer.dataProvider().dataSourceUri().split("/")[-1]
-                url = f"#reset_file?{layer_path}"
-                if lid not in self.editable:
-                    if any(file["path"] in layer_path for file in self.changes["updated"]):
-                        # layer file deleted
-                        self.issues.append(SingleLayerWarning(lid, Warning.EDITOR_NON_DIFFABLE_CHANGE, url))
-                    else:
-                        continue
-                dp = layer.dataProvider()
-                if dp.storageType() == "GPKG":
-                    has_change, msg = has_schema_change(self.mp, layer)
-                    if has_change:
-                        self.issues.append(SingleLayerWarning(lid, Warning.EDITOR_NON_DIFFABLE_CHANGE, url))
-                else:
-                    self.issues.append(SingleLayerWarning(lid, Warning.EDITOR_NON_DIFFABLE_CHANGE, url))
+            # editor cannot update nor delete a versioned file (e.g. .gpkg) or do non diff-based change (e.g. schema change)
+            for file in self.changes["removed"] or self.changes["updated"]:
+                path = file["path"]
+                url = f"reset_file?layer={path}"
+                if is_versioned_file(path) and "diff" not in file:
+                    layer = get_layer_by_path(path)
+                    if layer:
+                        self.issues.append(SingleLayerWarning(layer.id(), Warning.EDITOR_NON_DIFFABLE_CHANGE, url))
 
 
 def warning_display_string(warning_id, url=None):
@@ -465,7 +456,7 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.MERGIN_SNAPPING_NOT_ENABLED:
         return "Snapping is currently enabled in this QGIS project, but not enabled in Mergin Maps Input"
     elif warning_id == Warning.MISSING_DATUM_SHIFT_GRID:
-        return "Required datum shift grid is missing, reprojection may not work correctly. <a href='#fix_datum_shift_grids'>Fix the issue.</a>"
+        return "Required datum shift grid is missing, reprojection may not work correctly. <a href='fix_datum_shift_grids'>Fix the issue.</a>"
     elif warning_id == Warning.SVG_NOT_EMBEDDED:
         return "SVGs used for layer styling are not embedded in the project file, as a result those symbols won't be displayed in Mergin Maps Input"
     elif warning_id == Warning.EDITOR_PROJECT_FILE_CHANGE:
