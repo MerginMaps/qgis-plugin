@@ -421,7 +421,6 @@ class MerginProjectValidator(object):
                     self.issues.append(SingleLayerWarning(layer.id(), Warning.DIFFBASED_FILE_REMOVED, url))
 
 
-
 def warning_display_string(warning_id, url=None):
     """Returns a display string for a corresponding warning"""
     help_mgr = MerginHelp()
