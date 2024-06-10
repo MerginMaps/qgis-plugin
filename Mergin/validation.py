@@ -56,6 +56,7 @@ class Warning(Enum):
     EDITOR_PROJECT_FILE_CHANGE = 24
     EDITOR_NON_DIFFABLE_CHANGE = 25
     JSON_CONFIG_CHANGE = 26
+    DIFFBASED_FILE_REMOVED = 27
 
 
 class MultipleLayersWarning:
@@ -390,24 +391,35 @@ class MerginProjectValidator(object):
                     break
 
     def check_editor_perms(self):
-        if self.project_permission == "editor":
-            # editor cannot change specific files - QGS project file, mergin-config.json file (e.g. selective sync changes)
-            for category in self.changes:
-                for file in self.changes[category]:
-                    path = file["path"]
-                    url = f"reset_file?layer={path}"
-                    if path.lower().endswith((".qgs", ".qgz")):
-                        self.issues.append(MultipleLayersWarning(Warning.EDITOR_PROJECT_FILE_CHANGE, url))
-                    elif path.lower().endswith("mergin-config.json"):
-                        self.issues.append(MultipleLayersWarning(Warning.JSON_CONFIG_CHANGE, url))
-            # editor cannot update nor delete a versioned file (e.g. .gpkg) or do non diff-based change (e.g. schema change)
-            for file in self.changes["removed"] or self.changes["updated"]:
+        if self.project_permission != "editor":
+            return
+        # editor cannot change specific files - QGS project file, mergin-config.json file (e.g. selective sync changes)
+        for category in self.changes:
+            for file in self.changes[category]:
                 path = file["path"]
-                url = f"reset_file?layer={path}"
-                if is_versioned_file(path) and "diff" not in file:
-                    layer = get_layer_by_path(path)
-                    if layer:
-                        self.issues.append(SingleLayerWarning(layer.id(), Warning.EDITOR_NON_DIFFABLE_CHANGE, url))
+                if path.lower().endswith((".qgs", ".qgz")):
+                    url = f"reset_file?layer={path}"
+                    self.issues.append(MultipleLayersWarning(Warning.EDITOR_PROJECT_FILE_CHANGE, url))
+                elif path.lower().endswith("mergin-config.json"):
+                    url = f"reset_file?layer={path}"
+                    self.issues.append(MultipleLayersWarning(Warning.JSON_CONFIG_CHANGE, url))
+        # editor cannot do non diff-based change (e.g. schema change)
+        for file in self.changes["updated"]:
+            path = file["path"]
+            if is_versioned_file(path) and "diff" not in file:
+                layer = get_layer_by_path(path)
+                if layer:
+                    url = f"reset_file?layer={path}"
+                    self.issues.append(SingleLayerWarning(layer.id(), Warning.EDITOR_NON_DIFFABLE_CHANGE, url))
+        # editor cannot delete a versioned file (e.g. '*.gpkg')
+        for file in self.changes["removed"]:
+            path = file["path"]
+            if is_versioned_file(path):
+                layer = get_layer_by_path(path)
+                if layer:
+                    url = f"reset_file?layer={path}"
+                    self.issues.append(SingleLayerWarning(layer.id(), Warning.DIFFBASED_FILE_REMOVED, url))
+
 
 
 def warning_display_string(warning_id, url=None):
@@ -465,3 +477,5 @@ def warning_display_string(warning_id, url=None):
         return f"You don't have permission to edit layer schema. Ask workspace admin to upgrade you permission or <a href='{url}'>reset the layer</a> to be able to sync changes in other layers."
     elif warning_id == Warning.JSON_CONFIG_CHANGE:
         return f"You don't have permission to change the config file. <a href='{url}'>Reset the file</a> to be able to sync data changes."
+    elif warning_id == Warning.DIFFBASED_FILE_REMOVED:
+        return f"You don't have permission to remove a versioned file. <a href='{url}'>Reset the file</a> o be able to sync changes in other layers."
