@@ -55,8 +55,8 @@ class Warning(Enum):
     SVG_NOT_EMBEDDED = 23
     EDITOR_PROJECT_FILE_CHANGE = 24
     EDITOR_NON_DIFFABLE_CHANGE = 25
-    JSON_CONFIG_CHANGE = 26
-    DIFFBASED_FILE_REMOVED = 27
+    EDITOR_JSON_CONFIG_CHANGE = 26
+    EDITOR_DIFFBASED_FILE_REMOVED = 27
 
 
 class MultipleLayersWarning:
@@ -402,7 +402,7 @@ class MerginProjectValidator(object):
                     self.issues.append(MultipleLayersWarning(Warning.EDITOR_PROJECT_FILE_CHANGE, url))
                 elif path.lower().endswith("mergin-config.json"):
                     url = f"reset_file?layer={path}"
-                    self.issues.append(MultipleLayersWarning(Warning.JSON_CONFIG_CHANGE, url))
+                    self.issues.append(MultipleLayersWarning(Warning.EDITOR_JSON_CONFIG_CHANGE, url))
         # editor cannot do non diff-based change (e.g. schema change)
         for file in self.changes["updated"]:
             path = file["path"]
@@ -418,7 +418,7 @@ class MerginProjectValidator(object):
                 layer = get_layer_by_path(path)
                 if layer:
                     url = f"reset_file?layer={path}"
-                    self.issues.append(SingleLayerWarning(layer.id(), Warning.DIFFBASED_FILE_REMOVED, url))
+                    self.issues.append(SingleLayerWarning(layer.id(), Warning.EDITOR_DIFFBASED_FILE_REMOVED, url))
 
 
 def warning_display_string(warning_id, url=None):
@@ -471,10 +471,10 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.SVG_NOT_EMBEDDED:
         return "SVGs used for layer styling are not embedded in the project file, as a result those symbols won't be displayed in Mergin Maps Input"
     elif warning_id == Warning.EDITOR_PROJECT_FILE_CHANGE:
-        return f"You don't have permission to edit QGS project file. Ask workspace admin to upgrade you permission or <a href='{url}'>reset QGS project file</a> to be able to sync data changes. This might involve deleting layers you created locally."
+        return f"You don't have permission to edit QGS project file. Ask the workspace admin to upgrade your permission or <a href='{url}'>reset QGS project file</a> to be able to sync data changes. This might involve deleting layers you created locally."
     elif warning_id == Warning.EDITOR_NON_DIFFABLE_CHANGE:
-        return f"You don't have permission to edit layer schema. Ask workspace admin to upgrade you permission or <a href='{url}'>reset the layer</a> to be able to sync changes in other layers."
-    elif warning_id == Warning.JSON_CONFIG_CHANGE:
+        return f"You don't have permission to edit the layer schema. Ask the workspace admin to upgrade your permission or <a href='{url}'>reset the layer</a> to be able to sync changes in other layers."
+    elif warning_id == Warning.EDITOR_JSON_CONFIG_CHANGE:
         return f"You don't have permission to change the config file. <a href='{url}'>Reset the file</a> to be able to sync data changes."
-    elif warning_id == Warning.DIFFBASED_FILE_REMOVED:
+    elif warning_id == Warning.EDITOR_DIFFBASED_FILE_REMOVED:
         return f"You don't have permission to remove a versioned file. <a href='{url}'>Reset the file</a> o be able to sync changes in other layers."
