@@ -1,5 +1,6 @@
 import os
 from itertools import groupby
+from urllib.parse import urlparse, parse_qs
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import (
@@ -16,7 +17,7 @@ from qgis.gui import QgsGui
 from qgis.core import Qgis, QgsApplication, QgsProject
 from qgis.utils import OverrideCursor
 from .diff_dialog import DiffViewerDialog
-from .validation import MultipleLayersWarning, warning_display_string, MerginProjectValidator
+from .validation import MultipleLayersWarning, warning_display_string, MerginProjectValidator, SingleLayerWarning
 from .utils import is_versioned_file, icon_path, unsaved_project_check, UnsavedChangesStrategy
 from .repair import fix_datum_shift_grids
 
@@ -43,10 +44,14 @@ class ProjectStatusDialog(QDialog):
         push_changes_summary,
         has_write_permissions,
         mergin_project=None,
+        project_permission=None,
         parent=None,
     ):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
+        self.project_permission = project_permission
+        self.push_changes = push_changes
+        self.file_to_reset = None
 
         with OverrideCursor(Qt.WaitCursor):
             QgsGui.instance().enableAutoGeometryRestore(self)
@@ -175,15 +180,16 @@ class ProjectStatusDialog(QDialog):
         html = []
 
         # separate MultipleLayersWarning and SingleLayerWarning items
-        groups = dict()
-        for k, v in groupby(results, key=lambda x: "multi" if isinstance(x, MultipleLayersWarning) else "single"):
-            groups[k] = list(v)
+        groups = {
+            "single": [item for item in results if isinstance(item, SingleLayerWarning)],
+            "multi": [item for item in results if isinstance(item, MultipleLayersWarning)],
+        }
 
         # first add MultipleLayersWarnings. They are displayed using warning
         # string as a title and list of affected layers/items
         if "multi" in groups:
             for w in groups["multi"]:
-                issue = warning_display_string(w.id)
+                issue = warning_display_string(w.id, w.url)
                 html.append(f"<h3>{issue}</h3>")
                 if w.items:
                     items = []
@@ -202,7 +208,7 @@ class ProjectStatusDialog(QDialog):
                 html.append(f"<h3>{map_layers[lid].name()}</h3>")
                 items = []
                 for w in layers[lid]:
-                    items.append(f"<li>{warning_display_string(w.warning)}</li>")
+                    items.append(f"<li>{warning_display_string(w.warning, w.url)}</li>")
                 html.append(f"<ul>{''.join(items)}</ul>")
 
         self.txtWarnings.setHtml("".join(html))
@@ -223,17 +229,20 @@ class ProjectStatusDialog(QDialog):
         dlg_diff_viewer.exec_()
 
     def link_clicked(self, url):
-        function_name = url.toString()
-        if function_name == "#fix_datum_shift_grids":
+        parsed_url = urlparse(url.toString())
+        if parsed_url.path == "fix_datum_shift_grids":
             msg = fix_datum_shift_grids(self.mp)
             if msg is not None:
                 self.ui.messageBar.pushMessage("Mergin", f"Failed to fix issue: {msg}", Qgis.Warning)
                 return
+        if parsed_url.path == "reset_file":
+            query_parameters = parse_qs(parsed_url.query)
+            self.reset_local_changes(query_parameters["layer"][0])
 
         self.validate_project()
 
     def validate_project(self):
-        validator = MerginProjectValidator(self.mp)
+        validator = MerginProjectValidator(self.mp, self.push_changes, self.project_permission)
         results = validator.run_checks()
         if not results:
             self.ui.lblWarnings.hide()
@@ -243,11 +252,16 @@ class ProjectStatusDialog(QDialog):
             self.show_validation_results(results)
             self.btn_sync.setStyleSheet("background-color: #ffc800")
 
-    def reset_local_changes(self):
+    def reset_local_changes(self, file_to_reset=None):
+        if file_to_reset:
+            self.file_to_reset = file_to_reset
+            text = f"Local changes to file '{file_to_reset}' will be discarded. Do you want to proceed?"
+        else:
+            text = "All changes in your project directory will be reverted. Do you want to proceed?"
         btn_reply = QMessageBox.question(
             None,
             "Reset changes",
-            "All changes in your project directory will be reverted. Do you want to proceed?",
+            text,
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes,
         )
