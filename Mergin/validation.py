@@ -471,10 +471,12 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.SVG_NOT_EMBEDDED:
         return "SVGs used for layer styling are not embedded in the project file, as a result those symbols won't be displayed in Mergin Maps Input"
     elif warning_id == Warning.EDITOR_PROJECT_FILE_CHANGE:
-        return f"You don't have permission to edit QGS project file. Ask the workspace admin to upgrade your permission or <a href='{url}'>reset QGS project file</a> to be able to sync data changes. This might involve deleting layers you created locally."
+        return (f"You don't have permission to edit the QGIS project file. Your changes to this file will not be sent to the server. "
+                f"Ask the workspace admin to upgrade your permission if you want your changes sent to the server. "
+                f"You can also <a href='{url}'>reset this QGIS project file</a> to the server version.")
     elif warning_id == Warning.EDITOR_NON_DIFFABLE_CHANGE:
-        return f"You don't have permission to edit the layer schema. Ask the workspace admin to upgrade your permission or <a href='{url}'>reset the layer</a> to be able to sync changes in other layers."
+        return f"You don't have permission to edit layer fields and properties. Ask the workspace admin to upgrade your permission or <a href='{url}'>reset the layer</a> to be able to sync changes."
     elif warning_id == Warning.EDITOR_JSON_CONFIG_CHANGE:
-        return f"You don't have permission to change the config file. <a href='{url}'>Reset the file</a> to be able to sync data changes."
+        return f"You don't have permission to change the configuration of this project. <a href='{url}'>Reset the configuration</a> to be able to sync data changes."
     elif warning_id == Warning.EDITOR_DIFFBASED_FILE_REMOVED:
-        return f"You don't have permission to remove a versioned file. <a href='{url}'>Reset the file</a> o be able to sync changes in other layers."
+        return f"You don't have permission to remove this layer. <a href='{url}'>Reset the layer</a> to be able to sync changes."
