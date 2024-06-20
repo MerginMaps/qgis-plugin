@@ -11,7 +11,9 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2024.1
+changelog=2024.2
+  - handling of editor permission (#583)
+  <p>2024.1
   - fix plugin update on windows (#504))
   - reset local changes (#281)
   - add option to submit logs when download fails
