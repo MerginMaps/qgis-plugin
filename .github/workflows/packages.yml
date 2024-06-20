@@ -153,6 +153,8 @@ jobs:
         run: |
           cp -r mergin-py-client/mergin qgis-mergin-plugin/Mergin
           rsync -av --exclude='test' --exclude='/__pycache__/' --exclude='*/__pycache__/' qgis-mergin-plugin/Mergin output
+          # from 1 June 2024, plugins are required to include LICENSE file
+          cp qgis-mergin-plugin/LICENSE.txt output/LICENSE
           (cd output && zip -r9 ../mergin.zip Mergin/)
 
       - uses: actions/upload-artifact@v3
