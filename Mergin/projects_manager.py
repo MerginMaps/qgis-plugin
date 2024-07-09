@@ -88,13 +88,14 @@ class MerginProjectsManager(object):
             self.mc.create_project(full_project_name, is_public)
         except ClientError as e:
             QApplication.restoreOverrideCursor()
-            msg= str(e)
-            #User friendly error messages
+            msg = str(e)
+            # User friendly error messages
             if e.http_error == 409:
                 msg = f"Project with the name {full_project_name} already exists\n Try renaming the project"
-            if e.http_error == 422 and e.server_code == 'ProjectsLimitHit':
-                msg =  ("Maximum number of projects is reached. Please upgrade your subscription to create new projects\n"
-                        f"Maximum of projects: {e.server_response["projects_quota"]}"
+            if e.http_error == 422 and e.server_code == "ProjectsLimitHit":
+                msg = (
+                    "Maximum number of projects is reached. Please upgrade your subscription to create new projects\n"
+                    f"Maximum of projects: {e.server_response["projects_quota"]}"
                 )
 
             QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + msg)
