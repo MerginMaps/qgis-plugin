@@ -91,7 +91,7 @@ class MerginProjectsManager(object):
             msg = str(e)
             # User friendly error messages
             if e.http_error == 409:
-                msg = f"Project with the name {project_name} already exists in the workspace {namespace}\n Try renaming the project"
+                msg = f"Project with the name \"{project_name}\" already exists in the workspace \"{namespace}\"\n Try renaming the project"
             if e.http_error == 422 and e.server_code == "ProjectsLimitHit":
                 msg = (
                     "Maximum number of projects is reached. Please upgrade your subscription to create new projects\n"
