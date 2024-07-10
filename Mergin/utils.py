@@ -64,7 +64,8 @@ from .mergin.utils import int_version
 from .mergin.merginproject import MerginProject
 
 try:
-    from .mergin.client import MerginClient, ClientError, LoginError, InvalidProject, ServerType
+    from .mergin.common import ClientError, ErrorCode, LoginError, InvalidProject
+    from .mergin.client import MerginClient, ServerType
     from .mergin.client_pull import (
         download_project_async,
         download_project_is_running,
