@@ -366,7 +366,11 @@ class MerginProjectsManager(object):
             if isinstance(dlg.exception, LoginError):
                 login_error_message(dlg.exception)
             elif isinstance(dlg.exception, ClientError):
-                QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
+                # To note we check for a string since error in flask doesn't return server error code
+                if dlg.exception.http_error == 400 and "Another process" in dlg.exception.detail:
+                    QMessageBox.critical(None, "Project sync", "Client error:\n" + dlg.exception.detail)
+                else:
+                    QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
             else:
                 unhandled_exception_message(
                     dlg.exception_details(),
