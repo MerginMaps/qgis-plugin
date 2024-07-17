@@ -98,6 +98,11 @@ class MerginProjectsManager(object):
                     "Maximum number of projects is reached. Please upgrade your subscription to create new projects\n"
                     f"Maximum of projects: {e.server_response["projects_quota"]}"
                 )
+            elif e.http_error == 422 and e.server_code == ErrorCode.StorageLimitHit.value:
+                msg = (
+                    f"{e.detail}]\n"
+                    f"Current limit: {dlg.exception.server_response["storage_limit"]} Mb"
+                )
 
             QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + msg)
             return False
@@ -366,11 +371,16 @@ class MerginProjectsManager(object):
             if isinstance(dlg.exception, LoginError):
                 login_error_message(dlg.exception)
             elif isinstance(dlg.exception, ClientError):
-                # To note we check for a string since error in flask doesn't return server error code
                 if dlg.exception.http_error == 400 and "Another process" in dlg.exception.detail:
-                    QMessageBox.critical(None, "Project sync", "Client error:\n" + dlg.exception.detail)
+                    # To note we check for a string since error in flask doesn't return server error code
+                    msg = dlg.exception.detail
+                elif dlg.exception.http_error == 422 and dlg.exception.server_code == ErrorCode.StorageLimitHit.value:
+                    msg = (f"{dlg.exception.detail}\n"
+                           f"Current limit: {dlg.exception.server_response["storage_limit"]} Mb"
+                           )
                 else:
-                    QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
+                    msg =  str(dlg.exception)
+                QMessageBox.critical(None, "Project sync", "Client error: \n" + msg)
             else:
                 unhandled_exception_message(
                     dlg.exception_details(),
