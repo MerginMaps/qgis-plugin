@@ -60,7 +60,7 @@ from qgis.core import (
     QgsMapLayer,
 )
 
-from .mergin.utils import int_version
+from .mergin.utils import int_version, bytes_to_human_size
 from .mergin.merginproject import MerginProject
 
 try:
@@ -1505,12 +1505,3 @@ def get_layer_by_path(path):
         safe_file_path = layer_path.split("|")
         if safe_file_path[0] == path:
             return layer
-
-def bytes_to_mb(bytes : int):
-    """
-    Convert bytes to megabytes assuming base of bytes in binary
-    
-    Returns:
-    float: Result in megabytes
-    """
-    return bytes / (2**20)

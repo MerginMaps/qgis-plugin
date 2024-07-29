@@ -24,7 +24,7 @@ from .utils import (
     unsaved_project_check,
     UnsavedChangesStrategy,
     write_project_variables,
-    bytes_to_mb
+    bytes_to_human_size,
 )
 
 from .mergin.merginproject import MerginProject
@@ -100,7 +100,7 @@ class MerginProjectsManager(object):
                     f"Maximum of projects: {e.server_response["projects_quota"]}"
                 )
             elif e.server_code == ErrorCode.StorageLimitHit.value:
-                msg = f"{e.detail}]\nCurrent limit: {bytes_to_mb(dlg.exception.server_response["storage_limit"])} Mb"
+                msg = f"{e.detail}]\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response["storage_limit"])}"
 
             QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + msg)
             return False
@@ -373,7 +373,7 @@ class MerginProjectsManager(object):
                     # To note we check for a string since error in flask doesn't return server error code
                     msg = dlg.exception.detail
                 elif dlg.exception.server_code == ErrorCode.StorageLimitHit.value:
-                    msg = f"{e.detail}]\nCurrent limit: {bytes_to_mb(dlg.exception.server_response["storage_limit"])} Mb"
+                    msg = f"{e.detail}]\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response["storage_limit"])}"
                 else:
                     msg = str(dlg.exception)
                 QMessageBox.critical(None, "Project sync", "Client error: \n" + msg)
