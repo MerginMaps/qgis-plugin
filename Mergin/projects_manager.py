@@ -100,7 +100,9 @@ class MerginProjectsManager(object):
                     f"Maximum of projects: {e.server_response["projects_quota"]}"
                 )
             elif e.server_code == ErrorCode.StorageLimitHit.value:
-                msg = f"{e.detail}]\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response["storage_limit"])}"
+                msg = (
+                    f"{e.detail}]\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response["storage_limit"])}"
+                )
 
             QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + msg)
             return False
