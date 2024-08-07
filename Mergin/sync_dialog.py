@@ -48,6 +48,7 @@ class SyncDialog(QDialog):
         self.exception_tb = None
         self.is_complete = False
         self.job = None
+        self.log_file = None
 
         self.timer = QTimer(self)
         self.timer.setInterval(100)
@@ -72,6 +73,11 @@ class SyncDialog(QDialog):
             self.pull_cancel()
 
     def reset_operation(self, success, close, exception=None):
+        # job of type DownloadJob may have a reference to a log file if it failed - keep it in such case
+        # (we remove the download directory on failed download jobs, but the log is copied to a temporary
+        # file and thus it is preserved)
+        if hasattr(self.job, "failure_log_file") and self.job.failure_log_file is not None:
+            self.log_file = self.job.failure_log_file
         self.operation = None
         self.mergin_client = None
         self.target_dir = None

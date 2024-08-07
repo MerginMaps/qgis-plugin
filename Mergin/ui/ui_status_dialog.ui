@@ -14,7 +14,7 @@
    <string>Project status</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0" colspan="2">
+   <item row="0" column="0" colspan="3">
     <widget class="QgsMessageBar" name="messageBar">
      <property name="frameShape">
       <enum>QFrame::StyledPanel</enum>
@@ -24,7 +24,7 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="0" colspan="2">
+   <item row="1" column="0" colspan="3">
     <widget class="QTreeView" name="treeStatus">
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
@@ -41,7 +41,7 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="0" colspan="2">
+   <item row="3" column="0" colspan="3">
     <widget class="QTextBrowser" name="txtWarnings">
      <property name="readOnly">
       <bool>true</bool>
@@ -62,6 +62,16 @@
     </widget>
    </item>
    <item row="4" column="1">
+    <widget class="QPushButton" name="btn_reset_local_changes">
+     <property name="toolTip">
+      <string>This will revert all changes in your local project directory.</string>
+     </property>
+     <property name="text">
+      <string>Reset Changes</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="2">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>

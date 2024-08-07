@@ -27,7 +27,6 @@ from .utils import (
 
 from .mergin.merginproject import MerginProject
 from .project_status_dialog import ProjectStatusDialog
-from .validation import MerginProjectValidator
 
 
 class MerginProjectsManager(object):
@@ -83,9 +82,10 @@ class MerginProjectsManager(object):
         If project_dir is None, we are creating empty project without upload.
         """
 
+        full_project_name = "{}/{}".format(namespace, project_name)
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            self.mc.create_project(project_name, is_public, namespace)
+            self.mc.create_project(full_project_name, is_public)
         except Exception as e:
             QApplication.restoreOverrideCursor()
             QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + str(e))
@@ -100,11 +100,20 @@ class MerginProjectsManager(object):
             )
             return True
 
-        # let's do initial upload of the project data
+        # get project's metadata from the server and store it locally
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            project_info = self.mc.project_info(full_project_name)
+            MerginProject.write_metadata(project_dir, project_info)
+        except Exception as e:
+            QApplication.restoreOverrideCursor()
+            QMessageBox.critical(None, "Create Project", "Failed to initialize Mergin Maps project.\n" + str(e))
+            return False
 
+        QApplication.restoreOverrideCursor()
+
+        # let's do initial upload of the project data
         mp = MerginProject(project_dir)
-        full_project_name = "{}/{}".format(namespace, project_name)
-        mp.metadata = {"name": full_project_name, "version": "v0", "files": []}
         if not mp.inspect_files():
             QMessageBox.warning(None, "Create Project", "The project directory is empty - nothing to upload.")
             return True
@@ -173,12 +182,17 @@ class MerginProjectsManager(object):
                 push_changes_summary,
                 self.mc.has_writing_permissions(project_name),
                 mp,
+                self.mc.project_info(project_name)["role"],
             )
             # Sync button in the status dialog returns QDialog.Accepted
-            # and Close button retuns QDialog::Rejected, so it dialog was
+            # and Close button returns QDialog::Rejected, so if dialog was
             # accepted we start sync
-            if dlg.exec_():
+            return_value = dlg.exec_()
+
+            if return_value == ProjectStatusDialog.Accepted:
                 self.sync_project(project_dir)
+            elif return_value == ProjectStatusDialog.RESET_CHANGES:
+                self.reset_local_changes(project_dir, dlg.file_to_reset)
 
         except (URLError, ClientError, InvalidProject) as e:
             msg = f"Failed to get status for project {project_name}:\n\n{str(e)}"
@@ -214,6 +228,31 @@ class MerginProjectsManager(object):
             info += "You need to reconfigure Mergin Maps plugin to synchronise the project."
             QMessageBox.critical(None, "Mergin Maps", info)
         return False
+
+    def reset_local_changes(self, project_dir: str, files_to_reset=None):
+        if not project_dir:
+            return
+        if not self.check_project_server(project_dir):
+            return
+
+        current_project_filename = QgsProject.instance().fileName()
+        current_project_path = os.path.normpath(QgsProject.instance().absolutePath())
+        if current_project_path == os.path.normpath(project_dir):
+            QgsProject.instance().clear()
+
+        try:
+            self.mc.reset_local_changes(project_dir, files_to_reset)
+            if files_to_reset:
+                msg = f"File {files_to_reset} was successfully reset"
+            else:
+                msg = "Project local changes were successfully reset"
+            QMessageBox.information(None, "Project reset local changes", msg, QMessageBox.Close)
+
+        except Exception as e:
+            msg = f"Failed to reset local changes:\n\n{str(e)}"
+            QMessageBox.critical(None, "Project reset local changes", msg, QMessageBox.Close)
+
+        self.open_project(os.path.dirname(current_project_filename))
 
     def sync_project(self, project_dir, project_name=None):
         if not project_dir:
@@ -471,6 +510,8 @@ class MerginProjectsManager(object):
                     dlg.exception_details(),
                     "Project download",
                     f"Failed to download project {project_name} due to an unhandled exception.",
+                    dlg.log_file,
+                    self.mc.username(),
                 )
             return
         if not dlg.is_complete:

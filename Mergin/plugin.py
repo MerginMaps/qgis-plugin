@@ -334,7 +334,7 @@ class MerginPlugin:
 
         mp = MerginProject(project_path)
         try:
-            project_name = mp.metadata["name"]
+            project_name = mp.project_full_name()
         except InvalidProject as e:
             iface.messageBar().pushMessage(
                 "Mergin", "Current project is not a Mergin project. Please open a Mergin project first.", Qgis.Warning

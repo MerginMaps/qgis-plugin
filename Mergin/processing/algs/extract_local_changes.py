@@ -18,7 +18,7 @@ from qgis.core import (
 from ..postprocessors import StylingPostProcessor
 
 from ...mergin.merginproject import MerginProject
-
+from ...mergin.deps import pygeodiff
 from ...diff import (
     get_local_changes,
     parse_db_schema,
@@ -90,8 +90,10 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
 
         mp = MerginProject(project_dir)
 
+        geodiff = pygeodiff.GeoDiff()
+
         layer_path = layer.source().split("|")[0]
-        diff_path = get_local_changes(layer_path, mp)
+        diff_path = get_local_changes(geodiff, layer_path, mp)
         feedback.setProgress(5)
 
         if diff_path is None:
@@ -107,7 +109,7 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
             parameters, self.OUTPUT, context, fields, layer.wkbType(), layer.sourceCrs()
         )
 
-        diff = parse_diff(diff_path)
+        diff = parse_diff(geodiff, diff_path)
         feedback.setProgress(15)
 
         if diff and table_name in diff.keys():

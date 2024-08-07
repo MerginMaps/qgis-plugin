@@ -3,7 +3,13 @@ import re
 from enum import Enum
 from collections import defaultdict
 
-from qgis.core import QgsMapLayerType, QgsProject, QgsVectorDataProvider, QgsExpression, QgsRenderContext
+from qgis.core import (
+    QgsMapLayerType,
+    QgsProject,
+    QgsVectorDataProvider,
+    QgsExpression,
+    QgsRenderContext,
+)
 
 from .help import MerginHelp
 from .utils import (
@@ -15,6 +21,8 @@ from .utils import (
     project_grids_directory,
     QGIS_DB_PROVIDERS,
     QGIS_NET_PROVIDERS,
+    is_versioned_file,
+    get_layer_by_path,
 )
 
 INVALID_CHARS = re.compile('[\\\/\(\)\[\]\{\}"\n\r]')
@@ -45,6 +53,10 @@ class Warning(Enum):
     MERGIN_SNAPPING_NOT_ENABLED = 21
     MISSING_DATUM_SHIFT_GRID = 22
     SVG_NOT_EMBEDDED = 23
+    EDITOR_PROJECT_FILE_CHANGE = 24
+    EDITOR_NON_DIFFABLE_CHANGE = 25
+    EDITOR_JSON_CONFIG_CHANGE = 26
+    EDITOR_DIFFBASED_FILE_REMOVED = 27
 
 
 class MultipleLayersWarning:
@@ -55,23 +67,25 @@ class MultipleLayersWarning:
     layers.
     """
 
-    def __init__(self, warning_id):
+    def __init__(self, warning_id, url=""):
         self.id = warning_id
         self.items = list()
+        self.url = url
 
 
 class SingleLayerWarning:
     """Class for warning which is associated with single layer."""
 
-    def __init__(self, layer_id, warning):
+    def __init__(self, layer_id, warning, url=None):
         self.layer_id = layer_id
         self.warning = warning
+        self.url = url
 
 
 class MerginProjectValidator(object):
     """Class for checking Mergin project validity and fixing the problems, if possible."""
 
-    def __init__(self, mergin_project=None):
+    def __init__(self, mergin_project=None, changes=None, project_permission=None):
         self.mp = mergin_project
         self.layers = None  # {layer_id: map layer}
         self.editable = None  # list of editable layers ids
@@ -81,6 +95,8 @@ class MerginProjectValidator(object):
         self.qgis_proj = None
         self.qgis_proj_path = None
         self.qgis_proj_dir = None
+        self.changes = changes
+        self.project_permission = project_permission
 
     def run_checks(self):
         if self.mp is None:
@@ -105,6 +121,7 @@ class MerginProjectValidator(object):
         self.check_snapping()
         self.check_datum_shift_grids()
         self.check_svgs_embedded()
+        self.check_editor_perms()
 
         return self.issues
 
@@ -187,12 +204,19 @@ class MerginProjectValidator(object):
         """Check if there are layers that might not be available when offline"""
         w = MultipleLayersWarning(Warning.NOT_FOR_OFFLINE)
         for lid, layer in self.layers.items():
-            try:
-                dp_name = layer.dataProvider().name()
-            except AttributeError:
-                # might be vector tiles - no provider name
+            # special check for vector tile layers because in QGIS < 3.22 they may not have data provider assigned
+            if layer.type() == QgsMapLayerType.VectorTileLayer:
+                # mbtiles/vtpk are always local files
+                if "type=mbtiles" in layer.source() or "type=vtpk" in layer.source():
+                    continue
+                w.items.append(layer.name())
                 continue
+
+            dp_name = layer.dataProvider().name()
             if dp_name in QGIS_NET_PROVIDERS + QGIS_DB_PROVIDERS:
+                # raster tiles in mbtiles are always local files
+                if dp_name == "wms" and "type=mbtiles" in layer.source():
+                    continue
                 w.items.append(layer.name())
 
         if w.items:
@@ -366,9 +390,39 @@ class MerginProjectValidator(object):
                     self.issues.append(SingleLayerWarning(lid, Warning.SVG_NOT_EMBEDDED))
                     break
 
+    def check_editor_perms(self):
+        if self.project_permission != "editor":
+            return
+        # editor cannot change specific files - QGS project file, mergin-config.json file (e.g. selective sync changes)
+        for category in self.changes:
+            for file in self.changes[category]:
+                path = file["path"]
+                if path.lower().endswith((".qgs", ".qgz")):
+                    url = f"reset_file?layer={path}"
+                    self.issues.append(MultipleLayersWarning(Warning.EDITOR_PROJECT_FILE_CHANGE, url))
+                elif path.lower().endswith("mergin-config.json"):
+                    url = f"reset_file?layer={path}"
+                    self.issues.append(MultipleLayersWarning(Warning.EDITOR_JSON_CONFIG_CHANGE, url))
+        # editor cannot do non diff-based change (e.g. schema change)
+        for file in self.changes["updated"]:
+            path = file["path"]
+            if is_versioned_file(path) and "diff" not in file:
+                layer = get_layer_by_path(path)
+                if layer:
+                    url = f"reset_file?layer={path}"
+                    self.issues.append(SingleLayerWarning(layer.id(), Warning.EDITOR_NON_DIFFABLE_CHANGE, url))
+        # editor cannot delete a versioned file (e.g. '*.gpkg')
+        for file in self.changes["removed"]:
+            path = file["path"]
+            if is_versioned_file(path):
+                layer = get_layer_by_path(path)
+                if layer:
+                    url = f"reset_file?layer={path}"
+                    self.issues.append(SingleLayerWarning(layer.id(), Warning.EDITOR_DIFFBASED_FILE_REMOVED, url))
 
-def warning_display_string(warning_id):
-    """Returns a display string for a corresponing warning"""
+
+def warning_display_string(warning_id, url=None):
+    """Returns a display string for a corresponding warning"""
     help_mgr = MerginHelp()
     if warning_id == Warning.PROJ_NOT_LOADED:
         return "The QGIS project is not loaded. Open it to allow validation"
@@ -413,6 +467,18 @@ def warning_display_string(warning_id):
     elif warning_id == Warning.MERGIN_SNAPPING_NOT_ENABLED:
         return "Snapping is currently enabled in this QGIS project, but not enabled in Mergin Maps Input"
     elif warning_id == Warning.MISSING_DATUM_SHIFT_GRID:
-        return "Required datum shift grid is missing, reprojection may not work correctly. <a href='#fix_datum_shift_grids'>Fix the issue.</a>"
+        return "Required datum shift grid is missing, reprojection may not work correctly. <a href='fix_datum_shift_grids'>Fix the issue.</a>"
     elif warning_id == Warning.SVG_NOT_EMBEDDED:
         return "SVGs used for layer styling are not embedded in the project file, as a result those symbols won't be displayed in Mergin Maps Input"
+    elif warning_id == Warning.EDITOR_PROJECT_FILE_CHANGE:
+        return (
+            f"You don't have permission to edit the QGIS project file. Your changes to this file will not be sent to the server. "
+            f"Ask the workspace admin to upgrade your permission if you want your changes sent to the server. "
+            f"You can also <a href='{url}'>reset this QGIS project file</a> to the server version."
+        )
+    elif warning_id == Warning.EDITOR_NON_DIFFABLE_CHANGE:
+        return f"You don't have permission to edit layer fields and properties. Ask the workspace admin to upgrade your permission or <a href='{url}'>reset the layer</a> to be able to sync changes."
+    elif warning_id == Warning.EDITOR_JSON_CONFIG_CHANGE:
+        return f"You don't have permission to change the configuration of this project. <a href='{url}'>Reset the configuration</a> to be able to sync data changes."
+    elif warning_id == Warning.EDITOR_DIFFBASED_FILE_REMOVED:
+        return f"You don't have permission to remove this layer. <a href='{url}'>Reset the layer</a> to be able to sync changes."

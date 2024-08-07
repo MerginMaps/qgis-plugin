@@ -5,13 +5,13 @@
   <img width=350 src="https://raw.githubusercontent.com/MerginMaps/.github/main/images/MM_logo_HORIZ_COLOR_VECTOR.svg">
 </picture>
 
-[![Code Style](https://github.com/MerginMaps/qgis-mergin-plugin/actions/workflows/code_style.yml/badge.svg)](https://github.com/MerginMaps/qgis-mergin-plugin/actions/workflows/code_style.yml)
-[![.github/workflows/packages.yml](https://github.com/MerginMaps/qgis-mergin-plugin/actions/workflows/packages.yml/badge.svg)](https://github.com/MerginMaps/qgis-mergin-plugin/actions/workflows/packages.yml)
-[![Mergin Maps Plugin Tests](https://github.com/MerginMaps/qgis-mergin-plugin/actions/workflows/run-test.yml/badge.svg)](https://github.com/MerginMaps/qgis-mergin-plugin/actions/workflows/run-test.yml)
+[![Code Style](https://github.com/MerginMaps/qgis-plugin/actions/workflows/code_style.yml/badge.svg)](https://github.com/MerginMaps/qgis-plugin/actions/workflows/code_style.yml)
+[![.github/workflows/packages.yml](https://github.com/MerginMaps/qgis-plugin/actions/workflows/packages.yml/badge.svg)](https://github.com/MerginMaps/qgis-plugin/actions/workflows/packages.yml)
+[![Mergin Maps Plugin Tests](https://github.com/MerginMaps/qgis-plugin/actions/workflows/run-test.yml/badge.svg)](https://github.com/MerginMaps/qgis-plugin/actions/workflows/run-test.yml)
 
 QGIS plugin aims to simplify handling of [Mergin Maps](https://merginmaps.com/) projects.
 
-[Mergin Maps](https://merginmaps.com/) is a service to store, synchronise and manage GIS data and QGIS projects. Currently, [Mergin Maps](https://merginmaps.com/) is used as the back-end of Mergin Maps mobile app, an [open source](https://github.com/MerginMaps/input) mobile application to collect data in field.
+[Mergin Maps](https://merginmaps.com/) is a service to store, synchronise and manage GIS data and QGIS projects. Currently, [Mergin Maps](https://merginmaps.com/) is used as the back-end of Mergin Maps mobile app, an [open source](https://github.com/MerginMaps/mobile) mobile application to collect data in field.
 
 <div><img align="left" width="45" height="45" src="https://raw.githubusercontent.com/MerginMaps/docs/main/src/.vuepress/public/slack.svg"><a href="https://merginmaps.com/community/join">Join our community chat</a><br/>and ask questions!</div>
 

@@ -901,7 +901,7 @@ def login_error_message(e):
     QMessageBox.critical(None, "Login failed", msg, QMessageBox.Close)
 
 
-def unhandled_exception_message(error_details, dialog_title, error_text):
+def unhandled_exception_message(error_details, dialog_title, error_text, log_file=None, username=None):
     msg = (
         error_text + "<p>This should not happen, "
         '<a href="https://github.com/MerginMaps/qgis-mergin-plugin/issues">'
@@ -911,7 +911,20 @@ def unhandled_exception_message(error_details, dialog_title, error_text):
     box.setIcon(QMessageBox.Critical)
     box.setWindowTitle(dialog_title)
     box.setText(msg)
-    box.setDetailedText(error_details)
+    if log_file is None:
+        box.setDetailedText(error_details)
+    else:
+        error_details = (
+            "An error occured during project synchronisation. The log was saved to "
+            f"{log_file}. Click 'Send logs' to send a diagnostic log to the developers "
+            "to help them determine the exact cause of the problem.\n\n"
+            "The log does not contain any of your data, only file names. "
+            "It would be useful if you also send a mail to support@merginmaps.com "
+            "and briefly describe the problem to add more context to the diagnostic log."
+        )
+        box.setDetailedText(error_details)
+        btn = box.addButton("Send logs", QMessageBox.ActionRole)
+        btn.clicked.connect(lambda: send_logs(username, log_file))
     box.exec_()
 
 
@@ -989,9 +1002,8 @@ def set_qgis_project_mergin_variables():
         if same_dir(path, qgis_project_path):
             try:
                 mp = MerginProject(path)
-                metadata = mp.metadata
-                write_project_variables(owner, name, metadata.get("name"), metadata.get("version"), server)
-                return metadata.get("name")
+                write_project_variables(owner, name, mp.project_full_name(), mp.version(), server)
+                return mp.project_full_name()
             except InvalidProject:
                 remove_project_variables()
     return None
@@ -1480,6 +1492,19 @@ def set_tracking_layer_flags(layer):
     """
     layer.setReadOnly(False)
     layer.setFlags(QgsMapLayer.LayerFlag(QgsMapLayer.Identifiable + QgsMapLayer.Searchable + QgsMapLayer.Removable))
+
+
+def get_layer_by_path(path):
+    """
+    Returns layer object for project layer that matches the path
+    """
+    layers = QgsProject.instance().mapLayers()
+    for layer in layers.values():
+        _, layer_path = os.path.split(layer.source())
+        # file path may contain layer name next to the file name (e.g. 'Survey_lines.gpkg|layername=lines')
+        safe_file_path = layer_path.split("|")
+        if safe_file_path[0] == path:
+            return layer
 
 
 def format_size(size):
