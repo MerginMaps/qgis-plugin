@@ -42,6 +42,7 @@ from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
 from .configure_sync_wizard import DbSyncConfigWizard
 from .remove_project_dialog import RemoveProjectDialog
+from .project_history_dock import ProjectHistoryDockWidget
 from .utils import (
     ServerType,
     ClientError,
@@ -182,6 +183,9 @@ class MerginPlugin:
             self.action_export_mbtiles.setIcon(QIcon(icon_path("file-export.svg")))
             self.iface.addCustomActionForLayerType(self.action_export_mbtiles, "", QgsMapLayer.VectorTileLayer, False)
             self.action_export_mbtiles.triggered.connect(self.export_vector_tiles)
+
+            self.history_dock_widget = ProjectHistoryDockWidget(self.mc)
+            self.iface.addDockWidget(Qt.RightDockWidgetArea, self.history_dock_widget)
 
         QgsProject.instance().layersAdded.connect(self.add_context_menu_actions)
 
@@ -537,6 +541,9 @@ class MerginPlugin:
 
             self.iface.unregisterProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
 
+            self.iface.removeDockWidget(self.history_dock_widget)
+            del self.history_dock_widget
+            
         remove_project_variables()
         QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
         QgsExpressionContextUtils.removeGlobalVariable("mergin_url")
