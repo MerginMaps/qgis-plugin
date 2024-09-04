@@ -14,7 +14,12 @@ from qgis.core import Qgis, QgsMessageLog
 from qgis.utils import iface
 
 from .diff_dialog import DiffViewerDialog
-from .utils import ClientError, mergin_project_local_path
+from .utils import (
+    ClientError, 
+    mergin_project_local_path, 
+    check_mergin_subdirs,
+    contextual_date
+    )
 
 from .mergin.merginproject import MerginProject
 from .mergin.utils import int_version
@@ -30,6 +35,8 @@ class VersionsTableModel(QAbstractTableModel):
         self.latest = None
 
         self.headers = ["Version", "Author", "Created"]
+
+        self.current_version = None
 
     def latest_version(self):
         if len(self.versions) == 0:
@@ -64,8 +71,12 @@ class VersionsTableModel(QAbstractTableModel):
             if index.column() == 1:
                 return self.versions[idx]["author"]
             if index.column() == 2:
-                return "placeholder"
                 return contextual_date(self.versions[idx]["created"])
+        elif role == Qt.FontRole:
+            if self.versions[idx]["name"] == self.current_version:
+                font = QFont()
+                font.setBold(True)
+                return font
         else:
             return None
         
@@ -123,7 +134,7 @@ class VersionsFetcher(QThread):
         self.project_name = project_name
         self.model = model
 
-        self.per_page = 100 #server limit
+        self.per_page = 50 #server limit
 
     def run(self):
 
@@ -157,8 +168,10 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.ui = uic.loadUi(ui_file, self)
 
         self.mc = mc
-        self.mp = MerginProject(mergin_project_local_path())
+        self.mp = None
 
+        self.project_path = None
+        
         self.fetcher = None
 
 
@@ -166,14 +179,50 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         # self.model.versions.extend([{"name" : "blabla"},{"name" : "blabla2"}])
         self.versions_tree.setModel(self.model)
 
-
-        self.fetch_from_server()
-
-
-
         self.view_changes_btn.clicked.connect(self.model.append)
 
         self.ui.versions_tree.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
+
+
+        if self.mc is None:
+            self.info_label.setText("Plugin is not configured.")
+            self.stackedWidget.setCurrentIndex(0)
+            return
+
+        if self.project_path is None:
+            self.info_label.setText("Current project is not saved. Project history is not available.")
+            self.stackedWidget.setCurrentIndex(0)
+            return
+        
+        if not check_mergin_subdirs(self.project_path):
+            self.info_label.setText("Current project is not a Mergin project. Project history is not available.")
+            self.stackedWidget.setCurrentIndex(0)
+            return
+
+        self.mp = MerginProject(self.project_path)
+        self.local_project_version = self.mp.version()
+
+        try:
+            ws_id = self.mp.workspace_id()
+        except ClientError as e:
+            self.info_label.setText(str(e))
+            self.stackedWidget.setCurrentIndex(0)
+            return
+
+        # check if user has permissions
+        usage = self.mc.workspace_usage(ws_id)
+        if not usage["view_history"]["allowed"]:
+            self.info_label.setText("The workspace does not allow to view project history.")
+            self.stackedWidget.setCurrentIndex(0)
+            return
+
+        self.stackedWidget.setCurrentIndex(1)
+
+
+        self.model.current_version = self.mp.version()
+        self.fetch_from_server()
+
+
 
     def fetch_from_server(self):
 
