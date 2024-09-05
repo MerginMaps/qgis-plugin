@@ -2,6 +2,7 @@ import os
 import math
 import json
 from urllib.error import URLError
+from collections import deque
 
 from PyQt5.QtCore import QObject
 from qgis.PyQt import uic
@@ -29,7 +30,9 @@ from .mergin import MerginClient
 class VersionsTableModel(QAbstractTableModel):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.versions = []
+
+        #Keep ordered
+        self.versions = deque()
 
         self.oldest = None
         self.latest = None
@@ -103,8 +106,10 @@ class VersionsTableModel(QAbstractTableModel):
         self.versions.extend(versions)
         self.layoutChanged.emit()
     
-    def prepend():
-        pass
+    def prepend_versions(self, versions):
+        self.insertRows(0, len(versions))
+        self.versions.extendleft(versions)
+        self.layoutChanged.emit()
 
     def canFetchMore(self, parent: QModelIndex) -> bool:
         #Fetch while we are not the the first version
@@ -112,6 +117,7 @@ class VersionsTableModel(QAbstractTableModel):
 
     def fetchMore(self, parent: QModelIndex) -> None:
         pass
+        #emit
         # fetcher = VersionsFetcher(self.mc,self.mp.project_full_name(), self.model)
         # fetcher.finished.connect(lambda versions: self.model.add_versions(versions))
         # fetcher.start()
@@ -170,7 +176,7 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.mc = mc
         self.mp = None
 
-        self.project_path = None
+        self.project_path = mergin_project_local_path()
         
         self.fetcher = None
 
