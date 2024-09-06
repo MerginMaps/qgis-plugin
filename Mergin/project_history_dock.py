@@ -86,6 +86,11 @@ class VersionsTableModel(QAbstractTableModel):
     def insertRows(self, row, count, parent=QModelIndex()):
         self.beginInsertRows(parent, row, row + count - 1)
         self.endInsertRows()
+
+    def clear(self):
+        self.beginResetModel()
+        self.versions.clear()
+        self.endResetModel()
     
     def append(self):
         to_append = [{"name" : "azaz"},{"name" : "rezer"}]
