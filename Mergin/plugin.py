@@ -47,6 +47,7 @@ from .utils import (
     ServerType,
     ClientError,
     LoginError,
+    InvalidProject,
     check_mergin_subdirs,
     create_mergin_client,
     find_qgis_files,
@@ -155,6 +156,15 @@ class MerginPlugin:
                 callback=self.configure_db_sync,
                 add_to_menu=True,
                 add_to_toolbar=None,
+            )
+            self.history_dock_action = self.add_action(
+                "history.svg",
+                text="Project History",
+                callback=self.toggle_project_history_dock,
+                add_to_menu=False,
+                add_to_toolbar=self.toolbar,
+                enabled=False,
+                always_on=False,
             )
 
             self.enable_toolbar_actions()
@@ -327,6 +337,10 @@ class MerginPlugin:
         wizard = DbSyncConfigWizard(project_name)
         if not wizard.exec_():
             return
+
+
+    def toggle_project_history_dock(self):
+        self.history_dock_widget.toggleUserVisible()
 
     def show_no_workspaces_dialog(self):
         msg = (
