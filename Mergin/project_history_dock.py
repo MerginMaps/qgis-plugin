@@ -188,15 +188,26 @@ class VersionsFetcher(QThread):
 
     finished = pyqtSignal(list)
 
-    def __init__(self, mc : MerginClient , project_name, model: VersionsTableModel):
+    def __init__(self, mc : MerginClient , project_name, model: VersionsTableModel, is_sync=False):
         super(VersionsFetcher, self).__init__()
         self.mc = mc
         self.project_name = project_name
         self.model = model
 
+        self.is_sync = is_sync
+
         self.per_page = 50 #server limit
 
     def run(self):
+
+        if (not self.is_sync):
+            versions = self.fetch_previous()
+        else:
+            versions = self.fetch_sync_history()
+
+        self.finished.emit(versions)
+    
+    def fetch_previous(self):
 
         QgsMessageLog.logMessage("len: " + str(len(self.model.versions)))
 
@@ -214,10 +225,25 @@ class VersionsFetcher(QThread):
         versions = self.mc.project_versions(self.project_name, since=since, to=to)
         versions.reverse()
 
+        return versions
 
+    def fetch_sync_history(self):
+    
+        QgsMessageLog.logMessage("len: " + str(len(self.model.versions)))
 
-        self.finished.emit(versions)
-        
+        #deter latest 
+        info = self.mc.project_info(self.project_name)
+
+        latest_server = int_version(info["version"])
+        to = self.model.latest_version()
+
+        versions = self.mc.project_versions(self.project_name, since=latest_server, to=to)
+        versions.pop() #Remove the last as we already have it
+        versions.reverse()
+
+        QgsMessageLog.logMessage(str(versions))
+
+        return versions
 
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_history_dock.ui")
@@ -297,6 +323,17 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.model)
         self.fetcher.finished.connect(lambda versions: self.model.add_versions(versions))
         self.fetcher.start()
+    
+    def fetch_sync_server(self):
+
+        if self.fetcher and self.fetcher.isRunning():
+            # Only fetching when previous is finshed
+            self.fetcher.requestInterruption()
+
+        self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.model, is_sync=True)
+        self.fetcher.finished.connect(lambda versions: self.model.prepend_versions(versions))
+        self.fetcher.start()
+    
 
     def on_scrollbar_changed(self, value):
         if self.ui.versions_tree.verticalScrollBar().maximum() <= value:

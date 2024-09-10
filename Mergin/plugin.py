@@ -477,6 +477,7 @@ class MerginPlugin:
     def current_project_sync(self):
         """Synchronise current Mergin Maps project."""
         self.manager.project_status(self.mergin_proj_dir)
+        self.history_dock_widget.fetch_sync_server()
 
     def find_project(self):
         """Open new Find Mergin Maps project dialog"""
