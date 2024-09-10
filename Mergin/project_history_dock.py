@@ -15,11 +15,14 @@ from qgis.core import Qgis, QgsMessageLog
 from qgis.utils import iface
 
 from .diff_dialog import DiffViewerDialog
+from .version_details_dialog import VersionDetailsDialog
+
 from .utils import (
     ClientError, 
     mergin_project_local_path, 
     check_mergin_subdirs,
-    contextual_date
+    contextual_date,
+    icon_path,
     )
 
 from .mergin.merginproject import MerginProject
@@ -126,13 +129,59 @@ class VersionsTableModel(QAbstractTableModel):
         # fetcher = VersionsFetcher(self.mc,self.mp.project_full_name(), self.model)
         # fetcher.finished.connect(lambda versions: self.model.add_versions(versions))
         # fetcher.start()
+
+    def item_from_index(self, index):
+        return self.versions[index.row()]
+
         
     
 
         
-    
-    
-    
+
+class ChangesetsDownloader(QThread):
+    """
+    Class to download version changesets in background worker thread
+    """
+
+    finished = pyqtSignal(str)
+
+    def __init__(self, mc, mp, version):
+        """
+        ChangesetsDownloader constructor
+
+        :param mc: MerginClient instance
+        :param mp: MerginProject instance
+        :param version: project version to download
+        """
+        super(ChangesetsDownloader, self).__init__()
+        self.mc = mc
+        self.mp = mp
+        self.version = version
+
+    def run(self):
+        info = self.mc.project_info(self.mp.project_full_name(), version=f"v{self.version}")
+        files = [f for f in info["files"] if is_versioned_file(f["path"])]
+        if not files:
+            self.finished.emit("This version does not contain changes in the project layers.")
+            return
+
+        has_history = any("diff" in f for f in files)
+        if not has_history:
+            self.finished.emit("This version does not contain changes in the project layers.")
+            return
+
+        for f in files:
+            if self.isInterruptionRequested():
+                return
+
+            if "diff" not in f:
+                continue
+            file_diffs = self.mc.download_file_diffs(self.mp.dir, f["path"], [f"v{self.version}"])
+            full_gpkg = self.mp.fpath_cache(f["path"], version=f"v{self.version}")
+            if not os.path.exists(full_gpkg):
+                self.mc.download_file(self.mp.dir, f["path"], full_gpkg, f"v{self.version}")
+
+        self.finished.emit("")
 
 
 class VersionsFetcher(QThread):
@@ -184,15 +233,21 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.project_path = mergin_project_local_path()
         
         self.fetcher = None
+        self.diff_downloader = None
+
 
 
         self.model = VersionsTableModel()
         # self.model.versions.extend([{"name" : "blabla"},{"name" : "blabla2"}])
         self.versions_tree.setModel(self.model)
+        self.versions_tree.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
+        
+        QgsMessageLog.logMessage("attach")
+
+        self.versions_tree.customContextMenuRequested.connect(self.show_context_menu)
+        QgsMessageLog.logMessage("end Attach")
 
         self.view_changes_btn.clicked.connect(self.model.append)
-
-        self.ui.versions_tree.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
 
 
         if self.mc is None:
@@ -233,8 +288,6 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.model.current_version = self.mp.version()
         self.fetch_from_server()
 
-
-
     def fetch_from_server(self):
 
         if self.fetcher and self.fetcher.isRunning():
@@ -249,3 +302,63 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         if self.ui.versions_tree.verticalScrollBar().maximum() <= value:
             self.fetch_from_server()
 
+    
+
+    def show_context_menu(self, pos):
+        """Shows context menu in the project history dock"""
+        index = self.versions_tree.indexAt(pos)
+        if not index.isValid():
+            return
+
+        item = self.model.item_from_index(index)
+        version_name = item["name"]
+        version = int_version(item["name"])
+        QgsMessageLog.logMessage("Open meu sdz" + str(item))
+
+        menu = QMenu()
+        view_details_action = menu.addAction("Version details")
+        view_details_action.setIcon(QIcon(icon_path("file-description.svg")))
+        view_details_action.triggered.connect(lambda: self.version_details(version_name))
+        view_changes_action = menu.addAction("View changes")
+        view_changes_action.setIcon(QIcon(icon_path("file-diff.svg")))
+        view_changes_action.triggered.connect(lambda: self.view_changes(version))
+
+
+        menu.exec_(self.versions_tree.mapToGlobal(pos))
+
+
+
+    def version_details(self, version):
+        """Shows version information with full view of added/updated/removed files"""
+
+        data = self.mc.project_version_info(self.mp.project_id(), version)
+        dlg = VersionDetailsDialog(data)
+        dlg.exec_()
+
+    def view_changes(self, version):
+        """Initiates download of changesets for the given version if they are not present
+        in the cache. Otherwise use cached changesets to show diff viewer dialog.
+        """
+        if not os.path.exists(os.path.join(self.project_path, ".mergin", ".cache", f"v{version}")):
+            if self.diff_downloader and self.diff_downloader.isRunning():
+                self.diff_downloader.requestInterruption()
+
+            self.diff_downloader = ChangesetsDownloader(self.mc, self.mp, version)
+            self.diff_downloader.finished.connect(lambda msg: self.show_diff_viewer(version, msg))
+            self.diff_downloader.start()
+        else:
+            self.show_diff_viewer(version)
+
+    def show_diff_viewer(self, version, msg=""):
+        """Shows a Diff Viewer dialog with changes made in the specific version.
+        If msg is not empty string, show message box and returns.
+        """
+        if msg != "":
+            QMessageBox.information(None, "Mergin", msg)
+            return
+
+        dlg = DiffViewerDialog(version)
+        if dlg.diff_layers:
+            dlg.exec_()
+        else:
+            QMessageBox.information(None, "Mergin", "No changes to the current project layers for this version.")

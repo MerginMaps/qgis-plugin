@@ -1542,3 +1542,8 @@ def contextual_date(date_string, start_date=None):
         return f"{hours} {'hours' if hours > 1 else 'hour'} ago"
 
     return f"{delta.days} {'days' if delta.days > 1 else 'day'} ago"
+
+def format_datetime(date_string):
+    """Formats datetime string returned by the server into human-readable format"""
+    dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
+    return dt.strftime("%a, %d %b %Y %H:%M:%S GMT")
