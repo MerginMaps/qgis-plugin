@@ -237,6 +237,9 @@ class VersionsFetcher(QThread):
         latest_server = int_version(info["version"])
         to = self.model.latest_version()
 
+        QgsMessageLog.logMessage("from: " + str(latest_server))
+        QgsMessageLog.logMessage("to: " + str(to))
+
         versions = self.mc.project_versions(self.project_name, since=latest_server, to=to)
         versions.pop() #Remove the last as we already have it
         versions.reverse()
@@ -275,7 +278,10 @@ class ProjectHistoryDockWidget(QgsDockWidget):
 
         self.view_changes_btn.clicked.connect(self.model.append)
 
+        self.update_ui()
 
+
+    def update_ui(self):
         if self.mc is None:
             self.info_label.setText("Plugin is not configured.")
             self.stackedWidget.setCurrentIndex(0)
@@ -313,7 +319,7 @@ class ProjectHistoryDockWidget(QgsDockWidget):
 
         self.model.current_version = self.mp.version()
         self.fetch_from_server()
-
+        
     def fetch_from_server(self):
 
         if self.fetcher and self.fetcher.isRunning():
@@ -358,7 +364,7 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         view_details_action.triggered.connect(lambda: self.version_details(version_name))
         view_changes_action = menu.addAction("View changes")
         view_changes_action.setIcon(QIcon(icon_path("file-diff.svg")))
-        view_changes_action.triggered.connect(lambda: self.view_changes(version))
+        view_changes_action.triggered.connect(lambda: self.view_changes(version_name))
 
 
         menu.exec_(self.versions_tree.mapToGlobal(pos))
@@ -399,3 +405,11 @@ class ProjectHistoryDockWidget(QgsDockWidget):
             dlg.exec_()
         else:
             QMessageBox.information(None, "Mergin", "No changes to the current project layers for this version.")
+
+    def set_mergin_client(self, mc):
+        self.mc = mc
+        
+    def on_qgis_project_changed(self):
+        self.model.clear()
+        self.project_path = mergin_project_local_path()
+        self.update_ui()

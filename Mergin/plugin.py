@@ -88,12 +88,15 @@ class MerginPlugin:
         self.current_workspace = dict()
         self.provider = MerginProvider()
 
+        self.history_dock_widget = None
+
         if self.iface is not None:
             self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
             self.toolbar.setToolTip("Mergin Maps Toolbar")
             self.toolbar.setObjectName("MerginMapsToolbar")
 
             self.iface.projectRead.connect(self.on_qgis_project_changed)
+            self.on_qgis_project_changed()
             self.iface.newProjectCreated.connect(self.on_qgis_project_changed)
 
         settings = QSettings()
@@ -196,6 +199,8 @@ class MerginPlugin:
 
             self.history_dock_widget = ProjectHistoryDockWidget(self.mc)
             self.iface.addDockWidget(Qt.RightDockWidgetArea, self.history_dock_widget)
+            self.history_dock_widget.hide()
+
 
         QgsProject.instance().layersAdded.connect(self.add_context_menu_actions)
 
@@ -311,6 +316,8 @@ class MerginPlugin:
             self.mc = dlg.writeSettings()
             self.on_config_changed()
             self.show_browser_panel()
+            self.history_dock_widget.set_mergin_client(self.mc)
+
 
     def configure_db_sync(self):
         """Open db-sync setup wizard."""
@@ -532,6 +539,8 @@ class MerginPlugin:
         self.mergin_proj_dir = mergin_project_local_path()
         if self.mergin_proj_dir is not None:
             self.enable_toolbar_actions()
+        if self.history_dock_widget:
+            self.history_dock_widget.on_qgis_project_changed()
 
     def add_context_menu_actions(self, layers):
         provider_names = "vectortile"
