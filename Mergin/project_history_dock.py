@@ -26,7 +26,7 @@ from .utils import (
     )
 
 from .mergin.merginproject import MerginProject
-from .mergin.utils import int_version
+from .mergin.utils import int_version, is_versioned_file
 
 from .mergin import MerginClient
 
@@ -364,7 +364,7 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         view_details_action.triggered.connect(lambda: self.version_details(version_name))
         view_changes_action = menu.addAction("View changes")
         view_changes_action.setIcon(QIcon(icon_path("file-diff.svg")))
-        view_changes_action.triggered.connect(lambda: self.view_changes(version_name))
+        view_changes_action.triggered.connect(lambda: self.view_changes(version))
 
 
         menu.exec_(self.versions_tree.mapToGlobal(pos))
