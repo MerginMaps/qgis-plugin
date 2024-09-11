@@ -9,6 +9,7 @@ nbproject*
 *-swp
 .idea/
 .idea/*
+*.vscode
 *.autosave
 .pytest_cache
 .cache
