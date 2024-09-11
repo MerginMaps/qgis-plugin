@@ -202,6 +202,10 @@ class MerginPlugin:
             self.history_dock_widget.hide()
 
 
+            self.history_dock_widget = ProjectHistoryDockWidget(self.mc)
+            self.iface.addDockWidget(Qt.RightDockWidgetArea, self.history_dock_widget)
+            self.history_dock_widget.hide()
+
         QgsProject.instance().layersAdded.connect(self.add_context_menu_actions)
 
     def add_action(
