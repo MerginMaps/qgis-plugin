@@ -1,7 +1,7 @@
 
 # Developer's documentation
 ## Development/Testing
-Download python [client](https://github.com/MerginMaps/mergin-py-client), install deps and
+Download python [client](https://github.com/MerginMaps/python-api-client), install deps and
 link to qgis plugin:
 ```
     ln -s <path-to-py-client>/mergin/ <path-to-mergin-qgis-plugin>/Mergin/mergin
