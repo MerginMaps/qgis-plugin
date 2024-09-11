@@ -55,7 +55,6 @@ class VersionDetailsDialog(QDialog):
                             self.version_details["changesets"][path]["summary"]
                         ):
                             item.appendRow(sub_item)
-                            # QgsMessageLog.logMessage(str("changes") + "/" + str(category) + "/" + sub_item)
                 root_item.appendRow(item)
 
     def _get_icon_item(self, key, text):

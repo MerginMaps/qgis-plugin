@@ -102,12 +102,6 @@ class VersionsTableModel(QAbstractTableModel):
         self.insertRows(len(self.versions) - 1, len(to_append))
         self.versions.extend(to_append)
         self.layoutChanged.emit()
-
-        # iface.messageBar().pushMessage("len:", str(len(self.versions)), level=Qgis.Critical)
-        # for i in self.versions:
-        #     # print(i)
-        #     QgsMessageLog.logMessage("Error" + str(i), level=Qgis.Critical)
-        #     # iface.messageBar().pushMessage("Error","fefe", level=Qgis.Critical)
         
     def add_versions(self, versions):
         self.insertRows(len(self.versions) - 1, len(versions))
@@ -209,13 +203,10 @@ class VersionsFetcher(QThread):
     
     def fetch_previous(self):
 
-        QgsMessageLog.logMessage("len: " + str(len(self.model.versions)))
-
         if len(self.model.versions) == 0:
             #initial fetch 
             info = self.mc.project_info(self.project_name)
             to = int_version(info["version"])
-            QgsMessageLog.logMessage("intit")
         else:
             to = self.model.oldest_version()
         since = to - 100
@@ -229,22 +220,15 @@ class VersionsFetcher(QThread):
 
     def fetch_sync_history(self):
     
-        QgsMessageLog.logMessage("len: " + str(len(self.model.versions)))
-
-        #deter latest 
+        #determine latest 
         info = self.mc.project_info(self.project_name)
 
         latest_server = int_version(info["version"])
-        to = self.model.latest_version()
+        since = self.model.latest_version()
 
-        QgsMessageLog.logMessage("from: " + str(latest_server))
-        QgsMessageLog.logMessage("to: " + str(to))
-
-        versions = self.mc.project_versions(self.project_name, since=latest_server, to=to)
+        versions = self.mc.project_versions(self.project_name, since=since, to=latest_server)
         versions.pop() #Remove the last as we already have it
         versions.reverse()
-
-        QgsMessageLog.logMessage(str(versions))
 
         return versions
 
@@ -271,10 +255,7 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.versions_tree.setModel(self.model)
         self.versions_tree.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
         
-        QgsMessageLog.logMessage("attach")
-
         self.versions_tree.customContextMenuRequested.connect(self.show_context_menu)
-        QgsMessageLog.logMessage("end Attach")
 
         self.view_changes_btn.clicked.connect(self.model.append)
 
@@ -356,7 +337,6 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         item = self.model.item_from_index(index)
         version_name = item["name"]
         version = int_version(item["name"])
-        QgsMessageLog.logMessage("Open meu sdz" + str(item))
 
         menu = QMenu()
         view_details_action = menu.addAction("Version details")
