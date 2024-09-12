@@ -93,11 +93,11 @@ class MerginProjectsManager(object):
             msg = str(e)
             # User friendly error messages
             if e.http_error == 409:
-                msg = f'Project with the name "{project_name}" already exists in the workspace "{namespace}"\n Try renaming the project'
+                msg = f'Project named "{project_name}" already exists in the workspace "{namespace}".\nPlease try renaming the project.'
             elif e.server_code == ErrorCode.ProjectsLimitHit.value:
                 msg = (
-                    "Maximum number of projects is reached. Please upgrade your subscription to create new projects\n"
-                    f"Maximum of projects: {e.server_response["projects_quota"]}"
+                    "Maximum number of projects reached. Please upgrade your subscription to create new projects.\n"
+                    f"Projects quota: {e.server_response['projects_quota']}"
                 )
             elif e.server_code == ErrorCode.StorageLimitHit.value:
                 msg = (
@@ -373,7 +373,7 @@ class MerginProjectsManager(object):
             elif isinstance(dlg.exception, ClientError):
                 if dlg.exception.http_error == 400 and "Another process" in dlg.exception.detail:
                     # To note we check for a string since error in flask doesn't return server error code
-                    msg = dlg.exception.detail
+                    msg = "Somebody else is syncing, please try again later"
                 elif dlg.exception.server_code == ErrorCode.StorageLimitHit.value:
                     msg = f"{e.detail}]\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response["storage_limit"])}"
                 else:
