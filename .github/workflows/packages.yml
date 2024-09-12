@@ -35,7 +35,7 @@ jobs:
           patchelf --replace-needed ${SQLITE_LIB} libsqlite3.so.0 ./pygeodiff-binaries/libpygeodiff-${GEODIFF_VER}-python.so
           patchelf --remove-rpath ./pygeodiff-binaries/libpygeodiff-${GEODIFF_VER}-python.so
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: ./pygeodiff-binaries/*.so
 
@@ -63,7 +63,7 @@ jobs:
           unzip -o pygeodiff-$env:GEODIFF_VER-cp$env:PYTHON_VER-cp$env:PYTHON_VER-win_amd64.whl -d tmp64
           copy tmp64\pygeodiff\*.pyd pygeodiff-binaries\
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: ./pygeodiff-binaries/*.pyd
 
@@ -97,7 +97,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: ./pygeodiff-binaries/*.dylib
 
@@ -157,7 +157,7 @@ jobs:
           cp qgis-mergin-plugin/LICENSE.txt output/Mergin/LICENSE
           (cd output && zip -r9 ../mergin.zip Mergin/)
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: Mergin
           path: output/
