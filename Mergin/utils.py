@@ -1491,3 +1491,16 @@ def set_tracking_layer_flags(layer):
     """
     layer.setReadOnly(False)
     layer.setFlags(QgsMapLayer.LayerFlag(QgsMapLayer.Identifiable + QgsMapLayer.Searchable + QgsMapLayer.Removable))
+
+
+def get_layer_by_path(path):
+    """
+    Returns layer object for project layer that matches the path
+    """
+    layers = QgsProject.instance().mapLayers()
+    for layer in layers.values():
+        _, layer_path = os.path.split(layer.source())
+        # file path may contain layer name next to the file name (e.g. 'Survey_lines.gpkg|layername=lines')
+        safe_file_path = layer_path.split("|")
+        if safe_file_path[0] == path:
+            return layer

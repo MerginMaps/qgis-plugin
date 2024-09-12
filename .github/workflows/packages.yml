@@ -1,6 +1,6 @@
 name: Build Mergin Plugin Packages
 env:
-  MERGIN_CLIENT_VER: "0.9.0"
+  MERGIN_CLIENT_VER: "0.9.2"
   GEODIFF_VER: "2.0.2"
   PYTHON_VER: "38"
   PLUGIN_NAME: Mergin
@@ -153,6 +153,8 @@ jobs:
         run: |
           cp -r mergin-py-client/mergin qgis-mergin-plugin/Mergin
           rsync -av --exclude='test' --exclude='/__pycache__/' --exclude='*/__pycache__/' qgis-mergin-plugin/Mergin output
+          # from 1 June 2024, plugins are required to include LICENSE file
+          cp qgis-mergin-plugin/LICENSE.txt output/Mergin/LICENSE
           (cd output && zip -r9 ../mergin.zip Mergin/)
 
       - uses: actions/upload-artifact@v3
