@@ -94,14 +94,6 @@ class VersionsTableModel(QAbstractTableModel):
         self.beginResetModel()
         self.versions.clear()
         self.endResetModel()
-    
-    def append(self):
-        to_append = [{"name" : "azaz"},{"name" : "rezer"}]
-        
-
-        self.insertRows(len(self.versions) - 1, len(to_append))
-        self.versions.extend(to_append)
-        self.layoutChanged.emit()
         
     def add_versions(self, versions):
         self.insertRows(len(self.versions) - 1, len(versions))
@@ -127,10 +119,6 @@ class VersionsTableModel(QAbstractTableModel):
     def item_from_index(self, index):
         return self.versions[index.row()]
 
-        
-    
-
-        
 
 class ChangesetsDownloader(QThread):
     """
