@@ -459,7 +459,7 @@ class NewMerginProjectWizard(QWizard):
     def accept(self):
         self.project_dir = self.field("project_dir")
         self.project_namespace = self.field("project_owner")
-        self.project_name = self.field("project_name")
+        self.project_name = self.field("project_name").strip()
         self.is_public = self.field("is_public")
         reload_project = False
         failed_packaging = []
