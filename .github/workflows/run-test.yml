@@ -3,7 +3,7 @@ name: Run Mergin Plugin Tests
 on: [push]
 
 env:
-  MERGIN_CLIENT_VER: "0.8.0"
+  MERGIN_CLIENT_VER: "master"
   PLUGIN_NAME: Mergin
   TEST_FUNCTION: suite.test_all
   DOCKER_IMAGE: qgis/qgis
@@ -18,7 +18,7 @@ jobs:
 
     strategy:
       matrix:
-        docker_tags: [release-3_22, latest]
+        docker_tags: [release-3_22, release-3_34]
 
     steps:
 
