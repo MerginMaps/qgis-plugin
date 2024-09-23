@@ -16,6 +16,7 @@ from qgis.utils import iface
 
 from .diff_dialog import DiffViewerDialog
 from .version_details_dialog import VersionDetailsDialog
+from .version_viewer_dialog import VersionViewerDialog
 
 from .utils import (
     ClientError, 
@@ -245,9 +246,14 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         
         self.versions_tree.customContextMenuRequested.connect(self.show_context_menu)
 
-        self.view_changes_btn.clicked.connect(self.model.append)
+        self.view_changes_btn.clicked.connect(self.show_version_viewer)
 
         self.update_ui()
+
+    def show_version_viewer(self):
+        dlg = VersionViewerDialog()
+        dlg.exec_()
+
 
 
     def update_ui(self):
