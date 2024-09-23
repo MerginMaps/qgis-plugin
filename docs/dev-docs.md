@@ -22,7 +22,7 @@ link to qgis plugin. You might need admin privileges to run these commands:
     mklink /J <path-to-mergin-qgis-plugin>\Mergin\mergin <path-to-python-api-client>\mergin
 ```
 
-Now link the plugin to your QGIS profile python, e.g. for MacOS
+Now link the plugin to your QGIS profile python:
 ```
     mklink /J <path-to-QGIS-user-folder>\QGIS3\profiles\default\python\plugins\Mergin <path-to-mergin-qgis-plugin>\Mergin
 ```
