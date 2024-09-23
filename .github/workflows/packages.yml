@@ -5,7 +5,31 @@ env:
   PYTHON_VER: "38"
   PLUGIN_NAME: Mergin
 
-on: [push]
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+          - info
+          - warning
+          - debug
+      print_tags:
+        description: 'True to print to STDOUT'
+        required: true
+        type: boolean
+      tags:
+        description: 'Test scenario tags'
+        required: true
+        type: string
+      environment:
+        description: 'Environment to run tests against'
+        type: environment
+        required: true
+  
 jobs:
   build_linux_binary:
     name: Extract geodiff binary linux
