@@ -14,6 +14,7 @@ on:
         default: '2.0.4'
         type: string
 env:
+  # Assign the version provided by 'workflow_dispatch' if available; otherwise, use the default.
   MERGIN_CLIENT_VER: ${{ inputs.MERGIN_CLIENT_VER != '' && inputs.MERGIN_CLIENT_VER|| '0.9.3' }}
   GEODIFF_VER:  ${{ inputs.GEODIFF_VER != '' && inputs.GEODIFF_VER|| '2.0.4' }}
   PYTHON_VER: "38"
