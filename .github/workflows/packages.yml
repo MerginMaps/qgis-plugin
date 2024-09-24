@@ -119,13 +119,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          repository: MerginMaps/mergin-py-client
+          repository: MerginMaps/python-api-client
           ref: ${{ env.PYTHON_API_CLIENT_VER }}
-          path: mergin-py-client
+          path: python-api-client
 
       - name: prepare py-client dependencies
         run: |
-          cd mergin-py-client
+          cd python-api-client
           python3 setup.py sdist bdist_wheel
           mkdir -p mergin/deps
           # without __init__.py the deps dir may get recognized as "namespace package" in python
@@ -140,11 +140,11 @@ jobs:
           rm -rf mergin/deps/pygeodiff.libs
           rm -rf mergin/deps/pygeodiff-*.whl
 
-      - name: check geodiff version in sync with mergin-py-client
+      - name: check geodiff version in sync with python-api-client
         run: |
-          GEODIFF_VER_FROM_CLIENT="$(geodiff="$(cat mergin-py-client/mergin_client.egg-info/requires.txt | grep pygeodiff)";echo ${geodiff#pygeodiff==})"
+          GEODIFF_VER_FROM_CLIENT="$(geodiff="$(cat python-api-client/mergin_client.egg-info/requires.txt | grep pygeodiff)";echo ${geodiff#pygeodiff==})"
           if [ "$GEODIFF_VER" != "$GEODIFF_VER_FROM_CLIENT" ]; then
-            echo "geodiff version defined in mergin-py-client requires.txt $GEODIFF_VER_FROM_CLIENT does not equal $GEODIFF_VER from the workpackage file"
+            echo "geodiff version defined in python-api-client requires.txt $GEODIFF_VER_FROM_CLIENT does not equal $GEODIFF_VER from the workpackage file"
             exit 1; # or just warning??
           fi
 
@@ -155,7 +155,7 @@ jobs:
 
       - name: include pygeodiff deps
         run: |
-          cp pygeodiff-binaries/* mergin-py-client/mergin/deps/pygeodiff
+          cp pygeodiff-binaries/* python-api-client/mergin/deps/pygeodiff
 
       - uses: actions/checkout@v3
         with:
@@ -163,7 +163,7 @@ jobs:
 
       - name: create package
         run: |
-          cp -r mergin-py-client/mergin qgis-mergin-plugin/Mergin
+          cp -r python-api-client/mergin qgis-mergin-plugin/Mergin
           rsync -av --exclude='test' --exclude='/__pycache__/' --exclude='*/__pycache__/' qgis-mergin-plugin/Mergin output
           # from 1 June 2024, plugins are required to include LICENSE file
           cp qgis-mergin-plugin/LICENSE.txt output/Mergin/LICENSE

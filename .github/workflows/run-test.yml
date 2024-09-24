@@ -34,11 +34,11 @@ jobs:
       - name: Checkout client code
         uses: actions/checkout@v3
         with:
-          repository: MerginMaps/mergin-py-client
+          repository: MerginMaps/python-api-client
           ref: ${{ env.PYTHON_API_CLIENT_VER }}
           path: client
 
-      - name: Install mergin-py-client dependencies
+      - name: Install python-api-client dependencies
         run: |
           pip3 install python-dateutil pytz wheel
           cd client
