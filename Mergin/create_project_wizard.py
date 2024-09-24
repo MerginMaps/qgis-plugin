@@ -174,7 +174,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         if not self.project_owner_cbo.currentData(Qt.UserRole):
             self.create_warning("You do not have permissions to create a project in this workspace!")
             return
-        proj_name = self.project_name_ledit.text()
+        proj_name = self.project_name_ledit.text().strip()
         if not proj_name:
             self.create_warning("Project name missing!")
             return
@@ -459,7 +459,7 @@ class NewMerginProjectWizard(QWizard):
     def accept(self):
         self.project_dir = self.field("project_dir")
         self.project_namespace = self.field("project_owner")
-        self.project_name = self.field("project_name")
+        self.project_name = self.field("project_name").strip()
         self.is_public = self.field("is_public")
         reload_project = False
         failed_packaging = []
