@@ -12,7 +12,7 @@ on:
 
 env:
   # Assign the version provided by 'workflow_dispatch' if available; otherwise, use the default.
-  MERGIN_CLIENT_VER: ${{ inputs.MERGIN_CLIENT_VER != '' && inputs.MERGIN_CLIENT_VER|| 'master' }}
+  MERGIN_CLIENT_VER: ${{ inputs.MERGIN_CLIENT_VER != '' && inputs.MERGIN_CLIENT_VER || 'master' }}
   PLUGIN_NAME: Mergin
   TEST_FUNCTION: suite.test_all
   DOCKER_IMAGE: qgis/qgis
