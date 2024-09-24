@@ -3,19 +3,19 @@ on:
   push:
   workflow_dispatch:
     inputs:
-      MERGIN_CLIENT_VER:
+      API_CLIENT_VER:
         description: 'Mergin client version either a tag, release, or branch'
         required: true
         default: 'master'
         type: string
-      GEODIFF_VER:
+      LIB_GEODIFF_VER:
         description: 'Geodiff version released on PyPI repository'
         default: '2.0.4'
         type: string
 env:
   # Assign the version provided by 'workflow_dispatch' if available; otherwise, use the default.
-  MERGIN_CLIENT_VER: ${{ inputs.MERGIN_CLIENT_VER != '' && inputs.MERGIN_CLIENT_VER || '0.9.3' }}
-  GEODIFF_VER:  ${{ inputs.GEODIFF_VER != '' && inputs.GEODIFF_VER || '2.0.4' }}
+  MERGIN_CLIENT_VER: ${{ inputs.API_CLIENT_VER != '' && inputs.API_CLIENT_VER || '0.9.3' }}
+  GEODIFF_VER:  ${{ inputs.LIB_GEODIFF_VER != '' && inputs.LIB_GEODIFF_VER || '2.0.4' }}
   PYTHON_VER: "38"
   PLUGIN_NAME: Mergin  
 jobs:
