@@ -1,9 +1,18 @@
 name: Run Mergin Plugin Tests
 
-on: [push]
+on: 
+  push:
+  workflow_dispatch:
+    inputs:
+      PYTHON_API_CLIENT_VER:
+        description: 'python-api-client version: either a tag, release, or a branch'
+        required: true
+        default: 'master'
+        type: string
 
 env:
-  MERGIN_CLIENT_VER: "master"
+  # Assign the version provided by 'workflow_dispatch' if available; otherwise, use the default.
+  PYTHON_API_CLIENT_VER: ${{ inputs.PYTHON_API_CLIENT_VER != '' && inputs.PYTHON_API_CLIENT_VER || 'master' }}
   PLUGIN_NAME: Mergin
   TEST_FUNCTION: suite.test_all
   DOCKER_IMAGE: qgis/qgis
@@ -26,7 +35,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: MerginMaps/python-api-client
-          ref: ${{ env.MERGIN_CLIENT_VER }}
+          ref: ${{ env.PYTHON_API_CLIENT_VER }}
           path: client
 
       - name: Install python-api-client dependencies
