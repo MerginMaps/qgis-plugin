@@ -12,6 +12,7 @@ from urllib.error import URLError
 from .sync_dialog import SyncDialog
 from .utils import (
     ClientError,
+    ErrorCode,
     InvalidProject,
     get_local_mergin_projects_info,
     LoginError,
@@ -23,6 +24,7 @@ from .utils import (
     unsaved_project_check,
     UnsavedChangesStrategy,
     write_project_variables,
+    bytes_to_human_size,
 )
 
 from .mergin.merginproject import MerginProject
@@ -86,6 +88,24 @@ class MerginProjectsManager(object):
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             self.mc.create_project(full_project_name, is_public)
+        except ClientError as e:
+            QApplication.restoreOverrideCursor()
+            msg = str(e)
+            # User friendly error messages
+            if e.http_error == 409:
+                msg = f'Project named "{project_name}" already exists in the workspace "{namespace}".\nPlease try renaming the project.'
+            elif e.server_code == ErrorCode.ProjectsLimitHit.value:
+                msg = (
+                    "Maximum number of projects reached. Please upgrade your subscription to create new projects.\n"
+                    f"Projects quota: {e.server_response['projects_quota']}"
+                )
+            elif e.server_code == ErrorCode.StorageLimitHit.value:
+                msg = (
+                    f"{e.detail}]\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response["storage_limit"])}"
+                )
+
+            QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + msg)
+            return False
         except Exception as e:
             QApplication.restoreOverrideCursor()
             QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + str(e))
@@ -351,7 +371,14 @@ class MerginProjectsManager(object):
             if isinstance(dlg.exception, LoginError):
                 login_error_message(dlg.exception)
             elif isinstance(dlg.exception, ClientError):
-                QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
+                if dlg.exception.http_error == 400 and "Another process" in dlg.exception.detail:
+                    # To note we check for a string since error in flask doesn't return server error code
+                    msg = "Somebody else is syncing, please try again later"
+                elif dlg.exception.server_code == ErrorCode.StorageLimitHit.value:
+                    msg = f"{e.detail}]\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response["storage_limit"])}"
+                else:
+                    msg = str(dlg.exception)
+                QMessageBox.critical(None, "Project sync", "Client error: \n" + msg)
             else:
                 unhandled_exception_message(
                     dlg.exception_details(),
