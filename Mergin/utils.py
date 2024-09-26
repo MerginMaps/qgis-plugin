@@ -1411,7 +1411,7 @@ def prefix_for_relative_path(mode, home_path, target_dir):
 
 def create_tracking_layer(project_path):
     """
-    Creates a GPKG layer for tracking in Input
+    Creates a GPKG layer for tracking in mobile app
     """
     filename = get_unique_filename(os.path.join(project_path, "tracking_layer.gpkg"))
 

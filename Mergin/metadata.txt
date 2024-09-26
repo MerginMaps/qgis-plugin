@@ -50,7 +50,7 @@ changelog=2024.2
   - Fix packaging of rasters (#441)
   - Add warning about unsaved changes in the project before showing local changes (#432)
   <p>2022.5
-  - Add project setting to control snapping in Mergin Maps Input
+  - Add project setting to control snapping in Mergin Maps mobile app
   - Add validations for snapping configuration in Mergin Maps project
   - Fix Processing tools to visualize local changes and changes between two versions of the layer
   <p>2022.4.1
@@ -63,7 +63,7 @@ changelog=2024.2
   - Fix Python error when cancelling sync immediately after it started (#405)
   - Update public server URL following rebranding changes (#417)
   <p>2022.3.2
-  - Add project setting to control photo quality in Mergin Maps Input (#383)
+  - Add project setting to control photo quality in Mergin Maps mobile app (#383)
   - Disable primary keys validation for non-GPKG layers (#401)
   - Fix packaging of raster auxilary files with georeferencing information (#371)
   - Update of icon pack and renaming Mergin to Mergin Maps
