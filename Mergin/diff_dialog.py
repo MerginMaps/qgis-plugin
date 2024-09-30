@@ -18,7 +18,7 @@ from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttribute
 from qgis.utils import iface, OverrideCursor
 
 from .mergin.merginproject import MerginProject
-from .diff import make_local_changes_layer, make_version_changes_layers
+from .diff import make_local_changes_layer, make_version_changes_layers, icon_for_layer
 from .utils import icon_path
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_diff_viewer_dialog.ui")
@@ -130,14 +130,14 @@ class DiffViewerDialog(QDialog):
                 continue
 
             self.diff_layers.append(vl)
-            self.tab_bar.addTab(self.icon_for_layer(vl), f"{layer.name()} ({vl.featureCount()})")
+            self.tab_bar.addTab(icon_for_layer(vl), f"{layer.name()} ({vl.featureCount()})")
         self.tab_bar.setCurrentIndex(0)
 
     def show_version_changes(self):
         layers = make_version_changes_layers(QgsProject.instance().homePath(), self.version)
         for vl in layers:
             self.diff_layers.append(vl)
-            self.tab_bar.addTab(self.icon_for_layer(vl), f"{vl.name()} ({vl.featureCount()})")
+            self.tab_bar.addTab(icon_for_layer(vl), f"{vl.name()} ({vl.featureCount()})")
         self.tab_bar.setCurrentIndex(0)
 
     def toggle_project_layers(self, checked):
@@ -214,18 +214,7 @@ class DiffViewerDialog(QDialog):
             self.map_canvas.zoomToSelected([self.current_diff])
             self.map_canvas.refresh()
 
-    def icon_for_layer(self, layer):
-        geom_type = layer.geometryType()
-        if geom_type == QgsWkbTypes.PointGeometry:
-            return QgsApplication.getThemeIcon("/mIconPointLayer.svg")
-        elif geom_type == QgsWkbTypes.LineGeometry:
-            return QgsApplication.getThemeIcon("/mIconLineLayer.svg")
-        elif geom_type == QgsWkbTypes.PolygonGeometry:
-            return QgsApplication.getThemeIcon("/mIconPolygonLayer.svg")
-        elif geom_type == QgsWkbTypes.UnknownGeometry:
-            return QgsApplication.getThemeIcon("/mIconGeometryCollectionLayer.svg")
-        else:
-            return QgsApplication.getThemeIcon("/mIconTableLayer.svg")
+
 
     def show_unsaved_changes_warning(self):
         self.ui.messageBar.pushMessage(

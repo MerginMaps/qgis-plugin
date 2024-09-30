@@ -7,7 +7,7 @@ from collections import deque
 from PyQt5.QtCore import QObject
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QFont
-from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QSortFilterProxyModel, QAbstractItemModel, QModelIndex, QAbstractTableModel
+from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QModelIndex, QAbstractTableModel
 from qgis.PyQt.QtWidgets import QMenu, QMessageBox
 
 from qgis.gui import QgsDockWidget
@@ -240,7 +240,6 @@ class ProjectHistoryDockWidget(QgsDockWidget):
 
 
         self.model = VersionsTableModel()
-        # self.model.versions.extend([{"name" : "blabla"},{"name" : "blabla2"}])
         self.versions_tree.setModel(self.model)
         self.versions_tree.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
         
@@ -340,6 +339,8 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         view_changes_action.setIcon(QIcon(icon_path("file-diff.svg")))
         view_changes_action.triggered.connect(lambda: self.view_changes(version))
 
+
+        
 
         menu.exec_(self.versions_tree.mapToGlobal(pos))
 

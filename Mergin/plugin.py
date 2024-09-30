@@ -43,6 +43,7 @@ from .sync_dialog import SyncDialog
 from .configure_sync_wizard import DbSyncConfigWizard
 from .remove_project_dialog import RemoveProjectDialog
 from .project_history_dock import ProjectHistoryDockWidget
+from .version_viewer_dialog import VersionViewerDialog
 from .utils import (
     ServerType,
     ClientError,
@@ -64,7 +65,7 @@ from .utils import (
     unsaved_project_check,
     UnsavedChangesStrategy,
 )
-
+from .mergin.utils import int_version, is_versioned_file
 from .mergin.merginproject import MerginProject
 from .processing.provider import MerginProvider
 import processing
@@ -163,7 +164,7 @@ class MerginPlugin:
             self.history_dock_action = self.add_action(
                 "history.svg",
                 text="Project History",
-                callback=self.toggle_project_history_dock,
+                callback=self.open_project_history_window,
                 add_to_menu=False,
                 add_to_toolbar=self.toolbar,
                 enabled=False,
@@ -348,7 +349,10 @@ class MerginPlugin:
         wizard = DbSyncConfigWizard(project_name)
         if not wizard.exec_():
             return
-
+        
+    def open_project_history_window(self):
+        dlg = VersionViewerDialog(self.mc)
+        dlg.exec_()
 
     def toggle_project_history_dock(self):
         self.history_dock_widget.toggleUserVisible()

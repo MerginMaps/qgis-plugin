@@ -1,11 +1,21 @@
+from collections import deque
 import os
 
 from qgis.PyQt import uic, QtCore
-from qgis.PyQt.QtWidgets import QDialog, QAction
-from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon
-from qgis.PyQt.QtCore import QStringListModel, Qt
+from qgis.PyQt.QtWidgets import QDialog, QAction, QListWidgetItem
+from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon, QFont
+from qgis.PyQt.QtCore import (
+    QStringListModel,
+    Qt,
+    QModelIndex,
+    QAbstractTableModel,
+    QThread, 
+    pyqtSignal
+    )
+
 from qgis.utils import iface
 from qgis.core import (
+    QgsProject,
     QgsMessageLog,
     QgsApplication,
     QgsFeatureRequest,
@@ -14,58 +24,298 @@ from qgis.core import (
 from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
 
 
-from .utils import is_versioned_file, icon_path, format_datetime
-from .mergin.utils import bytes_to_human_size
+from .utils import (
+    ServerType,
+    ClientError,
+    LoginError,
+    InvalidProject,
+    check_mergin_subdirs,
+    create_mergin_client,
+    find_qgis_files,
+    get_mergin_auth,
+    icon_path,
+    mm_symbol_path,
+    is_number,
+    login_error_message,
+    mergin_project_local_path,
+    PROJS_PER_PAGE,
+    remove_project_variables,
+    same_dir,
+    unhandled_exception_message,
+    unsaved_project_check,
+    UnsavedChangesStrategy,
+    contextual_date,
+    is_versioned_file,
+    icon_path,
+    format_datetime
+)
+
+from .mergin.merginproject import MerginProject
+from .mergin.utils import bytes_to_human_size, int_version
+
+from .mergin import MerginClient
+from .diff import make_version_changes_layers, icon_for_layer
+
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_draft_versions_viewer.ui")
 
 
-class VersionViewerDialog(QDialog):
+class VersionsTableModel(QAbstractTableModel):
+    VERSION = Qt.UserRole + 1
+    VERSION_NAME = Qt.UserRole + 2
+    
     def __init__(self, parent=None):
+        super().__init__(parent)
+
+        #Keep ordered
+        self.versions = deque()
+
+        self.oldest = None
+        self.latest = None
+
+        self.headers = ["Version", "Author", "Created"]
+
+        self.current_version = None
+
+    def latest_version(self):
+        if len(self.versions) == 0:
+            return None
+        return int_version(self.versions[0]["name"])
+    
+    def oldest_version(self):
+        if len(self.versions) == 0:
+            return None
+        return int_version(self.versions[-1]["name"])
+    
+
+    def rowCount(self, parent: QModelIndex):
+        return len(self.versions)
+    
+    def columnCount(self, parent: QModelIndex) -> int:
+        return len(self.headers)
+
+    def headerData(self, section, orientation, role):
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self.headers[section]
+        return None
+    
+    def data(self, index, role=Qt.DisplayRole):
+        if not index.isValid():
+            return None
+
+        idx = index.row()
+        if role == Qt.DisplayRole:
+            if index.column() == 0:
+                return self.versions[idx]["name"]
+            if index.column() == 1:
+                return self.versions[idx]["author"]
+            if index.column() == 2:
+                return contextual_date(self.versions[idx]["created"])
+        elif role == Qt.FontRole:
+            if self.versions[idx]["name"] == self.current_version:
+                font = QFont()
+                font.setBold(True)
+                return font
+        elif role == Qt.ToolTipRole:
+            if index.column() == 2:
+                return format_datetime(self.versions[idx]["created"])
+        elif role == VersionsTableModel.VERSION:
+            return int_version(self.versions[idx]["name"])
+        elif role == VersionsTableModel.VERSION_NAME:
+            return self.versions[idx]["name"]
+        else:
+            return None
+        
+    def insertRows(self, row, count, parent=QModelIndex()):
+        self.beginInsertRows(parent, row, row + count - 1)
+        self.endInsertRows()
+
+    def clear(self):
+        self.beginResetModel()
+        self.versions.clear()
+        self.endResetModel()
+        
+    def add_versions(self, versions):
+        self.insertRows(len(self.versions) - 1, len(versions))
+        self.versions.extend(versions)
+        self.layoutChanged.emit()
+    
+    def prepend_versions(self, versions):
+        self.insertRows(0, len(versions))
+        self.versions.extendleft(versions)
+        self.layoutChanged.emit()
+
+    def canFetchMore(self, parent: QModelIndex) -> bool:
+        #Fetch while we are not the the first version
+        return self.oldest_version() == None  or self.oldest_version() >= 1
+
+    def fetchMore(self, parent: QModelIndex) -> None:
+        pass
+        #emit
+        # fetcher = VersionsFetcher(self.mc,self.mp.project_full_name(), self.model)
+        # fetcher.finished.connect(lambda versions: self.model.add_versions(versions))
+        # fetcher.start()
+
+    def item_from_index(self, index):
+        return self.versions[index.row()]
+
+
+
+class ChangesetsDownloader(QThread):
+    """
+    Class to download version changesets in background worker thread
+    """
+
+    finished = pyqtSignal(str)
+
+    def __init__(self, mc, mp, version):
+        """
+        ChangesetsDownloader constructor
+
+        :param mc: MerginClient instance
+        :param mp: MerginProject instance
+        :param version: project version to download
+        """
+        super(ChangesetsDownloader, self).__init__()
+        self.mc = mc
+        self.mp = mp
+        self.version = version
+
+    def run(self):
+        info = self.mc.project_info(self.mp.project_full_name(), version=f"v{self.version}")
+        files = [f for f in info["files"] if is_versioned_file(f["path"])]
+        if not files:
+            self.finished.emit("This version does not contain changes in the project layers.")
+            return
+
+        has_history = any("diff" in f for f in files)
+        if not has_history:
+            self.finished.emit("This version does not contain changes in the project layers.")
+            return
+
+        for f in files:
+            if self.isInterruptionRequested():
+                return
+
+            if "diff" not in f:
+                continue
+            file_diffs = self.mc.download_file_diffs(self.mp.dir, f["path"], [f"v{self.version}"])
+            full_gpkg = self.mp.fpath_cache(f["path"], version=f"v{self.version}")
+            if not os.path.exists(full_gpkg):
+                self.mc.download_file(self.mp.dir, f["path"], full_gpkg, f"v{self.version}")
+
+        self.finished.emit("")
+
+
+class VersionsFetcher(QThread):
+
+    finished = pyqtSignal(list)
+
+    def __init__(self, mc : MerginClient , project_name, model: VersionsTableModel, is_sync=False):
+        super(VersionsFetcher, self).__init__()
+        self.mc = mc
+        self.project_name = project_name
+        self.model = model
+
+        self.is_sync = is_sync
+
+        self.per_page = 50 #server limit
+
+    def run(self):
+
+        if (not self.is_sync):
+            versions = self.fetch_previous()
+        else:
+            versions = self.fetch_sync_history()
+
+        self.finished.emit(versions)
+    
+    def fetch_previous(self):
+
+        if len(self.model.versions) == 0:
+            #initial fetch 
+            info = self.mc.project_info(self.project_name)
+            to = int_version(info["version"])
+        else:
+            to = self.model.oldest_version()
+        since = to - 100
+        if since < 0:
+            since = 1
+
+        versions = self.mc.project_versions(self.project_name, since=since, to=to)
+        versions.reverse()
+
+        return versions
+
+    def fetch_sync_history(self):
+    
+        #determine latest 
+        info = self.mc.project_info(self.project_name)
+
+        latest_server = int_version(info["version"])
+        since = self.model.latest_version()
+
+        versions = self.mc.project_versions(self.project_name, since=since, to=latest_server)
+        versions.pop() #Remove the last as we already have it
+        versions.reverse()
+
+        return versions
+
+
+class VersionViewerDialog(QDialog):
+    def __init__(self,mc, parent=None):
         
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
 
-        self.history_model = QStandardItemModel()
 
-        # self.history_model.setHeaderData(0, Qt.Horizontal, "Versions", Qt.DisplayRole)
-        self.history_model.setHorizontalHeaderItem(0, QStandardItem("Versions"))
+        self.mc = mc
+        self.mp = None
 
-        self.history_treeview.setModel(self.history_model)
+        self.project_path = mergin_project_local_path()
+        self.mp = MerginProject(self.project_path)
+
+
+        self.fetcher = None
+        self.diff_downloader = None
+
+        self.model = VersionsTableModel()
+        self.history_treeview.setModel(self.model)
+
+        # self.list_model = QStringListModel()
+        # self.list_model.setStringList(["Line example\n   2 add 2 removed", "New_scratch_layer"])
         
-        root_node = self.history_model.invisibleRootItem()
-        date_1 = QStandardItem("September 16")
+        # self.layer_list.setModel(self.list_model)
 
-        item = QStandardItem("v25  ValentinB")
-
-        date_1.appendRow(QStandardItem("v25  ValentinB"))
-        date_1.appendRow(QStandardItem("v24  ValentinB"))
-        date_1.appendRow(QStandardItem("v23  ValentinB"))
+        
+        self.history_treeview.clicked.connect(self.handle_click)
+        # self.history_treeview.currentChanged.connect(lambda index, _previous : self.handle_click(index))
+        self.fetch_from_server()
 
 
-        date_2 = QStandardItem("September 17")
-        date_2.appendRow(QStandardItem("v22  ValentinB"))
-        date_2.appendRow(QStandardItem("v21  ValentinB"))
-
-        root_node.appendRow(date_1)
-        root_node.appendRow(date_2)
-
-        self.history_treeview.expandRecursively(root_node.index())
-
-        model = QStringListModel()
-        model.setStringList(["Line example", "New_scratch_layer"])
-        self.layer_list.setModel(model)
 
         height = 30
         self.toolbar.setMinimumHeight(height)
-        self.temporal_control.setMinimumHeight(height)
+
+        self.history_control.setMinimumHeight(height)
+        self.history_control.setVisible(False)
         # self.verticalSpacer_3.setMinimumHeight(100)
         self.verticalLayout.insertSpacing(0,height)
 
-        self.map_canvas.setDisabled(False)
-        self.map_canvas.setEnabled(False)
+        # self.map_canvas.setDisabled(False)
+        # self.map_canvas.setEnabled(False)
 
-        # self.toolbar.
+
+        self.toggle_layers_action = QAction(
+            QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Toggle Project Layers", self
+        )
+        self.toggle_layers_action.setCheckable(True)
+        self.toggle_layers_action.setChecked(True)
+        self.toggle_layers_action.toggled.connect(self.toggle_project_layers)
+        self.toolbar.addAction(self.toggle_layers_action)
+
+        self.toolbar.addSeparator()
+
         self.zoom_full_action = QAction(
             QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"), "Zoom Full", self
         )
@@ -82,29 +332,6 @@ class VersionViewerDialog(QDialog):
         self.splitter.setSizes([height, height])
 
 
-        layers = iface.mapCanvas().layers()
-        self.map_canvas.setLayers(layers)
-
-        self.layer_cache = QgsVectorLayerCache(layers[0], 1000)
-        self.layer_cache.setCacheGeometry(False)
-
-        self.table_model = QgsAttributeTableModel(self.layer_cache)
-        self.table_model.setRequest(QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry).setLimit(100))
-
-        self.filter_model = QgsAttributeTableFilterModel(self.map_canvas, self.table_model)
-
-        self.attribute_table.setModel(self.filter_model)
-        self.table_model.loadLayer()
-        
-        self.map_canvas.setDestinationCrs(layers[0].crs())
-        extent = layers[0].extent()
-        d = min(extent.width(), extent.height())
-        if d == 0:
-            d = 1
-        extent = extent.buffered(d * 0.07)
-        self.map_canvas.setExtent(extent)
-
-
 
         # self.history_verticalLayout.hide()
         self.splitter_2.setSizes([50,50, 200])
@@ -117,71 +344,23 @@ class VersionViewerDialog(QDialog):
         
         # self.attribute_table_2.hide()
 
-        self.version_details = {
-                "author": "ValentinB_lutraconsulting",
-                "changes": {
-                    "added": [],
-                    "removed": [],
-                    "updated": [
-                    {
-                        "change": "updated",
-                        "checksum": "5c9cdf250e6fbfe37c55dbb6dc299ce5db697136",
-                        "diff": {
-                        "checksum": "d42ac00c1ac157bab94e0627d104d49767c98d63",
-                        "path": "line example.gpkg-diff-d58ebf64-15d7-4847-840d-2dec44a6c987",
-                        "size": 129
-                        },
-                        "expiration": "2024-09-08T14:35:04Z",
-                        "mtime": "2024-09-06T14:35:07Z",
-                        "path": "line example.gpkg",
-                        "size": 98304
-                    },
-                    {
-                        "change": "updated",
-                        "checksum": "3e833120cc04d3bc88a3c38bb14b58dea3e3e9d2",
-                        "diff": {
-                        "checksum": "7b86f60f3665982c03e39a1c3a186ff64fba8439",
-                        "path": "New_scratch_layer.gpkg-diff-01ffb906-086b-4980-b205-6c50284e8ac5",
-                        "size": 291
-                        },
-                        "expiration": "2024-09-08T14:35:07Z",
-                        "mtime": "2024-09-06T14:35:07Z",
-                        "path": "New_scratch_layer.gpkg",
-                        "size": 98304
-                    }
-                    ]
-                },
-                "changesets": {
-                    "New_scratch_layer.gpkg": {
-                    "size": 291,
-                    "summary": [
-                        {
-                        "delete": 1,
-                        "insert": 1,
-                        "table": "New_scratch_layer",
-                        "update": 0
-                        }
-                    ]
-                    },
-                    "line example.gpkg": {
-                    "size": 129,
-                    "summary": [
-                        {
-                        "delete": 0,
-                        "insert": 1,
-                        "table": "line example",
-                        "update": 0
-                        }
-                    ]
-                    }
-                },
-                "created": "2024-09-06T14:35:07Z",
-                "name": "v21",
-                "namespace": "solar panel workspace cop",
-                "project_name": "terrain_poi2",
-                "project_size": 4533043,
-                "user_agent": "Input/2024.3.1 (android/13.0)"
-                }
+        self.current_diff = None
+        self.diff_layers = []
+        self.filter_model = None
+
+
+
+        self.layer_list.currentRowChanged.connect(self.diff_layer_changed)
+
+        self.show_version_changes(25)
+        self.update_canvas(self.diff_layers)
+        self.diff_layer_changed(1)
+
+
+
+
+        self.version_details = self.mc.project_version_info(self.mp.project_id(), "v25")
+
 
         self.icons = {
             "added": "plus.svg",
@@ -190,19 +369,57 @@ class VersionViewerDialog(QDialog):
             "renamed": "pencil.svg",
             "table": "table.svg",
         }
-        self.model = QStandardItemModel()
-        self.model.setHorizontalHeaderLabels(["Details"])
-        self.details_treeview.setModel(self.model)
+        self.model_detail = QStandardItemModel()
+        self.model_detail.setHorizontalHeaderLabels(["Details"])
+        self.details_treeview.setModel(self.model_detail)
         self.populate_details()
         self.details_treeview.expandAll()
+
+        self.model.current_version = self.mp.version()
+        self.fetch_from_server()
+    
+
+    def handle_click(self, index: QModelIndex):
+        item = self.model.item_from_index(index)
+        version_name = item["name"]
+        version = int_version(item["name"])
+
+        self.version_details = self.mc.project_version_info(self.mp.project_id(), version_name)
+        self.populate_details()
+        self.details_treeview.expandAll()
+
+        # Reset layer list 
+        QgsMessageLog.logMessage("Rest list")
+        # self.list_model.setStringList([])
+        # self.list_model.removeRows( 0, self.list_model.rowCount() )
+        self.layer_list.clear()
+        
+        self.show_version_changes(version)
+        self.update_canvas(self.diff_layers)
+
+        return self.model.data(index, VersionsTableModel.VERSION)
+    
+    def set_mergin_client(self, mc):
+        self.mc = mc
+
+    def fetch_from_server(self):
+
+        if self.fetcher and self.fetcher.isRunning():
+            # Only fetching when previous is finshed
+            return
+
+        self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.model)
+        self.fetcher.finished.connect(lambda versions: self.model.add_versions(versions))
+        self.fetcher.start()
 
     def populate_details(self):
         self.edit_project_size.setText(bytes_to_human_size(self.version_details["project_size"]))
         self.edit_created.setText(format_datetime(self.version_details["created"]))
         self.edit_user_agent.setText(self.version_details["user_agent"])
 
+        self.model_detail.clear()
         root_item = QStandardItem(f"Changes in version {self.version_details['name']}")
-        self.model.appendRow(root_item)
+        self.model_detail.appendRow(root_item)
         for category in self.version_details["changes"]:
             for item in self.version_details["changes"][category]:
                 path = item["path"]
@@ -234,11 +451,99 @@ class VersionViewerDialog(QDialog):
     def _table_summary_items(self, summary):
         return [QStandardItem("{}: {}".format(k, summary[k])) for k in summary if k != "table"]
 
+    def toggle_project_layers(self, checked):
+        layers = self.collect_layers(checked)
+        self.update_canvas(layers)
+
+    def update_canvas(self, layers):
+        self.map_canvas.setLayers(layers)
+        if layers:
+            self.map_canvas.setDestinationCrs(layers[0].crs())
+            extent = layers[0].extent()
+            d = min(extent.width(), extent.height())
+            if d == 0:
+                d = 1
+            extent = extent.buffered(d * 0.07)
+            self.map_canvas.setExtent(extent)
+        self.map_canvas.refresh()
+
+
+    def show_version_changes(self, version):
+        self.diff_layers.clear()
+
+
+        layers = make_version_changes_layers(QgsProject.instance().homePath(), version)
+        for vl in layers:
+            self.diff_layers.append(vl)
+            QgsMessageLog.logMessage(f"{vl.name()}")
+            icon = icon_for_layer(vl)
+
+            self.layer_list.addItem(QListWidgetItem(icon, f"{vl.name()} ({vl.featureCount()})\n   2 updated"))
+            # self.tab_bar.addTab(self.icon_for_layer(vl), f"{vl.name()} ({vl.featureCount()})")
+            
+
+        if len(self.diff_layers) >= 1:
+            QgsMessageLog.logMessage("Visual change")
+            self.toolbar.setEnabled(True)
+            self.layer_list.setCurrentRow(0)
+            self.stackedWidget.setCurrentIndex(0)
+            self.tabWidget.setCurrentIndex(0)
+        else:
+            QgsMessageLog.logMessage("no Visual change")
+            self.toolbar.setEnabled(False)
+            self.stackedWidget.setCurrentIndex(1)
+            self.tabWidget.setCurrentIndex(1)
+        # self.list_model.setStringList([vl.name() for vl in self.diff_layers])
+        # self.tab_bar.setCurrentIndex(0)
+
+
+    def collect_layers(self, checked):
+        if checked:
+            layers = iface.mapCanvas().layers()
+        else:
+            layers = []
+
+        if self.current_diff:
+            layers.insert(0, self.current_diff)
+
+        return layers
+
+    def diff_layer_changed(self, index):
+        if index > len(self.diff_layers):
+            return
+
+        self.map_canvas.setLayers([])
+        self.attribute_table.clearSelection()
+
+        self.current_diff = self.diff_layers[index]
+
+        self.layer_cache = QgsVectorLayerCache(self.current_diff, 1000)
+        self.layer_cache.setCacheGeometry(False)
+
+        self.table_model = QgsAttributeTableModel(self.layer_cache)
+        self.table_model.setRequest(QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry).setLimit(100))
+
+        self.filter_model = QgsAttributeTableFilterModel(self.map_canvas, self.table_model)
+
+        self.layer_cache.setParent(self.table_model)
+
+        self.attribute_table.setModel(self.filter_model)
+        self.table_model.loadLayer()
+
+        config = self.current_diff.attributeTableConfig()
+        self.filter_model.setAttributeTableConfig(config)
+        self.attribute_table.setAttributeTableConfig(config)
+
+        layers = self.collect_layers(self.toggle_layers_action.isChecked())
+        # layers = self.collect_layers(True)
+        self.update_canvas(layers)
 
         
     def keyPressEvent(self, event):
+        QgsMessageLog.logMessage("eventxezdede")
+        
         if event.key() == QtCore.Qt.Key_C:          
-            # QgsMessageLog.logMessage("blabla")
+            QgsMessageLog.logMessage("blabla" + str(self.stackedWidget.currentIndex()))
             if self.stackedWidget.currentIndex() == 0:
                 self.stackedWidget.setCurrentIndex(1)
                 self.tabWidget.setCurrentIndex(1)
