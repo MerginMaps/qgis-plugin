@@ -341,10 +341,10 @@ class MerginProjectValidator(object):
         if ok:
             enabled = QgsProject.instance().snappingConfig().enabled()
             if not enabled and mode == 2:
-                # snapping in mobile app using QGIS setting is enbaled but QGIS snapping is not activated
+                # snapping in the mobile app using QGIS setting is enbaled but QGIS snapping is not activated
                 self.issues.append(MultipleLayersWarning(Warning.QGIS_SNAPPING_NOT_ENABLED))
             if enabled and mode == 0:
-                # snapping in mobile app using QGIS setting is disabled but project has snapping activated
+                # snapping in the mobile app using QGIS setting is disabled but project has snapping activated
                 self.issues.append(MultipleLayersWarning(Warning.MERGIN_SNAPPING_NOT_ENABLED))
 
     def check_datum_shift_grids(self):
@@ -463,13 +463,13 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.ATTACHMENT_WRONG_EXPRESSION:
         return "Expression for the default path in the attachment widget configuration might be wrong. <a href='{help_mgr.howto_attachment_widget()}'>Read more.</a>"
     elif warning_id == Warning.QGIS_SNAPPING_NOT_ENABLED:
-        return "Snapping is currently disabled in this QGIS project, it will be thus disabled in Mergin Maps mobile app"
+        return "Snapping is currently disabled in this QGIS project, it will be thus disabled in the mobile app"
     elif warning_id == Warning.MERGIN_SNAPPING_NOT_ENABLED:
-        return "Snapping is currently enabled in this QGIS project, but not enabled in Mergin Maps mobile app"
+        return "Snapping is currently enabled in this QGIS project, but not enabled in the mobile app"
     elif warning_id == Warning.MISSING_DATUM_SHIFT_GRID:
         return "Required datum shift grid is missing, reprojection may not work correctly. <a href='fix_datum_shift_grids'>Fix the issue.</a>"
     elif warning_id == Warning.SVG_NOT_EMBEDDED:
-        return "SVGs used for layer styling are not embedded in the project file, as a result those symbols won't be displayed in Mergin Maps mobile app"
+        return "SVGs used for layer styling are not embedded in the project file, as a result those symbols won't be displayed in the mobile app"
     elif warning_id == Warning.EDITOR_PROJECT_FILE_CHANGE:
         return (
             f"You don't have permission to edit the QGIS project file. Your changes to this file will not be sent to the server. "
