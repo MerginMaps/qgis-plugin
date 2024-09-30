@@ -115,7 +115,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
 
     def populate_namespace_cbo(self):
         if self.parent.workspaces is not None:
-            for ws in self.parent.workspaces:
+            for ws in sorted(self.parent.workspaces, key=lambda x: x["name"].lower()):
                 is_writable = ws.get("role", "owner") in ["owner", "admin", "writer"]
                 self.project_owner_cbo.addItem(ws["name"], is_writable)
 
