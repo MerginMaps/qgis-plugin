@@ -15,6 +15,8 @@ changelog=2024.2.1
   - Improve error messages when creating and syncing projects  (#601)
   - Sort the workspaces list in the new project wizard (#602)
   - Strip trailing whitespace from project name in the new project wizard (#577)
+  - Cleanup reference to the old Mergin Map mobile app name in the interface (#624)
+  - Bump version of python-api-client to 0.9.3 and geodiff to 2.0.4 (#620)
   <p>2024.2
   - handling of editor permission (#583)
   <p>2024.1
