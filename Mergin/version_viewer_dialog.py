@@ -4,7 +4,7 @@ import os
 from qgis.PyQt import uic, QtCore
 from qgis.PyQt.QtWidgets import QDialog, QAction, QListWidgetItem, QPushButton, QMenu, QMessageBox
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon, QFont
-from qgis.PyQt.QtCore import QStringListModel, Qt, QSettings, QModelIndex, QAbstractTableModel, QThread, pyqtSignal
+from qgis.PyQt.QtCore import QStringListModel, Qt, QSettings, QModelIndex, QAbstractTableModel, QThread, pyqtSignal, QItemSelectionModel
 
 from qgis.utils import iface
 from qgis.core import QgsProject, QgsMessageLog, QgsApplication, QgsFeatureRequest, QgsVectorLayerCache
@@ -264,14 +264,11 @@ class VersionViewerDialog(QDialog):
 
         self.model = VersionsTableModel()
         self.history_treeview.setModel(self.model)
+        
+        self.selectionModel = self.history_treeview.selectionModel()
 
-        # self.list_model = QStringListModel()
-        # self.list_model.setStringList(["Line example\n   2 add 2 removed", "New_scratch_layer"])
+        self.selectionModel.currentChanged.connect(self.currentVersionChanged)
 
-        # self.layer_list.setModel(self.list_model)
-
-        self.history_treeview.clicked.connect(self.handle_click)
-        # self.history_treeview.currentChanged.connect(lambda index, _previous : self.handle_click(index))
         self.fetch_from_server()
 
         height = 30
@@ -279,11 +276,6 @@ class VersionViewerDialog(QDialog):
 
         self.history_control.setMinimumHeight(height)
         self.history_control.setVisible(False)
-        # self.verticalSpacer_3.setMinimumHeight(100)
-        self.verticalLayout.insertSpacing(0, height)
-
-        # self.map_canvas.setDisabled(False)
-        # self.map_canvas.setEnabled(False)
 
         self.toggle_layers_action = QAction(
             QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Toggle Project Layers", self
@@ -316,16 +308,6 @@ class VersionViewerDialog(QDialog):
         self.toolbar.setIconSize(iface.iconSize())
 
         self.set_splitters_state()
-
-        # self.history_verticalLayout.hide()
-        # self.splitter_vertical.setCollapsible(0, True)
-
-        # self.tabWidget.tabBar().setDocumentMode(True)
-        # self.tabWidget.tabBar().setExpanding(False)
-
-        # self.splitter_vertical.setStretchFactor(0, 0)
-
-        # self.attribute_table_2.hide()
 
         self.current_diff = None
         self.diff_layers = []
@@ -372,8 +354,9 @@ class VersionViewerDialog(QDialog):
         self.reject()
         return
 
-    def handle_click(self, index: QModelIndex):
-        item = self.model.item_from_index(index)
+    
+    def currentVersionChanged(self, current_index, previous_index):
+        item = self.model.item_from_index(current_index)
         version_name = item["name"]
         version = int_version(item["name"])
 
@@ -382,15 +365,12 @@ class VersionViewerDialog(QDialog):
         self.details_treeview.expandAll()
 
         # Reset layer list
-        QgsMessageLog.logMessage("Rest list")
-        # self.list_model.setStringList([])
-        # self.list_model.removeRows( 0, self.list_model.rowCount() )
         self.layer_list.clear()
 
         self.show_version_changes(version)
         self.update_canvas(self.diff_layers)
 
-        return self.model.data(index, VersionsTableModel.VERSION)
+        return self.model.data(current_index, VersionsTableModel.VERSION)
 
     def closeEvent(self, event):
         self.save_splitters_state()
@@ -411,7 +391,6 @@ class VersionViewerDialog(QDialog):
 
         state = settings.value("Mergin/VersionViewerSplitterSize")
         if state:
-            QgsMessageLog.logMessage("horizonttal")
             self.splitter.restoreState(state)
         else:
             height = max([self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()])
@@ -491,25 +470,21 @@ class VersionViewerDialog(QDialog):
         layers = make_version_changes_layers(QgsProject.instance().homePath(), version)
         for vl in layers:
             self.diff_layers.append(vl)
-            QgsMessageLog.logMessage(f"{vl.name()}")
             icon = icon_for_layer(vl)
 
             self.layer_list.addItem(QListWidgetItem(icon, f"{vl.name()} ({vl.featureCount()})\n   2 updated"))
-            # self.tab_bar.addTab(self.icon_for_layer(vl), f"{vl.name()} ({vl.featureCount()})")
 
         if len(self.diff_layers) >= 1:
-            QgsMessageLog.logMessage("Visual change")
             self.toolbar.setEnabled(True)
             self.layer_list.setCurrentRow(0)
             self.stackedWidget.setCurrentIndex(0)
             self.tabWidget.setCurrentIndex(0)
+            self.tabWidget.setTabEnabled(0, True)
         else:
-            QgsMessageLog.logMessage("no Visual change")
             self.toolbar.setEnabled(False)
             self.stackedWidget.setCurrentIndex(1)
             self.tabWidget.setCurrentIndex(1)
-        # self.list_model.setStringList([vl.name() for vl in self.diff_layers])
-        # self.tab_bar.setCurrentIndex(0)
+            self.tabWidget.setTabEnabled(0, False)
 
     def collect_layers(self, checked):
         if checked:
@@ -549,7 +524,6 @@ class VersionViewerDialog(QDialog):
         self.attribute_table.setAttributeTableConfig(config)
 
         layers = self.collect_layers(self.toggle_layers_action.isChecked())
-        # layers = self.collect_layers(True)
         self.update_canvas(layers)
 
     def add_current_to_project(self):
@@ -559,17 +533,3 @@ class VersionViewerDialog(QDialog):
     def add_all_to_project(self):
         for layer in self.diff_layers:
             QgsProject.instance().addMapLayer(layer)
-
-    def keyPressEvent(self, event):
-        QgsMessageLog.logMessage("eventxezdede")
-
-        if event.key() == QtCore.Qt.Key_C:
-            QgsMessageLog.logMessage("blabla" + str(self.stackedWidget.currentIndex()))
-            if self.stackedWidget.currentIndex() == 0:
-                self.stackedWidget.setCurrentIndex(1)
-                self.tabWidget.setCurrentIndex(1)
-            else:
-                self.stackedWidget.setCurrentIndex(0)
-                self.tabWidget.setCurrentIndex(0)
-
-            return
