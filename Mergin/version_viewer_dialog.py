@@ -2,7 +2,7 @@ from collections import deque
 import os
 
 from qgis.PyQt import uic, QtCore
-from qgis.PyQt.QtWidgets import QDialog, QAction, QListWidgetItem, QPushButton, QMenu
+from qgis.PyQt.QtWidgets import QDialog, QAction, QListWidgetItem, QPushButton, QMenu, QMessageBox
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon, QFont
 from qgis.PyQt.QtCore import (
     QStringListModel,
@@ -396,7 +396,23 @@ class VersionViewerDialog(QDialog):
         self.model.current_version = self.mp.version()
         self.fetch_from_server()
     
+    def exec(self):
 
+        try:
+            ws_id = self.mp.workspace_id()
+        except ClientError as e:
+            QMessageBox.warning(None, "Client Error", str(e))
+            return
+
+        # check if user has permissions
+        usage = self.mc.workspace_usage(ws_id)
+        if not usage["view_history"]["allowed"]:
+            QMessageBox.warning(None, "Permission Error", "The workspace does not allow to view project history.")
+            return
+
+        self.reject()
+        return
+    
     def handle_click(self, index: QModelIndex):
         item = self.model.item_from_index(index)
         version_name = item["name"]
