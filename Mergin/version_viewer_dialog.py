@@ -7,6 +7,7 @@ from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon, QFont
 from qgis.PyQt.QtCore import (
     QStringListModel,
     Qt,
+    QSettings,
     QModelIndex,
     QAbstractTableModel,
     QThread, 
@@ -341,12 +342,9 @@ class VersionViewerDialog(QDialog):
         self.toolbar.addWidget(btn_add_changes)
         self.toolbar.setIconSize(iface.iconSize())
 
-        height = max(
-                    [self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()]
-                )
-        self.splitter.setSizes([height, height])
 
 
+        self.set_splitters_state()
         
 
 
@@ -355,7 +353,6 @@ class VersionViewerDialog(QDialog):
 
 
         # self.history_verticalLayout.hide()
-        self.splitter_vertical.setSizes([120,200, 40])
         # self.splitter_vertical.setCollapsible(0, True)
 
         # self.tabWidget.tabBar().setDocumentMode(True)
@@ -420,6 +417,35 @@ class VersionViewerDialog(QDialog):
 
         return self.model.data(index, VersionsTableModel.VERSION)
     
+    def closeEvent(self, event):
+        self.save_splitters_state()
+        QDialog.closeEvent(self, event)
+
+    def save_splitters_state(self):
+        settings = QSettings()
+        settings.setValue("Mergin/VersionViewerSplitterSize", self.splitter.saveState())
+        settings.setValue("Mergin/VersionViewerSplitterVericalSize", self.splitter_vertical.saveState())
+
+    def set_splitters_state(self):
+        settings = QSettings()
+        state_vertical = settings.value("Mergin/VersionViewerSplitterVericalSize")
+        if state_vertical:
+            self.splitter_vertical.restoreState(state_vertical)
+        else:
+            self.splitter_vertical.setSizes([120,200, 40])
+
+        state = settings.value("Mergin/VersionViewerSplitterSize")
+        if state:
+            QgsMessageLog.logMessage("horizonttal")
+            self.splitter.restoreState(state)
+        else:
+            height = max(
+                        [self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()]
+                )
+            self.splitter.setSizes([height, height])
+        
+        
+
     def set_mergin_client(self, mc):
         self.mc = mc
 
