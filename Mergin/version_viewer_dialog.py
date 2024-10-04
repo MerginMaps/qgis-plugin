@@ -2,7 +2,7 @@ from collections import deque
 import os
 
 from qgis.PyQt import uic, QtCore
-from qgis.PyQt.QtWidgets import QDialog, QAction, QListWidgetItem
+from qgis.PyQt.QtWidgets import QDialog, QAction, QListWidgetItem, QPushButton, QMenu
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon, QFont
 from qgis.PyQt.QtCore import (
     QStringListModel,
@@ -326,21 +326,42 @@ class VersionViewerDialog(QDialog):
         )
         self.toolbar.addAction(self.zoom_selected_action)
 
+
+        btn_add_changes = QPushButton("Add to project")
+        btn_add_changes.setIcon(QgsApplication.getThemeIcon("/mActionAdd.svg"))
+        menu = QMenu()
+        add_current_action = menu.addAction(
+            QIcon(icon_path("file-plus.svg")), "Add current changes layer to project"
+        )
+        add_current_action.triggered.connect(self.add_current_to_project)
+        add_all_action = menu.addAction(QIcon(icon_path("folder-plus.svg")), "Add all changes layers to project")
+        add_all_action.triggered.connect(self.add_all_to_project)
+        btn_add_changes.setMenu(menu)
+
+        self.toolbar.addWidget(btn_add_changes)
+        self.toolbar.setIconSize(iface.iconSize())
+
         height = max(
                     [self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()]
                 )
         self.splitter.setSizes([height, height])
 
 
+        
+
+
+        
+
+
 
         # self.history_verticalLayout.hide()
-        self.splitter_2.setSizes([50,50, 200])
-        self.splitter_2.setCollapsible(0, True)
+        self.splitter_vertical.setSizes([120,200, 40])
+        # self.splitter_vertical.setCollapsible(0, True)
 
         # self.tabWidget.tabBar().setDocumentMode(True)
         # self.tabWidget.tabBar().setExpanding(False)
         
-        # self.splitter_2.setStretchFactor(0, 0)
+        # self.splitter_vertical.setStretchFactor(0, 0)
         
         # self.attribute_table_2.hide()
 
@@ -538,7 +559,14 @@ class VersionViewerDialog(QDialog):
         # layers = self.collect_layers(True)
         self.update_canvas(layers)
 
-        
+    def add_current_to_project(self):
+        if self.current_diff:
+            QgsProject.instance().addMapLayer(self.current_diff)
+
+    def add_all_to_project(self):
+        for layer in self.diff_layers:
+            QgsProject.instance().addMapLayer(layer)
+
     def keyPressEvent(self, event):
         QgsMessageLog.logMessage("eventxezdede")
         
