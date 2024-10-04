@@ -202,7 +202,6 @@ class MerginPlugin:
             self.iface.addDockWidget(Qt.RightDockWidgetArea, self.history_dock_widget)
             self.history_dock_widget.hide()
 
-
             self.history_dock_widget = ProjectHistoryDockWidget(self.mc)
             self.iface.addDockWidget(Qt.RightDockWidgetArea, self.history_dock_widget)
             self.history_dock_widget.hide()
@@ -323,7 +322,6 @@ class MerginPlugin:
             self.show_browser_panel()
             self.history_dock_widget.set_mergin_client(self.mc)
 
-
     def configure_db_sync(self):
         """Open db-sync setup wizard."""
         project_path = QgsProject.instance().homePath()
@@ -349,7 +347,7 @@ class MerginPlugin:
         wizard = DbSyncConfigWizard(project_name)
         if not wizard.exec_():
             return
-        
+
     def open_project_history_window(self):
         dlg = VersionViewerDialog(self.mc)
         dlg.exec_()
@@ -575,7 +573,7 @@ class MerginPlugin:
 
             self.iface.removeDockWidget(self.history_dock_widget)
             del self.history_dock_widget
-            
+
         remove_project_variables()
         QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
         QgsExpressionContextUtils.removeGlobalVariable("mergin_url")

@@ -19,23 +19,24 @@ from .version_details_dialog import VersionDetailsDialog
 from .version_viewer_dialog import VersionViewerDialog
 
 from .utils import (
-    ClientError, 
-    mergin_project_local_path, 
+    ClientError,
+    mergin_project_local_path,
     check_mergin_subdirs,
     contextual_date,
     icon_path,
-    )
+)
 
 from .mergin.merginproject import MerginProject
 from .mergin.utils import int_version, is_versioned_file
 
 from .mergin import MerginClient
 
+
 class VersionsTableModel(QAbstractTableModel):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        #Keep ordered
+        # Keep ordered
         self.versions = deque()
 
         self.oldest = None
@@ -49,16 +50,15 @@ class VersionsTableModel(QAbstractTableModel):
         if len(self.versions) == 0:
             return None
         return int_version(self.versions[0]["name"])
-    
+
     def oldest_version(self):
         if len(self.versions) == 0:
             return None
         return int_version(self.versions[-1]["name"])
-    
 
     def rowCount(self, parent: QModelIndex):
         return len(self.versions)
-    
+
     def columnCount(self, parent: QModelIndex) -> int:
         return len(self.headers)
 
@@ -66,7 +66,7 @@ class VersionsTableModel(QAbstractTableModel):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return self.headers[section]
         return None
-    
+
     def data(self, index, role=Qt.DisplayRole):
         if not index.isValid():
             return None
@@ -86,7 +86,7 @@ class VersionsTableModel(QAbstractTableModel):
                 return font
         else:
             return None
-        
+
     def insertRows(self, row, count, parent=QModelIndex()):
         self.beginInsertRows(parent, row, row + count - 1)
         self.endInsertRows()
@@ -95,24 +95,24 @@ class VersionsTableModel(QAbstractTableModel):
         self.beginResetModel()
         self.versions.clear()
         self.endResetModel()
-        
+
     def add_versions(self, versions):
         self.insertRows(len(self.versions) - 1, len(versions))
         self.versions.extend(versions)
         self.layoutChanged.emit()
-    
+
     def prepend_versions(self, versions):
         self.insertRows(0, len(versions))
         self.versions.extendleft(versions)
         self.layoutChanged.emit()
 
     def canFetchMore(self, parent: QModelIndex) -> bool:
-        #Fetch while we are not the the first version
-        return self.oldest_version() == None  or self.oldest_version() >= 1
+        # Fetch while we are not the the first version
+        return self.oldest_version() == None or self.oldest_version() >= 1
 
     def fetchMore(self, parent: QModelIndex) -> None:
         pass
-        #emit
+        # emit
         # fetcher = VersionsFetcher(self.mc,self.mp.project_full_name(), self.model)
         # fetcher.finished.connect(lambda versions: self.model.add_versions(versions))
         # fetcher.start()
@@ -171,7 +171,7 @@ class VersionsFetcher(QThread):
 
     finished = pyqtSignal(list)
 
-    def __init__(self, mc : MerginClient , project_name, model: VersionsTableModel, is_sync=False):
+    def __init__(self, mc: MerginClient, project_name, model: VersionsTableModel, is_sync=False):
         super(VersionsFetcher, self).__init__()
         self.mc = mc
         self.project_name = project_name
@@ -179,21 +179,21 @@ class VersionsFetcher(QThread):
 
         self.is_sync = is_sync
 
-        self.per_page = 50 #server limit
+        self.per_page = 50  # server limit
 
     def run(self):
 
-        if (not self.is_sync):
+        if not self.is_sync:
             versions = self.fetch_previous()
         else:
             versions = self.fetch_sync_history()
 
         self.finished.emit(versions)
-    
+
     def fetch_previous(self):
 
         if len(self.model.versions) == 0:
-            #initial fetch 
+            # initial fetch
             info = self.mc.project_info(self.project_name)
             to = int_version(info["version"])
         else:
@@ -208,21 +208,22 @@ class VersionsFetcher(QThread):
         return versions
 
     def fetch_sync_history(self):
-    
-        #determine latest 
+
+        # determine latest
         info = self.mc.project_info(self.project_name)
 
         latest_server = int_version(info["version"])
         since = self.model.latest_version()
 
         versions = self.mc.project_versions(self.project_name, since=since, to=latest_server)
-        versions.pop() #Remove the last as we already have it
+        versions.pop()  # Remove the last as we already have it
         versions.reverse()
 
         return versions
 
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_history_dock.ui")
+
 
 class ProjectHistoryDockWidget(QgsDockWidget):
     def __init__(self, mc):
@@ -233,16 +234,14 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.mp = None
 
         self.project_path = mergin_project_local_path()
-        
+
         self.fetcher = None
         self.diff_downloader = None
-
-
 
         self.model = VersionsTableModel()
         self.versions_tree.setModel(self.model)
         self.versions_tree.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
-        
+
         self.versions_tree.customContextMenuRequested.connect(self.show_context_menu)
 
         self.view_changes_btn.clicked.connect(self.show_version_viewer)
@@ -252,8 +251,6 @@ class ProjectHistoryDockWidget(QgsDockWidget):
     def show_version_viewer(self):
         dlg = VersionViewerDialog()
         dlg.exec_()
-
-
 
     def update_ui(self):
         if self.mc is None:
@@ -265,7 +262,7 @@ class ProjectHistoryDockWidget(QgsDockWidget):
             self.info_label.setText("Current project is not saved. Project history is not available.")
             self.stackedWidget.setCurrentIndex(0)
             return
-        
+
         if not check_mergin_subdirs(self.project_path):
             self.info_label.setText("Current project is not a Mergin project. Project history is not available.")
             self.stackedWidget.setCurrentIndex(0)
@@ -290,10 +287,9 @@ class ProjectHistoryDockWidget(QgsDockWidget):
 
         self.stackedWidget.setCurrentIndex(1)
 
-
         self.model.current_version = self.mp.version()
         self.fetch_from_server()
-        
+
     def fetch_from_server(self):
 
         if self.fetcher and self.fetcher.isRunning():
@@ -303,7 +299,7 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.model)
         self.fetcher.finished.connect(lambda versions: self.model.add_versions(versions))
         self.fetcher.start()
-    
+
     def fetch_sync_server(self):
 
         if self.fetcher and self.fetcher.isRunning():
@@ -313,13 +309,10 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.model, is_sync=True)
         self.fetcher.finished.connect(lambda versions: self.model.prepend_versions(versions))
         self.fetcher.start()
-    
 
     def on_scrollbar_changed(self, value):
         if self.ui.versions_tree.verticalScrollBar().maximum() <= value:
             self.fetch_from_server()
-
-    
 
     def show_context_menu(self, pos):
         """Shows context menu in the project history dock"""
@@ -339,12 +332,7 @@ class ProjectHistoryDockWidget(QgsDockWidget):
         view_changes_action.setIcon(QIcon(icon_path("file-diff.svg")))
         view_changes_action.triggered.connect(lambda: self.view_changes(version))
 
-
-        
-
         menu.exec_(self.versions_tree.mapToGlobal(pos))
-
-
 
     def version_details(self, version):
         """Shows version information with full view of added/updated/removed files"""
@@ -383,7 +371,7 @@ class ProjectHistoryDockWidget(QgsDockWidget):
 
     def set_mergin_client(self, mc):
         self.mc = mc
-        
+
     def on_qgis_project_changed(self):
         self.model.clear()
         self.project_path = mergin_project_local_path()

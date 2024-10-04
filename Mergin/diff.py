@@ -108,6 +108,7 @@ def parse_db_schema(db_file):
         tables[tbl["table"]] = TableSchema(tbl["table"], columns)
     return tables
 
+
 def db_schema_from_json(schema_json):
     """Create map of tables from the schema JSON file"""
     tables = {}  # key: name, value: TableSchema
@@ -118,6 +119,7 @@ def db_schema_from_json(schema_json):
 
         tables[tbl["table"]] = TableSchema(tbl["table"], columns)
     return tables
+
 
 def parse_diff(geodiff, diff_file):
     """
@@ -371,6 +373,7 @@ def make_version_changes_layers(project_path, version):
             layers.append(vl)
 
     return layers
+
 
 def find_changeset_file(file_name, version_dir):
     """Returns path to the diff file for the given version file"""

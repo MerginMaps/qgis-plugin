@@ -214,8 +214,6 @@ class DiffViewerDialog(QDialog):
             self.map_canvas.zoomToSelected([self.current_diff])
             self.map_canvas.refresh()
 
-
-
     def show_unsaved_changes_warning(self):
         self.ui.messageBar.pushMessage(
             "Mergin",

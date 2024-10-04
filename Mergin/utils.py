@@ -1515,6 +1515,7 @@ def check_mergin_subdirs(directory):
                 return os.path.join(root, name)
     return False
 
+
 def contextual_date(date_string, start_date=None):
     """Converts datetime string returned by the server into contextual duration string, e.g.
     'N hours/days/month ago'
@@ -1543,6 +1544,7 @@ def contextual_date(date_string, start_date=None):
         return f"{hours} {'hours' if hours > 1 else 'hour'} ago"
 
     return f"{delta.days} {'days' if delta.days > 1 else 'day'} ago"
+
 
 def format_datetime(date_string):
     """Formats datetime string returned by the server into human-readable format"""
