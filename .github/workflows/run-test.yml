@@ -1,9 +1,18 @@
 name: Run Mergin Plugin Tests
 
-on: [push]
+on: 
+  push:
+  workflow_dispatch:
+    inputs:
+      PYTHON_API_CLIENT_VER:
+        description: 'python-api-client version: either a tag, release, or a branch'
+        required: true
+        default: 'master'
+        type: string
 
 env:
-  MERGIN_CLIENT_VER: "0.8.0"
+  # Assign the version provided by 'workflow_dispatch' if available; otherwise, use the default.
+  PYTHON_API_CLIENT_VER: ${{ inputs.PYTHON_API_CLIENT_VER != '' && inputs.PYTHON_API_CLIENT_VER || 'master' }}
   PLUGIN_NAME: Mergin
   TEST_FUNCTION: suite.test_all
   DOCKER_IMAGE: qgis/qgis
@@ -18,18 +27,18 @@ jobs:
 
     strategy:
       matrix:
-        docker_tags: [release-3_22, latest]
+        docker_tags: [release-3_22, release-3_34]
 
     steps:
 
       - name: Checkout client code
         uses: actions/checkout@v3
         with:
-          repository: MerginMaps/mergin-py-client
-          ref: ${{ env.MERGIN_CLIENT_VER }}
+          repository: MerginMaps/python-api-client
+          ref: ${{ env.PYTHON_API_CLIENT_VER }}
           path: client
 
-      - name: Install mergin-py-client dependencies
+      - name: Install python-api-client dependencies
         run: |
           pip3 install python-dateutil pytz wheel
           cd client

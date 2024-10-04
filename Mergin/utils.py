@@ -60,11 +60,12 @@ from qgis.core import (
     QgsMapLayer,
 )
 
-from .mergin.utils import int_version
+from .mergin.utils import int_version, bytes_to_human_size
 from .mergin.merginproject import MerginProject
 
 try:
-    from .mergin.client import MerginClient, ClientError, LoginError, InvalidProject, ServerType
+    from .mergin.common import ClientError, ErrorCode, LoginError, InvalidProject
+    from .mergin.client import MerginClient, ServerType
     from .mergin.client_pull import (
         download_project_async,
         download_project_is_running,
@@ -1410,7 +1411,7 @@ def prefix_for_relative_path(mode, home_path, target_dir):
 
 def create_tracking_layer(project_path):
     """
-    Creates a GPKG layer for tracking in Input
+    Creates a GPKG layer for tracking in the mobile app
     """
     filename = get_unique_filename(os.path.join(project_path, "tracking_layer.gpkg"))
 
