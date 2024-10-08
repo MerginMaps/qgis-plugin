@@ -497,7 +497,8 @@ class VersionViewerDialog(QDialog):
             self.diff_layers.append(vl)
             icon = icon_for_layer(vl)
 
-            self.layer_list.addItem(QListWidgetItem(icon, f"{vl.name()} ({vl.featureCount()})\n   2 updated"))
+            self.layer_list.addItem(QListWidgetItem(icon, f"{vl.name()} ({vl.featureCount()})"))
+            # evenutally add a summary eg: \n   2 updated"
 
         if len(self.diff_layers) >= 1:
             self.toolbar.setEnabled(True)
