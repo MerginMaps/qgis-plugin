@@ -248,6 +248,13 @@ class VersionsFetcher(QThread):
 
 
 class VersionViewerDialog(QDialog):
+    """
+    The class is constructed in a way that the flow of the code follow the flow the UI
+    The UI is read from left to right and each splitter is read from top to bottom
+
+    The __init__ method follow this pattern after varaible initiatlization
+    the methods of the class also follow this pattern
+    """
     def __init__(self, mc, parent=None):
 
         QDialog.__init__(self, parent)
@@ -262,14 +269,19 @@ class VersionViewerDialog(QDialog):
         self.fetcher = None
         self.diff_downloader = None
 
-        self.model = VersionsTableModel()
-        self.history_treeview.setModel(self.model)
+        self.set_splitters_state()
+
+        self.versionModel = VersionsTableModel()
+        self.history_treeview.setModel(self.versionModel)
+        self.history_treeview.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
         
-        self.selectionModel = self.history_treeview.selectionModel()
+        self.selectionModel:QItemSelectionModel = self.history_treeview.selectionModel()
+        self.selectionModel.currentChanged.connect(self.current_version_changed)
 
-        self.selectionModel.currentChanged.connect(self.currentVersionChanged)
-
+        self.has_selected_latest = False
+        
         self.fetch_from_server()
+
 
         height = 30
         self.toolbar.setMinimumHeight(height)
@@ -307,19 +319,12 @@ class VersionViewerDialog(QDialog):
         self.toolbar.addWidget(btn_add_changes)
         self.toolbar.setIconSize(iface.iconSize())
 
-        self.set_splitters_state()
+
 
         self.current_diff = None
         self.diff_layers = []
         self.filter_model = None
-
         self.layer_list.currentRowChanged.connect(self.diff_layer_changed)
-
-        self.show_version_changes(25)
-        self.update_canvas(self.diff_layers)
-        self.diff_layer_changed(1)
-
-        self.version_details = self.mc.project_version_info(self.mp.project_id(), "v25")
 
         self.icons = {
             "added": "plus.svg",
@@ -331,14 +336,10 @@ class VersionViewerDialog(QDialog):
         self.model_detail = QStandardItemModel()
         self.model_detail.setHorizontalHeaderLabels(["Details"])
         self.details_treeview.setModel(self.model_detail)
-        self.populate_details()
-        self.details_treeview.expandAll()
 
-        self.model.current_version = self.mp.version()
-        self.fetch_from_server()
+        self.versionModel.current_version = self.mp.version()
 
     def exec(self):
-
         try:
             ws_id = self.mp.workspace_id()
         except ClientError as e:
@@ -354,23 +355,6 @@ class VersionViewerDialog(QDialog):
         self.reject()
         return
 
-    
-    def currentVersionChanged(self, current_index, previous_index):
-        item = self.model.item_from_index(current_index)
-        version_name = item["name"]
-        version = int_version(item["name"])
-
-        self.version_details = self.mc.project_version_info(self.mp.project_id(), version_name)
-        self.populate_details()
-        self.details_treeview.expandAll()
-
-        # Reset layer list
-        self.layer_list.clear()
-
-        self.show_version_changes(version)
-        self.update_canvas(self.diff_layers)
-
-        return self.model.data(current_index, VersionsTableModel.VERSION)
 
     def closeEvent(self, event):
         self.save_splitters_state()
@@ -396,18 +380,49 @@ class VersionViewerDialog(QDialog):
             height = max([self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()])
             self.splitter.setSizes([height, height])
 
-    def set_mergin_client(self, mc):
-        self.mc = mc
-
     def fetch_from_server(self):
 
         if self.fetcher and self.fetcher.isRunning():
             # Only fetching when previous is finshed
             return
 
-        self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.model)
-        self.fetcher.finished.connect(lambda versions: self.model.add_versions(versions))
+        self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
+        self.fetcher.finished.connect(lambda versions: self.versionModel.add_versions(versions))
+        self.fetcher.finished.connect(lambda versions: self.selected_latest())
         self.fetcher.start()
+
+    def on_scrollbar_changed(self, value):
+        if self.ui.history_treeview.verticalScrollBar().maximum() <= value:
+            self.fetch_from_server()
+
+    def selected_latest(self):
+        # On open dialog select the latest version 
+        if self.has_selected_latest and self.has_selected_latest == True:
+            return
+        
+        self.has_selected_latest = True
+        
+        index = self.versionModel.index(0,0)
+        self.selectionModel.setCurrentIndex(index,  QItemSelectionModel.Select | QItemSelectionModel.Rows)
+
+
+    def current_version_changed(self, current_index, previous_index):
+        #Update the ui when the selected version change
+        item = self.versionModel.item_from_index(current_index)
+        version_name = item["name"]
+        version = int_version(item["name"])
+
+        self.version_details = self.mc.project_version_info(self.mp.project_id(), version_name)
+        self.populate_details()
+        self.details_treeview.expandAll()
+
+        # Reset layer list
+        self.layer_list.clear()
+
+        self.show_version_changes(version)
+        self.update_canvas(self.diff_layers)
+
+        return self.versionModel.data(current_index, VersionsTableModel.VERSION)
 
     def populate_details(self):
         self.edit_project_size.setText(bytes_to_human_size(self.version_details["project_size"]))
