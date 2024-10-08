@@ -4,7 +4,16 @@ import os
 from qgis.PyQt import uic, QtCore
 from qgis.PyQt.QtWidgets import QDialog, QAction, QListWidgetItem, QPushButton, QMenu, QMessageBox
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon, QFont, QColor
-from qgis.PyQt.QtCore import QStringListModel, Qt, QSettings, QModelIndex, QAbstractTableModel, QThread, pyqtSignal, QItemSelectionModel
+from qgis.PyQt.QtCore import (
+    QStringListModel,
+    Qt,
+    QSettings,
+    QModelIndex,
+    QAbstractTableModel,
+    QThread,
+    pyqtSignal,
+    QItemSelectionModel,
+)
 
 from qgis.utils import iface
 from qgis.core import QgsProject, QgsMessageLog, QgsApplication, QgsFeatureRequest, QgsVectorLayerCache
@@ -255,6 +264,7 @@ class VersionViewerDialog(QDialog):
     The __init__ method follow this pattern after varaible initiatlization
     the methods of the class also follow this pattern
     """
+
     def __init__(self, mc, parent=None):
 
         QDialog.__init__(self, parent)
@@ -274,14 +284,13 @@ class VersionViewerDialog(QDialog):
         self.versionModel = VersionsTableModel()
         self.history_treeview.setModel(self.versionModel)
         self.history_treeview.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
-        
-        self.selectionModel:QItemSelectionModel = self.history_treeview.selectionModel()
+
+        self.selectionModel: QItemSelectionModel = self.history_treeview.selectionModel()
         self.selectionModel.currentChanged.connect(self.current_version_changed)
 
         self.has_selected_latest = False
-        
-        self.fetch_from_server()
 
+        self.fetch_from_server()
 
         height = 30
         self.toolbar.setMinimumHeight(height)
@@ -324,7 +333,6 @@ class VersionViewerDialog(QDialog):
         self.pan_tool = QgsMapToolPan(self.map_canvas)
         self.map_canvas.setMapTool(self.pan_tool)
 
-
         self.current_diff = None
         self.diff_layers = []
         self.filter_model = None
@@ -359,7 +367,6 @@ class VersionViewerDialog(QDialog):
         self.reject()
         return
 
-
     def closeEvent(self, event):
         self.save_splitters_state()
         QDialog.closeEvent(self, event)
@@ -392,26 +399,25 @@ class VersionViewerDialog(QDialog):
 
         self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
         self.fetcher.finished.connect(lambda versions: self.versionModel.add_versions(versions))
-        self.fetcher.finished.connect(lambda versions: self.selected_latest())
+        self.fetcher.finished.connect(lambda versions: self.select_latest())
         self.fetcher.start()
 
     def on_scrollbar_changed(self, value):
         if self.ui.history_treeview.verticalScrollBar().maximum() <= value:
             self.fetch_from_server()
 
-    def selected_latest(self):
-        # On open dialog select the latest version 
+    def select_latest(self):
+        # On open dialog select the latest version
         if self.has_selected_latest and self.has_selected_latest == True:
             return
-        
-        self.has_selected_latest = True
-        
-        index = self.versionModel.index(0,0)
-        self.selectionModel.setCurrentIndex(index,  QItemSelectionModel.Select | QItemSelectionModel.Rows)
 
+        self.has_selected_latest = True
+
+        index = self.versionModel.index(0, 0)
+        self.selectionModel.setCurrentIndex(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
 
     def current_version_changed(self, current_index, previous_index):
-        #Update the ui when the selected version change
+        # Update the ui when the selected version change
         item = self.versionModel.item_from_index(current_index)
         version_name = item["name"]
         version = int_version(item["name"])
