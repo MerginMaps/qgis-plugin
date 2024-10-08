@@ -3,7 +3,7 @@ import os
 
 from qgis.PyQt import uic, QtCore
 from qgis.PyQt.QtWidgets import QDialog, QAction, QListWidgetItem, QPushButton, QMenu, QMessageBox
-from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon, QFont
+from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon, QFont, QColor
 from qgis.PyQt.QtCore import QStringListModel, Qt, QSettings, QModelIndex, QAbstractTableModel, QThread, pyqtSignal, QItemSelectionModel
 
 from qgis.utils import iface
@@ -319,6 +319,10 @@ class VersionViewerDialog(QDialog):
         self.toolbar.addWidget(btn_add_changes)
         self.toolbar.setIconSize(iface.iconSize())
 
+        self.map_canvas.enableAntiAliasing(True)
+        self.map_canvas.setSelectionColor(QColor(Qt.cyan))
+        self.pan_tool = QgsMapToolPan(self.map_canvas)
+        self.map_canvas.setMapTool(self.pan_tool)
 
 
         self.current_diff = None
