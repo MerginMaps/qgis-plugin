@@ -3,12 +3,14 @@ import json
 import base64
 import sqlite3
 import tempfile
+import glob
 
 from qgis.PyQt.QtCore import QVariant
 
-from qgis.PyQt.QtGui import QColor
+from qgis.PyQt.QtGui import QColor, QIcon
 
 from qgis.core import (
+    QgsApplication,
     QgsVectorLayer,
     QgsFeature,
     QgsGeometry,
@@ -97,6 +99,18 @@ def parse_db_schema(db_file):
     """Parse GPKG file schema and return map of tables"""
     schema_json = get_schema(db_file)
 
+    tables = {}  # key: name, value: TableSchema
+    for tbl in schema_json:
+        columns = []
+        for col in tbl["columns"]:
+            columns.append(ColumnSchema(col["name"], col["type"], "primary_key" in col and col["primary_key"]))
+
+        tables[tbl["table"]] = TableSchema(tbl["table"], columns)
+    return tables
+
+
+def db_schema_from_json(schema_json):
+    """Create map of tables from the schema JSON file"""
     tables = {}  # key: name, value: TableSchema
     for tbl in schema_json:
         columns = []
@@ -311,6 +325,76 @@ def make_local_changes_layer(mp, layer):
     return vl, ""
 
 
+def make_version_changes_layers(project_path, version):
+    geodiff = pygeodiff.GeoDiff()
+
+    layers = []
+    version_dir = os.path.join(project_path, ".mergin", ".cache", f"v{version}")
+    for f in glob.iglob("*.gpkg", root_dir=version_dir):
+        gpkg_file = os.path.join(version_dir, f)
+        schema_file = gpkg_file + "-schema.json"
+        if not os.path.exists(schema_file):
+            geodiff.schema("sqlite", "", gpkg_file, schema_file)
+
+        changeset_file = find_changeset_file(f, version_dir)
+        if changeset_file is None:
+            continue
+
+        with open(schema_file, encoding="utf-8") as fl:
+            data = fl.read()
+            schema_json = json.loads(data.replace("\n", "")).get("geodiff_schema")
+
+        db_schema = db_schema_from_json(schema_json)
+        diff = parse_diff(geodiff, changeset_file)
+
+        for table_name in diff.keys():
+            fields, cols_to_fields = create_field_list(db_schema[table_name])
+            geom_type, geom_crs = get_layer_geometry_info(schema_json, table_name)
+
+            db_conn = None  # no ref. db
+            db_conn = sqlite3.connect(gpkg_file)
+
+            features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn)
+
+            # create diff layer
+            if geom_type is None:
+                continue
+
+            uri = f"{geom_type}?crs=epsg:{geom_crs}" if geom_crs else geom_type
+            vl = QgsVectorLayer(uri, f"[v{version} changes] {table_name}", "memory")
+            if not vl.isValid():
+                continue
+
+            vl.dataProvider().addAttributes(fields)
+            vl.updateFields()
+            vl.dataProvider().addFeatures(features)
+
+            style_diff_layer(vl, db_schema[table_name])
+            layers.append(vl)
+
+    return layers
+
+
+def find_changeset_file(file_name, version_dir):
+    """Returns path to the diff file for the given version file"""
+    for f in glob.iglob("*.gpkg-diff*", root_dir=version_dir):
+        if f.startswith(file_name):
+            return os.path.join(version_dir, f)
+    return None
+
+
+def get_layer_geometry_info(schema_json, table_name):
+    """Returns geometry type and CRS for a given table"""
+    for tbl in schema_json:
+        if tbl["table"] == table_name:
+            for col in tbl["columns"]:
+                if col["type"] == "geometry":
+                    return col["geometry"]["type"], col["geometry"]["srs_id"]
+            return "NoGeometry", ""
+
+    return None, None
+
+
 def style_diff_layer(layer, schema_table):
     """Apply conditional styling and symbology to diff layer"""
     ### setup conditional styles!
@@ -446,3 +530,17 @@ def style_diff_layer(layer, schema_table):
         )
         r = QgsRuleBasedRenderer(root_rule)
         layer.setRenderer(r)
+
+
+def icon_for_layer(layer) -> QIcon:
+    geom_type = layer.geometryType()
+    if geom_type == QgsWkbTypes.PointGeometry:
+        return QgsApplication.getThemeIcon("/mIconPointLayer.svg")
+    elif geom_type == QgsWkbTypes.LineGeometry:
+        return QgsApplication.getThemeIcon("/mIconLineLayer.svg")
+    elif geom_type == QgsWkbTypes.PolygonGeometry:
+        return QgsApplication.getThemeIcon("/mIconPolygonLayer.svg")
+    elif geom_type == QgsWkbTypes.UnknownGeometry:
+        return QgsApplication.getThemeIcon("/mIconGeometryCollectionLayer.svg")
+    else:
+        return QgsApplication.getThemeIcon("/mIconTableLayer.svg")
