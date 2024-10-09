@@ -53,7 +53,7 @@ from .mergin import MerginClient
 from .diff import make_version_changes_layers, icon_for_layer
 
 
-ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_draft_versions_viewer.ui")
+ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_versions_viewer.ui")
 
 
 class VersionsTableModel(QAbstractTableModel):

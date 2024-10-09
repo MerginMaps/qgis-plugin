@@ -42,7 +42,6 @@ from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
 from .configure_sync_wizard import DbSyncConfigWizard
 from .remove_project_dialog import RemoveProjectDialog
-from .project_history_dock import ProjectHistoryDockWidget
 from .version_viewer_dialog import VersionViewerDialog
 from .utils import (
     ServerType,
@@ -88,8 +87,6 @@ class MerginPlugin:
         # current_workspace is a dict with "name" and "id" keys, empty dict() if the server does not support workspaces
         self.current_workspace = dict()
         self.provider = MerginProvider()
-
-        # self.history_dock_widget = None
 
         if self.iface is not None:
             self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
@@ -197,10 +194,6 @@ class MerginPlugin:
             self.action_export_mbtiles.setIcon(QIcon(icon_path("file-export.svg")))
             self.iface.addCustomActionForLayerType(self.action_export_mbtiles, "", QgsMapLayer.VectorTileLayer, False)
             self.action_export_mbtiles.triggered.connect(self.export_vector_tiles)
-
-            # self.history_dock_widget = ProjectHistoryDockWidget(self.mc)
-            # self.iface.addDockWidget(Qt.RightDockWidgetArea, self.history_dock_widget)
-            # self.history_dock_widget.hide()
 
         QgsProject.instance().layersAdded.connect(self.add_context_menu_actions)
 
@@ -316,7 +309,6 @@ class MerginPlugin:
             self.mc = dlg.writeSettings()
             self.on_config_changed()
             self.show_browser_panel()
-            # self.history_dock_widget.set_mergin_client(self.mc)
 
     def configure_db_sync(self):
         """Open db-sync setup wizard."""
@@ -347,9 +339,6 @@ class MerginPlugin:
     def open_project_history_window(self):
         dlg = VersionViewerDialog(self.mc)
         dlg.exec_()
-
-    # def toggle_project_history_dock(self):
-    #     self.history_dock_widget.toggleUserVisible()
 
     def show_no_workspaces_dialog(self):
         msg = (
@@ -486,7 +475,6 @@ class MerginPlugin:
     def current_project_sync(self):
         """Synchronise current Mergin Maps project."""
         self.manager.project_status(self.mergin_proj_dir)
-        # self.history_dock_widget.fetch_sync_server()
 
     def find_project(self):
         """Open new Find Mergin Maps project dialog"""
@@ -541,8 +529,6 @@ class MerginPlugin:
         self.mergin_proj_dir = mergin_project_local_path()
         if self.mergin_proj_dir is not None:
             self.enable_toolbar_actions()
-        # if self.history_dock_widget:
-        #     self.history_dock_widget.on_qgis_project_changed()
 
     def add_context_menu_actions(self, layers):
         provider_names = "vectortile"
@@ -566,9 +552,6 @@ class MerginPlugin:
             self.iface.removeCustomActionForLayerType(self.action_show_changes)
 
             self.iface.unregisterProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
-
-            # self.iface.removeDockWidget(self.history_dock_widget)
-            # del self.history_dock_widget
 
         remove_project_variables()
         QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
