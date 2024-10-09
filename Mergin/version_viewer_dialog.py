@@ -429,7 +429,16 @@ class VersionViewerDialog(QDialog):
         # Reset layer list
         self.layer_list.clear()
 
-        self.show_version_changes(version)
+        if not os.path.exists(os.path.join(self.project_path, ".mergin", ".cache", f"v{version}")):
+            if self.diff_downloader and self.diff_downloader.isRunning():
+                self.diff_downloader.requestInterruption()
+
+            self.diff_downloader = ChangesetsDownloader(self.mc, self.mp, version)
+            self.diff_downloader.finished.connect(lambda msg: self.show_version_changes(version))
+            self.diff_downloader.start()
+        else:
+            self.show_version_changes(version)
+
         self.update_canvas(self.diff_layers)
 
         return self.versionModel.data(current_index, VersionsTableModel.VERSION)
