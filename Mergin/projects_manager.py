@@ -364,7 +364,7 @@ class MerginProjectsManager(object):
                 qgis_proj_changed = True
                 break
         filename_in_files = qgis_proj_filename in find_qgis_files(project_dir)
-        if filename_in_files in find_qgis_files(project_dir) and qgis_proj_changed:
+        if filename_in_files and qgis_proj_changed:
             self.open_project(project_dir)
 
         if dlg.exception:
