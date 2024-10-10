@@ -20,7 +20,6 @@ from .utils import (
     check_mergin_subdirs,
     create_basic_qgis_project,
     find_packable_layers,
-    find_qgis_files,
     package_layer,
     PackagingError,
     save_current_project,
