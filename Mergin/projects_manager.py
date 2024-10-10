@@ -43,7 +43,8 @@ class MerginProjectsManager(object):
         """
         Check if current project is the same as actually operated Mergin project and has some unsaved changes.
         """
-        if QgsProject.instance().fileName() in find_qgis_files(project_dir):
+        qgis_proj_filename = os.path.normpath(QgsProject.instance().fileName())
+        if qgis_proj_filename in find_qgis_files(project_dir):
             check_result = unsaved_project_check()
             return False if check_result == UnsavedChangesStrategy.HasUnsavedChanges else True
         return True  # not a Mergin project
@@ -255,7 +256,7 @@ class MerginProjectsManager(object):
         if not self.check_project_server(project_dir):
             return
 
-        current_project_filename = QgsProject.instance().fileName()
+        current_project_filename = os.path.normpath(QgsProject.instance().fileName())
         current_project_path = os.path.normpath(QgsProject.instance().absolutePath())
         if current_project_path == os.path.normpath(project_dir):
             QgsProject.instance().clear()
@@ -356,7 +357,7 @@ class MerginProjectsManager(object):
         dlg.push_start(self.mc, project_dir, project_name)
         dlg.exec_()  # blocks until success, failure or cancellation
 
-        qgis_proj_filename = QgsProject.instance().fileName()
+        qgis_proj_filename = os.path.normpath(QgsProject.instance().fileName())
         qgis_proj_basename = os.path.basename(qgis_proj_filename)
         qgis_proj_changed = False
         for updated in pull_changes["updated"]:
