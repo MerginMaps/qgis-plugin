@@ -1026,7 +1026,7 @@ def mergin_project_local_path(project_name=None):
                 proj_path = None
         return proj_path
 
-    qgis_project_path = QgsProject.instance().absolutePath()
+    qgis_project_path = os.path.normpath(QgsProject.instance().absolutePath())
     if not qgis_project_path:
         return None
 

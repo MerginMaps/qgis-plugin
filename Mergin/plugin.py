@@ -715,12 +715,6 @@ class MerginLocalProjectItem(QgsDirectoryItem):
             return
         self.project_manager.project_status(self.path)
 
-    def _reload_project(self):
-        """This will forcefully reload the QGIS project because the project (or its data) may have changed"""
-        qgis_files = find_qgis_files(self.path)
-        if QgsProject.instance().fileName() in qgis_files:
-            iface.addProject(QgsProject.instance().fileName())
-
     def remove_local_project(self):
         if not self.path:
             return
