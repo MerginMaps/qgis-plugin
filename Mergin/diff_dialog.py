@@ -18,14 +18,14 @@ from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttribute
 from qgis.utils import iface, OverrideCursor
 
 from .mergin.merginproject import MerginProject
-from .diff import make_local_changes_layer
+from .diff import make_local_changes_layer, make_version_changes_layers, icon_for_layer
 from .utils import icon_path
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_diff_viewer_dialog.ui")
 
 
 class DiffViewerDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, version=None, parent=None):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
 
@@ -91,6 +91,8 @@ class DiffViewerDialog(QDialog):
             self.diff_layers = []
             self.filter_model = None
 
+            self.version = version
+
             self.create_tabs()
 
     def reject(self):
@@ -106,6 +108,12 @@ class DiffViewerDialog(QDialog):
         settings.setValue("Mergin/changesViewerSplitterSize", self.splitter.saveState())
 
     def create_tabs(self):
+        if self.version is None:
+            self.show_local_changes()
+        else:
+            self.show_version_changes()
+
+    def show_local_changes(self):
         mp = MerginProject(QgsProject.instance().homePath())
         project_layers = QgsProject.instance().mapLayers()
         for layer in project_layers.values():
@@ -122,7 +130,14 @@ class DiffViewerDialog(QDialog):
                 continue
 
             self.diff_layers.append(vl)
-            self.tab_bar.addTab(self.icon_for_layer(vl), f"{layer.name()} ({vl.featureCount()})")
+            self.tab_bar.addTab(icon_for_layer(vl), f"{layer.name()} ({vl.featureCount()})")
+        self.tab_bar.setCurrentIndex(0)
+
+    def show_version_changes(self):
+        layers = make_version_changes_layers(QgsProject.instance().homePath(), self.version)
+        for vl in layers:
+            self.diff_layers.append(vl)
+            self.tab_bar.addTab(icon_for_layer(vl), f"{vl.name()} ({vl.featureCount()})")
         self.tab_bar.setCurrentIndex(0)
 
     def toggle_project_layers(self, checked):
@@ -198,19 +213,6 @@ class DiffViewerDialog(QDialog):
         if self.current_diff:
             self.map_canvas.zoomToSelected([self.current_diff])
             self.map_canvas.refresh()
-
-    def icon_for_layer(self, layer):
-        geom_type = layer.geometryType()
-        if geom_type == QgsWkbTypes.PointGeometry:
-            return QgsApplication.getThemeIcon("/mIconPointLayer.svg")
-        elif geom_type == QgsWkbTypes.LineGeometry:
-            return QgsApplication.getThemeIcon("/mIconLineLayer.svg")
-        elif geom_type == QgsWkbTypes.PolygonGeometry:
-            return QgsApplication.getThemeIcon("/mIconPolygonLayer.svg")
-        elif geom_type == QgsWkbTypes.UnknownGeometry:
-            return QgsApplication.getThemeIcon("/mIconGeometryCollectionLayer.svg")
-        else:
-            return QgsApplication.getThemeIcon("/mIconTableLayer.svg")
 
     def show_unsaved_changes_warning(self):
         self.ui.messageBar.pushMessage(
