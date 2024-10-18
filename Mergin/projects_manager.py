@@ -506,7 +506,9 @@ class MerginProjectsManager(object):
         project_name = posixpath.join(project["namespace"], project["name"])  # we need posix path for server API calls
         settings = QSettings()
         last_parent_dir = settings.value("Mergin/lastUsedDownloadDir", str(Path.home()))
-        parent_dir = QFileDialog.getExistingDirectory(None, "Open Directory", last_parent_dir, QFileDialog.Option.ShowDirsOnly)
+        parent_dir = QFileDialog.getExistingDirectory(
+            None, "Open Directory", last_parent_dir, QFileDialog.Option.ShowDirsOnly
+        )
         if not parent_dir:
             return
         settings.setValue("Mergin/lastUsedDownloadDir", parent_dir)

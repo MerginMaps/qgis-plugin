@@ -434,7 +434,9 @@ def get_new_qgis_project_filepath(project_name=None):
     settings = QSettings()
     last_dir = settings.value("Mergin/lastUsedDownloadDir", str(pathlib.Path.home()))
     if project_name is not None:
-        dest_dir = QFileDialog.getExistingDirectory(None, "Destination directory", last_dir, QFileDialog.Option.ShowDirsOnly)
+        dest_dir = QFileDialog.getExistingDirectory(
+            None, "Destination directory", last_dir, QFileDialog.Option.ShowDirsOnly
+        )
         project_file = os.path.abspath(os.path.join(dest_dir, project_name))
     else:
         project_file, filters = QFileDialog.getSaveFileName(
