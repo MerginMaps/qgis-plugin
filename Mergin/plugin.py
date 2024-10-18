@@ -293,7 +293,7 @@ class MerginPlugin:
     def configure(self):
         """Open plugin configuration dialog."""
         dlg = ConfigurationDialog()
-        if dlg.exec_():
+        if dlg.exec():
             self.mc = dlg.writeSettings()
             self.on_config_changed()
             self.show_browser_panel()
@@ -321,7 +321,7 @@ class MerginPlugin:
             return
 
         wizard = DbSyncConfigWizard(project_name)
-        if not wizard.exec_():
+        if not wizard.exec():
             return
 
     def show_no_workspaces_dialog(self):
@@ -330,11 +330,11 @@ class MerginPlugin:
             "Click on the button below to create one. \n\n"
             "A minimum of one workspace is required to use Mergin Maps."
         )
-        msg_box = QMessageBox(QMessageBox.Critical, "You do not have any workspace", msg, QMessageBox.Close)
+        msg_box = QMessageBox(QMessageBox.Icon.Critical, "You do not have any workspace", msg, QMessageBox.Close)
         create_button = msg_box.addButton("Create workspace", msg_box.ActionRole)
         create_button.clicked.disconnect()
         create_button.clicked.connect(partial(self.open_configured_url, "/workspaces"))
-        msg_box.exec_()
+        msg_box.exec()
 
     def set_current_workspace(self, workspace):
         """
@@ -449,7 +449,7 @@ class MerginPlugin:
             default_workspace = user_info["username"]
 
         wizard = NewMerginProjectWizard(self.manager, user_info=user_info, default_workspace=default_workspace)
-        if not wizard.exec_():
+        if not wizard.exec():
             return  # cancelled
         if self.has_browser_item():
             # make sure the item has the link between remote and local project we have just added
@@ -474,7 +474,7 @@ class MerginPlugin:
         except:
             pass
 
-        dlg.exec_()
+        dlg.exec()
 
     def switch_workspace(self):
         """Open new Switch workspace dialog"""
@@ -490,7 +490,7 @@ class MerginPlugin:
 
         dlg = WorkspaceSelectionDialog(workspaces)
         dlg.manage_workspaces_clicked.connect(self.open_configured_url)
-        if not dlg.exec_():
+        if not dlg.exec():
             return
 
         workspace = dlg.get_workspace()
@@ -501,7 +501,7 @@ class MerginPlugin:
         dlg = PublicProjectSelectionDialog(self.mc)
         dlg.open_project_clicked.connect(self.manager.open_project)
         dlg.download_project_clicked.connect(self.manager.download_project)
-        dlg.exec_()
+        dlg.exec()
 
     def on_qgis_project_changed(self):
         """
@@ -589,7 +589,7 @@ class MerginPlugin:
                     dlg_diff_viewer.tab_bar.setCurrentIndex(i)
                     break
         dlg_diff_viewer.show()
-        dlg_diff_viewer.exec_()
+        dlg_diff_viewer.exec()
 
     def export_vector_tiles(self):
         selected_layers = self.iface.layerTreeView().selectedLayersRecursive()
@@ -637,7 +637,7 @@ class MerginRemoteProjectItem(QgsDataItem):
         user_info = self.mc.user_info()
 
         dlg = CloneProjectDialog(user_info=user_info, default_workspace=self.project["namespace"])
-        if not dlg.exec_():
+        if not dlg.exec():
             return  # cancelled
         try:
             self.mc.clone_project(self.project_name, dlg.project_name, dlg.project_namespace)
@@ -658,7 +658,7 @@ class MerginRemoteProjectItem(QgsDataItem):
 
     def remove_remote_project(self):
         dlg = RemoveProjectDialog(self.project_name)
-        if dlg.exec_() == QDialog.Rejected:
+        if dlg.exec() == QDialog.Rejected:
             return
 
         try:
@@ -784,7 +784,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
 
         dlg = CloneProjectDialog(user_info=user_info, default_workspace=self.project["namespace"])
 
-        if not dlg.exec_():
+        if not dlg.exec():
             return  # cancelled
         try:
             self.mc.clone_project(self.project_name, dlg.project_name, dlg.project_namespace)
