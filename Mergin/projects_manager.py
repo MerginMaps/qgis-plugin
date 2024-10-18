@@ -141,7 +141,7 @@ class MerginProjectsManager(object):
         dlg = SyncDialog()
         dlg.push_start(self.mc, project_dir, full_project_name)
 
-        dlg.exec_()  # blocks until success, failure or cancellation
+        dlg.exec()  # blocks until success, failure or cancellation
 
         if dlg.exception:
             # push failed for some reason
@@ -207,7 +207,7 @@ class MerginProjectsManager(object):
             # Sync button in the status dialog returns QDialog.Accepted
             # and Close button returns QDialog::Rejected, so if dialog was
             # accepted we start sync
-            return_value = dlg.exec_()
+            return_value = dlg.exec()
 
             if return_value == ProjectStatusDialog.Accepted:
                 self.sync_project(project_dir)
@@ -313,7 +313,7 @@ class MerginProjectsManager(object):
         dlg = SyncDialog()
         dlg.pull_start(self.mc, project_dir, project_name)
 
-        dlg.exec_()  # blocks until success, failure or cancellation
+        dlg.exec()  # blocks until success, failure or cancellation
 
         if dlg.exception:
             # pull failed for some reason
@@ -354,7 +354,7 @@ class MerginProjectsManager(object):
 
         dlg = SyncDialog()
         dlg.push_start(self.mc, project_dir, project_name)
-        dlg.exec_()  # blocks until success, failure or cancellation
+        dlg.exec()  # blocks until success, failure or cancellation
 
         qgis_proj_filename = QgsProject.instance().fileName()
         qgis_proj_basename = os.path.basename(qgis_proj_filename)
@@ -472,7 +472,7 @@ class MerginProjectsManager(object):
         msg_box.setTextFormat(Qt.RichText)
         msg_box.setStandardButtons(QMessageBox.Ok)
         msg_box.setText(msg)
-        msg_box.exec_()
+        msg_box.exec()
 
     def resolve_unfinished_pull(self, project_dir, reopen_project=False):
         """
@@ -521,7 +521,7 @@ class MerginProjectsManager(object):
 
         dlg = SyncDialog()
         dlg.download_start(self.mc, target_dir, project_name)
-        dlg.exec_()  # blocks until completion / failure / cancellation
+        dlg.exec()  # blocks until completion / failure / cancellation
         if dlg.exception:
             if isinstance(dlg.exception, (URLError, ValueError)):
                 QgsApplication.messageLog().logMessage("Mergin Maps plugin: " + str(dlg.exception))

@@ -226,7 +226,7 @@ class ProjectStatusDialog(QDialog):
         self.close()
         self.ui.messageBar.pushMessage("Mergin", "No changes found in the project layers.", Qgis.Info)
         dlg_diff_viewer.show()
-        dlg_diff_viewer.exec_()
+        dlg_diff_viewer.exec()
 
     def link_clicked(self, url):
         parsed_url = urlparse(url.toString())

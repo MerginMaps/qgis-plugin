@@ -925,7 +925,7 @@ def unhandled_exception_message(error_details, dialog_title, error_text, log_fil
         box.setDetailedText(error_details)
         btn = box.addButton("Send logs", QMessageBox.ActionRole)
         btn.clicked.connect(lambda: send_logs(username, log_file))
-    box.exec_()
+    box.exec()
 
 
 def write_project_variables(project_owner, project_name, project_full_name, version, server):

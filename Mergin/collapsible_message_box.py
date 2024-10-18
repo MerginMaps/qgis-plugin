@@ -13,4 +13,4 @@ class CollapsibleBox(QtWidgets.QWidget):
         msg.setStandardButtons(QMessageBox.Close)
         msg.setDefaultButton(QMessageBox.Close)
         msg.setDetailedText(details)
-        msg.exec_()
+        msg.exec()

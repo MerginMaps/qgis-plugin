@@ -77,4 +77,4 @@ class CloneProjectDialog(QDialog):
         self.project_name = self.ui.edit_project_name.text()
         self.project_namespace = self.ui.projectNamespace.currentText()
 
-        self.accept()  # this will close the dialog and dlg.exec_() returns True
+        self.accept()  # this will close the dialog and dlg.exec() returns True
