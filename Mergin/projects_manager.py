@@ -468,7 +468,7 @@ class MerginProjectsManager(object):
         )
         msg_box = QMessageBox()
         msg_box.setWindowTitle("Conflicts found")
-        msg_box.setIcon(QMessageBox.Warning)
+        msg_box.setIcon(QMessageBox.Icon.Warning)
         msg_box.setTextFormat(Qt.RichText)
         msg_box.setStandardButtons(QMessageBox.Ok)
         msg_box.setText(msg)
@@ -506,7 +506,7 @@ class MerginProjectsManager(object):
         project_name = posixpath.join(project["namespace"], project["name"])  # we need posix path for server API calls
         settings = QSettings()
         last_parent_dir = settings.value("Mergin/lastUsedDownloadDir", str(Path.home()))
-        parent_dir = QFileDialog.getExistingDirectory(None, "Open Directory", last_parent_dir, QFileDialog.ShowDirsOnly)
+        parent_dir = QFileDialog.getExistingDirectory(None, "Open Directory", last_parent_dir, QFileDialog.Option.ShowDirsOnly)
         if not parent_dir:
             return
         settings.setValue("Mergin/lastUsedDownloadDir", parent_dir)

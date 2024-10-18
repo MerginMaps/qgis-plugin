@@ -330,7 +330,7 @@ class MerginPlugin:
             "Click on the button below to create one. \n\n"
             "A minimum of one workspace is required to use Mergin Maps."
         )
-        msg_box = QMessageBox(QMessageBox.Critical, "You do not have any workspace", msg, QMessageBox.Close)
+        msg_box = QMessageBox(QMessageBox.Icon.Critical, "You do not have any workspace", msg, QMessageBox.Close)
         create_button = msg_box.addButton("Create workspace", msg_box.ActionRole)
         create_button.clicked.disconnect()
         create_button.clicked.connect(partial(self.open_configured_url, "/workspaces"))

@@ -95,7 +95,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
-            None, "Select directory", self.local_project_dir, QFileDialog.ShowDirsOnly
+            None, "Select directory", self.local_project_dir, QFileDialog.Option.ShowDirsOnly
         )
         if self.local_project_dir not in abs_path:
             return

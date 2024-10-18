@@ -79,7 +79,7 @@ class ConfigurationDialog(QDialog):
 
     def check_credentials(self):
         credentials_are_set = bool(self.ui.username.text()) and bool(self.ui.password.text())
-        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(credentials_are_set)
+        self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(credentials_are_set)
         self.ui.test_connection_btn.setEnabled(credentials_are_set)
 
     def check_master_password(self):

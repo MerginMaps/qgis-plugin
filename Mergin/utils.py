@@ -434,7 +434,7 @@ def get_new_qgis_project_filepath(project_name=None):
     settings = QSettings()
     last_dir = settings.value("Mergin/lastUsedDownloadDir", str(pathlib.Path.home()))
     if project_name is not None:
-        dest_dir = QFileDialog.getExistingDirectory(None, "Destination directory", last_dir, QFileDialog.ShowDirsOnly)
+        dest_dir = QFileDialog.getExistingDirectory(None, "Destination directory", last_dir, QFileDialog.Option.ShowDirsOnly)
         project_file = os.path.abspath(os.path.join(dest_dir, project_name))
     else:
         project_file, filters = QFileDialog.getSaveFileName(
@@ -908,7 +908,7 @@ def unhandled_exception_message(error_details, dialog_title, error_text, log_fil
         "please report the problem</a>."
     )
     box = QMessageBox()
-    box.setIcon(QMessageBox.Critical)
+    box.setIcon(QMessageBox.Icon.Critical)
     box.setWindowTitle(dialog_title)
     box.setText(msg)
     if log_file is None:
@@ -923,7 +923,7 @@ def unhandled_exception_message(error_details, dialog_title, error_text, log_fil
             "and briefly describe the problem to add more context to the diagnostic log."
         )
         box.setDetailedText(error_details)
-        btn = box.addButton("Send logs", QMessageBox.ActionRole)
+        btn = box.addButton("Send logs", QMessageBox.ButtonRole.ActionRole)
         btn.clicked.connect(lambda: send_logs(username, log_file))
     box.exec()
 
@@ -1242,7 +1242,7 @@ def is_dark_theme():
 
     # check whether system-wide theme is dark
     palette = QgsApplication.instance().palette()
-    bg_color = palette.color(QPalette.Window)
+    bg_color = palette.color(QPalette.ColorRole.Window)
     brightness = (bg_color.red() * 299 + bg_color.green() * 587 + bg_color.blue() * 114) / 1000
     return brightness < 155
 

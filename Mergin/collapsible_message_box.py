@@ -9,7 +9,7 @@ class CollapsibleBox(QtWidgets.QWidget):
         msg.setWindowTitle(title)
         msg.setTextFormat(Qt.RichText)
         msg.setText(text)
-        msg.setIcon(QMessageBox.Warning)
+        msg.setIcon(QMessageBox.Icon.Warning)
         msg.setStandardButtons(QMessageBox.Close)
         msg.setDefaultButton(QMessageBox.Close)
         msg.setDetailedText(details)

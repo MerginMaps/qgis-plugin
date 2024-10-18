@@ -60,7 +60,7 @@ class ProjectStatusDialog(QDialog):
             self.btn_sync.setIcon(QIcon(icon_path("refresh.svg")))
             # add sync button with AcceptRole. If dialog accepted we will start
             # sync, otherwise just close status dialog
-            self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.AcceptRole)
+            self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.ButtonRole.AcceptRole)
 
             self.btn_view_changes.setIcon(QIcon(icon_path("file-diff.svg")))
             self.btn_view_changes.clicked.connect(self.show_changes)
@@ -85,7 +85,7 @@ class ProjectStatusDialog(QDialog):
             info_text = self._get_info_text(has_files_to_replace, has_write_permissions, self.mp.has_unfinished_pull())
             for msg in info_text:
                 lbl = QLabel(msg)
-                lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+                lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
                 lbl.setWordWrap(True)
                 self.ui.messageBar.pushWidget(lbl, Qgis.Warning)
 
