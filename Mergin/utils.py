@@ -1550,3 +1550,18 @@ def format_datetime(date_string):
     """Formats datetime string returned by the server into human-readable format"""
     dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
     return dt.strftime("%a, %d %b %Y %H:%M:%S GMT")
+
+def parse_user_agent(user_agent:str)->str:
+    user_agent = user_agent.split()
+    #Does the python-api-client have a specific user_agent ?
+    if len(user_agent) == 4: #Plugin
+        _, plugin_version, qgis_version, platform = user_agent
+        plugin_version = plugin_version.replace("Plugin/", "")
+        qgis_version = qgis_version.replace("QGIS/", "")
+        platform = platform.strip("()")
+        return f"MerginMaps plugin version {plugin_version} and QGIS version {qgis_version} on {platform}"
+    elif len(user_agent) == 2:
+        mobile_version, platform = user_agent
+        mobile_version = mobile_version.replace("Input/", "")
+        platform = platform.strip("()")
+        return f"Mobile app version {mobile_version} on {platform}"

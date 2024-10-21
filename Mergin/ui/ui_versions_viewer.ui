@@ -259,7 +259,7 @@
          <item row="3" column="0">
           <widget class="QLabel" name="label_5">
            <property name="text">
-            <string>User Agent</string>
+            <string>Created with:</string>
            </property>
           </widget>
          </item>
@@ -293,7 +293,7 @@
          <item row="2" column="0">
           <widget class="QLabel" name="label_4">
            <property name="text">
-            <string>Created</string>
+            <string>Created at</string>
            </property>
           </widget>
          </item>
