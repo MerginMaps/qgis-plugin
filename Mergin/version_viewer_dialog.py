@@ -199,6 +199,9 @@ class ChangesetsDownloader(QThread):
             if not os.path.exists(full_gpkg):
                 self.mc.download_file(self.mp.dir, f["path"], full_gpkg, f"v{self.version}")
 
+        if self.isInterruptionRequested():
+            self.quit()
+
         self.finished.emit("")
 
 
