@@ -1551,10 +1551,11 @@ def format_datetime(date_string):
     dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
     return dt.strftime("%a, %d %b %Y %H:%M:%S GMT")
 
-def parse_user_agent(user_agent:str)->str:
+
+def parse_user_agent(user_agent: str) -> str:
     user_agent = user_agent.split()
-    #Does the python-api-client have a specific user_agent ?
-    if len(user_agent) == 4: #Plugin
+    # Does the python-api-client have a specific user_agent ?
+    if len(user_agent) == 4:  # Plugin
         _, plugin_version, qgis_version, platform = user_agent
         plugin_version = plugin_version.replace("Plugin/", "")
         qgis_version = qgis_version.replace("QGIS/", "")

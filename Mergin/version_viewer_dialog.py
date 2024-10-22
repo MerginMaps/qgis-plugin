@@ -44,7 +44,7 @@ from .utils import (
     is_versioned_file,
     icon_path,
     format_datetime,
-    parse_user_agent
+    parse_user_agent,
 )
 
 from .mergin.merginproject import MerginProject
@@ -181,7 +181,7 @@ class ChangesetsDownloader(QThread):
 
         files_updated = version_info["changes"]["updated"]
 
-        #if file not in project_version_info # skip as well
+        # if file not in project_version_info # skip as well
         if not version_info["changesets"]:
             self.finished.emit("This version does not contain changes in the project layers.")
             return
@@ -416,6 +416,11 @@ class VersionViewerDialog(QDialog):
         self.fetcher.start()
 
     def on_scrollbar_changed(self, value):
+
+        if self.versionModel.oldest_version() == 1:
+            # No version left to fetch
+            return
+
         if self.ui.history_treeview.verticalScrollBar().maximum() <= value:
             self.fetch_from_server()
 
@@ -539,7 +544,7 @@ class VersionViewerDialog(QDialog):
             self.tabWidget.setCurrentIndex(1)
             self.tabWidget.setTabEnabled(0, False)
 
-    def collect_layers(self, checked):
+    def collect_layers(self, checked: bool):
         if checked:
             layers = iface.mapCanvas().layers()
         else:
@@ -550,7 +555,7 @@ class VersionViewerDialog(QDialog):
 
         return layers
 
-    def diff_layer_changed(self, index):
+    def diff_layer_changed(self, index: int):
         if index > len(self.diff_layers):
             return
 
