@@ -177,18 +177,27 @@ class ChangesetsDownloader(QThread):
         self.version = version
 
     def run(self):
-        info = self.mc.project_info(self.mp.project_full_name(), version=f"v{self.version}")
-        files = [f for f in info["files"] if is_versioned_file(f["path"])]
-        if not files:
+        version_info = self.mc.project_version_info(self.mp.project_id(), version=f"v{self.version}")
+
+        files_updated = version_info["changes"]["updated"]
+
+        #if file not in project_version_info # skip as well
+        if not version_info["changesets"]:
             self.finished.emit("This version does not contain changes in the project layers.")
             return
 
-        has_history = any("diff" in f for f in files)
+        files_updated = [f for f in files_updated if is_versioned_file(f["path"])]
+        
+        if not files_updated:
+            self.finished.emit("This version does not contain changes in the project layers.")
+            return
+
+        has_history = any("diff" in f for f in files_updated)
         if not has_history:
             self.finished.emit("This version does not contain changes in the project layers.")
             return
 
-        for f in files:
+        for f in files_updated:
             if self.isInterruptionRequested():
                 return
 
