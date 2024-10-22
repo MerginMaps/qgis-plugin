@@ -187,7 +187,7 @@ class ChangesetsDownloader(QThread):
             return
 
         files_updated = [f for f in files_updated if is_versioned_file(f["path"])]
-        
+
         if not files_updated:
             self.finished.emit("This version does not contain changes in the project layers.")
             return
@@ -443,6 +443,10 @@ class VersionViewerDialog(QDialog):
         self.layer_list.clear()
 
         if not os.path.exists(os.path.join(self.project_path, ".mergin", ".cache", f"v{version}")):
+
+            self.stackedWidget.setCurrentIndex(1)
+            self.label_info.setText("Loading version info…")
+
             if self.diff_downloader and self.diff_downloader.isRunning():
                 self.diff_downloader.requestInterruption()
 
@@ -531,6 +535,7 @@ class VersionViewerDialog(QDialog):
         else:
             self.toolbar.setEnabled(False)
             self.stackedWidget.setCurrentIndex(1)
+            self.label_info.setText("No visual changes")
             self.tabWidget.setCurrentIndex(1)
             self.tabWidget.setTabEnabled(0, False)
 

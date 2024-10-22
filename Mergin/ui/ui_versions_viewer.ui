@@ -219,7 +219,7 @@
           </layout>
          </widget>
          <widget class="QWidget" name="Novisualchange">
-          <widget class="QLabel" name="label">
+          <widget class="QLabel" name="label_info">
            <property name="geometry">
             <rect>
              <x>110</x>
