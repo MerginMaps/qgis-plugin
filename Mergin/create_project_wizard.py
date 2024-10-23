@@ -383,9 +383,9 @@ class PackageLayersTreeView(QTreeView):
         self.expandAll()
         self.header().setStretchLastSection(False)
         self.resizeColumnToContents(0)
-        self.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
-        self.setSelectionMode(QAbstractItemView.NoSelection)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         self.setEditTriggers(QTreeView.NoEditTriggers)
 
         self.clicked.connect(self.model().toggle_item)
@@ -419,7 +419,7 @@ class NewMerginProjectWizard(QWizard):
         self.iface = iface
         self.settings = QSettings()
         self.setWindowTitle("Create new Mergin Maps project")
-        self.setWizardStyle(QWizard.ClassicStyle)
+        self.setWizardStyle(QWizard.WizardStyle.ClassicStyle)
         self.setDefaultProperty("QComboBox", "currentText", QComboBox.currentTextChanged)
         self.project_manager = project_manager
         self.username = user_info["username"]
@@ -437,7 +437,7 @@ class NewMerginProjectWizard(QWizard):
         self.package_page = PackagingPage(parent=self)
         self.setPage(PACK_PAGE, self.package_page)
 
-        self.cancel_btn = self.button(QWizard.CancelButton)
+        self.cancel_btn = self.button(QWizard.WizardButton.CancelButton)
         self.cancel_btn.clicked.connect(self.cancel_wizard)
 
         # these are the variables used by the caller
