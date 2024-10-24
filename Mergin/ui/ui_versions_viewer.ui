@@ -234,7 +234,7 @@
             </font>
            </property>
            <property name="text">
-            <string>No visual changes</string>
+            <string>Loading version info…</string>
            </property>
           </widget>
          </widget>
