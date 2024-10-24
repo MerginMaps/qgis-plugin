@@ -2,7 +2,14 @@ from collections import deque
 import os
 
 from qgis.PyQt import uic, QtCore
-from qgis.PyQt.QtWidgets import QDialog, QAction, QListWidgetItem, QPushButton, QMenu, QMessageBox
+from qgis.PyQt.QtWidgets import (
+    QDialog,
+    QAction,
+    QListWidgetItem,
+    QPushButton,
+    QMenu,
+    QMessageBox,
+)
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon, QFont, QColor
 from qgis.PyQt.QtCore import (
     QStringListModel,
@@ -16,7 +23,13 @@ from qgis.PyQt.QtCore import (
 )
 
 from qgis.utils import iface
-from qgis.core import QgsProject, QgsMessageLog, QgsApplication, QgsFeatureRequest, QgsVectorLayerCache
+from qgis.core import (
+    QgsProject,
+    QgsMessageLog,
+    QgsApplication,
+    QgsFeatureRequest,
+    QgsVectorLayerCache,
+)
 from qgis.gui import QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
 
 
@@ -126,7 +139,6 @@ class VersionsTableModel(QAbstractTableModel):
         self.versions.extendleft(versions)
         self.layoutChanged.emit()
 
-
     def item_from_index(self, index):
         return self.versions[index.row()]
 
@@ -193,11 +205,20 @@ class VersionsFetcher(QThread):
 
     finished = pyqtSignal(list)
 
-    def __init__(self, mc: MerginClient, project_name, model: VersionsTableModel, is_sync=False):
+    def __init__(
+        self,
+        mc: MerginClient,
+        project_name,
+        oldest_version: int | None,
+        latest_version: int | None,
+        is_sync=False,
+    ):
         super(VersionsFetcher, self).__init__()
         self.mc = mc
         self.project_name = project_name
-        self.model = model
+
+        self.oldest_version = oldest_version
+        self.latest_version = latest_version
 
         self.is_sync = is_sync
 
@@ -214,12 +235,12 @@ class VersionsFetcher(QThread):
 
     def fetch_previous(self):
 
-        if len(self.model.versions) == 0:
+        if self.oldest_version == None:
             # initial fetch
             info = self.mc.project_info(self.project_name)
             to = int_version(info["version"])
         else:
-            to = self.model.oldest_version()
+            to = self.oldest_version
         since = to - 100
         if since < 0:
             since = 1
@@ -235,7 +256,7 @@ class VersionsFetcher(QThread):
         info = self.mc.project_info(self.project_name)
 
         latest_server = int_version(info["version"])
-        since = self.model.latest_version()
+        since = self.latest_version
 
         versions = self.mc.project_versions(self.project_name, since=since, to=latest_server)
         versions.pop()  # Remove the last as we already have it
@@ -389,7 +410,12 @@ class VersionViewerDialog(QDialog):
             # Only fetching when previous is finshed
             return
 
-        self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
+        self.fetcher = VersionsFetcher(
+            self.mc,
+            self.mp.project_full_name(),
+            self.versionModel.oldest_version(),
+            self.versionModel.latest_version(),
+        )
         self.fetcher.finished.connect(lambda versions: self.versionModel.add_versions(versions))
         self.fetcher.finished.connect(lambda versions: self.select_latest())
         self.fetcher.start()
