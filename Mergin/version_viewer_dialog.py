@@ -322,11 +322,15 @@ class VersionViewerDialog(QDialog):
         self.toolbar.addSeparator()
 
         self.zoom_full_action = QAction(QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"), "Zoom Full", self)
+        self.zoom_full_action.triggered.connect(self.zoom_full)
+
         self.toolbar.addAction(self.zoom_full_action)
 
         self.zoom_selected_action = QAction(
             QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"), "Zoom To Selection", self
         )
+        self.zoom_selected_action.triggered.connect(self.zoom_selected)
+
         self.toolbar.addAction(self.zoom_selected_action)
 
         btn_add_changes = QPushButton("Add to project")
@@ -591,3 +595,13 @@ class VersionViewerDialog(QDialog):
     def add_all_to_project(self):
         for layer in self.diff_layers:
             QgsProject.instance().addMapLayer(layer)
+
+    def zoom_full(self):
+        if self.current_diff:
+            self.map_canvas.setExtent(self.current_diff.extent())
+            self.map_canvas.refresh()
+
+    def zoom_selected(self):
+        if self.current_diff:
+            self.map_canvas.zoomToSelected([self.current_diff])
+            self.map_canvas.refresh()
