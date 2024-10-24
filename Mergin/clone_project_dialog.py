@@ -20,7 +20,7 @@ class CloneProjectDialog(QDialog):
         """
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
-        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
         self.ui.buttonBox.accepted.connect(self.accept_dialog)
 
         workspaces = user_info.get("workspaces", None)
@@ -67,14 +67,14 @@ class CloneProjectDialog(QDialog):
                 msg = "Incorrect project name!"
 
         self.ui.edit_project_name.setToolTip(msg)
-        self.ui.buttonBox.button(QDialogButtonBox.Ok).setToolTip(msg)
+        self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setToolTip(msg)
         has_error = bool(msg)
         self.ui.warningMessageLabel.setVisible(has_error)
         self.ui.warningMessageLabel.setText(msg)
-        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(not has_error)
+        self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(not has_error)
 
     def accept_dialog(self):
         self.project_name = self.ui.edit_project_name.text()
         self.project_namespace = self.ui.projectNamespace.currentText()
 
-        self.accept()  # this will close the dialog and dlg.exec_() returns True
+        self.accept()  # this will close the dialog and dlg.exec() returns True

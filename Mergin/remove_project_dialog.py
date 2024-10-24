@@ -17,9 +17,9 @@ class RemoveProjectDialog(QDialog):
             "This action cannot be undone.<br><br>"
             "In order to delete project, enter project name in the field below and click 'Yes'."
         )
-        self.buttonBox.button(QDialogButtonBox.Yes).setEnabled(False)
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Yes).setEnabled(False)
 
         self.edit_project_name.textChanged.connect(self.project_name_changed)
 
     def project_name_changed(self, text):
-        self.buttonBox.button(QDialogButtonBox.Yes).setEnabled(self.project_name == text)
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Yes).setEnabled(self.project_name == text)
