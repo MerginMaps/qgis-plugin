@@ -17,29 +17,14 @@ from qgis.PyQt.QtCore import (
 
 from qgis.utils import iface
 from qgis.core import QgsProject, QgsMessageLog, QgsApplication, QgsFeatureRequest, QgsVectorLayerCache
-from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
+from qgis.gui import QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
 
 
 from .utils import (
-    ServerType,
     ClientError,
-    LoginError,
-    InvalidProject,
-    check_mergin_subdirs,
-    create_mergin_client,
-    find_qgis_files,
-    get_mergin_auth,
     icon_path,
-    mm_symbol_path,
-    is_number,
-    login_error_message,
     mergin_project_local_path,
     PROJS_PER_PAGE,
-    remove_project_variables,
-    same_dir,
-    unhandled_exception_message,
-    unsaved_project_check,
-    UnsavedChangesStrategy,
     contextual_date,
     is_versioned_file,
     icon_path,
