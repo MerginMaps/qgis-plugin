@@ -126,16 +126,6 @@ class VersionsTableModel(QAbstractTableModel):
         self.versions.extendleft(versions)
         self.layoutChanged.emit()
 
-    def canFetchMore(self, parent: QModelIndex) -> bool:
-        # Fetch while we are not the the first version
-        return self.oldest_version() == None or self.oldest_version() >= 1
-
-    def fetchMore(self, parent: QModelIndex) -> None:
-        pass
-        # emit
-        # fetcher = VersionsFetcher(self.mc,self.mp.project_full_name(), self.model)
-        # fetcher.finished.connect(lambda versions: self.model.add_versions(versions))
-        # fetcher.start()
 
     def item_from_index(self, index):
         return self.versions[index.row()]
