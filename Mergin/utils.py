@@ -1507,3 +1507,64 @@ def get_layer_by_path(path):
         safe_file_path = layer_path.split("|")
         if safe_file_path[0] == path:
             return layer
+
+
+def check_mergin_subdirs(directory):
+    """Check if the directory has a Mergin Maps project subdir (.mergin)."""
+    for root, dirs, files in os.walk(directory):
+        for name in dirs:
+            if name == ".mergin":
+                return os.path.join(root, name)
+    return False
+
+
+def contextual_date(date_string, start_date=None):
+    """Converts datetime string returned by the server into contextual duration string, e.g.
+    'N hours/days/month ago'
+    """
+    dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now() if start_date is None else datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%SZ")
+    delta = now - dt
+    if delta.days > 365:
+        years = now.year - dt.year - ((now.month, now.day) < (dt.month, dt.day))
+        return f"{years} {'years' if years > 1 else 'year'} ago"
+    elif delta.days > 31:
+        months = int(delta.days // 30.436875)
+        return f"{months} {'months' if months > 1 else 'month'} ago"
+    elif delta.days > 6:
+        weeks = int(delta.days // 7)
+        return f"{weeks} {'weeks' if weeks > 1 else 'week'} ago"
+
+    if delta.days < 1:
+        hours = delta.seconds // 3600
+        if hours < 1:
+            minutes = (delta.seconds // 60) % 60
+            if minutes <= 0:
+                return "just now"
+            return f"{minutes} {'minutes' if minutes > 1 else 'minute'} ago"
+
+        return f"{hours} {'hours' if hours > 1 else 'hour'} ago"
+
+    return f"{delta.days} {'days' if delta.days > 1 else 'day'} ago"
+
+
+def format_datetime(date_string):
+    """Formats datetime string returned by the server into human-readable format"""
+    dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
+    return dt.strftime("%a, %d %b %Y %H:%M:%S GMT")
+
+
+def parse_user_agent(user_agent: str) -> str:
+    user_agent = user_agent.split()
+    # Does the python-api-client have a specific user_agent ?
+    if len(user_agent) == 4:  # Plugin
+        _, plugin_version, qgis_version, platform = user_agent
+        plugin_version = plugin_version.replace("Plugin/", "")
+        qgis_version = qgis_version.replace("QGIS/", "")
+        platform = platform.strip("()")
+        return f"MerginMaps plugin version {plugin_version} and QGIS version {qgis_version} on {platform}"
+    elif len(user_agent) == 2:
+        mobile_version, platform = user_agent
+        mobile_version = mobile_version.replace("Input/", "")
+        platform = platform.strip("()")
+        return f"Mobile app version {mobile_version} on {platform}"
