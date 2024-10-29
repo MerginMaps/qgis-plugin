@@ -12,6 +12,7 @@ from qgis.PyQt.QtWidgets import (
     QPushButton,
     QMenu,
     QMessageBox,
+    QAbstractItemView,
 )
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon, QFont, QColor
 from qgis.PyQt.QtCore import (
@@ -363,6 +364,8 @@ class VersionViewerDialog(QDialog):
         }
         self.model_detail = QStandardItemModel()
         self.model_detail.setHorizontalHeaderLabels(["Details"])
+
+        self.details_treeview.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.details_treeview.setModel(self.model_detail)
 
         self.versionModel.current_version = self.mp.version()
