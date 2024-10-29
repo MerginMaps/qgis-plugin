@@ -469,10 +469,6 @@ class VersionViewerDialog(QDialog):
         else:
             self.show_version_changes(version)
 
-        self.update_canvas(self.diff_layers)
-
-        return self.versionModel.data(current_index, VersionsTableModel.VERSION)
-
     def populate_details(self):
         self.edit_project_size.setText(bytes_to_human_size(self.version_details["project_size"]))
         self.edit_created.setText(format_datetime(self.version_details["created"]))
@@ -545,6 +541,8 @@ class VersionViewerDialog(QDialog):
             self.stackedWidget.setCurrentIndex(0)
             self.tabWidget.setCurrentIndex(0)
             self.tabWidget.setTabEnabled(0, True)
+            layers = self.collect_layers(self.toggle_layers_action.isChecked())
+            self.update_canvas(layers)
         else:
             self.toolbar.setEnabled(False)
             self.stackedWidget.setCurrentIndex(1)
