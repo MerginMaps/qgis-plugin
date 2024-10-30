@@ -1,5 +1,5 @@
 import shutil
-from datetime import datetime, timezone
+from datetime import datetime, timezone, tzinfo
 from enum import Enum
 from urllib.error import URLError, HTTPError
 import configparser
@@ -1518,12 +1518,13 @@ def check_mergin_subdirs(directory):
     return False
 
 
-def contextual_date(date_string, start_date=None):
+def contextual_date(date_string):
     """Converts datetime string returned by the server into contextual duration string, e.g.
     'N hours/days/month ago'
     """
     dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
-    now = datetime.now() if start_date is None else datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%SZ")
+    dt = dt.replace(tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc)
     delta = now - dt
     if delta.days > 365:
         years = now.year - dt.year - ((now.month, now.day) < (dt.month, dt.day))
