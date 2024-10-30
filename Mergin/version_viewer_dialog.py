@@ -216,7 +216,6 @@ class VersionsFetcher(QThread):
         project_name,
         oldest_version: int | None,
         latest_version: int | None,
-        is_sync=False,
     ):
         super(VersionsFetcher, self).__init__()
         self.mc = mc
@@ -225,16 +224,10 @@ class VersionsFetcher(QThread):
         self.oldest_version = oldest_version
         self.latest_version = latest_version
 
-        self.is_sync = is_sync
-
         self.per_page = 50  # server limit
 
     def run(self):
-
-        if not self.is_sync:
-            versions = self.fetch_previous()
-        else:
-            versions = self.fetch_sync_history()
+        versions = self.fetch_previous()
 
         self.finished.emit(versions)
 
@@ -251,20 +244,6 @@ class VersionsFetcher(QThread):
             since = 1
 
         versions = self.mc.project_versions(self.project_name, since=since, to=to)
-        versions.reverse()
-
-        return versions
-
-    def fetch_sync_history(self):
-
-        # determine latest
-        info = self.mc.project_info(self.project_name)
-
-        latest_server = int_version(info["version"])
-        since = self.latest_version
-
-        versions = self.mc.project_versions(self.project_name, since=since, to=latest_server)
-        versions.pop()  # Remove the last as we already have it
         versions.reverse()
 
         return versions
