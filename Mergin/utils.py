@@ -1556,16 +1556,21 @@ def format_datetime(date_string):
 
 
 def parse_user_agent(user_agent: str) -> str:
-    user_agent = user_agent.split()
-    # Does the python-api-client have a specific user_agent ?
-    if len(user_agent) == 4:  # Plugin
-        _, plugin_version, qgis_version, platform = user_agent
-        plugin_version = plugin_version.replace("Plugin/", "")
-        qgis_version = qgis_version.replace("QGIS/", "")
-        platform = platform.strip("()")
-        return f"MerginMaps plugin version {plugin_version} and QGIS version {qgis_version} on {platform}"
-    elif len(user_agent) == 2:
-        mobile_version, platform = user_agent
-        mobile_version = mobile_version.replace("Input/", "")
-        platform = platform.strip("()")
-        return f"Mobile app version {mobile_version} on {platform}"
+    browsers = ["Chrome", "Firefox", "Mozilla", "Opera", "Safari", "Webkit"]
+    if any([ browser in user_agent for  browser in browsers]):
+        return "Web dashboard"
+    elif "Input" in user_agent:
+        return "Mobile app"
+    elif "Plugin" in user_agent:
+        return "QGIS plugin"
+    elif "DB-sync" in user_agent:
+        return "Synced from db-sync"
+    elif "work-packages" in user_agent:
+        return "Synced from  Work Packages"
+    elif "media-sync" in user_agent:
+        return "Synced from Media Sync"
+    elif "Python-client" in user_agent:
+        return "Mergin Maps Python Client"
+    else: # For uncommon user agent we display user agent as is
+        return user_agent
+        
