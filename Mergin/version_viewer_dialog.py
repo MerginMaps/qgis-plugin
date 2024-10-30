@@ -13,6 +13,7 @@ from qgis.PyQt.QtWidgets import (
     QMenu,
     QMessageBox,
     QAbstractItemView,
+    QToolButton
 )
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon, QFont, QColor
 from qgis.PyQt.QtCore import (
@@ -317,8 +318,14 @@ class VersionViewerDialog(QDialog):
         self.toggle_layers_action.setCheckable(True)
         self.toggle_layers_action.setChecked(True)
         self.toggle_layers_action.toggled.connect(self.toggle_project_layers)
-        self.toolbar.addAction(self.toggle_layers_action)
 
+        #We use a ToolButton instead of simple action to dislay both icon AND text
+        self.toggle_layers_button = QToolButton()
+        self.toggle_layers_button.setDefaultAction(self.toggle_layers_action)
+        self.toggle_layers_button.setText("Show projecct layers")
+        self.toggle_layers_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.toolbar.addWidget(self.toggle_layers_button)
+        
         self.toolbar.addSeparator()
 
         self.zoom_full_action = QAction(QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"), "Zoom Full", self)
