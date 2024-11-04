@@ -350,6 +350,7 @@ class VersionViewerDialog(QDialog):
         self.versionModel.current_version = self.mp.version()
 
     def exec(self):
+        
         try:
             ws_id = self.mp.workspace_id()
         except ClientError as e:
@@ -357,13 +358,15 @@ class VersionViewerDialog(QDialog):
             return
 
         # check if user has permissions
-        usage = self.mc.workspace_usage(ws_id)
-        if not usage["view_history"]["allowed"]:
-            QMessageBox.warning(None, "Permission Error", "The workspace does not allow to view project history.")
-            return
-
-        self.reject()
-        return
+        try: 
+            usage = self.mc.workspace_usage(ws_id)
+            if not usage["view_history"]["allowed"]:
+                QMessageBox.warning(None, "Permission Error", "The workspace does not allow to view project history.")
+                return
+        except ClientError: 
+            # Some versions e.g CE, EE edition doesn't have 
+            pass
+        super().exec()
 
     def closeEvent(self, event):
         self.save_splitters_state()
