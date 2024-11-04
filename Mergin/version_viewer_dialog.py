@@ -3,6 +3,7 @@
 
 from collections import deque
 import os
+import math
 
 from qgis.PyQt import uic, QtCore
 from qgis.PyQt.QtWidgets import (
@@ -213,40 +214,33 @@ class VersionsFetcher(QThread):
     def __init__(
         self,
         mc: MerginClient,
-        project_name,
-        oldest_version: int | None,
-        latest_version: int | None,
+        project_path,
+        model : VersionsTableModel
     ):
         super(VersionsFetcher, self).__init__()
         self.mc = mc
-        self.project_name = project_name
+        self.project_path = project_path
+        self.model = model
 
-        self.oldest_version = oldest_version
-        self.latest_version = latest_version
+        self.current_page  = 1
+        self.per_page = 50  
 
-        self.per_page = 50  # server limit
+        version_count = self.mc.project_versions_count(self.project_path)
+        self.nb_page = math.ceil(version_count / self.per_page)
 
     def run(self):
-        versions = self.fetch_previous()
+        self.fetch_another_page()
+    
+    def has_more_page(self):
+        return self.current_page <= self.nb_page
 
-        self.finished.emit(versions)
-
-    def fetch_previous(self):
-
-        if self.oldest_version == None:
-            # initial fetch
-            info = self.mc.project_info(self.project_name)
-            to = int_version(info["version"])
-        else:
-            to = self.oldest_version
-        since = to - 100
-        if since < 0:
-            since = 1
-
-        versions = self.mc.project_versions(self.project_name, since=since, to=to)
-        versions.reverse()
-
-        return versions
+    def fetch_another_page(self):
+        if self.has_more_page() == False:
+            return
+        versions = self.mc.project_versions_page(self.project_path, self.current_page, per_page=self.per_page, descending=True)
+        self.model.add_versions(versions)
+    
+        self.current_page += 1
 
 
 class VersionViewerDialog(QDialog):
@@ -264,13 +258,9 @@ class VersionViewerDialog(QDialog):
         self.ui = uic.loadUi(ui_file, self)
 
         self.mc = mc
-        self.mp = None
 
         self.project_path = mergin_project_local_path()
         self.mp = MerginProject(self.project_path)
-
-        self.fetcher = None
-        self.diff_downloader = None
 
         self.set_splitters_state()
 
@@ -283,7 +273,10 @@ class VersionViewerDialog(QDialog):
 
         self.has_selected_latest = False
 
-        self.fetch_from_server()
+        self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
+        self.diff_downloader = None
+
+        self.fetcher.fetch_another_page()
 
         height = 30
         self.toolbar.setMinimumHeight(height)
@@ -401,35 +394,14 @@ class VersionViewerDialog(QDialog):
         if self.fetcher and self.fetcher.isRunning():
             # Only fetching when previous is finshed
             return
-
-        self.fetcher = VersionsFetcher(
-            self.mc,
-            self.mp.project_full_name(),
-            self.versionModel.oldest_version(),
-            self.versionModel.latest_version(),
-        )
-        self.fetcher.finished.connect(lambda versions: self.versionModel.add_versions(versions))
-        self.fetcher.finished.connect(lambda versions: self.select_latest())
-        self.fetcher.start()
+        else:
+            self.fetcher.start()
 
     def on_scrollbar_changed(self, value):
-
-        if self.versionModel.oldest_version() == 1:
-            # No version left to fetch
-            return
 
         if self.ui.history_treeview.verticalScrollBar().maximum() <= value:
             self.fetch_from_server()
 
-    def select_latest(self):
-        # On open dialog select the latest version
-        if self.has_selected_latest and self.has_selected_latest == True:
-            return
-
-        self.has_selected_latest = True
-
-        index = self.versionModel.index(0, 0)
-        self.selectionModel.setCurrentIndex(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
 
     def current_version_changed(self, current_index, previous_index):
         # Update the ui when the selected version change
