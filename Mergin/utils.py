@@ -1527,8 +1527,8 @@ def contextual_date(date_string):
     now = datetime.now(timezone.utc)
     delta = now - dt
     if delta.days > 365:
-        years = now.year - dt.year - ((now.month, now.day) < (dt.month, dt.day))
-        return f"{years} {'years' if years > 1 else 'year'} ago"
+        # return the date value for version older than one year
+        return dt.strftime("%Y-%m-%d")
     elif delta.days > 31:
         months = int(delta.days // 30.436875)
         return f"{months} {'months' if months > 1 else 'month'} ago"
