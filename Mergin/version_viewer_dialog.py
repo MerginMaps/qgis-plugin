@@ -437,6 +437,8 @@ class VersionViewerDialog(QDialog):
         self.edit_project_size.setText(bytes_to_human_size(self.version_details["project_size"]))
         self.edit_created.setText(format_datetime(self.version_details["created"]))
         self.edit_user_agent.setText(parse_user_agent(self.version_details["user_agent"]))
+        self.edit_user_agent.setToolTip(self.version_details["user_agent"])
+
 
         self.model_detail.clear()
         root_item = QStandardItem(f"Changes in version {self.version_details['name']}")
