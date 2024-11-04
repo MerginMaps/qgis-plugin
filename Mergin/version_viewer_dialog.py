@@ -14,7 +14,7 @@ from qgis.PyQt.QtWidgets import (
     QMenu,
     QMessageBox,
     QAbstractItemView,
-    QToolButton
+    QToolButton,
 )
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon, QFont, QColor
 from qgis.PyQt.QtCore import (
@@ -211,35 +211,32 @@ class VersionsFetcher(QThread):
 
     finished = pyqtSignal(list)
 
-    def __init__(
-        self,
-        mc: MerginClient,
-        project_path,
-        model : VersionsTableModel
-    ):
+    def __init__(self, mc: MerginClient, project_path, model: VersionsTableModel):
         super(VersionsFetcher, self).__init__()
         self.mc = mc
         self.project_path = project_path
         self.model = model
 
-        self.current_page  = 1
-        self.per_page = 50  
+        self.current_page = 1
+        self.per_page = 50
 
         version_count = self.mc.project_versions_count(self.project_path)
         self.nb_page = math.ceil(version_count / self.per_page)
 
     def run(self):
         self.fetch_another_page()
-    
+
     def has_more_page(self):
         return self.current_page <= self.nb_page
 
     def fetch_another_page(self):
         if self.has_more_page() == False:
             return
-        versions = self.mc.project_versions_page(self.project_path, self.current_page, per_page=self.per_page, descending=True)
+        versions = self.mc.project_versions_page(
+            self.project_path, self.current_page, per_page=self.per_page, descending=True
+        )
         self.model.add_versions(versions)
-    
+
         self.current_page += 1
 
 
@@ -291,13 +288,13 @@ class VersionViewerDialog(QDialog):
         self.toggle_layers_action.setChecked(True)
         self.toggle_layers_action.toggled.connect(self.toggle_project_layers)
 
-        #We use a ToolButton instead of simple action to dislay both icon AND text
+        # We use a ToolButton instead of simple action to dislay both icon AND text
         self.toggle_layers_button = QToolButton()
         self.toggle_layers_button.setDefaultAction(self.toggle_layers_action)
         self.toggle_layers_button.setText("Show projecct layers")
         self.toggle_layers_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.toolbar.addWidget(self.toggle_layers_button)
-        
+
         self.toolbar.addSeparator()
 
         self.zoom_full_action = QAction(QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"), "Zoom Full", self)
@@ -350,7 +347,7 @@ class VersionViewerDialog(QDialog):
         self.versionModel.current_version = self.mp.version()
 
     def exec(self):
-        
+
         try:
             ws_id = self.mp.workspace_id()
         except ClientError as e:
@@ -358,13 +355,13 @@ class VersionViewerDialog(QDialog):
             return
 
         # check if user has permissions
-        try: 
+        try:
             usage = self.mc.workspace_usage(ws_id)
             if not usage["view_history"]["allowed"]:
                 QMessageBox.warning(None, "Permission Error", "The workspace does not allow to view project history.")
                 return
-        except ClientError: 
-            # Some versions e.g CE, EE edition doesn't have 
+        except ClientError:
+            # Some versions e.g CE, EE edition doesn't have
             pass
         super().exec()
 
@@ -405,7 +402,6 @@ class VersionViewerDialog(QDialog):
         if self.ui.history_treeview.verticalScrollBar().maximum() <= value:
             self.fetch_from_server()
 
-
     def current_version_changed(self, current_index, previous_index):
         # Update the ui when the selected version change
         item = self.versionModel.item_from_index(current_index)
@@ -438,7 +434,6 @@ class VersionViewerDialog(QDialog):
         self.edit_created.setText(format_datetime(self.version_details["created"]))
         self.edit_user_agent.setText(parse_user_agent(self.version_details["user_agent"]))
         self.edit_user_agent.setToolTip(self.version_details["user_agent"])
-
 
         self.model_detail.clear()
         root_item = QStandardItem(f"Changes in version {self.version_details['name']}")

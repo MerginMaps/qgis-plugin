@@ -1557,7 +1557,7 @@ def format_datetime(date_string):
 
 def parse_user_agent(user_agent: str) -> str:
     browsers = ["Chrome", "Firefox", "Mozilla", "Opera", "Safari", "Webkit"]
-    if any([ browser in user_agent for  browser in browsers]):
+    if any([browser in user_agent for browser in browsers]):
         return "Web dashboard"
     elif "Input" in user_agent:
         return "Mobile app"
@@ -1571,6 +1571,5 @@ def parse_user_agent(user_agent: str) -> str:
         return "Synced from Media Sync"
     elif "Python-client" in user_agent:
         return "Mergin Maps Python Client"
-    else: # For uncommon user agent we display user agent as is
+    else:  # For uncommon user agent we display user agent as is
         return user_agent
-        
