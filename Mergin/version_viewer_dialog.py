@@ -49,13 +49,14 @@ from .utils import (
     icon_path,
     format_datetime,
     parse_user_agent,
+    icon_for_layer,
 )
 
 from .mergin.merginproject import MerginProject
 from .mergin.utils import bytes_to_human_size, int_version
 
 from .mergin import MerginClient
-from .diff import make_version_changes_layers, icon_for_layer
+from .diff import make_version_changes_layers
 
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_versions_viewer.ui")

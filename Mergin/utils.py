@@ -16,7 +16,7 @@ import re
 
 from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
-from qgis.PyQt.QtGui import QPalette, QColor
+from qgis.PyQt.QtGui import QPalette, QColor, QIcon
 from qgis.core import (
     NULL,
     Qgis,
@@ -1573,3 +1573,18 @@ def parse_user_agent(user_agent: str) -> str:
         return "Mergin Maps Python Client"
     else:  # For uncommon user agent we display user agent as is
         return user_agent
+
+
+def icon_for_layer(layer) -> QIcon:
+    # Used in diff viewer and history viewer
+    geom_type = layer.geometryType()
+    if geom_type == QgsWkbTypes.PointGeometry:
+        return QgsApplication.getThemeIcon("/mIconPointLayer.svg")
+    elif geom_type == QgsWkbTypes.LineGeometry:
+        return QgsApplication.getThemeIcon("/mIconLineLayer.svg")
+    elif geom_type == QgsWkbTypes.PolygonGeometry:
+        return QgsApplication.getThemeIcon("/mIconPolygonLayer.svg")
+    elif geom_type == QgsWkbTypes.UnknownGeometry:
+        return QgsApplication.getThemeIcon("/mIconGeometryCollectionLayer.svg")
+    else:
+        return QgsApplication.getThemeIcon("/mIconTableLayer.svg")

@@ -7,7 +7,7 @@ import glob
 
 from qgis.PyQt.QtCore import QVariant
 
-from qgis.PyQt.QtGui import QColor, QIcon
+from qgis.PyQt.QtGui import QColor
 
 from qgis.core import (
     QgsApplication,
@@ -530,17 +530,3 @@ def style_diff_layer(layer, schema_table):
         )
         r = QgsRuleBasedRenderer(root_rule)
         layer.setRenderer(r)
-
-
-def icon_for_layer(layer) -> QIcon:
-    geom_type = layer.geometryType()
-    if geom_type == QgsWkbTypes.PointGeometry:
-        return QgsApplication.getThemeIcon("/mIconPointLayer.svg")
-    elif geom_type == QgsWkbTypes.LineGeometry:
-        return QgsApplication.getThemeIcon("/mIconLineLayer.svg")
-    elif geom_type == QgsWkbTypes.PolygonGeometry:
-        return QgsApplication.getThemeIcon("/mIconPolygonLayer.svg")
-    elif geom_type == QgsWkbTypes.UnknownGeometry:
-        return QgsApplication.getThemeIcon("/mIconGeometryCollectionLayer.svg")
-    else:
-        return QgsApplication.getThemeIcon("/mIconTableLayer.svg")

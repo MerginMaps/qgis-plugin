@@ -18,8 +18,8 @@ from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttribute
 from qgis.utils import iface, OverrideCursor
 
 from .mergin.merginproject import MerginProject
-from .diff import make_local_changes_layer, make_version_changes_layers, icon_for_layer
-from .utils import icon_path
+from .diff import make_local_changes_layer, make_version_changes_layers
+from .utils import icon_path, icon_for_layer
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_diff_viewer_dialog.ui")
 
