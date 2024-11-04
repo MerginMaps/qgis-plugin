@@ -358,7 +358,9 @@ class VersionViewerDialog(QDialog):
         try:
             usage = self.mc.workspace_usage(ws_id)
             if not usage["view_history"]["allowed"]:
-                QMessageBox.warning(None, "Permission Error", "The workspace does not allow to view project history.")
+                QMessageBox.warning(
+                    None, "Upgrade required", "To view the project history, please upgrade your subscription plan."
+                )
                 return
         except ClientError:
             # Some versions e.g CE, EE edition doesn't have
