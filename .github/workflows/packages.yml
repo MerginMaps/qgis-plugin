@@ -180,7 +180,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: "Mergin $GITHUB_RUN_ATTEMPT"
+          name: Mergin ${{ env.GITHUB_RUN_ATTEMPT }}
           path: output/
 
       - name: upload asset on tagged release
