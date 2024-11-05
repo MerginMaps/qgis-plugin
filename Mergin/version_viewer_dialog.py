@@ -292,7 +292,7 @@ class VersionViewerDialog(QDialog):
         # We use a ToolButton instead of simple action to dislay both icon AND text
         self.toggle_layers_button = QToolButton()
         self.toggle_layers_button.setDefaultAction(self.toggle_layers_action)
-        self.toggle_layers_button.setText("Show projecct layers")
+        self.toggle_layers_button.setText("Show project layers")
         self.toggle_layers_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.toolbar.addWidget(self.toggle_layers_button)
 
