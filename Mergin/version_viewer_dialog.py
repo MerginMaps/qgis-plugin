@@ -543,8 +543,8 @@ class VersionViewerDialog(QDialog):
             layers = iface.mapCanvas().layers()
 
             #Filter only "Background" type
-            backgound_layer_types = [QgsRasterLayer, QgsVectorTileLayer, QgsTiledSceneLayer]
-            layers = [layer for layer in layers if type(layer) in backgound_layer_types]
+            whitelist_backgound_layer_types = [QgsRasterLayer, QgsVectorTileLayer, QgsTiledSceneLayer]
+            layers = [layer for layer in layers if type(layer) in whitelist_backgound_layer_types]
         else:
             layers = []
 
