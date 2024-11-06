@@ -361,7 +361,7 @@ def make_version_changes_layers(project_path, version):
                 continue
 
             uri = f"{geom_type}?crs=epsg:{geom_crs}" if geom_crs else geom_type
-            vl = QgsVectorLayer(uri, f"[v{version} changes] {table_name}", "memory")
+            vl = QgsVectorLayer(uri, table_name, "memory")
             if not vl.isValid():
                 continue
 
