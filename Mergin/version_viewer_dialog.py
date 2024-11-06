@@ -411,6 +411,8 @@ class VersionViewerDialog(QDialog):
         version_name = item["name"]
         version = int_version(item["name"])
 
+        self.setWindowTitle(f"Version Viewer | {version_name}")
+
         self.version_details = self.mc.project_version_info(self.mp.project_id(), version_name)
         self.populate_details()
         self.details_treeview.expandAll()
