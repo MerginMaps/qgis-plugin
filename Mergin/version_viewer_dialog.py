@@ -107,6 +107,8 @@ class VersionsTableModel(QAbstractTableModel):
         idx = index.row()
         if role == Qt.DisplayRole:
             if index.column() == 0:
+                if self.versions[idx]["name"] == self.current_version:
+                    return f'{self.versions[idx]["name"]} (local)'
                 return self.versions[idx]["name"]
             if index.column() == 1:
                 return self.versions[idx]["author"]
