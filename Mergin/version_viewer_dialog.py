@@ -35,6 +35,11 @@ from qgis.core import (
     QgsApplication,
     QgsFeatureRequest,
     QgsVectorLayerCache,
+
+    # Used to filter background map
+    QgsRasterLayer,
+    QgsTiledSceneLayer,
+    QgsVectorTileLayer
 )
 from qgis.gui import QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
 
@@ -285,7 +290,7 @@ class VersionViewerDialog(QDialog):
         self.history_control.setVisible(False)
 
         self.toggle_layers_action = QAction(
-            QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Toggle Project Layers", self
+            QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Hide background layers", self
         )
         self.toggle_layers_action.setCheckable(True)
         self.toggle_layers_action.setChecked(True)
@@ -294,7 +299,8 @@ class VersionViewerDialog(QDialog):
         # We use a ToolButton instead of simple action to dislay both icon AND text
         self.toggle_layers_button = QToolButton()
         self.toggle_layers_button.setDefaultAction(self.toggle_layers_action)
-        self.toggle_layers_button.setText("Show project layers")
+        self.toggle_layers_button.setText("Show background layers")
+        self.toggle_layers_button.setToolTip("Toggle the display of background layer(Raster and tiles) in the current project")
         self.toggle_layers_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.toolbar.addWidget(self.toggle_layers_button)
 
@@ -413,7 +419,7 @@ class VersionViewerDialog(QDialog):
         version_name = item["name"]
         version = int_version(item["name"])
 
-        self.setWindowTitle(f"Version Viewer | {version_name}")
+        self.setWindowTitle(f"Changes Viewer | {version_name}")
 
         self.version_details = self.mc.project_version_info(self.mp.project_id(), version_name)
         self.populate_details()
@@ -477,6 +483,11 @@ class VersionViewerDialog(QDialog):
         return [QStandardItem("{}: {}".format(k, summary[k])) for k in summary if k != "table"]
 
     def toggle_project_layers(self, checked):
+        if checked:
+            self.toggle_layers_button.setText("Hide background layers")
+        else:
+            self.toggle_layers_button.setText("Show background layers")
+        
         layers = self.collect_layers(checked)
         self.update_canvas(layers)
 
@@ -521,6 +532,10 @@ class VersionViewerDialog(QDialog):
     def collect_layers(self, checked: bool):
         if checked:
             layers = iface.mapCanvas().layers()
+
+            #Filter only "Background" type
+            backgound_layer_types = [QgsRasterLayer, QgsVectorTileLayer, QgsTiledSceneLayer]
+            layers = [layer for layer in layers if type(layer) in backgound_layer_types]
         else:
             layers = []
 
