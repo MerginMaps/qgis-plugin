@@ -489,10 +489,19 @@ class VersionViewerDialog(QDialog):
             self.toggle_layers_button.setText("Show background layers")
         
         layers = self.collect_layers(checked)
-        self.update_canvas(layers)
+        self.update_canvas_layers(layers)
 
     def update_canvas(self, layers):
+        self.update_canvas_layers(layers)
+        self.update_canvas_extend(layers)
+
+    def update_canvas_layers(self, layers):
         self.map_canvas.setLayers(layers)
+        self.map_canvas.refresh()
+
+    def update_canvas_extend(self, layers):
+        self.map_canvas.setDestinationCrs( QgsProject.instance().crs())
+
         if layers:
             self.map_canvas.setDestinationCrs(layers[0].crs())
             extent = layers[0].extent()
