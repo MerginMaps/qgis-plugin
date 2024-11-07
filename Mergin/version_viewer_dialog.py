@@ -520,8 +520,19 @@ class VersionViewerDialog(QDialog):
             self.diff_layers.append(vl)
             icon = icon_for_layer(vl)
 
-            self.layer_list.addItem(QListWidgetItem(icon, f"{vl.name()} ({vl.featureCount()})"))
-            # evenutally add a summary eg: \n   2 updated"
+            summary = self.find_changeset_summary_for_layer(vl.name(), self.version_details["changesets"])
+            additional_info = []
+            if  summary["insert"]:
+                additional_info.append(f" Added : {summary['insert']}")
+            if  summary["update"]:
+                additional_info.append(f", Updated : {summary['update']}")
+            if  summary["delete"]:
+                additional_info.append(f", Deleted : {summary['delete']}")
+
+            additional_summary = "\n" +",".join(additional_info)         
+
+            self.layer_list.addItem(QListWidgetItem(icon, vl.name() + additional_summary))
+
 
         if len(self.diff_layers) >= 1:
             self.toolbar.setEnabled(True)
@@ -599,3 +610,11 @@ class VersionViewerDialog(QDialog):
         if self.current_diff:
             self.map_canvas.zoomToSelected([self.current_diff])
             self.map_canvas.refresh()
+
+    def find_changeset_summary_for_layer(self, layer_name:str, changesets: dict):
+        for gpkg_changes in changesets.values():
+            for summary in gpkg_changes["summary"]:
+                if summary["table"] == layer_name:
+                    return summary
+                    
+
