@@ -321,7 +321,7 @@
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
-           <string>Layers</string>
+           <string>Updated layers</string>
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_4">
            <item>
@@ -331,7 +331,7 @@
          </widget>
          <widget class="QWidget" name="tab_2">
           <attribute name="title">
-           <string>Files</string>
+           <string>Updated files</string>
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <item>
