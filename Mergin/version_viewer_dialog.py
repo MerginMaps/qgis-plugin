@@ -382,7 +382,7 @@ class VersionViewerDialog(QDialog):
 
     def save_splitters_state(self):
         settings = QSettings()
-        settings.setValue("Mergin/VersionViewerSplitterSize", self.splitter.saveState())
+        settings.setValue("Mergin/VersionViewerSplitterSize", self.splitter_map_table.saveState())
         settings.setValue("Mergin/VersionViewerSplitterVericalSize", self.splitter_vertical.saveState())
 
     def set_splitters_state(self):
@@ -395,10 +395,10 @@ class VersionViewerDialog(QDialog):
 
         state = settings.value("Mergin/VersionViewerSplitterSize")
         if state:
-            self.splitter.restoreState(state)
+            self.splitter_map_table.restoreState(state)
         else:
             height = max([self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()])
-            self.splitter.setSizes([height, height])
+            self.splitter_map_table.setSizes([height, height])
 
     def fetch_from_server(self):
 
@@ -492,6 +492,12 @@ class VersionViewerDialog(QDialog):
         self.update_canvas_layers(layers)
 
     def update_canvas(self, layers):
+
+        if self.current_diff.isSpatial() == False:
+            self.map_canvas.setEnabled(False)
+        else:
+            self.map_canvas.setEnabled(True)
+
         self.update_canvas_layers(layers)
         self.update_canvas_extend(layers)
 
