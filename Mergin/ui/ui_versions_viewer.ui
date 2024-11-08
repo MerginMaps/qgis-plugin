@@ -208,7 +208,7 @@
          <widget class="QWidget" name="default_page">
           <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
-            <widget class="QSplitter" name="splitter">
+            <widget class="QSplitter" name="splitter_map_table">
              <property name="orientation">
               <enum>Qt::Vertical</enum>
              </property>

@@ -35,11 +35,10 @@ from qgis.core import (
     QgsApplication,
     QgsFeatureRequest,
     QgsVectorLayerCache,
-
     # Used to filter background map
     QgsRasterLayer,
     QgsTiledSceneLayer,
-    QgsVectorTileLayer
+    QgsVectorTileLayer,
 )
 from qgis.gui import QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
 
@@ -300,7 +299,9 @@ class VersionViewerDialog(QDialog):
         self.toggle_layers_button = QToolButton()
         self.toggle_layers_button.setDefaultAction(self.toggle_layers_action)
         self.toggle_layers_button.setText("Show background layers")
-        self.toggle_layers_button.setToolTip("Toggle the display of background layer(Raster and tiles) in the current project")
+        self.toggle_layers_button.setToolTip(
+            "Toggle the display of background layer(Raster and tiles) in the current project"
+        )
         self.toggle_layers_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.toolbar.addWidget(self.toggle_layers_button)
 
@@ -487,7 +488,7 @@ class VersionViewerDialog(QDialog):
             self.toggle_layers_button.setText("Hide background layers")
         else:
             self.toggle_layers_button.setText("Show background layers")
-        
+
         layers = self.collect_layers(checked)
         self.update_canvas_layers(layers)
 
@@ -506,7 +507,7 @@ class VersionViewerDialog(QDialog):
         self.map_canvas.refresh()
 
     def update_canvas_extend(self, layers):
-        self.map_canvas.setDestinationCrs( QgsProject.instance().crs())
+        self.map_canvas.setDestinationCrs(QgsProject.instance().crs())
 
         if layers:
             self.map_canvas.setDestinationCrs(layers[0].crs())
@@ -528,17 +529,16 @@ class VersionViewerDialog(QDialog):
 
             summary = self.find_changeset_summary_for_layer(vl.name(), self.version_details["changesets"])
             additional_info = []
-            if  summary["insert"]:
+            if summary["insert"]:
                 additional_info.append(f" Added : {summary['insert']}")
-            if  summary["update"]:
+            if summary["update"]:
                 additional_info.append(f", Updated : {summary['update']}")
-            if  summary["delete"]:
+            if summary["delete"]:
                 additional_info.append(f", Deleted : {summary['delete']}")
 
-            additional_summary = "\n" +",".join(additional_info)         
+            additional_summary = "\n" + ",".join(additional_info)
 
             self.layer_list.addItem(QListWidgetItem(icon, vl.name() + additional_summary))
-
 
         if len(self.diff_layers) >= 1:
             self.toolbar.setEnabled(True)
@@ -559,7 +559,7 @@ class VersionViewerDialog(QDialog):
         if checked:
             layers = iface.mapCanvas().layers()
 
-            #Filter only "Background" type
+            # Filter only "Background" type
             whitelist_backgound_layer_types = [QgsRasterLayer, QgsVectorTileLayer, QgsTiledSceneLayer]
             layers = [layer for layer in layers if type(layer) in whitelist_backgound_layer_types]
         else:
@@ -617,10 +617,8 @@ class VersionViewerDialog(QDialog):
             self.map_canvas.zoomToSelected([self.current_diff])
             self.map_canvas.refresh()
 
-    def find_changeset_summary_for_layer(self, layer_name:str, changesets: dict):
+    def find_changeset_summary_for_layer(self, layer_name: str, changesets: dict):
         for gpkg_changes in changesets.values():
             for summary in gpkg_changes["summary"]:
                 if summary["table"] == layer_name:
                     return summary
-                    
-

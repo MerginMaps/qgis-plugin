@@ -349,8 +349,8 @@ def make_version_changes_layers(project_path, version):
 
         for table_name in diff.keys():
             if table_name.startswith("gpkg_"):
-                # db schema reported by geodiff exclude layer named "gpkg_*" 
-                # We skip it in the layer displayed to the user  
+                # db schema reported by geodiff exclude layer named "gpkg_*"
+                # We skip it in the layer displayed to the user
                 continue
             fields, cols_to_fields = create_field_list(db_schema[table_name])
             geom_type, geom_crs = get_layer_geometry_info(schema_json, table_name)
