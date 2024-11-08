@@ -330,7 +330,7 @@ def make_version_changes_layers(project_path, version):
 
     layers = []
     version_dir = os.path.join(project_path, ".mergin", ".cache", f"v{version}")
-    for f in glob.iglob("*.gpkg", root_dir=version_dir):
+    for f in glob.iglob(f"{version_dir}/*.gpkg"):
         gpkg_file = os.path.join(version_dir, f)
         schema_file = gpkg_file + "-schema.json"
         if not os.path.exists(schema_file):
@@ -348,6 +348,10 @@ def make_version_changes_layers(project_path, version):
         diff = parse_diff(geodiff, changeset_file)
 
         for table_name in diff.keys():
+            if table_name.startswith("gpkg_"):
+                # db schema reported by geodiff exclude layer named "gpkg_*" 
+                # We skip it in the layer displayed to the user  
+                continue
             fields, cols_to_fields = create_field_list(db_schema[table_name])
             geom_type, geom_crs = get_layer_geometry_info(schema_json, table_name)
 
@@ -377,7 +381,7 @@ def make_version_changes_layers(project_path, version):
 
 def find_changeset_file(file_name, version_dir):
     """Returns path to the diff file for the given version file"""
-    for f in glob.iglob("*.gpkg-diff*", root_dir=version_dir):
+    for f in glob.iglob(f"{version_dir}/*.gpkg-diff*"):
         if f.startswith(file_name):
             return os.path.join(version_dir, f)
     return None
