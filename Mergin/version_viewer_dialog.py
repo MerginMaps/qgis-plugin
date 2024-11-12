@@ -210,6 +210,7 @@ class ChangesetsDownloader(QThread):
 
         if self.isInterruptionRequested():
             self.quit()
+            return
 
         self.finished.emit("")
 
