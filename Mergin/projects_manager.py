@@ -97,7 +97,6 @@ class MerginProjectsManager(object):
             if e.http_error == 409:
                 msg = f'Project named "{project_name}" already exists in the workspace "{namespace}".\nPlease try renaming the project.'
             elif e.server_code == ErrorCode.ProjectsLimitHit.value:
-                print(e.server_response)
                 dlg = ProjectLimitHitDialog(e)
                 dlg.exec()
                 return False
