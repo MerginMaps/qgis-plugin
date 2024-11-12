@@ -395,10 +395,15 @@ class VersionViewerDialog(QDialog):
         else:
             self.splitter_vertical.setSizes([120, 200, 40])
 
+        do_calc_height = True
         state = settings.value("Mergin/VersionViewerSplitterSize")
         if state:
             self.splitter_map_table.restoreState(state)
-        else:
+
+            if self.splitter_map_table.sizes()[0] != 0:
+                do_calc_height = False
+
+        if do_calc_height:
             height = max([self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()])
             self.splitter_map_table.setSizes([height, height])
 
@@ -497,8 +502,12 @@ class VersionViewerDialog(QDialog):
 
         if self.current_diff.isSpatial() == False:
             self.map_canvas.setEnabled(False)
+            self.save_splitters_state()
+            self.splitter_map_table.setSizes([0, 1])
         else:
             self.map_canvas.setEnabled(True)
+            self.set_splitters_state()
+            
 
         self.update_canvas_layers(layers)
         self.update_canvas_extend(layers)
