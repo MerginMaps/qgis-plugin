@@ -530,11 +530,11 @@ class VersionViewerDialog(QDialog):
             summary = self.find_changeset_summary_for_layer(vl.name(), self.version_details["changesets"])
             additional_info = []
             if summary["insert"]:
-                additional_info.append(f" Added : {summary['insert']}")
+                additional_info.append(f"{summary['insert']} added")
             if summary["update"]:
-                additional_info.append(f", Updated : {summary['update']}")
+                additional_info.append(f"{summary['update']} updated")
             if summary["delete"]:
-                additional_info.append(f", Deleted : {summary['delete']}")
+                additional_info.append(f"{summary['delete']} deleted")
 
             additional_summary = "\n" + ",".join(additional_info)
 
@@ -571,7 +571,7 @@ class VersionViewerDialog(QDialog):
         return layers
 
     def diff_layer_changed(self, index: int):
-        if index > len(self.diff_layers):
+        if index > len(self.diff_layers) or index < 0:
             return
 
         self.map_canvas.setLayers([])
