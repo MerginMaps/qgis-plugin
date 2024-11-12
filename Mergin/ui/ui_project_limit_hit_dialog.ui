@@ -6,15 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>332</width>
-    <height>278</height>
+    <width>352</width>
+    <height>224</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Project limit hit</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
     <widget class="QLabel" name="label">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
@@ -30,7 +30,7 @@
       </font>
      </property>
      <property name="text">
-      <string>You have reached the maximum limit of active monthly contributors for your subscription.</string>
+      <string>You've reached the maximum number of active monthly contributors for your current subscription.</string>
      </property>
      <property name="textFormat">
       <enum>Qt::AutoText</enum>
@@ -43,80 +43,41 @@
      </property>
     </widget>
    </item>
-   <item>
-    <widget class="QLabel" name="label_2">
-     <property name="text">
-      <string>Upgrade your subscription or wait until next month
-for refresh of slots.</string>
+   <item row="3" column="0">
+    <widget class="QProgressBar" name="plan_quota_progress_bar">
+     <property name="enabled">
+      <bool>true</bool>
      </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
      </property>
-    </widget>
-   </item>
-   <item>
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
+     <property name="minimumSize">
       <size>
-       <width>20</width>
-       <height>40</height>
+       <width>0</width>
+       <height>15</height>
       </size>
      </property>
-    </spacer>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>Used</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="planQuota_label">
-       <property name="text">
-        <string/>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <widget class="QProgressBar" name="plan_quota_progress_bar">
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="baseSize">
+      <size>
+       <width>0</width>
+       <height>15</height>
+      </size>
+     </property>
      <property name="value">
       <number>100</number>
      </property>
     </widget>
    </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item>
-      <widget class="QLabel" name="label_6">
-       <property name="text">
-        <string>Plan</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="planName_label">
-       <property name="text">
-        <string/>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item>
+   <item row="5" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
       <widget class="QPushButton" name="cancel_btn">
@@ -133,8 +94,11 @@ for refresh of slots.</string>
      </item>
      <item>
       <widget class="QPushButton" name="upgrade_plan_btn">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -151,11 +115,41 @@ for refresh of slots.</string>
          <height>16777215</height>
         </size>
        </property>
+       <property name="font">
+        <font>
+         <kerning>true</kerning>
+        </font>
+       </property>
        <property name="text">
         <string>Upgrade</string>
        </property>
        <property name="default">
         <bool>true</bool>
+       </property>
+       <property name="flat">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Upgrade your subscription or wait until next month
+for the limit to reset.</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Used</string>
        </property>
       </widget>
      </item>

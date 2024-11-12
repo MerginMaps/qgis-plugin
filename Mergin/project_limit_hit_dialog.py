@@ -6,19 +6,35 @@ from qgis.PyQt.QtGui import QDesktopServices
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_limit_hit_dialog.ui")
 
+
 class ProjectLimitHitDialog(QDialog):
     def __init__(self, e, parent=None):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
-        
-        quota = e.server_response.get('projects_quota', 'N/A')
-        plan = e.server_response.get('plan', 'N/A')
-        self.planQuota_label.setText(str(quota))
-        self.planName_label.setText(str(plan))
-        
+
+        self.server_response = e.server_response
+        self.setDialogStyle()
+
         self.cancel_btn.clicked.connect(self.reject)
         self.upgrade_plan_btn.clicked.connect(self.open_upgrade_link)
-        
+
+    def setDialogStyle(self):
+        quota = self.server_response.get("projects_quota", "N/A")
+        quota_text = f"{quota}/{quota}"
+
+        self.plan_quota_progress_bar.setFormat(quota_text)
+        self.plan_quota_progress_bar.setStyleSheet(
+            """
+            QProgressBar {
+                border: none;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: rgb(0, 76, 69);
+            }
+        """
+        )
+
     def open_upgrade_link(self):
         QDesktopServices.openUrl(QUrl("https://www.merginmaps.com/pricing"))
         self.accept()

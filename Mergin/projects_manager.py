@@ -31,6 +31,7 @@ from .mergin.merginproject import MerginProject
 from .project_status_dialog import ProjectStatusDialog
 from .project_limit_hit_dialog import ProjectLimitHitDialog
 
+
 class MerginProjectsManager(object):
     """Class for managing Mergin Maps projects in QGIS."""
 
