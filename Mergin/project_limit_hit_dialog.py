@@ -6,20 +6,19 @@ from qgis.PyQt.QtGui import QDesktopServices
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_limit_hit_dialog.ui")
 
-
 class ProjectLimitHitDialog(QDialog):
     def __init__(self, e, parent=None):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
 
         self.server_response = e.server_response
-        self.setDialogStyle()
+        self.set_dialog_style()
 
         self.cancel_btn.clicked.connect(self.reject)
         self.upgrade_plan_btn.clicked.connect(self.open_upgrade_link)
 
-    def setDialogStyle(self):
-        quota = self.server_response.get("projects_quota", "N/A")
+    def set_dialog_style(self):
+        quota = self.server_response.get("projects_quota", "#NA")
         quota_text = f"{quota}/{quota}"
 
         self.plan_quota_progress_bar.setFormat(quota_text)
