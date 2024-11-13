@@ -4,9 +4,9 @@ from qgis.PyQt.QtWidgets import QDialog
 from qgis.PyQt.QtCore import QUrl
 from qgis.PyQt.QtGui import QDesktopServices
 
-ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_limit_hit_dialog.ui")
+ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_monthly_contributors_error_dialog.ui.ui")
 
-class ProjectLimitHitDialog(QDialog):
+class MonthlyContributorsErrorDialog(QDialog):
     def __init__(self, e, parent=None):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)

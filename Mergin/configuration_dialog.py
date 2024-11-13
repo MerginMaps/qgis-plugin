@@ -14,7 +14,7 @@ except ImportError:
     this_dir = os.path.dirname(os.path.realpath(__file__))
     path = os.path.join(this_dir, "mergin_client.whl")
     sys.path.append(path)
-    from mergin.client import MerginClient, ClientError, LoginError
+    from .mergin.client import MerginClient, ClientError, LoginError
 
 from .utils import (
     get_mergin_auth,

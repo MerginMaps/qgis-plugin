@@ -29,7 +29,7 @@ from .utils import (
 
 from .mergin.merginproject import MerginProject
 from .project_status_dialog import ProjectStatusDialog
-from .project_limit_hit_dialog import ProjectLimitHitDialog
+from .monthly_contributors_error_dialog import MonthlyContributorsErrorDialog
 
 
 class MerginProjectsManager(object):
@@ -97,14 +97,18 @@ class MerginProjectsManager(object):
             if e.http_error == 409:
                 msg = f'Project named "{project_name}" already exists in the workspace "{namespace}".\nPlease try renaming the project.'
             elif e.server_code == ErrorCode.ProjectsLimitHit.value:
-                dlg = ProjectLimitHitDialog(e)
-                dlg.exec()
-                return False
+                msg = (
+                    "Maximum number of projects reached. Please upgrade your subscription to create new projects.\n"
+                    f"Projects quota: {e.server_response['projects_quota']}"
+                )
             elif e.server_code == ErrorCode.StorageLimitHit.value:
                 msg = (
                     f"{e.detail}\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response['storage_limit'])}"
                 )
-
+            elif e.server_code == ErrorCode.MonthlyContributorsError.value:
+                dlg = MonthlyContributorsErrorDialog(e)
+                dlg.exec()
+                return False
             QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + msg)
             return False
         except Exception as e:

@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Project Limit Hit</string>
+   <string>Monthly Contributors Error</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
@@ -155,7 +155,7 @@ for the limit to reset.</string>
         </sizepolicy>
        </property>
        <property name="text">
-        <string>Used</string>
+        <string>Monthly Contributors</string>
        </property>
       </widget>
      </item>
