@@ -520,12 +520,14 @@ class VersionViewerDialog(QDialog):
         self.map_canvas.setDestinationCrs(QgsProject.instance().crs())
 
         if layers:
-            self.map_canvas.setDestinationCrs(layers[0].crs())
             extent = layers[0].extent()
             d = min(extent.width(), extent.height())
             if d == 0:
                 d = 1
             extent = extent.buffered(d * 0.07)
+
+            extent = self.map_canvas.mapSettings().layerExtentToOutputExtent( layers[0], extent );
+
             self.map_canvas.setExtent(extent)
         self.map_canvas.refresh()
 
