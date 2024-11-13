@@ -507,7 +507,6 @@ class VersionViewerDialog(QDialog):
         else:
             self.map_canvas.setEnabled(True)
             self.set_splitters_state()
-            
 
         self.update_canvas_layers(layers)
         self.update_canvas_extend(layers)
@@ -526,7 +525,7 @@ class VersionViewerDialog(QDialog):
                 d = 1
             extent = extent.buffered(d * 0.07)
 
-            extent = self.map_canvas.mapSettings().layerExtentToOutputExtent( layers[0], extent );
+            extent = self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
 
             self.map_canvas.setExtent(extent)
         self.map_canvas.refresh()
