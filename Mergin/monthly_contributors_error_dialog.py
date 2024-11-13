@@ -6,6 +6,7 @@ from qgis.PyQt.QtGui import QDesktopServices
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_monthly_contributors_error_dialog.ui.ui")
 
+
 class MonthlyContributorsErrorDialog(QDialog):
     def __init__(self, e, parent=None):
         QDialog.__init__(self, parent)
