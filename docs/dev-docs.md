@@ -31,3 +31,12 @@ Now link the plugin to your QGIS profile python:
 
 Plugin packages are built as GitHub actions for every commit.
 When releasing, make sure to check if [run-test.yml](../.github/workflows/run-test.yml) is using the latest QGIS release tag for auto-tests.
+
+## Code Formatting
+
+To format code and pass CI check, you can run `format_py.bash` script.
+
+### Setup:
+1. Install Black: `pip install black`
+2. Make script executable: `chmod +x format_py.bash`
+3. Run script: `./format_py.bash`
