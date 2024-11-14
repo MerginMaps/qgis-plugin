@@ -96,6 +96,10 @@ class MerginProjectsManager(object):
             # User friendly error messages
             if e.http_error == 409:
                 msg = f'Project named "{project_name}" already exists in the workspace "{namespace}".\nPlease try renaming the project.'
+            elif e.http_error == 422:
+                dlg = MonthlyContributorsErrorDialog(e)
+                dlg.exec()
+                return False
             elif e.server_code == ErrorCode.ProjectsLimitHit.value:
                 msg = (
                     "Maximum number of projects reached. Please upgrade your subscription to create new projects.\n"
@@ -105,10 +109,6 @@ class MerginProjectsManager(object):
                 msg = (
                     f"{e.detail}\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response['storage_limit'])}"
                 )
-            elif e.server_code == ErrorCode.MonthlyContributorsError.value:
-                dlg = MonthlyContributorsErrorDialog(e)
-                dlg.exec()
-                return False
             QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + msg)
             return False
         except Exception as e:
