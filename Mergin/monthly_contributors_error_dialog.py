@@ -8,6 +8,7 @@ from .help import MerginHelp
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_monthly_contributors_error_dialog.ui")
 
+
 class MonthlyContributorsErrorDialog(QDialog):
     def __init__(self, e, parent=None):
         QDialog.__init__(self, parent)
@@ -15,14 +16,14 @@ class MonthlyContributorsErrorDialog(QDialog):
 
         self.server_response = e.server_response
         self.set_dialog_style()
-        
+
         self.buttonBox.accepted.connect(self.open_upgrade_link)
         self.buttonBox.rejected.connect(self.reject)
 
     def set_dialog_style(self):
         upgrade_button = self.buttonBox.button(QDialogButtonBox.Ok)
         upgrade_button.setText("Upgrade")
-        
+
         quota = self.server_response.get("contributors_quota", "#NA")
         quota_text = f"{quota}/{quota}"
         self.plan_quota_progress_bar.setFormat(quota_text)
@@ -36,7 +37,8 @@ class MonthlyContributorsErrorDialog(QDialog):
             QProgressBar::chunk {
                 background-color: rgb(0, 76, 69);
             }
-        """)
+        """
+        )
 
     def open_upgrade_link(self):
         QDesktopServices.openUrl(QUrl(MerginHelp().mergin_subscription_link()))

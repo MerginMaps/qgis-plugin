@@ -1,5 +1,6 @@
 MAIN_ROOT = "https://merginmaps.com/"
 
+
 class MerginHelp:
     """Class for generating Mergin plugin help URLs."""
 
@@ -8,6 +9,6 @@ class MerginHelp:
 
     def howto_background_maps(self):
         return f"{MAIN_ROOT}/docs/gis/settingup_background_map/"
-    
+
     def mergin_subscription_link(self):
         return f"{MAIN_ROOT}/pricing/"
