@@ -620,11 +620,10 @@ class VersionViewerDialog(QDialog):
 
     def zoom_full(self):
         if self.current_diff:
-            
             layerExtent = self.current_diff.extent()
             # transform extent
-            layerExtent = self.map_canvas.mapSettings().layerExtentToOutputExtent( self.current_diff, layerExtent );
-      
+            layerExtent = self.map_canvas.mapSettings().layerExtentToOutputExtent(self.current_diff, layerExtent)
+
             self.map_canvas.setExtent(layerExtent)
             self.map_canvas.refresh()
 
