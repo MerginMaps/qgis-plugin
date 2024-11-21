@@ -96,7 +96,7 @@ class MerginProjectsManager(object):
             # User friendly error messages
             if e.http_error == 409:
                 msg = f'Project named "{project_name}" already exists in the workspace "{namespace}".\nPlease try renaming the project.'
-            elif e.http_error == 422:
+            elif e.server_code == ErrorCode.MonthlyContributorsLimitHit.value:
                 dlg = MonthlyContributorsErrorDialog(e)
                 dlg.exec()
                 return False
@@ -379,7 +379,7 @@ class MerginProjectsManager(object):
                 if dlg.exception.http_error == 400 and "Another process" in dlg.exception.detail:
                     # To note we check for a string since error in flask doesn't return server error code
                     msg = "Somebody else is syncing, please try again later"
-                elif dlg.exception.http_error == 422:
+                elif dlg.exception.server_code == ErrorCode.MonthlyContributorsLimitHit.value:
                     dlg = MonthlyContributorsErrorDialog(dlg.exception)
                     dlg.exec()
                     return

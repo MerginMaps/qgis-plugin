@@ -25,20 +25,8 @@ class MonthlyContributorsErrorDialog(QDialog):
         upgrade_button.setText("Upgrade")
 
         quota = self.server_response.get("contributors_quota", "#NA")
-        quota_text = f"{quota}/{quota}"
-        self.plan_quota_progress_bar.setFormat(quota_text)
-
-        self.plan_quota_progress_bar.setStyleSheet(
-            """
-            QProgressBar {
-                border: none;
-                text-align: center;
-            }
-            QProgressBar::chunk {
-                background-color: rgb(0, 76, 69);
-            }
-        """
-        )
+        quota_text = f"You've reached the maximum number of active monthly contributors ({quota}) for your current subscription."
+        self.label.setText(quota_text)
 
     def open_upgrade_link(self):
         QDesktopServices.openUrl(QUrl(MerginHelp().mergin_subscription_link()))
