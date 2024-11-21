@@ -25,7 +25,9 @@ class MonthlyContributorsErrorDialog(QDialog):
         upgrade_button.setText("Upgrade")
 
         quota = self.server_response.get("contributors_quota", "#NA")
-        quota_text = f"You've reached the maximum number of active monthly contributors ({quota}) for your current subscription."
+        quota_text = (
+            f"You've reached the maximum number of active monthly contributors ({quota}) for your current subscription."
+        )
         self.label.setText(quota_text)
 
     def open_upgrade_link(self):
