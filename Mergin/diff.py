@@ -242,6 +242,9 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
                 value = "?"
 
             if i == geom_col_index:
+                if value == None:
+                    # Empty geometry
+                    continue
                 wkb_with_gpkg_hdr = base64.decodebytes(value.encode("ascii"))
                 wkb = parse_gpkg_geom_encoding(wkb_with_gpkg_hdr)
                 g = QgsGeometry()
