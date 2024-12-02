@@ -242,7 +242,7 @@ class VersionsFetcher(QThread):
             return
         versions = self.mc.project_versions_page(
             self.project_path, self.current_page, per_page=self.per_page, descending=True
-        )
+        )[0]
         self.model.add_versions(versions)
 
         self.current_page += 1
