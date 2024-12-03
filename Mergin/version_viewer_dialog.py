@@ -240,10 +240,10 @@ class VersionsFetcher(QThread):
     def fetch_another_page(self):
         if self.has_more_page() == False:
             return
-        versions = self.mc.project_versions_page(
+        page_versions, _ = self.mc.paginated_project_versions(
             self.project_path, self.current_page, per_page=self.per_page, descending=True
-        )[0]
-        self.model.add_versions(versions)
+        )
+        self.model.add_versions(page_versions)
 
         self.current_page += 1
 
