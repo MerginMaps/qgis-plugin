@@ -170,8 +170,6 @@ class MerginPlugin:
 
             self.enable_toolbar_actions()
 
-        self.post_login()
-
         self.data_item_provider = DataItemProvider(self)
         QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
         # related to https://github.com/MerginMaps/qgis-mergin-plugin/issues/3
@@ -261,7 +259,6 @@ class MerginPlugin:
         """Called when plugin config (connection settings) were changed."""
         self.create_manager()
         self.enable_toolbar_actions()
-        self.post_login()
 
     def open_configured_url(self, path=None):
         """Opens configured Mergin Maps server url in default browser
@@ -367,20 +364,21 @@ class MerginPlugin:
 
         if self.mc.server_type() == ServerType.SAAS and workspace_id:
             # check action required flag
-            service_response = self.mc.workspace_service(workspace_id)
+            try:
+                service_response = self.mc.workspace_service(workspace_id)
+            except ClientError as e:
+                return
 
-            if service_response and type(service_response) is dict:
-                requires_action = service_response.get("action_required", False)
-
-                if requires_action:
-                    iface.messageBar().pushMessage(
-                        "Mergin Maps",
-                        "Your attention is required.&nbsp;Please visit the "
-                        f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required'>"
-                        "Mergin dashboard</a>",
-                        level=Qgis.Critical,
-                        duration=0,
-                    )
+            requires_action = service_response.get("action_required", False)
+            if requires_action:
+                iface.messageBar().pushMessage(
+                    "Mergin Maps",
+                    "Your attention is required.&nbsp;Please visit the "
+                    f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required'>"
+                    "Mergin dashboard</a>",
+                    level=Qgis.Critical,
+                    duration=0,
+                )
 
     def choose_active_workspace(self):
         """
@@ -417,32 +415,6 @@ class MerginPlugin:
                     break
 
         self.set_current_workspace(workspace)
-
-    def post_login(self):
-        """Groups actions that needs to be done when auth information changes"""
-        if not self.mc:
-            return
-
-        if self.mc.server_type() != ServerType.OLD:
-            return
-
-        settings = QSettings()
-
-        # check action required flag
-        service_response = self.mc.user_service()
-
-        if service_response and type(service_response) is dict:
-            requires_action = service_response.get("action_required", False)
-
-            if requires_action:
-                iface.messageBar().pushMessage(
-                    "Mergin Maps",
-                    "Your attention is required.&nbsp;Please visit the "
-                    f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required'>"
-                    "Mergin dashboard</a>",
-                    level=Qgis.Critical,
-                    duration=0,
-                )
 
     def create_new_project(self):
         """Open new Mergin Maps project creation dialog."""
