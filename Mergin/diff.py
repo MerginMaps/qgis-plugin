@@ -220,6 +220,8 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
 
             for i in range(len(db_row)):
                 if i == geom_col_index:
+                    if db_row[i] == None:
+                        continue
                     wkb = parse_gpkg_geom_encoding(db_row[i])
                     g = QgsGeometry()
                     g.fromWkb(wkb)
