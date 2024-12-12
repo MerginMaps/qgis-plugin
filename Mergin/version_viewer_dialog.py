@@ -384,19 +384,19 @@ class VersionViewerDialog(QDialog):
 
     def save_splitters_state(self):
         settings = QSettings()
-        settings.setValue("Mergin/VersionViewerSplitterSize", self.splitter_map_table.saveState())
-        settings.setValue("Mergin/VersionViewerSplitterVericalSize", self.splitter_vertical.saveState())
+        settings.setValue("Mergin/versionViewerSplitterSize", self.splitter_map_table.saveState())
+        settings.setValue("Mergin/versionViewerSplitterVericalSize", self.splitter_vertical.saveState())
 
     def set_splitters_state(self):
         settings = QSettings()
-        state_vertical = settings.value("Mergin/VersionViewerSplitterVericalSize")
+        state_vertical = settings.value("Mergin/versionViewerSplitterVericalSize")
         if state_vertical:
             self.splitter_vertical.restoreState(state_vertical)
         else:
             self.splitter_vertical.setSizes([120, 200, 40])
 
         do_calc_height = True
-        state = settings.value("Mergin/VersionViewerSplitterSize")
+        state = settings.value("Mergin/versionViewerSplitterSize")
         if state:
             self.splitter_map_table.restoreState(state)
 

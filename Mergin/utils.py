@@ -1509,15 +1509,6 @@ def get_layer_by_path(path):
             return layer
 
 
-def check_mergin_subdirs(directory):
-    """Check if the directory has a Mergin Maps project subdir (.mergin)."""
-    for root, dirs, files in os.walk(directory):
-        for name in dirs:
-            if name == ".mergin":
-                return os.path.join(root, name)
-    return False
-
-
 def contextual_date(date_string):
     """Converts datetime string returned by the server into contextual duration string, e.g.
     'N hours/days/month ago'

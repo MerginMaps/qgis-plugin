@@ -158,7 +158,7 @@ class MerginPlugin:
                 add_to_menu=True,
                 add_to_toolbar=None,
             )
-            self.history_dock_action = self.add_action(
+            self.add_action(
                 "history.svg",
                 text="Project History",
                 callback=self.open_project_history_window,
