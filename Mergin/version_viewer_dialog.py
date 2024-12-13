@@ -28,7 +28,8 @@ from qgis.PyQt.QtCore import (
     QItemSelectionModel,
 )
 
-from qgis.utils import iface
+from qgis.utils import iface, OverrideCursor
+
 from qgis.core import (
     QgsProject,
     QgsMessageLog,
@@ -262,108 +263,113 @@ class VersionViewerDialog(QDialog):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
 
-        QgsGui.instance().enableAutoGeometryRestore(self)
+        with OverrideCursor(Qt.WaitCursor):
+            QgsGui.instance().enableAutoGeometryRestore(self)
 
-        self.mc = mc
+            self.mc = mc
 
-        self.failed_to_fetch = False
+            self.failed_to_fetch = False
 
-        self.project_path = mergin_project_local_path()
-        self.mp = MerginProject(self.project_path)
+            self.project_path = mergin_project_local_path()
+            self.mp = MerginProject(self.project_path)
 
-        self.set_splitters_state()
+            self.set_splitters_state()
 
-        self.versionModel = VersionsTableModel()
-        self.history_treeview.setModel(self.versionModel)
-        self.history_treeview.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
+            self.versionModel = VersionsTableModel()
+            self.history_treeview.setModel(self.versionModel)
+            self.history_treeview.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
 
-        self.selectionModel: QItemSelectionModel = self.history_treeview.selectionModel()
-        self.selectionModel.currentChanged.connect(self.current_version_changed)
+            self.selectionModel: QItemSelectionModel = self.history_treeview.selectionModel()
+            self.selectionModel.currentChanged.connect(self.current_version_changed)
 
-        self.has_selected_latest = False
+            self.has_selected_latest = False
 
-        try:
-            self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
-            self.diff_downloader = None
+            try:
+                self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
+                self.diff_downloader = None
 
-            self.fetcher.fetch_another_page()
-        except ClientError as e:
-            self.failed_to_fetch = True
-            return
+                self.fetcher.fetch_another_page()
+            except ClientError as e:
+                self.failed_to_fetch = True
+                return
 
-        height = 30
-        self.toolbar.setMinimumHeight(height)
+            height = 30
+            self.toolbar.setMinimumHeight(height)
 
-        self.history_control.setMinimumHeight(height)
-        self.history_control.setVisible(False)
+            self.history_control.setMinimumHeight(height)
+            self.history_control.setVisible(False)
 
-        self.toggle_layers_action = QAction(
-            QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Hide background layers", self
-        )
-        self.toggle_layers_action.setCheckable(True)
-        self.toggle_layers_action.setChecked(True)
-        self.toggle_layers_action.toggled.connect(self.toggle_project_layers)
+            self.toggle_layers_action = QAction(
+                QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Hide background layers", self
+            )
+            self.toggle_layers_action.setCheckable(True)
+            self.toggle_layers_action.setChecked(True)
+            self.toggle_layers_action.toggled.connect(self.toggle_project_layers)
 
-        # We use a ToolButton instead of simple action to dislay both icon AND text
-        self.toggle_layers_button = QToolButton()
-        self.toggle_layers_button.setDefaultAction(self.toggle_layers_action)
-        self.toggle_layers_button.setText("Show background layers")
-        self.toggle_layers_button.setToolTip(
-            "Toggle the display of background layer(Raster and tiles) in the current project"
-        )
-        self.toggle_layers_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        self.toolbar.addWidget(self.toggle_layers_button)
+            # We use a ToolButton instead of simple action to dislay both icon AND text
+            self.toggle_layers_button = QToolButton()
+            self.toggle_layers_button.setDefaultAction(self.toggle_layers_action)
+            self.toggle_layers_button.setText("Show background layers")
+            self.toggle_layers_button.setToolTip(
+                "Toggle the display of background layer(Raster and tiles) in the current project"
+            )
+            self.toggle_layers_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+            self.toolbar.addWidget(self.toggle_layers_button)
 
-        self.toolbar.addSeparator()
+            self.toolbar.addSeparator()
 
-        self.zoom_full_action = QAction(QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"), "Zoom Full", self)
-        self.zoom_full_action.triggered.connect(self.zoom_full)
+            self.zoom_full_action = QAction(
+                QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"), "Zoom Full", self
+            )
+            self.zoom_full_action.triggered.connect(self.zoom_full)
 
-        self.toolbar.addAction(self.zoom_full_action)
+            self.toolbar.addAction(self.zoom_full_action)
 
-        self.zoom_selected_action = QAction(
-            QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"), "Zoom To Selection", self
-        )
-        self.zoom_selected_action.triggered.connect(self.zoom_selected)
+            self.zoom_selected_action = QAction(
+                QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"), "Zoom To Selection", self
+            )
+            self.zoom_selected_action.triggered.connect(self.zoom_selected)
 
-        self.toolbar.addAction(self.zoom_selected_action)
+            self.toolbar.addAction(self.zoom_selected_action)
 
-        btn_add_changes = QPushButton("Add to project")
-        btn_add_changes.setIcon(QgsApplication.getThemeIcon("/mActionAdd.svg"))
-        menu = QMenu()
-        add_current_action = menu.addAction(QIcon(icon_path("file-plus.svg")), "Add current changes layer to project")
-        add_current_action.triggered.connect(self.add_current_to_project)
-        add_all_action = menu.addAction(QIcon(icon_path("folder-plus.svg")), "Add all changes layers to project")
-        add_all_action.triggered.connect(self.add_all_to_project)
-        btn_add_changes.setMenu(menu)
+            btn_add_changes = QPushButton("Add to project")
+            btn_add_changes.setIcon(QgsApplication.getThemeIcon("/mActionAdd.svg"))
+            menu = QMenu()
+            add_current_action = menu.addAction(
+                QIcon(icon_path("file-plus.svg")), "Add current changes layer to project"
+            )
+            add_current_action.triggered.connect(self.add_current_to_project)
+            add_all_action = menu.addAction(QIcon(icon_path("folder-plus.svg")), "Add all changes layers to project")
+            add_all_action.triggered.connect(self.add_all_to_project)
+            btn_add_changes.setMenu(menu)
 
-        self.toolbar.addWidget(btn_add_changes)
-        self.toolbar.setIconSize(iface.iconSize())
+            self.toolbar.addWidget(btn_add_changes)
+            self.toolbar.setIconSize(iface.iconSize())
 
-        self.map_canvas.enableAntiAliasing(True)
-        self.map_canvas.setSelectionColor(QColor(Qt.cyan))
-        self.pan_tool = QgsMapToolPan(self.map_canvas)
-        self.map_canvas.setMapTool(self.pan_tool)
+            self.map_canvas.enableAntiAliasing(True)
+            self.map_canvas.setSelectionColor(QColor(Qt.cyan))
+            self.pan_tool = QgsMapToolPan(self.map_canvas)
+            self.map_canvas.setMapTool(self.pan_tool)
 
-        self.current_diff = None
-        self.diff_layers = []
-        self.filter_model = None
-        self.layer_list.currentRowChanged.connect(self.diff_layer_changed)
+            self.current_diff = None
+            self.diff_layers = []
+            self.filter_model = None
+            self.layer_list.currentRowChanged.connect(self.diff_layer_changed)
 
-        self.icons = {
-            "added": "plus.svg",
-            "removed": "trash.svg",
-            "updated": "pencil.svg",
-            "renamed": "pencil.svg",
-            "table": "table.svg",
-        }
-        self.model_detail = QStandardItemModel()
-        self.model_detail.setHorizontalHeaderLabels(["Details"])
+            self.icons = {
+                "added": "plus.svg",
+                "removed": "trash.svg",
+                "updated": "pencil.svg",
+                "renamed": "pencil.svg",
+                "table": "table.svg",
+            }
+            self.model_detail = QStandardItemModel()
+            self.model_detail.setHorizontalHeaderLabels(["Details"])
 
-        self.details_treeview.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.details_treeview.setModel(self.model_detail)
+            self.details_treeview.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            self.details_treeview.setModel(self.model_detail)
 
-        self.versionModel.current_version = self.mp.version()
+            self.versionModel.current_version = self.mp.version()
 
     def exec(self):
         if self.failed_to_fetch:
