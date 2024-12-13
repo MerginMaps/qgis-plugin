@@ -40,7 +40,7 @@ from qgis.core import (
     QgsTiledSceneLayer,
     QgsVectorTileLayer,
 )
-from qgis.gui import QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
+from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
 
 
 from .utils import (
@@ -262,7 +262,11 @@ class VersionViewerDialog(QDialog):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
 
+        QgsGui.instance().enableAutoGeometryRestore(self)
+
         self.mc = mc
+
+        self.failed_to_fetch = False
 
         self.project_path = mergin_project_local_path()
         self.mp = MerginProject(self.project_path)
@@ -278,10 +282,14 @@ class VersionViewerDialog(QDialog):
 
         self.has_selected_latest = False
 
-        self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
-        self.diff_downloader = None
+        try:
+            self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
+            self.diff_downloader = None
 
-        self.fetcher.fetch_another_page()
+            self.fetcher.fetch_another_page()
+        except ClientError as e:
+            self.failed_to_fetch = True
+            return
 
         height = 30
         self.toolbar.setMinimumHeight(height)
@@ -358,7 +366,10 @@ class VersionViewerDialog(QDialog):
         self.versionModel.current_version = self.mp.version()
 
     def exec(self):
-
+        if self.failed_to_fetch:
+            msg = f"Client error : Failed to reach history version for project {self.project_path}"
+            QMessageBox.critical(None, "Failed requesting history", msg, QMessageBox.Close)
+            return
         try:
             ws_id = self.mp.workspace_id()
         except ClientError as e:
