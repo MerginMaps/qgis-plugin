@@ -75,7 +75,7 @@ class VersionsTableModel(QAbstractTableModel):
         super().__init__(parent)
 
         # Keep ordered
-        self.versions = []]
+        self.versions = []
 
         self.oldest = None
         self.latest = None
