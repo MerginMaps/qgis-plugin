@@ -75,7 +75,7 @@ class VersionsTableModel(QAbstractTableModel):
         super().__init__(parent)
 
         # Keep ordered
-        self.versions = deque()
+        self.versions = []]
 
         self.oldest = None
         self.latest = None
@@ -85,12 +85,12 @@ class VersionsTableModel(QAbstractTableModel):
         self.current_version = None
 
     def latest_version(self):
-        if len(self.versions) == 0:
+        if not self.versions:
             return None
         return int_version(self.versions[0]["name"])
 
     def oldest_version(self):
-        if len(self.versions) == 0:
+        if not self.versions:
             return None
         return int_version(self.versions[-1]["name"])
 
@@ -125,8 +125,9 @@ class VersionsTableModel(QAbstractTableModel):
                 font.setBold(True)
                 return font
         elif role == Qt.ToolTipRole:
-            if index.column() == 2:
-                return format_datetime(self.versions[idx]["created"])
+            return f"""Version: {self.versions[idx]['name'] }
+Author: {self.versions[idx]['author']}
+Date: {format_datetime(self.versions[idx]['created'])}"""
         elif role == VersionsTableModel.VERSION:
             return int_version(self.versions[idx]["name"])
         elif role == VersionsTableModel.VERSION_NAME:
@@ -280,7 +281,7 @@ class VersionViewerDialog(QDialog):
             self.history_treeview.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
 
             self.selectionModel: QItemSelectionModel = self.history_treeview.selectionModel()
-            self.selectionModel.currentChanged.connect(self.current_version_changed)
+            self.selectionModel.currentChanged.connect(self.selected_version_changed)
 
             self.has_selected_latest = False
 
@@ -437,7 +438,7 @@ class VersionViewerDialog(QDialog):
         if self.ui.history_treeview.verticalScrollBar().maximum() <= value:
             self.fetch_from_server()
 
-    def current_version_changed(self, current_index, previous_index):
+    def selected_version_changed(self, current_index, previous_index):
         # Update the ui when the selected version change
         item = self.versionModel.item_from_index(current_index)
         version_name = item["name"]
