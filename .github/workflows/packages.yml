@@ -150,7 +150,13 @@ jobs:
             echo "geodiff version defined in python-api-client requires.txt $GEODIFF_VER_FROM_CLIENT does not equal $GEODIFF_VER from the workpackage file"
             exit 1; # or just warning??
           fi
-
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          path: artifact-pygeodiff
+          pattern: artifact-pygeodiff-*
+          merge-multiple: true
+          
       - uses: actions/download-artifact@v4
         with:
           name: artifact
@@ -173,12 +179,7 @@ jobs:
           (cd output && zip -r9 ../mergin.zip Mergin/)
 
 
-      - name: Merge Artifacts
-        uses: actions/upload-artifact/merge@v4
-        with:
-          path: artifact-pygeodiff
-          pattern: artifact-pygeodiff-*
-          merge-multiple: true
+
       - uses: actions/upload-artifact@v4
         with:
           name: Mergin
