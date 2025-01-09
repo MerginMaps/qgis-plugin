@@ -49,6 +49,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
+          name: artifact-pygeodiff-linux
           path: ./pygeodiff-binaries/*.so
 
   build_windows_binaries:
@@ -77,6 +78,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
+          name: artifact-pygeodiff-windows
           path: ./pygeodiff-binaries/*.pyd
 
   build_macos_binary:
@@ -111,6 +113,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
+          name: artifact-pygeodiff-macos
           path: ./pygeodiff-binaries/*.dylib
 
   create_mergin_plugin_package:
@@ -173,7 +176,9 @@ jobs:
       - name: Merge Artifacts
         uses: actions/upload-artifact/merge@v4
         with:
-          pattern: ./pygeodiff-binaries/*
+          path: artifact-pygeodiff
+          pattern: artifact-pygeodiff-*
+          merge-multiple: true
       - uses: actions/upload-artifact@v4
         with:
           name: Mergin
