@@ -157,6 +157,7 @@ jobs:
           path: artifact-pygeodiff
           pattern: artifact-pygeodiff-*
           merge-multiple: true
+          delete-merged: true
 
       - uses: actions/download-artifact@v4
         with:
