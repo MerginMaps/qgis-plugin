@@ -1222,7 +1222,7 @@ def test_server_connection(url, username, password):
     result = True, "<font color=green> OK </font>"
     proxy_config = get_qgis_proxy_config(url)
     try:
-        _ = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
+        MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
     except (LoginError, ClientError) as e:
         QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
         result = False, f"<font color=red> Connection failed, {str(e)} </font>"
