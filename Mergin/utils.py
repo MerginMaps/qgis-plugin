@@ -404,7 +404,7 @@ def validate_mergin_url(url):
     :return: String error message as result of validation. If None, URL is valid.
     """
     try:
-        _ = MerginClient(url, proxy_config=get_qgis_proxy_config(url))
+        MerginClient(url, proxy_config=get_qgis_proxy_config(url))
 
     # Valid but not Mergin URl
     except ClientError:
