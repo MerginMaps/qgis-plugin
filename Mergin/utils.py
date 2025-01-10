@@ -399,14 +399,13 @@ def send_logs(username, logfile):
 
 def validate_mergin_url(url):
     """
-    Validation of mergin URL by pinging. Checks if URL points at compatible Mergin server.
+    Initiates connection to the provided server URL to check if the server is accessible
     :param url: String Mergin Maps URL to ping.
     :return: String error message as result of validation. If None, URL is valid.
     """
     try:
-        mc = MerginClient(url, proxy_config=get_qgis_proxy_config(url))
-        if not mc.is_server_compatible():
-            return "Incompatible Mergin Maps server"
+        MerginClient(url, proxy_config=get_qgis_proxy_config(url))
+
     # Valid but not Mergin URl
     except ClientError:
         return "Invalid Mergin Maps URL"
@@ -1223,7 +1222,7 @@ def test_server_connection(url, username, password):
     result = True, "<font color=green> OK </font>"
     proxy_config = get_qgis_proxy_config(url)
     try:
-        mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
+        MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
     except (LoginError, ClientError) as e:
         QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
         result = False, f"<font color=red> Connection failed, {str(e)} </font>"
