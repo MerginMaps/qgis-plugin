@@ -58,7 +58,7 @@ class CreateDiff(QgsProcessingAlgorithm):
         )
 
     def shortHelpString(self):
-        return "Extracts changes made between two versions of the layer of the Mergin project to make it easier to revise changes."
+        return "Extracts changes made between two versions of the layer of the Mergin Maps project to make it easier to revise changes."
 
     def icon(self):
         return QIcon(mm_symbol_path())
