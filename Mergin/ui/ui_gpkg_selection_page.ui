@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Pick a GeoPackage file that contains data to be synchronized</string>
+      <string>Pick a GeoPackage file that contains data to be synchronised</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
