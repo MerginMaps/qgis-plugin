@@ -42,10 +42,12 @@ from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
 from .configure_sync_wizard import DbSyncConfigWizard
 from .remove_project_dialog import RemoveProjectDialog
+from .version_viewer_dialog import VersionViewerDialog
 from .utils import (
     ServerType,
     ClientError,
     LoginError,
+    InvalidProject,
     check_mergin_subdirs,
     create_mergin_client,
     find_qgis_files,
@@ -62,7 +64,7 @@ from .utils import (
     unsaved_project_check,
     UnsavedChangesStrategy,
 )
-
+from .mergin.utils import int_version, is_versioned_file
 from .mergin.merginproject import MerginProject
 from .processing.provider import MerginProvider
 import processing
@@ -92,6 +94,7 @@ class MerginPlugin:
             self.toolbar.setObjectName("MerginMapsToolbar")
 
             self.iface.projectRead.connect(self.on_qgis_project_changed)
+            self.on_qgis_project_changed()
             self.iface.newProjectCreated.connect(self.on_qgis_project_changed)
 
         settings = QSettings()
@@ -154,6 +157,15 @@ class MerginPlugin:
                 callback=self.configure_db_sync,
                 add_to_menu=True,
                 add_to_toolbar=None,
+            )
+            self.add_action(
+                "history.svg",
+                text="Project History",
+                callback=self.open_project_history_window,
+                add_to_menu=False,
+                add_to_toolbar=self.toolbar,
+                enabled=False,
+                always_on=False,
             )
 
             self.enable_toolbar_actions()
@@ -320,6 +332,10 @@ class MerginPlugin:
         wizard = DbSyncConfigWizard(project_name)
         if not wizard.exec():
             return
+
+    def open_project_history_window(self):
+        dlg = VersionViewerDialog(self.mc)
+        dlg.exec()
 
     def show_no_workspaces_dialog(self):
         msg = (
