@@ -344,6 +344,9 @@ class VersionViewerDialog(QDialog):
             add_all_action.triggered.connect(self.add_all_to_project)
             btn_add_changes.setMenu(menu)
 
+            # Fix issue on MacOS where the menu was not working properly, it's unclear why we need that
+            btn_add_changes.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+
             self.toolbar.addWidget(btn_add_changes)
             self.toolbar.setIconSize(iface.iconSize())
 
