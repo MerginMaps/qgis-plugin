@@ -630,7 +630,6 @@ class VersionViewerDialog(QDialog):
     def zoom_selected(self):
         if self.current_diff:
             self.map_canvas.zoomToSelected([self.current_diff])
-            self.map_canvas.refresh()
 
     def find_changeset_summary_for_layer(self, layer_name: str, changesets: dict):
         for gpkg_changes in changesets.values():
