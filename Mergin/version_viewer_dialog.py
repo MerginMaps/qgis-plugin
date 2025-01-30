@@ -101,18 +101,18 @@ Date: {format_datetime(self.versions[idx]['created'])}"""
         else:
             return None
 
-    def insertRows(self, row, count, parent=QModelIndex()):
-        self.beginInsertRows(parent, row, row + count - 1)
-        self.endInsertRows()
-
     def clear(self):
         self.beginResetModel()
         self.versions.clear()
         self.endResetModel()
 
     def append_versions(self, versions):
-        self.insertRows(len(self.versions) - 1, len(versions))
+        first_row = len(self.versions) - 1
+        last_row = first_row + len(versions)
+        self.beginInsertRows(QModelIndex(), first_row , last_row)
         self.versions.extend(versions)
+        self.endInsertRows()
+
         self.layoutChanged.emit()
 
     def item_from_index(self, index):
@@ -266,12 +266,12 @@ class VersionViewerDialog(QDialog):
             )
             self.toggle_layers_action.setCheckable(True)
             self.toggle_layers_action.setChecked(True)
-            self.toggle_layers_action.toggled.connect(self.toggle_project_layers)
+            self.toggle_layers_action.toggled.connect(self.toggle_background_layers)
 
             # We use a ToolButton instead of simple action to dislay both icon AND text
             self.toggle_layers_button = QToolButton()
             self.toggle_layers_button.setDefaultAction(self.toggle_layers_action)
-            self.toggle_layers_button.setText("Show background layers")
+            self.toggle_layers_button.setText("Hide background layers")
             self.toggle_layers_button.setToolTip(
                 "Toggle the display of background layer(Raster and tiles) in the current project"
             )
@@ -471,7 +471,7 @@ class VersionViewerDialog(QDialog):
     def _table_summary_items(self, summary):
         return [QStandardItem("{}: {}".format(k, summary[k])) for k in summary if k != "table"]
 
-    def toggle_project_layers(self, checked):
+    def toggle_background_layers(self, checked):
         if checked:
             self.toggle_layers_button.setText("Hide background layers")
         else:
@@ -501,7 +501,7 @@ class VersionViewerDialog(QDialog):
                 extent = extent.buffered(d * 0.07)
                 extent = self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
                 self.map_canvas.setExtent(extent)
-                
+
         self.map_canvas.refresh()
 
     def show_version_changes(self, version):
