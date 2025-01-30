@@ -286,22 +286,22 @@ class VersionViewerDialog(QDialog):
             self.history_control.setMinimumHeight(height)
             self.history_control.setVisible(False)
 
-            self.toggle_layers_action = QAction(
+            self.toggle_background_layers_action = QAction(
                 QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Hide background layers", self
             )
-            self.toggle_layers_action.setCheckable(True)
-            self.toggle_layers_action.setChecked(True)
-            self.toggle_layers_action.toggled.connect(self.toggle_background_layers)
+            self.toggle_background_layers_action.setCheckable(True)
+            self.toggle_background_layers_action.setChecked(True)
+            self.toggle_background_layers_action.toggled.connect(self.toggle_background_layers)
 
             # We use a ToolButton instead of simple action to dislay both icon AND text
-            self.toggle_layers_button = QToolButton()
-            self.toggle_layers_button.setDefaultAction(self.toggle_layers_action)
-            self.toggle_layers_button.setText("Hide background layers")
-            self.toggle_layers_button.setToolTip(
+            self.toggle_background_layers_button = QToolButton()
+            self.toggle_background_layers_button.setDefaultAction(self.toggle_background_layers_action)
+            self.toggle_background_layers_button.setText("Hide background layers")
+            self.toggle_background_layers_button.setToolTip(
                 "Toggle the display of background layer(Raster and tiles) in the current project"
             )
-            self.toggle_layers_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-            self.toolbar.addWidget(self.toggle_layers_button)
+            self.toggle_background_layers_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+            self.toolbar.addWidget(self.toggle_background_layers_button)
 
             self.toolbar.addSeparator()
 
@@ -498,9 +498,9 @@ class VersionViewerDialog(QDialog):
 
     def toggle_background_layers(self, checked):
         if checked:
-            self.toggle_layers_button.setText("Hide background layers")
+            self.toggle_background_layers_button.setText("Hide background layers")
         else:
-            self.toggle_layers_button.setText("Show background layers")
+            self.toggle_background_layers_button.setText("Show background layers")
 
         layers = self.collect_layers(checked)
         self.update_canvas(layers, set_extent=False)
@@ -556,7 +556,7 @@ class VersionViewerDialog(QDialog):
             self.stackedWidget.setCurrentIndex(0)
             self.tabWidget.setCurrentIndex(0)
             self.tabWidget.setTabEnabled(0, True)
-            layers = self.collect_layers(self.toggle_layers_action.isChecked())
+            layers = self.collect_layers(self.toggle_background_layers_action.isChecked())
             self.update_canvas(layers)
         else:
             self.toolbar.setEnabled(False)
@@ -606,7 +606,7 @@ class VersionViewerDialog(QDialog):
         self.filter_model.setAttributeTableConfig(config)
         self.attribute_table.setAttributeTableConfig(config)
 
-        layers = self.collect_layers(self.toggle_layers_action.isChecked())
+        layers = self.collect_layers(self.toggle_background_layers_action.isChecked())
         self.update_canvas(layers)
 
     def add_current_to_project(self):
