@@ -250,7 +250,7 @@ class VersionViewerDialog(QDialog):
                 self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
                 self.diff_downloader = None
 
-                self.fetcher.fetch_another_page()
+                self.fetch_from_server()
             except ClientError as e:
                 self.failed_to_fetch = True
                 return
