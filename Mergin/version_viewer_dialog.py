@@ -1,68 +1,34 @@
 # GPLv3 license
 # Copyright Lutra Consulting Limited
 
-from collections import deque
-import os
 import math
+import os
 
-from qgis.PyQt import uic, QtCore
-from qgis.PyQt.QtWidgets import (
-    QDialog,
-    QAction,
-    QListWidgetItem,
-    QPushButton,
-    QMenu,
-    QMessageBox,
-    QAbstractItemView,
-    QToolButton,
-)
-from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel, QIcon, QFont, QColor
-from qgis.PyQt.QtCore import (
-    QStringListModel,
-    Qt,
-    QSettings,
-    QModelIndex,
-    QAbstractTableModel,
-    QThread,
-    pyqtSignal,
-    QItemSelectionModel,
-)
+from qgis.core import (QgsApplication,  # Used to filter background map
+                       QgsFeatureRequest, QgsMessageLog, QgsProject,
+                       QgsRasterLayer, QgsTiledSceneLayer, QgsVectorLayerCache,
+                       QgsVectorTileLayer)
+from qgis.gui import (QgsAttributeTableFilterModel, QgsAttributeTableModel,
+                      QgsGui, QgsMapToolPan)
+from qgis.PyQt import QtCore, uic
+from qgis.PyQt.QtCore import (QAbstractTableModel, QItemSelectionModel,
+                              QModelIndex, QSettings, QStringListModel, Qt,
+                              QThread, pyqtSignal)
+from qgis.PyQt.QtGui import (QColor, QFont, QIcon, QStandardItem,
+                             QStandardItemModel)
+from qgis.PyQt.QtWidgets import (QAbstractItemView, QAction, QDialog,
+                                 QListWidgetItem, QMenu, QMessageBox,
+                                 QPushButton, QToolButton)
+from qgis.utils import OverrideCursor, iface
 
-from qgis.utils import iface, OverrideCursor
-
-from qgis.core import (
-    QgsProject,
-    QgsMessageLog,
-    QgsApplication,
-    QgsFeatureRequest,
-    QgsVectorLayerCache,
-    # Used to filter background map
-    QgsRasterLayer,
-    QgsTiledSceneLayer,
-    QgsVectorTileLayer,
-)
-from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
-
-
-from .utils import (
-    ClientError,
-    icon_path,
-    mergin_project_local_path,
-    PROJS_PER_PAGE,
-    contextual_date,
-    is_versioned_file,
-    icon_path,
-    format_datetime,
-    parse_user_agent,
-    icon_for_layer,
-)
-
+from .diff import make_version_changes_layers
+from .mergin import MerginClient
 from .mergin.merginproject import MerginProject
 from .mergin.utils import bytes_to_human_size, int_version
-
-from .mergin import MerginClient
-from .diff import make_version_changes_layers
-
+from .utils import (PROJS_PER_PAGE, ClientError, contextual_date,
+                    format_datetime, icon_for_layer, icon_path,
+                    is_versioned_file, mergin_project_local_path,
+                    parse_user_agent)
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_versions_viewer.ui")
 
