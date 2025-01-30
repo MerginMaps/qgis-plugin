@@ -478,7 +478,7 @@ class VersionViewerDialog(QDialog):
             self.toggle_layers_button.setText("Show background layers")
 
         layers = self.collect_layers(checked)
-        self.update_canvas_layers(layers, set_extent=False)
+        self.update_canvas(layers, set_extent=False)
 
     def update_canvas(self, layers, set_extent=True):
 
