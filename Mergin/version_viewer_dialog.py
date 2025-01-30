@@ -110,14 +110,9 @@ Date: {format_datetime(self.versions[idx]['created'])}"""
         self.versions.clear()
         self.endResetModel()
 
-    def add_versions(self, versions):
+    def append_versions(self, versions):
         self.insertRows(len(self.versions) - 1, len(versions))
         self.versions.extend(versions)
-        self.layoutChanged.emit()
-
-    def prepend_versions(self, versions):
-        self.insertRows(0, len(versions))
-        self.versions.extendleft(versions)
         self.layoutChanged.emit()
 
     def item_from_index(self, index):
@@ -211,7 +206,7 @@ class VersionsFetcher(QThread):
         page_versions, _ = self.mc.paginated_project_versions(
             self.project_path, self.current_page, per_page=self.per_page, descending=True
         )
-        self.model.add_versions(page_versions)
+        self.model.append_versions(page_versions)
 
         self.current_page += 1
 
@@ -483,9 +478,9 @@ class VersionViewerDialog(QDialog):
             self.toggle_layers_button.setText("Show background layers")
 
         layers = self.collect_layers(checked)
-        self.update_canvas_layers(layers)
+        self.update_canvas_layers(layers, set_extent=False)
 
-    def update_canvas(self, layers):
+    def update_canvas(self, layers, set_extent=True):
 
         if self.current_diff.isSpatial() == False:
             self.map_canvas.setEnabled(False)
@@ -495,26 +490,18 @@ class VersionViewerDialog(QDialog):
             self.map_canvas.setEnabled(True)
             self.set_splitters_state()
 
-        self.update_canvas_layers(layers)
-        self.update_canvas_extend(layers)
-
-    def update_canvas_layers(self, layers):
         self.map_canvas.setLayers(layers)
-        self.map_canvas.refresh()
-
-    def update_canvas_extend(self, layers):
-        self.map_canvas.setDestinationCrs(QgsProject.instance().crs())
-
-        if layers:
-            extent = layers[0].extent()
-            d = min(extent.width(), extent.height())
-            if d == 0:
-                d = 1
-            extent = extent.buffered(d * 0.07)
-
-            extent = self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
-
-            self.map_canvas.setExtent(extent)
+        if set_extent:
+            self.map_canvas.setDestinationCrs(QgsProject.instance().crs())
+            if layers:
+                extent = layers[0].extent()
+                d = min(extent.width(), extent.height())
+                if d == 0:
+                    d = 1
+                extent = extent.buffered(d * 0.07)
+                extent = self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
+                self.map_canvas.setExtent(extent)
+                
         self.map_canvas.refresh()
 
     def show_version_changes(self, version):
