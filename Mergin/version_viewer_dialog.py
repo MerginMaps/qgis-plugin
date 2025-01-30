@@ -320,6 +320,7 @@ class VersionViewerDialog(QDialog):
             self.toolbar.addAction(self.zoom_selected_action)
 
             btn_add_changes = QPushButton("Add to project")
+            btn_add_changes.setToolTip("Add changes at this version as temporary layers to the project")
             btn_add_changes.setIcon(QgsApplication.getThemeIcon("/mActionAdd.svg"))
             menu = QMenu()
             add_current_action = menu.addAction(
