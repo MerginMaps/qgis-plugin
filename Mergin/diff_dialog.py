@@ -46,7 +46,7 @@ class DiffViewerDialog(QDialog):
             )
             self.toggle_layers_action.setCheckable(True)
             self.toggle_layers_action.setChecked(True)
-            self.toggle_layers_action.toggled.connect(self.toggle_project_layers)
+            self.toggle_layers_action.toggled.connect(self.toggle_background_layers)
             self.toolbar.addAction(self.toggle_layers_action)
 
             self.toolbar.addSeparator()
@@ -140,7 +140,7 @@ class DiffViewerDialog(QDialog):
             self.tab_bar.addTab(icon_for_layer(vl), f"{vl.name()} ({vl.featureCount()})")
         self.tab_bar.setCurrentIndex(0)
 
-    def toggle_project_layers(self, checked):
+    def toggle_background_layers(self, checked):
         layers = self.collect_layers(checked)
         self.update_canvas(layers)
 
@@ -156,8 +156,8 @@ class DiffViewerDialog(QDialog):
             self.map_canvas.setExtent(extent)
         self.map_canvas.refresh()
 
-    def collect_layers(self, checked):
-        if checked:
+    def collect_layers(self, include_background_layers: bool):
+        if include_background_layers:
             layers = iface.mapCanvas().layers()
         else:
             layers = []
