@@ -11,6 +11,7 @@ from qgis.core import (
     QgsProject,
     QgsRasterLayer,
     QgsTiledSceneLayer,
+    QgsVectorLayer,
     QgsVectorLayerCache,
     QgsVectorTileLayer,
 )
@@ -507,7 +508,6 @@ class VersionViewerDialog(QDialog):
         self.update_canvas(layers, set_extent=False)
 
     def update_canvas(self, layers, set_extent=True):
-
         if self.current_diff.isSpatial() == False:
             self.map_canvas.setEnabled(False)
             self.save_splitters_state()
@@ -612,11 +612,19 @@ class VersionViewerDialog(QDialog):
 
     def add_current_to_project(self):
         if self.current_diff:
-            QgsProject.instance().addMapLayer(self.current_diff)
+            lyr_clone = QgsVectorLayer(
+                self.current_diff.source(),
+                self.current_diff.name() + f" {self.version_details['name']}",
+                self.current_diff.providerType(),
+            )
+            QgsProject.instance().addMapLayer(lyr_clone)
 
     def add_all_to_project(self):
         for layer in self.diff_layers:
-            QgsProject.instance().addMapLayer(layer)
+            lyr_clone = QgsVectorLayer(
+                layer.source(), layer.name() + f" {self.version_details['name']}", layer.providerType()
+            )
+            QgsProject.instance().addMapLayer(lyr_clone)
 
     def zoom_full(self):
         if self.current_diff:
