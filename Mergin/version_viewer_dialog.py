@@ -614,7 +614,7 @@ class VersionViewerDialog(QDialog):
         if self.current_diff:
             lyr_clone = QgsVectorLayer(
                 self.current_diff.source(),
-                self.current_diff.name() + f" {self.version_details['name']}",
+                self.current_diff.name() + f" ({self.version_details['name']})",
                 self.current_diff.providerType(),
             )
             QgsProject.instance().addMapLayer(lyr_clone)
@@ -622,7 +622,7 @@ class VersionViewerDialog(QDialog):
     def add_all_to_project(self):
         for layer in self.diff_layers:
             lyr_clone = QgsVectorLayer(
-                layer.source(), layer.name() + f" {self.version_details['name']}", layer.providerType()
+                layer.source(), layer.name() + f" ({self.version_details['name']})", layer.providerType()
             )
             QgsProject.instance().addMapLayer(lyr_clone)
 
