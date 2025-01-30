@@ -4,31 +4,56 @@
 import math
 import os
 
-from qgis.core import (QgsApplication,  # Used to filter background map
-                       QgsFeatureRequest, QgsMessageLog, QgsProject,
-                       QgsRasterLayer, QgsTiledSceneLayer, QgsVectorLayerCache,
-                       QgsVectorTileLayer)
-from qgis.gui import (QgsAttributeTableFilterModel, QgsAttributeTableModel,
-                      QgsGui, QgsMapToolPan)
+from qgis.core import (
+    QgsApplication,  # Used to filter background map
+    QgsFeatureRequest,
+    QgsMessageLog,
+    QgsProject,
+    QgsRasterLayer,
+    QgsTiledSceneLayer,
+    QgsVectorLayerCache,
+    QgsVectorTileLayer,
+)
+from qgis.gui import QgsAttributeTableFilterModel, QgsAttributeTableModel, QgsGui, QgsMapToolPan
 from qgis.PyQt import QtCore, uic
-from qgis.PyQt.QtCore import (QAbstractTableModel, QItemSelectionModel,
-                              QModelIndex, QSettings, QStringListModel, Qt,
-                              QThread, pyqtSignal)
-from qgis.PyQt.QtGui import (QColor, QFont, QIcon, QStandardItem,
-                             QStandardItemModel)
-from qgis.PyQt.QtWidgets import (QAbstractItemView, QAction, QDialog,
-                                 QListWidgetItem, QMenu, QMessageBox,
-                                 QPushButton, QToolButton)
+from qgis.PyQt.QtCore import (
+    QAbstractTableModel,
+    QItemSelectionModel,
+    QModelIndex,
+    QSettings,
+    QStringListModel,
+    Qt,
+    QThread,
+    pyqtSignal,
+)
+from qgis.PyQt.QtGui import QColor, QFont, QIcon, QStandardItem, QStandardItemModel
+from qgis.PyQt.QtWidgets import (
+    QAbstractItemView,
+    QAction,
+    QDialog,
+    QListWidgetItem,
+    QMenu,
+    QMessageBox,
+    QPushButton,
+    QToolButton,
+)
 from qgis.utils import OverrideCursor, iface
 
 from .diff import make_version_changes_layers
 from .mergin import MerginClient
 from .mergin.merginproject import MerginProject
 from .mergin.utils import bytes_to_human_size, int_version
-from .utils import (PROJS_PER_PAGE, ClientError, contextual_date,
-                    format_datetime, icon_for_layer, icon_path,
-                    is_versioned_file, mergin_project_local_path,
-                    parse_user_agent)
+from .utils import (
+    PROJS_PER_PAGE,
+    ClientError,
+    contextual_date,
+    format_datetime,
+    icon_for_layer,
+    icon_path,
+    is_versioned_file,
+    mergin_project_local_path,
+    parse_user_agent,
+)
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_versions_viewer.ui")
 
@@ -109,7 +134,7 @@ Date: {format_datetime(self.versions[idx]['created'])}"""
     def append_versions(self, versions):
         first_row = len(self.versions) - 1
         last_row = first_row + len(versions)
-        self.beginInsertRows(QModelIndex(), first_row , last_row)
+        self.beginInsertRows(QModelIndex(), first_row, last_row)
         self.versions.extend(versions)
         self.endInsertRows()
 
