@@ -76,6 +76,8 @@ class VersionsTableModel(QAbstractTableModel):
 
         self.current_version = None
 
+        self._loading = False
+
     def latest_version(self):
         if not self.versions:
             return None
@@ -86,8 +88,9 @@ class VersionsTableModel(QAbstractTableModel):
             return None
         return int_version(self.versions[-1]["name"])
 
-    def rowCount(self, parent: QModelIndex):
-        return len(self.versions)
+    def rowCount(self, parent: QModelIndex = QModelIndex):
+        # We add an extra row when loading
+        return len(self.versions) + (1 if self._loading else 0)
 
     def columnCount(self, parent: QModelIndex) -> int:
         return len(self.headers)
@@ -102,6 +105,13 @@ class VersionsTableModel(QAbstractTableModel):
             return None
 
         idx = index.row()
+
+        # Edge case last row when loading
+        if index.row() >= len(self.versions):
+            if role == Qt.DisplayRole:
+                if index.column() == 0:
+                    return "loading⌛"
+            return
         if role == Qt.DisplayRole:
             if index.column() == 0:
                 if self.versions[idx]["name"] == self.current_version:
@@ -141,7 +151,21 @@ Date: {format_datetime(self.versions[idx]['created'])}"""
 
         self.layoutChanged.emit()
 
-    def item_from_index(self, index):
+    def beginFetching(self):
+        first_row = self.rowCount() - 1
+        last_row = first_row + 1
+        self.beginInsertRows(QModelIndex(), first_row, last_row)
+        self.endInsertRows()
+        self._loading = True
+
+    def endFetching(self):
+        first_row = self.rowCount() - 1
+        last_row = first_row + 1
+        self.beginRemoveRows(QModelIndex(), first_row, last_row)
+        self.endInsertRows()
+        self._loading = False
+
+    def item_from_index(self, index: QModelIndex):
         return self.versions[index.row()]
 
 
@@ -229,9 +253,13 @@ class VersionsFetcher(QThread):
     def fetch_another_page(self):
         if self.has_more_page() == False:
             return
+        self.model.beginFetching()
+        # self._loading = False
         page_versions, _ = self.mc.paginated_project_versions(
             self.project_path, self.current_page, per_page=self.per_page, descending=True
         )
+        self.model.endFetching()
+        # self._loading = False
         self.model.append_versions(page_versions)
 
         self.current_page += 1
@@ -429,9 +457,14 @@ class VersionViewerDialog(QDialog):
         if self.ui.history_treeview.verticalScrollBar().maximum() <= value:
             self.fetch_from_server()
 
-    def selected_version_changed(self, current_index, previous_index):
+    def selected_version_changed(self, current_index: QModelIndex, previous_index):
         # Update the ui when the selected version change
-        item = self.versionModel.item_from_index(current_index)
+
+        try:
+            item = self.versionModel.item_from_index(current_index)
+        except:
+            # Click on invalid item like loading
+            return
         version_name = item["name"]
         version = int_version(item["name"])
 
