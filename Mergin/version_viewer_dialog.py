@@ -121,6 +121,9 @@ class VersionsTableModel(QAbstractTableModel):
                 return self.versions[idx]["author"]
             if index.column() == 2:
                 return contextual_date(self.versions[idx]["created"])
+        elif role == Qt.TextAlignmentRole:
+            if index.column() == 0:
+                return Qt.AlignLeft
         elif role == Qt.FontRole:
             if self.versions[idx]["name"] == self.current_version:
                 font = QFont()
