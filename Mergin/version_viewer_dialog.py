@@ -316,7 +316,7 @@ class VersionViewerDialog(QDialog):
             self.history_control.setVisible(False)
 
             self.toggle_background_layers_action = QAction(
-                QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Hide background layers", self
+                QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Background layers", self
             )
             self.toggle_background_layers_action.setCheckable(True)
             self.toggle_background_layers_action.setChecked(True)
@@ -325,7 +325,6 @@ class VersionViewerDialog(QDialog):
             # We use a ToolButton instead of simple action to dislay both icon AND text
             self.toggle_background_layers_button = QToolButton()
             self.toggle_background_layers_button.setDefaultAction(self.toggle_background_layers_action)
-            self.toggle_background_layers_button.setText("Hide background layers")
             self.toggle_background_layers_button.setToolTip(
                 "Toggle the display of background layer(Raster and tiles) in the current project"
             )
@@ -532,11 +531,6 @@ class VersionViewerDialog(QDialog):
         return [QStandardItem("{}: {}".format(k, summary[k])) for k in summary if k != "table"]
 
     def toggle_background_layers(self, checked):
-        if checked:
-            self.toggle_background_layers_button.setText("Hide background layers")
-        else:
-            self.toggle_background_layers_button.setText("Show background layers")
-
         layers = self.collect_layers(checked)
         self.update_canvas(layers, set_extent=False)
 
