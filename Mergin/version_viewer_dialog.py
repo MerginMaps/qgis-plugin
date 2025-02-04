@@ -589,7 +589,7 @@ class VersionViewerDialog(QDialog):
         else:
             self.toolbar.setEnabled(False)
             self.stackedWidget.setCurrentIndex(1)
-            self.label_info.setText("No visual changes")
+            self.label_info.setText("No GeoPackage updates or removal to show")
             self.tabWidget.setCurrentIndex(1)
             self.tabWidget.setTabEnabled(0, False)
 
