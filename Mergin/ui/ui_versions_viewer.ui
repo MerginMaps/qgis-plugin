@@ -222,9 +222,9 @@
           <widget class="QLabel" name="label_info">
            <property name="geometry">
             <rect>
-             <x>110</x>
+             <x>80</x>
              <y>300</y>
-             <width>231</width>
+             <width>271</width>
              <height>81</height>
             </rect>
            </property>
@@ -234,7 +234,10 @@
             </font>
            </property>
            <property name="text">
-            <string>Loading version info…</string>
+            <string>No GeoPackage updates or removal to show</string>
+           </property>
+           <property name="wordWrap">
+            <bool>true</bool>
            </property>
           </widget>
          </widget>

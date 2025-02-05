@@ -258,12 +258,10 @@ class VersionsFetcher(QThread):
         if self.has_more_page() == False:
             return
         self.model.beginFetching()
-        # self._loading = False
         page_versions, _ = self.mc.paginated_project_versions(
             self.project_path, self.current_page, per_page=self.per_page, descending=True
         )
         self.model.endFetching()
-        # self._loading = False
         self.model.append_versions(page_versions)
 
         self.current_page += 1
@@ -631,7 +629,7 @@ class VersionViewerDialog(QDialog):
         self.layer_cache.setCacheGeometry(False)
 
         self.table_model = QgsAttributeTableModel(self.layer_cache)
-        self.table_model.setRequest(QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry).setLimit(100))
+        self.table_model.setRequest(QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry))
 
         self.filter_model = QgsAttributeTableFilterModel(self.map_canvas, self.table_model)
 
