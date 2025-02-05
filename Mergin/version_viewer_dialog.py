@@ -233,7 +233,7 @@ class ChangesetsDownloader(QThread):
 
 class VersionsFetcher(QThread):
 
-    finished = pyqtSignal(list)
+    finished = pyqtSignal()
 
     def __init__(self, mc: MerginClient, project_path, model: VersionsTableModel):
         super(VersionsFetcher, self).__init__()
@@ -249,6 +249,7 @@ class VersionsFetcher(QThread):
 
     def run(self):
         self.fetch_another_page()
+        self.finished.emit()
 
     def has_more_page(self):
         return self.current_page <= self.nb_page
@@ -305,6 +306,7 @@ class VersionViewerDialog(QDialog):
 
             try:
                 self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
+                self.fetcher.finished.connect(lambda: self.on_finish_fetching())
                 self.diff_downloader = None
 
                 self.fetch_from_server()
@@ -453,6 +455,11 @@ class VersionViewerDialog(QDialog):
             return
         else:
             self.fetcher.start()
+
+    def on_finish_fetching(self):
+        # Fetch more if there is no scrollbar yet
+        if not self.history_treeview.verticalScrollBar().isVisible():
+            self.fetch_from_server()
 
     def on_scrollbar_changed(self, value):
 
