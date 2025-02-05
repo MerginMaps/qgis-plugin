@@ -543,7 +543,7 @@ class VersionViewerDialog(QDialog):
         self.update_canvas(layers, set_extent=False)
 
     def update_canvas(self, layers, set_extent=True):
-        if self.current_diff.isSpatial() == False:
+        if self.current_diff and self.current_diff.isSpatial() == False:
             self.map_canvas.setEnabled(False)
             self.save_splitters_state()
             self.splitter_map_table.setSizes([0, 1])
