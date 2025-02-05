@@ -792,7 +792,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
         action_open_project = QAction("Open QGIS project", parent)
         action_open_project.triggered.connect(self.open_project)
 
-        action_sync_project = QAction(QIcon(icon_path("refresh.svg")), "Synchronize", parent)
+        action_sync_project = QAction(QIcon(icon_path("refresh.svg")), "Synchronise", parent)
         action_sync_project.triggered.connect(self.sync_project)
 
         action_clone_remote = QAction(QIcon(icon_path("copy.svg")), "Clone", parent)

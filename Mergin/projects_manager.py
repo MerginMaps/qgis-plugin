@@ -390,7 +390,7 @@ class MerginProjectsManager(object):
 
         if dlg.is_complete:
             # TODO: report success only when we have actually done anything
-            msg = "Mergin Maps project {} synchronized successfully".format(project_name)
+            msg = "Mergin Maps project {} synchronised successfully".format(project_name)
             QMessageBox.information(None, "Project sync", msg, QMessageBox.Close)
             # clear canvas cache so any changes become immediately visible to users
             self.iface.mapCanvas().clearCache()
