@@ -1,5 +1,5 @@
 import shutil
-from datetime import datetime, timezone
+from datetime import datetime, timezone, tzinfo
 from enum import Enum
 from urllib.error import URLError, HTTPError
 import configparser
@@ -16,7 +16,7 @@ import re
 
 from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
-from qgis.PyQt.QtGui import QPalette, QColor
+from qgis.PyQt.QtGui import QPalette, QColor, QIcon
 from qgis.core import (
     NULL,
     Qgis,
@@ -1506,3 +1506,75 @@ def get_layer_by_path(path):
         safe_file_path = layer_path.split("|")
         if safe_file_path[0] == path:
             return layer
+
+
+def contextual_date(date_string):
+    """Converts datetime string returned by the server into contextual duration string, e.g.
+    'N hours/days/month ago'
+    """
+    dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
+    dt = dt.replace(tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc)
+    delta = now - dt
+    if delta.days > 365:
+        # return the date value for version older than one year
+        return dt.strftime("%Y-%m-%d")
+    elif delta.days > 31:
+        months = int(delta.days // 30.436875)
+        return f"{months} {'months' if months > 1 else 'month'} ago"
+    elif delta.days > 6:
+        weeks = int(delta.days // 7)
+        return f"{weeks} {'weeks' if weeks > 1 else 'week'} ago"
+
+    if delta.days < 1:
+        hours = delta.seconds // 3600
+        if hours < 1:
+            minutes = (delta.seconds // 60) % 60
+            if minutes <= 0:
+                return "just now"
+            return f"{minutes} {'minutes' if minutes > 1 else 'minute'} ago"
+
+        return f"{hours} {'hours' if hours > 1 else 'hour'} ago"
+
+    return f"{delta.days} {'days' if delta.days > 1 else 'day'} ago"
+
+
+def format_datetime(date_string):
+    """Formats datetime string returned by the server into human-readable format"""
+    dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
+    return dt.strftime("%a, %d %b %Y %H:%M:%S GMT")
+
+
+def parse_user_agent(user_agent: str) -> str:
+    browsers = ["Chrome", "Firefox", "Mozilla", "Opera", "Safari", "Webkit"]
+    if any([browser in user_agent for browser in browsers]):
+        return "Web dashboard"
+    elif "Input" in user_agent:
+        return "Mobile app"
+    elif "Plugin" in user_agent:
+        return "QGIS plugin"
+    elif "DB-sync" in user_agent:
+        return "Synced from db-sync"
+    elif "work-packages" in user_agent:
+        return "Synced from  Work Packages"
+    elif "media-sync" in user_agent:
+        return "Synced from Media Sync"
+    elif "Python-client" in user_agent:
+        return "Mergin Maps Python Client"
+    else:  # For uncommon user agent we display user agent as is
+        return user_agent
+
+
+def icon_for_layer(layer) -> QIcon:
+    # Used in diff viewer and history viewer
+    geom_type = layer.geometryType()
+    if geom_type == QgsWkbTypes.PointGeometry:
+        return QgsApplication.getThemeIcon("/mIconPointLayer.svg")
+    elif geom_type == QgsWkbTypes.LineGeometry:
+        return QgsApplication.getThemeIcon("/mIconLineLayer.svg")
+    elif geom_type == QgsWkbTypes.PolygonGeometry:
+        return QgsApplication.getThemeIcon("/mIconPolygonLayer.svg")
+    elif geom_type == QgsWkbTypes.UnknownGeometry:
+        return QgsApplication.getThemeIcon("/mIconGeometryCollectionLayer.svg")
+    else:
+        return QgsApplication.getThemeIcon("/mIconTableLayer.svg")
