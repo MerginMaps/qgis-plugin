@@ -175,7 +175,11 @@
         </widget>
        </item>
        <item>
-        <widget class="QTreeView" name="history_treeview"/>
+        <widget class="QTreeView" name="history_treeview">
+         <property name="rootIsDecorated">
+          <bool>false</bool>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>

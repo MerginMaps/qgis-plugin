@@ -459,6 +459,10 @@ class VersionViewerDialog(QDialog):
         if not self.history_treeview.verticalScrollBar().isVisible():
             self.fetch_from_server()
 
+        # We resize the column at the end of the first fetch to fit the text
+        # Nb current page is increment on each fetch so we check for 2n page
+        if self.fetcher.current_page == 2: 
+            self.history_treeview.resizeColumnToContents(0)
     def on_scrollbar_changed(self, value):
 
         if self.ui.history_treeview.verticalScrollBar().maximum() <= value:
