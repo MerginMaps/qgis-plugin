@@ -165,7 +165,7 @@ Date: {format_datetime(self.versions[idx]['created'])}"""
         first_row = self.rowCount() - 1
         last_row = first_row + 1
         self.beginRemoveRows(QModelIndex(), first_row, last_row)
-        self.endInsertRows()
+        self.endRemoveRows()
         self._loading = False
 
     def item_from_index(self, index: QModelIndex):
