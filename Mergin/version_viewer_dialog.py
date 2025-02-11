@@ -110,7 +110,7 @@ class VersionsTableModel(QAbstractTableModel):
         if index.row() >= len(self.versions):
             if role == Qt.DisplayRole:
                 if index.column() == 0:
-                    return "loading⌛"
+                    return "loading..."
             return
         if role == Qt.DisplayRole:
             if index.column() == 0:
