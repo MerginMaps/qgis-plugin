@@ -463,11 +463,13 @@ class VersionViewerDialog(QDialog):
         #  * resizing the column at the end of the first fetch to fit the text
         #  * set current selected version to latest server version
         # Nb current page is increment on each fetch so we check for 2n page
-        if self.fetcher.current_page == 2: 
+        if self.fetcher.current_page == 2:
             self.history_treeview.resizeColumnToContents(0)
-            
+
             first_row_index = self.history_treeview.model().index(0, 1, QModelIndex())
-            self.selectionModel.setCurrentIndex(first_row_index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
+            self.selectionModel.setCurrentIndex(
+                first_row_index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows
+            )
 
     def on_scrollbar_changed(self, value):
 
@@ -578,9 +580,9 @@ class VersionViewerDialog(QDialog):
     def show_version_changes(self, version):
         self.diff_layers.clear()
 
-        #Sync UI/Thread
+        # Sync UI/Thread
         if int_version(self.version_details["name"]) != version:
-            # latest loaded is differrent from the selected one don't show it 
+            # latest loaded is differrent from the selected one don't show it
             return
 
         layers = make_version_changes_layers(QgsProject.instance().homePath(), version)
