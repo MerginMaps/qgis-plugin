@@ -3,6 +3,7 @@
 
 import math
 import os
+import sys
 
 from qgis.core import (
     QgsApplication,  # Used to filter background map
@@ -362,11 +363,11 @@ class VersionViewerDialog(QDialog):
             add_all_action.triggered.connect(self.add_all_to_project)
             btn_add_changes.setMenu(menu)
 
-            # Fix issue on MacOS where the menu was not working properly, it's unclear why we need that
-            btn_add_changes.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-
-            self.toolbar.addWidget(btn_add_changes)
-            self.toolbar.setIconSize(iface.iconSize())
+            # Opt out on MacOs because of a bug on this plateform
+            # TODO Reinstate
+            if sys.platform != "darwin":
+                self.toolbar.addWidget(btn_add_changes)
+                self.toolbar.setIconSize(iface.iconSize())
 
             self.map_canvas.enableAntiAliasing(True)
             self.map_canvas.setSelectionColor(QColor(Qt.cyan))
