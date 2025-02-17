@@ -665,18 +665,20 @@ class VersionViewerDialog(QDialog):
 
     def add_current_to_project(self):
         if self.current_diff:
-            lyr_clone = QgsVectorLayer(
-                self.current_diff.source(),
-                self.current_diff.name() + f" ({self.version_details['name']})",
-                self.current_diff.providerType(),
+            lyr_clone = self.current_diff.materialize(
+                QgsFeatureRequest().setFilterFids(self.current_diff.allFeatureIds())
             )
+            lyr_clone.setName(self.current_diff.name() + f" ({self.version_details['name']})")
+            lyr_clone.setAttributeTableConfig(self.current_diff.attributeTableConfig())
+            lyr_clone.setRenderer(self.current_diff.renderer())
             QgsProject.instance().addMapLayer(lyr_clone)
 
     def add_all_to_project(self):
         for layer in self.diff_layers:
-            lyr_clone = QgsVectorLayer(
-                layer.source(), layer.name() + f" ({self.version_details['name']})", layer.providerType()
-            )
+            lyr_clone = layer.materialize(QgsFeatureRequest().setFilterFids(layer.allFeatureIds()))
+            lyr_clone.setName(layer.name() + f" ({self.version_details['name']})")
+            lyr_clone.setAttributeTableConfig(layer.attributeTableConfig())
+            lyr_clone.setRenderer(self.current_diff.renderer())
             QgsProject.instance().addMapLayer(lyr_clone)
 
     def zoom_full(self):
