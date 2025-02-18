@@ -55,6 +55,7 @@ from .utils import (
     is_versioned_file,
     mergin_project_local_path,
     parse_user_agent,
+    layer_copy
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_versions_viewer.ui")
@@ -665,20 +666,15 @@ class VersionViewerDialog(QDialog):
 
     def add_current_to_project(self):
         if self.current_diff:
-            lyr_clone = self.current_diff.materialize(
-                QgsFeatureRequest().setFilterFids(self.current_diff.allFeatureIds())
-            )
+            lyr_clone = layer_copy(self.current_diff)
             lyr_clone.setName(self.current_diff.name() + f" ({self.version_details['name']})")
-            lyr_clone.setAttributeTableConfig(self.current_diff.attributeTableConfig())
-            lyr_clone.setRenderer(self.current_diff.renderer())
             QgsProject.instance().addMapLayer(lyr_clone)
 
     def add_all_to_project(self):
         for layer in self.diff_layers:
-            lyr_clone = layer.materialize(QgsFeatureRequest().setFilterFids(layer.allFeatureIds()))
+            lyr_clone = layer_copy(layer)
             lyr_clone.setName(layer.name() + f" ({self.version_details['name']})")
-            lyr_clone.setAttributeTableConfig(layer.attributeTableConfig())
-            lyr_clone.setRenderer(self.current_diff.renderer())
+
             QgsProject.instance().addMapLayer(lyr_clone)
 
     def zoom_full(self):
