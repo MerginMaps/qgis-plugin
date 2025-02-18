@@ -233,7 +233,7 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
                 else:
                     f[cols_to_flds[i]] = db_row[i]
                     f[cols_to_flds[i] + fld_old_offset] = db_row[i]
-            
+
             # try to fill in unchanged columns from the diff
             for entry_change in entry_changes:
                 i = entry_change["column"]

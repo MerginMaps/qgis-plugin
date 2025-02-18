@@ -1581,10 +1581,8 @@ def icon_for_layer(layer) -> QIcon:
 
 
 # Copy a layer and it's legend
-def layer_copy(layer, style_name = 'mergin_diff'):
-    lyr_clone = layer.materialize(
-        QgsFeatureRequest().setFilterFids(layer.allFeatureIds())
-    )
+def layer_copy(layer, style_name="mergin_diff"):
+    lyr_clone = layer.materialize(QgsFeatureRequest().setFilterFids(layer.allFeatureIds()))
     lyr_clone.setName(layer.name())
     lyr_clone.setAttributeTableConfig(layer.attributeTableConfig())
 
@@ -1595,7 +1593,7 @@ def layer_copy(layer, style_name = 'mergin_diff'):
 
     # add the style to the target layer with a custom name (in this case: 'copied')
     lyr_clone.styleManager().addStyle(style_name, source_style)
-    lyr_clone.styleManager().setCurrentStyle(style_name)  
+    lyr_clone.styleManager().setCurrentStyle(style_name)
 
     lyr_clone.setRenderer(layer.renderer())
 

@@ -55,7 +55,7 @@ from .utils import (
     is_versioned_file,
     mergin_project_local_path,
     parse_user_agent,
-    layer_copy
+    layer_copy,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_versions_viewer.ui")
@@ -616,7 +616,9 @@ class VersionViewerDialog(QDialog):
         else:
             self.toolbar.setEnabled(False)
             self.stackedWidget.setCurrentIndex(1)
-            self.label_info.setText("No GeoPackage features were added, removed or updated in this version (Note: adding or removing an entire GeoPackage is not shown here).")
+            self.label_info.setText(
+                "No GeoPackage features were added, removed or updated in this version (Note: adding or removing an entire GeoPackage is not shown here)."
+            )
             self.tabWidget.setCurrentIndex(1)
             self.tabWidget.setTabEnabled(0, False)
 
