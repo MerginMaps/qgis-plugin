@@ -1580,7 +1580,7 @@ def icon_for_layer(layer) -> QIcon:
         return QgsApplication.getThemeIcon("/mIconTableLayer.svg")
 
 
-# Copy a layer and it's legend
+# Copy a layer and its legend
 def layer_copy(layer, style_name="mergin_diff"):
     lyr_clone = layer.materialize(QgsFeatureRequest().setFilterFids(layer.allFeatureIds()))
     lyr_clone.setName(layer.name())
