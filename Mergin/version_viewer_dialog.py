@@ -55,7 +55,7 @@ from .utils import (
     is_versioned_file,
     mergin_project_local_path,
     parse_user_agent,
-    layer_copy,
+    duplicate_layer,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_versions_viewer.ui")
@@ -668,13 +668,13 @@ class VersionViewerDialog(QDialog):
 
     def add_current_to_project(self):
         if self.current_diff:
-            lyr_clone = layer_copy(self.current_diff)
+            lyr_clone = duplicate_layer(self.current_diff)
             lyr_clone.setName(self.current_diff.name() + f" ({self.version_details['name']})")
             QgsProject.instance().addMapLayer(lyr_clone)
 
     def add_all_to_project(self):
         for layer in self.diff_layers:
-            lyr_clone = layer_copy(layer)
+            lyr_clone = duplicate_layer(layer)
             lyr_clone.setName(layer.name() + f" ({self.version_details['name']})")
 
             QgsProject.instance().addMapLayer(lyr_clone)
