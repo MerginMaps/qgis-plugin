@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 import os
 import sys
 import traceback

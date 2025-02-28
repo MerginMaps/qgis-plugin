@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 import os
 from qgis.PyQt.QtWidgets import QDialog, QAbstractItemDelegate, QStyle
 from qgis.PyQt.QtCore import (

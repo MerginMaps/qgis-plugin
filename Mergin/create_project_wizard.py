@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 import os
 from pathlib import Path
 from qgis.PyQt import uic
