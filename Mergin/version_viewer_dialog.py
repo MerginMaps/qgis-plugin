@@ -584,7 +584,7 @@ class VersionViewerDialog(QDialog):
         if int_version(self.version_details["name"]) != version:
             # latest loaded is differrent from the selected one don't show it
             return
-        
+
         self.diff_layers.clear()
         layers = make_version_changes_layers(QgsProject.instance().homePath(), version)
         for vl in layers:
