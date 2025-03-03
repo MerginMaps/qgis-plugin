@@ -580,13 +580,12 @@ class VersionViewerDialog(QDialog):
         self.map_canvas.refresh()
 
     def show_version_changes(self, version):
-        self.diff_layers.clear()
-
         # Sync UI/Thread
         if int_version(self.version_details["name"]) != version:
             # latest loaded is differrent from the selected one don't show it
             return
-
+        
+        self.diff_layers.clear()
         layers = make_version_changes_layers(QgsProject.instance().homePath(), version)
         for vl in layers:
             self.diff_layers.append(vl)
