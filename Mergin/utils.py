@@ -17,6 +17,7 @@ import re
 from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
 from qgis.PyQt.QtGui import QPalette, QColor, QIcon
+from qgis.PyQt.QtXml import QDomDocument
 from qgis.core import (
     NULL,
     Qgis,
@@ -52,6 +53,7 @@ from qgis.core import (
     QgsSingleSymbolRenderer,
     QgsLineSymbol,
     QgsSymbolLayerUtils,
+    QgsReadWriteContext,
     QgsField,
     QgsFields,
     QgsWkbTypes,
@@ -92,7 +94,9 @@ except ImportError:
     this_dir = os.path.dirname(os.path.realpath(__file__))
     path = os.path.join(this_dir, "mergin_client.whl")
     sys.path.append(path)
-    from mergin.client import MerginClient, ClientError, InvalidProject, LoginError, ServerType
+    from mergin.client import MerginClient, ServerType
+    from mergin.common import ClientError, InvalidProject, LoginError
+
     from mergin.client_pull import (
         download_project_async,
         download_project_is_running,
@@ -1578,3 +1582,23 @@ def icon_for_layer(layer) -> QIcon:
         return QgsApplication.getThemeIcon("/mIconGeometryCollectionLayer.svg")
     else:
         return QgsApplication.getThemeIcon("/mIconTableLayer.svg")
+
+
+def duplicate_layer(layer: QgsVectorLayer) -> QgsVectorLayer:
+    """
+    Duplicate a vector layer and its style associated with
+    See QgisApp::duplicateLayers in the QGIS source code for the inspiration
+    """
+    lyr_clone = layer.clone()
+    lyr_clone.setName(layer.name())
+
+    # duplicate the layer style
+    style = QDomDocument()
+    context = QgsReadWriteContext()
+    err_msg = layer.exportNamedStyle(style, context)
+    if not err_msg:
+        _, err_msg = lyr_clone.importNamedStyle(style)
+    if err_msg:
+        raise Exception(err_msg)
+
+    return lyr_clone
