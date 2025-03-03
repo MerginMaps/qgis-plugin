@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox
 from qgis.PyQt import QtWidgets

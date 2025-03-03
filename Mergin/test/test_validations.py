@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
+
 import os
 import base64
 

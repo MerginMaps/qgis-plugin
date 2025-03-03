@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem
 from qgis.PyQt.QtCore import Qt, QSize
 from qgis.core import QgsProject, QgsMapLayer, QgsSymbolLayerUtils

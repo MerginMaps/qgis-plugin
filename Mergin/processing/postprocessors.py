@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 from qgis.core import QgsProcessingLayerPostProcessorInterface
 
 from ..diff import style_diff_layer

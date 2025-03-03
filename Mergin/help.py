@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 HELP_ROOT = "https://merginmaps.com/docs"
 
 

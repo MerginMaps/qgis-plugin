@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 import os
 from itertools import groupby
 from urllib.parse import urlparse, parse_qs
