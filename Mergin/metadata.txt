@@ -217,7 +217,7 @@ changelog=2024.2.1
   - Initial release
 
 ; tags are in comma separated value format, spaces are allowed
-; tags=
+tags=cloud, mobile, field, gps, synchronization, android, offline, gnss, fieldwork, sensors, tablet, simple, ios, collaborative, smartphone, data, merginmaps, versioning, synchronization, backup
 
 homepage=https://merginmaps.com/
 tracker=https://github.com/MerginMaps/qgis-mergin-plugin/issues
