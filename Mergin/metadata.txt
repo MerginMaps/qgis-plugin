@@ -12,7 +12,7 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 
 ; start of optional metadata
 changelog=2025.1
-  - Add a new history browser window
+  - Add a new history viewer window
   <p>2024.2.1
   - Improve error messages when creating and syncing projects  (#601)
   - Sort the workspaces list in the new project wizard (#602)
