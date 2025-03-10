@@ -247,6 +247,9 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
                         g = QgsGeometry()
                         g.fromWkb(wkb)
                         f.setGeometry(g)
+
+                        f[fld_geometry_idx] = g.asWkt()
+                        f[fld_geometry_idx + fld_old_offset] = g.asWkt()
                     else:
                         f[cols_to_flds[i] + fld_old_offset] = entry_change["old"]
 
