@@ -180,6 +180,7 @@ class ChangesetsDownloader(QThread):
     """
 
     finished = pyqtSignal(str)
+    error_occured = pyqtSignal(Exception)
 
     def __init__(self, mc, mp, version):
         """
@@ -221,10 +222,18 @@ class ChangesetsDownloader(QThread):
 
             if "diff" not in f:
                 continue
-            file_diffs = self.mc.download_file_diffs(self.mp.dir, f["path"], [f"v{self.version}"])
-            full_gpkg = self.mp.fpath_cache(f["path"], version=f"v{self.version}")
-            if not os.path.exists(full_gpkg):
-                self.mc.download_file(self.mp.dir, f["path"], full_gpkg, f"v{self.version}")
+            try:
+                file_diffs = self.mc.download_file_diffs(self.mp.dir, f["path"], [f"v{self.version}"])
+                full_gpkg = self.mp.fpath_cache(f["path"], version=f"v{self.version}")
+                if not os.path.exists(full_gpkg):
+                    self.mc.download_file(self.mp.dir, f["path"], full_gpkg, f"v{self.version}")
+            except ClientError as e:
+                self.error_occured.emit(e)
+                return
+            except Exception as e:
+                self.error_occured.emit(e)
+                return
+
 
         if self.isInterruptionRequested():
             self.quit()
@@ -508,6 +517,7 @@ class VersionViewerDialog(QDialog):
 
             self.diff_downloader = ChangesetsDownloader(self.mc, self.mp, version)
             self.diff_downloader.finished.connect(lambda msg: self.show_version_changes(version))
+            self.diff_downloader.error_occured.connect(self.show_download_error)
             self.diff_downloader.start()
         else:
             self.show_version_changes(version)
@@ -621,6 +631,11 @@ class VersionViewerDialog(QDialog):
             self.tabWidget.setCurrentIndex(1)
             self.tabWidget.setTabEnabled(0, False)
 
+    def show_download_error(self, e: Exception):
+        additional_log = str(e) 
+        QgsMessageLog.logMessage(f"Download history error: " + additional_log, "Mergin")
+        self.label_info.setText("There was an issue loading this version. Please try again later or contact our support if the issue persists. Refer to the QGIS messages log for more details.")
+         
     def collect_layers(self, checked: bool):
         if checked:
             layers = iface.mapCanvas().layers()
