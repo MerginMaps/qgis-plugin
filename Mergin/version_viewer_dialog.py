@@ -234,7 +234,6 @@ class ChangesetsDownloader(QThread):
                 self.error_occured.emit(e)
                 return
 
-
         if self.isInterruptionRequested():
             self.quit()
             return
@@ -632,10 +631,12 @@ class VersionViewerDialog(QDialog):
             self.tabWidget.setTabEnabled(0, False)
 
     def show_download_error(self, e: Exception):
-        additional_log = str(e) 
+        additional_log = str(e)
         QgsMessageLog.logMessage(f"Download history error: " + additional_log, "Mergin")
-        self.label_info.setText("There was an issue loading this version. Please try again later or contact our support if the issue persists. Refer to the QGIS messages log for more details.")
-         
+        self.label_info.setText(
+            "There was an issue loading this version. Please try again later or contact our support if the issue persists. Refer to the QGIS messages log for more details."
+        )
+
     def collect_layers(self, checked: bool):
         if checked:
             layers = iface.mapCanvas().layers()
