@@ -3,6 +3,7 @@
 
 import math
 import os
+import sys
 
 from qgis.core import (
     QgsApplication,  # Used to filter background map
@@ -54,6 +55,7 @@ from .utils import (
     is_versioned_file,
     mergin_project_local_path,
     parse_user_agent,
+    duplicate_layer,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_versions_viewer.ui")
@@ -110,7 +112,7 @@ class VersionsTableModel(QAbstractTableModel):
         if index.row() >= len(self.versions):
             if role == Qt.DisplayRole:
                 if index.column() == 0:
-                    return "loading⌛"
+                    return "loading..."
             return
         if role == Qt.DisplayRole:
             if index.column() == 0:
@@ -165,7 +167,7 @@ Date: {format_datetime(self.versions[idx]['created'])}"""
         first_row = self.rowCount() - 1
         last_row = first_row + 1
         self.beginRemoveRows(QModelIndex(), first_row, last_row)
-        self.endInsertRows()
+        self.endRemoveRows()
         self._loading = False
 
     def item_from_index(self, index: QModelIndex):
@@ -178,6 +180,7 @@ class ChangesetsDownloader(QThread):
     """
 
     finished = pyqtSignal(str)
+    error_occured = pyqtSignal(Exception)
 
     def __init__(self, mc, mp, version):
         """
@@ -219,10 +222,17 @@ class ChangesetsDownloader(QThread):
 
             if "diff" not in f:
                 continue
-            file_diffs = self.mc.download_file_diffs(self.mp.dir, f["path"], [f"v{self.version}"])
-            full_gpkg = self.mp.fpath_cache(f["path"], version=f"v{self.version}")
-            if not os.path.exists(full_gpkg):
-                self.mc.download_file(self.mp.dir, f["path"], full_gpkg, f"v{self.version}")
+            try:
+                file_diffs = self.mc.download_file_diffs(self.mp.dir, f["path"], [f"v{self.version}"])
+                full_gpkg = self.mp.fpath_cache(f["path"], version=f"v{self.version}")
+                if not os.path.exists(full_gpkg):
+                    self.mc.download_file(self.mp.dir, f["path"], full_gpkg, f"v{self.version}")
+            except ClientError as e:
+                self.error_occured.emit(e)
+                return
+            except Exception as e:
+                self.error_occured.emit(e)
+                return
 
         if self.isInterruptionRequested():
             self.quit()
@@ -362,11 +372,11 @@ class VersionViewerDialog(QDialog):
             add_all_action.triggered.connect(self.add_all_to_project)
             btn_add_changes.setMenu(menu)
 
-            # Fix issue on MacOS where the menu was not working properly, it's unclear why we need that
-            btn_add_changes.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
-
-            self.toolbar.addWidget(btn_add_changes)
-            self.toolbar.setIconSize(iface.iconSize())
+            # Opt out on MacOs because of a bug on this plateform
+            # TODO Reinstate
+            if sys.platform != "darwin":
+                self.toolbar.addWidget(btn_add_changes)
+                self.toolbar.setIconSize(iface.iconSize())
 
             self.map_canvas.enableAntiAliasing(True)
             self.map_canvas.setSelectionColor(QColor(Qt.cyan))
@@ -459,6 +469,18 @@ class VersionViewerDialog(QDialog):
         if not self.history_treeview.verticalScrollBar().isVisible():
             self.fetch_from_server()
 
+        # Action we do only on the first fetch
+        #  * resizing the column at the end of the first fetch to fit the text
+        #  * set current selected version to latest server version
+        # Nb current page is increment on each fetch so we check for 2n page
+        if self.fetcher.current_page == 2:
+            self.history_treeview.resizeColumnToContents(0)
+
+            first_row_index = self.history_treeview.model().index(0, 1, QModelIndex())
+            self.selectionModel.setCurrentIndex(
+                first_row_index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows
+            )
+
     def on_scrollbar_changed(self, value):
 
         if self.ui.history_treeview.verticalScrollBar().maximum() <= value:
@@ -494,6 +516,7 @@ class VersionViewerDialog(QDialog):
 
             self.diff_downloader = ChangesetsDownloader(self.mc, self.mp, version)
             self.diff_downloader.finished.connect(lambda msg: self.show_version_changes(version))
+            self.diff_downloader.error_occured.connect(self.show_download_error)
             self.diff_downloader.start()
         else:
             self.show_version_changes(version)
@@ -566,8 +589,12 @@ class VersionViewerDialog(QDialog):
         self.map_canvas.refresh()
 
     def show_version_changes(self, version):
-        self.diff_layers.clear()
+        # Sync UI/Thread
+        if int_version(self.version_details["name"]) != version:
+            # latest loaded is differrent from the selected one don't show it
+            return
 
+        self.diff_layers.clear()
         layers = make_version_changes_layers(QgsProject.instance().homePath(), version)
         for vl in layers:
             self.diff_layers.append(vl)
@@ -597,9 +624,18 @@ class VersionViewerDialog(QDialog):
         else:
             self.toolbar.setEnabled(False)
             self.stackedWidget.setCurrentIndex(1)
-            self.label_info.setText("No GeoPackage updates or removal to show")
+            self.label_info.setText(
+                "No GeoPackage features were added, removed or updated in this version (Note: adding or removing an entire GeoPackage is not shown here)."
+            )
             self.tabWidget.setCurrentIndex(1)
             self.tabWidget.setTabEnabled(0, False)
+
+    def show_download_error(self, e: Exception):
+        additional_log = str(e)
+        QgsMessageLog.logMessage(f"Download history error: " + additional_log, "Mergin")
+        self.label_info.setText(
+            "There was an issue loading this version. Please try again later or contact our support if the issue persists. Refer to the QGIS messages log for more details."
+        )
 
     def collect_layers(self, checked: bool):
         if checked:
@@ -647,18 +683,15 @@ class VersionViewerDialog(QDialog):
 
     def add_current_to_project(self):
         if self.current_diff:
-            lyr_clone = QgsVectorLayer(
-                self.current_diff.source(),
-                self.current_diff.name() + f" ({self.version_details['name']})",
-                self.current_diff.providerType(),
-            )
+            lyr_clone = duplicate_layer(self.current_diff)
+            lyr_clone.setName(self.current_diff.name() + f" ({self.version_details['name']})")
             QgsProject.instance().addMapLayer(lyr_clone)
 
     def add_all_to_project(self):
         for layer in self.diff_layers:
-            lyr_clone = QgsVectorLayer(
-                layer.source(), layer.name() + f" ({self.version_details['name']})", layer.providerType()
-            )
+            lyr_clone = duplicate_layer(layer)
+            lyr_clone.setName(layer.name() + f" ({self.version_details['name']})")
+
             QgsProject.instance().addMapLayer(lyr_clone)
 
     def zoom_full(self):

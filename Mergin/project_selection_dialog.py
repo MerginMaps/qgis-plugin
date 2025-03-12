@@ -20,7 +20,8 @@ from qgis.PyQt.QtCore import (
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QPixmap, QFont, QFontMetrics, QIcon, QStandardItem, QStandardItemModel
 
-from .mergin.client import MerginProject, InvalidProject, ServerType
+from .mergin.client import MerginProject, ServerType
+from .mergin.common import InvalidProject
 from .utils import (
     icon_path,
     mm_logo_path,
