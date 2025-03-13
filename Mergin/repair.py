@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 from qgis.core import QgsProject
 
 from .utils import project_grids_directory, copy_datum_shift_grids

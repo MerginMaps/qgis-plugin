@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 import os
 from qgis.PyQt.QtWidgets import QDialog, QApplication, QDialogButtonBox, QMessageBox
 from qgis.PyQt import uic

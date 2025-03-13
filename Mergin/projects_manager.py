@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 import os
 from urllib.parse import urlparse
 from pathlib import Path

@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 import shutil
 from datetime import datetime, timezone, tzinfo
 from enum import Enum
