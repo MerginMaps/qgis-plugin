@@ -133,10 +133,12 @@ class DiffViewerDialog(QDialog):
         self.update_canvas(layers)
 
     def update_canvas(self, layers):
+        print("len layers", len(layers))
         self.map_canvas.setLayers(layers)
         if layers:
             self.map_canvas.setDestinationCrs(layers[0].crs())
             extent = layers[0].extent()
+            print("extend diff", extent)
             d = min(extent.width(), extent.height())
             if d == 0:
                 d = 1
