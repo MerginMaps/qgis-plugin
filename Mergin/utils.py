@@ -1611,5 +1611,4 @@ def has_only_null_geometries(layer: QgsVectorLayer) -> bool:
     """
     Returns True if all geometry in a layer are null or empty
     """
-    all_null = all(f.geometry() is None or f.geometry().isEmpty() for f in layer.getFeatures())
-    return all_null
+    return all(f.geometry() is None or f.geometry().isEmpty() for f in layer.getFeatures())

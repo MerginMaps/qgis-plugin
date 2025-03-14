@@ -20,9 +20,11 @@ from qgis.core import (
 try:
     from qgis.core import QgsTiledSceneLayer
 except ImportError:
+
     class QgsTiledSceneLayer:
         # Dummy class we only use this class to whitelist layers
         pass
+
 
 from qgis.gui import QgsAttributeTableFilterModel, QgsAttributeTableModel, QgsGui, QgsMapToolPan
 from qgis.PyQt import QtCore, uic
@@ -592,7 +594,11 @@ class VersionViewerDialog(QDialog):
                 if d == 0:
                     d = 1
                 extent = extent.buffered(d * 0.07)
-                extent = extent if has_only_null_geometries(layers[0]) else self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
+                extent = (
+                    extent
+                    if has_only_null_geometries(layers[0])
+                    else self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
+                )
                 self.map_canvas.setExtent(extent)
 
         self.map_canvas.refresh()
