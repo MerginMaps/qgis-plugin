@@ -362,14 +362,14 @@ class LayerTreeProxyModel(QSortFilterProxyModel):
 
     def flags(self, idx):
         if idx.column() == self.LAYER_COL:
-            return Qt.ItemFlags.ItemIsEnabled
+            return Qt.ItemFlag.ItemIsEnabled
         layer = self.map_layer(idx)
         if not layer:
-            return Qt.ItemFlags.NoItemFlags
+            return Qt.ItemFlag.NoItemFlags
         else:
-            enabled_flags = Qt.ItemFlags.ItemIsEnabled | Qt.ItemFlags.ItemIsEditable | Qt.ItemFlags.ItemIsUserCheckable
+            enabled_flags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable | Qt.ItemFlag.ItemIsUserCheckable
             if idx.column() == self.LAYER_COL:
-                return Qt.ItemFlags.ItemIsEnabled
+                return Qt.ItemFlag.ItemIsEnabled
             elif idx.column() == self.PACK_COL:
                 return enabled_flags if layer.id() in self.packable else Qt.ItemFlags()
             elif idx.column() in (self.KEEP_COL, self.IGNORE_COL):
