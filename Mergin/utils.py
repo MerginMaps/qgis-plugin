@@ -1605,10 +1605,3 @@ def duplicate_layer(layer: QgsVectorLayer) -> QgsVectorLayer:
         raise Exception(err_msg)
 
     return lyr_clone
-
-
-def has_only_null_geometries(layer: QgsVectorLayer) -> bool:
-    """
-    Returns True if all geometry in a layer are null or empty
-    """
-    return all(f.geometry() is None or f.geometry().isEmpty() for f in layer.getFeatures())

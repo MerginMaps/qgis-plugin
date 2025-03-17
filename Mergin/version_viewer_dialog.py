@@ -66,7 +66,6 @@ from .utils import (
     mergin_project_local_path,
     parse_user_agent,
     duplicate_layer,
-    has_only_null_geometries,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_versions_viewer.ui")
@@ -595,9 +594,9 @@ class VersionViewerDialog(QDialog):
                     d = 1
                 extent = extent.buffered(d * 0.07)
                 extent = (
-                    extent
-                    if has_only_null_geometries(layers[0])
-                    else self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
+                    self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
+                    if not layers[0].extent().isEmpty()
+                    else extent
                 )
                 self.map_canvas.setExtent(extent)
 
