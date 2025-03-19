@@ -11,11 +11,21 @@ from qgis.core import (
     QgsMessageLog,
     QgsProject,
     QgsRasterLayer,
-    QgsTiledSceneLayer,
     QgsVectorLayer,
     QgsVectorLayerCache,
     QgsVectorTileLayer,
 )
+
+# QgsTiledSceneLayer only available since QGIS >= 3.34
+try:
+    from qgis.core import QgsTiledSceneLayer
+except ImportError:
+
+    class QgsTiledSceneLayer:
+        # Dummy class we only use this class to whitelist layers
+        pass
+
+
 from qgis.gui import QgsAttributeTableFilterModel, QgsAttributeTableModel, QgsGui, QgsMapToolPan
 from qgis.PyQt import QtCore, uic
 from qgis.PyQt.QtCore import (
@@ -583,7 +593,11 @@ class VersionViewerDialog(QDialog):
                 if d == 0:
                     d = 1
                 extent = extent.buffered(d * 0.07)
-                extent = self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
+                extent = (
+                    self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
+                    if not layers[0].extent().isEmpty()
+                    else extent
+                )
                 self.map_canvas.setExtent(extent)
 
         self.map_canvas.refresh()
