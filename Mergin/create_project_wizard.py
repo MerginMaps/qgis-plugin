@@ -264,7 +264,7 @@ class LayerTreeProxyModel(QSortFilterProxyModel):
         return 4
 
     def headerData(self, section, orientation, role):
-        if orientation == Qt.AlignmentFlag.Horizontal:
+        if orientation == Qt.Orientation.Horizontal:
             if role == Qt.ItemDataRole.DisplayRole:
                 if section == self.LAYER_COL:
                     return "Layer"
@@ -391,7 +391,7 @@ class PackageLayersTreeView(QTreeView):
         self.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
         self.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
-        self.setEditTriggers(QAbstractItemView.EditTriggers.NoEditTriggers)
+        self.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 
         self.clicked.connect(self.model().toggle_item)
 
