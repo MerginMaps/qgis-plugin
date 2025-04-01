@@ -3,7 +3,7 @@
 
 from qgis.core import QgsProject
 
-from .utils import project_grids_directory, copy_datum_shift_grids
+from .utils import project_grids_directory, copy_datum_shift_grids, set_qgis_project_home_ignore
 
 
 def fix_datum_shift_grids(mp):
@@ -23,4 +23,10 @@ def fix_datum_shift_grids(mp):
     if missed_files:
         return f"Following grids were not found in the QGIS folder: {','.join(missed_files)}"
 
+    return None
+
+def fix_project_home_path():
+    """Remove home path settings from the project."""
+    cur_project = QgsProject.instance()
+    set_qgis_project_home_ignore(cur_project)
     return None

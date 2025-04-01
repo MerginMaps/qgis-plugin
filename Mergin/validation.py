@@ -60,6 +60,7 @@ class Warning(Enum):
     EDITOR_NON_DIFFABLE_CHANGE = 25
     EDITOR_JSON_CONFIG_CHANGE = 26
     EDITOR_DIFFBASED_FILE_REMOVED = 27
+    PROJECT_HOME_PATH = 28
 
 
 class MultipleLayersWarning:
@@ -113,6 +114,7 @@ class MerginProjectValidator(object):
             return self.issues
         self.get_proj_layers()
         self.check_proj_paths_relative()
+        self.check_proj_home_path()
         self.check_saved_in_proj_dir()
         self.check_editable_vectors_format()
         self.check_offline()
@@ -157,6 +159,12 @@ class MerginProjectValidator(object):
         assert ok
         if not abs_paths == "false":
             self.issues.append(MultipleLayersWarning(Warning.ABSOLUTE_PATHS))
+
+    def check_proj_home_path(self):
+        """Check if the QGIS project has project home path specified."""
+        project_home_path = self.qgis_proj.qgis_project.presetHomePath()
+        if project_home_path:
+            self.issues.append(MultipleLayersWarning(Warning.PROJECT_HOME_PATH))
 
     def get_proj_layers(self):
         """Get project layers and find those editable."""
@@ -485,3 +493,5 @@ def warning_display_string(warning_id, url=None):
         return f"You don't have permission to change the configuration of this project. <a href='{url}'>Reset the configuration</a> to be able to sync data changes."
     elif warning_id == Warning.EDITOR_DIFFBASED_FILE_REMOVED:
         return f"You don't have permission to remove this layer. <a href='{url}'>Reset the layer</a> to be able to sync changes."
+    elif warning_id == Warning.PROJECT_HOME_PATH:
+        return "QGIS Project Home Path is specified. <a href='fix_project_home_path'>Fix the issue.</a>"
