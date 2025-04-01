@@ -162,7 +162,7 @@ class MerginProjectValidator(object):
 
     def check_proj_home_path(self):
         """Check if the QGIS project has project home path specified."""
-        project_home_path = self.qgis_proj.qgis_project.presetHomePath()
+        project_home_path = self.qgis_proj.presetHomePath()
         if project_home_path:
             self.issues.append(MultipleLayersWarning(Warning.PROJECT_HOME_PATH))
 
