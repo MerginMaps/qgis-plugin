@@ -25,6 +25,7 @@ def fix_datum_shift_grids(mp):
 
     return None
 
+
 def fix_project_home_path():
     """Remove home path settings from the project."""
     cur_project = QgsProject.instance()

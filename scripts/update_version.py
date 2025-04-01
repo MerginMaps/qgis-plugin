@@ -4,7 +4,7 @@ import argparse
 
 
 def replace_in_file(filepath, regex, sub):
-    with open(filepath, 'r') as f:
+    with open(filepath, "r") as f:
         content = f.read()
 
     content_new = re.sub(regex, sub, content, flags=re.M)
@@ -15,7 +15,7 @@ def replace_in_file(filepath, regex, sub):
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 parser = argparse.ArgumentParser()
-parser.add_argument('--version', help='version to replace')
+parser.add_argument("--version", help="version to replace")
 args = parser.parse_args()
 ver = args.version
 print("using version " + ver)
