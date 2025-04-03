@@ -2,11 +2,12 @@
 # Copyright Lutra Consulting Limited
 
 import os
-from qgis.PyQt.QtWidgets import QDialog, QApplication, QDialogButtonBox, QMessageBox
+from qgis.PyQt.QtWidgets import QDialog, QApplication, QDialogButtonBox, QInputDialog, QMessageBox
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import Qt, QSettings
+from qgis.PyQt.QtCore import Qt, QSettings, QUrl
 from qgis.PyQt.QtGui import QPixmap
-from qgis.core import QgsApplication, QgsExpressionContextUtils
+from qgis.PyQt.QtNetwork import QNetworkRequest
+from qgis.core import QgsApplication, QgsAuthMethodConfig, QgsBlockingNetworkRequest, QgsExpressionContextUtils
 from urllib.error import URLError
 
 try:
@@ -67,6 +68,8 @@ class ConfigurationDialog(QDialog):
         self.ui.username.textChanged.connect(self.check_credentials)
         self.ui.password.textChanged.connect(self.check_credentials)
         self.check_credentials()
+
+        self.ui.sso_btn.clicked.connect(self.sso)
 
     def accept(self):
         if not self.test_connection():
@@ -136,3 +139,70 @@ class ConfigurationDialog(QDialog):
         QApplication.restoreOverrideCursor()
         self.ui.test_status.setText(msg)
         return ok
+
+    def sso(self):
+
+        server = "https://cd.dev.merginmaps.com"       # TODO: use given server
+
+        email, ok = QInputDialog.getText(self, "SSO email", "Your work email:")
+        if not ok:
+            return
+        
+        br = QgsBlockingNetworkRequest()
+        error = br.get(QNetworkRequest(QUrl(f"{server}/v2/sso/connections?email={email}")))
+        # TODO: network error handling
+        json_raw_data = bytes(br.reply().content())
+        import json
+        json_data = json.loads(json_raw_data)  # TODO: json error handling
+        oauth2_client_id = json_data['id']  # TODO: dict error handling
+
+        # add/update SSO config
+        config_dict = {
+            "accessMethod": 0,
+            "apiKey": "",
+            "clientId": oauth2_client_id,
+            "clientSecret": "",
+            "configType": 1,
+            "customHeader": "",
+            "description": "",
+            "grantFlow": 3,
+            "id": "mmmmsso",
+            "name": "Mergin Maps SSO",
+            "objectName": "",
+            "password": "",
+            "persistToken": False,
+            "queryPairs": { "state": "hejhejhej"},  # TODO: should be random every time!
+            "redirectHost": "localhost",
+            "redirectPort": 8082,
+            "redirectUrl": "qgis",
+            "refreshTokenUrl": "",
+            "requestTimeout": 30,
+            "requestUrl": f"{server}/v2/sso/authorize",
+            "scope": "",
+            "tokenUrl": f"{server}/v2/sso/token",
+            "username": "",
+            "version": 1
+        }
+        config_json = json.dumps(config_dict)
+        config = QgsAuthMethodConfig(method='OAuth2')
+        config.setName('Mergin Maps SSO')
+        config.setId('mmmmsso')
+        config.setConfig('oauth2config', config_json)
+        if 'mmmmsso' in QgsApplication.authManager().configIds():
+            QgsApplication.authManager().updateAuthenticationConfig(config)
+        else:
+            QgsApplication.authManager().storeAuthenticationConfig(config)
+
+        # trigger OAuth2  (will open browser if QGIS does not have token yet)
+        blocking_request = QgsBlockingNetworkRequest()
+        blocking_request.setAuthCfg('mmmmsso')
+        res = blocking_request.get(QNetworkRequest(QUrl(f"{server}/ping")))
+        reply=blocking_request.reply()
+        access_token = bytes(reply.request().rawHeader(b'Authorization'))  # includes "Bearer ...."
+
+        # create mergin client using the token
+        access_token_str = access_token.decode("utf-8")
+        mc = MerginClient(server, auth_token=access_token_str)  # TODO: add plugin version, proxy_config
+        QMessageBox.information(self, "user", str(mc.user_info()))
+
+        # TODO: write to settings etc.
