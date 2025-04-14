@@ -494,4 +494,4 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.EDITOR_DIFFBASED_FILE_REMOVED:
         return f"You don't have permission to remove this layer. <a href='{url}'>Reset the layer</a> to be able to sync changes."
     elif warning_id == Warning.PROJECT_HOME_PATH:
-        return "QGIS Project Home Path is specified. <a href='fix_project_home_path'>Fix the issue.</a>"
+        return "Quick fix the issue. (This will unset project home) <a href='fix_project_home_path'>Fix the issue.</a>"
