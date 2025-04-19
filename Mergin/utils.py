@@ -945,6 +945,11 @@ def write_project_variables(project_owner, project_name, project_full_name, vers
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_full_name", project_full_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_version", int_version(version))
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_server", server)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_name", project_name)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_owner", project_owner)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_full_name", project_full_name)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_version", int_version(version))
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_server", server)
 
 
 def remove_project_variables():
@@ -953,6 +958,11 @@ def remove_project_variables():
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_version")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_owner")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_server")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_name")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_full_name")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_version")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_owner")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_server")
 
 
 def pretty_summary(summary):
@@ -1481,7 +1491,7 @@ def setup_tracking_layer(layer):
 
     idx = layer.fields().indexFromName("tracked_by")
     user_default = QgsDefaultValue()
-    user_default.setExpression("@mergin_username")
+    user_default.setExpression("@mm_username")
     layer.setDefaultValueDefinition(idx, user_default)
 
     symbol = QgsLineSymbol.createSimple(
