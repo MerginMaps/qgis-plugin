@@ -623,11 +623,19 @@ def set_qgis_project_relative_paths(qgis_project):
         _ = qgis_project.writeEntry("Paths", "/Absolute", "false")
 
 
-def save_current_project(project_path, warn=False, relative_paths=True):
+def set_qgis_project_home_ignore(qgis_project):
+    """Check if given QGIS project have home path set up. If yes - remove it from the project."""
+    if qgis_project.presetHomePath():
+        qgis_project.setPresetHomePath("")
+
+
+def save_current_project(project_path, warn=False):
     """Save current QGIS project to project_path. Set the project to use relative paths if relative_paths is True."""
     cur_project = QgsProject.instance()
-    if relative_paths:
-        set_qgis_project_relative_paths(cur_project)
+
+    set_qgis_project_relative_paths(cur_project)
+    set_qgis_project_home_ignore(cur_project)
+
     cur_project.setFileName(project_path)
     write_success = cur_project.write()
     if not write_success and warn:
