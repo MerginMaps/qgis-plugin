@@ -1240,7 +1240,14 @@ def test_server_connection(url, username, password):
     result = True, "<font color=green> OK </font>"
     proxy_config = get_qgis_proxy_config(url)
     try:
-        MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
+        mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
+
+        if mc.server_type() == ServerType.OLD:
+            result = (
+                False,
+                f"<font color=red> Out of date server. Please contact your server administrator. <br> If you still require data access, please downgrade your plugin version. </font>",
+            )
+
     except (LoginError, ClientError) as e:
         QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
         result = False, f"<font color=red> Connection failed, {str(e)} </font>"

@@ -439,8 +439,6 @@ class MerginPlugin:
             return
 
         default_workspace = self.current_workspace.get("name", None)
-        if self.mc.server_type() == ServerType.OLD:
-            default_workspace = user_info["username"]
 
         wizard = NewMerginProjectWizard(self.manager, user_info=user_info, default_workspace=default_workspace)
         if not wizard.exec():
@@ -913,7 +911,7 @@ class MerginRootItem(QgsDataCollectionItem):
     def updateName(self):
         name = self.base_name
         try:
-            if self.mc.server_type() != ServerType.OLD and self.plugin.current_workspace.get("name", None):
+            if self.plugin.current_workspace.get("name", None):
                 name = f"{self.base_name} [{self.plugin.current_workspace['name']}]"
         except AttributeError:
             # self.mc might not be set yet
@@ -930,9 +928,6 @@ class MerginRootItem(QgsDataCollectionItem):
             error_item.setIcon(QIcon(icon_path("alert-triangle.svg")))
             sip.transferto(error_item, self)
             return [error_item]
-
-        if self.mc.server_type() == ServerType.OLD:
-            return self.createChildrenGroups()
 
         return self.createChildrenProjects()
 
@@ -955,7 +950,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.set_fetch_more_item()
         if self.fetch_more_item is not None:
             items.append(self.fetch_more_item)
-        if not items and self.mc.server_type() != ServerType.OLD:
+        if not items:
             self.create_new_project_item = CreateNewProjectItem(self)
             self.create_new_project_item.setState(QgsDataItem.Populated)
             sip.transferto(self.create_new_project_item, self)
@@ -984,25 +979,17 @@ class MerginRootItem(QgsDataCollectionItem):
             error_item = QgsErrorItem(self, "Failed to log in. Please check the configuration", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
-        if self.mc.server_type() != ServerType.OLD and not self.plugin.current_workspace:
+        if not self.plugin.current_workspace:
             error_item = QgsErrorItem(self, "No workspace available", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
         try:
-            if self.mc.server_type() == ServerType.OLD:
-                resp = self.project_manager.mc.paginated_projects_list(
-                    flag=self.filter,
-                    page=page,
-                    per_page=per_page,
-                    order_params="namespace_asc,name_asc",
-                )
-            else:
-                resp = self.project_manager.mc.paginated_projects_list(
-                    only_namespace=self.plugin.current_workspace.get("name", None),
-                    page=page,
-                    per_page=per_page,
-                    order_params="name_asc",
-                )
+            resp = self.project_manager.mc.paginated_projects_list(
+                only_namespace=self.plugin.current_workspace.get("name", None),
+                page=page,
+                per_page=per_page,
+                order_params="name_asc",
+            )
             self.projects += resp["projects"]
             self.total_projects_count = int(resp["count"]) if is_number(resp["count"]) else 0
         except URLError:
@@ -1077,10 +1064,7 @@ class MerginRootItem(QgsDataCollectionItem):
         actions = [action_configure]
         if self.mc:
             server_type = self.mc.server_type()
-            if server_type == ServerType.OLD:
-                actions.append(action_create)
-                actions.append(action_explore)
-            elif server_type == ServerType.CE:
+            if server_type == ServerType.CE:
                 actions.append(action_refresh)
                 actions.append(action_create)
                 actions.append(action_find)
