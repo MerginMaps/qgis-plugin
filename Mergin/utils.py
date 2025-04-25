@@ -1462,7 +1462,7 @@ def create_tracking_layer(project_path):
     return filename
 
 
-def setup_tracking_layer(layer):
+def setup_tracking_layer(layer: QgsVectorLayer):
     """
     Configures tracking layer:
      - set default values for fields
@@ -1491,6 +1491,8 @@ def setup_tracking_layer(layer):
     user_default = QgsDefaultValue()
     user_default.setExpression("@mergin_username")
     layer.setDefaultValueDefinition(idx, user_default)
+
+    layer.setDisplayExpression('"tracked_by" ||\' on \'|| format_date( "tracking_end_time", \'dd MMM yyyy\') ||\' at \'|| format_date("tracking_end_time", \'H:MM\')')
 
     symbol = QgsLineSymbol.createSimple(
         {
