@@ -605,9 +605,6 @@ class MerginRemoteProjectItem(QgsDataItem):
             project["namespace"], project["name"]
         )  # we need posix path for server API calls
         display_name = project["name"]
-        group_items = project_manager.get_mergin_browser_groups()
-        if group_items.get("Shared with me") == parent:
-            display_name = self.project_name
         QgsDataItem.__init__(self, QgsDataItem.Collection, parent, display_name, "/Mergin/" + self.project_name)
         self.path = None
         self.setSortKey(f"1 {self.name()}")
@@ -643,10 +640,6 @@ class MerginRemoteProjectItem(QgsDataItem):
         msg = "Mergin Maps project cloned successfully."
         QMessageBox.information(None, "Clone project", msg, QMessageBox.StandardButton.Close)
         self.parent().reload()
-        # we also need to reload My projects group as the cloned project could appear there
-        group_items = self.project_manager.get_mergin_browser_groups()
-        if "My projects" in group_items:
-            group_items["My projects"].reload()
 
     def remove_remote_project(self):
         dlg = RemoveProjectDialog(self.project_name)
@@ -687,9 +680,6 @@ class MerginLocalProjectItem(QgsDirectoryItem):
         self.project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
         self.path = mergin_project_local_path(self.project_name)
         display_name = project["name"]
-        group_items = project_manager.get_mergin_browser_groups()
-        if group_items.get("Shared with me") == parent:
-            display_name = self.project_name
         QgsDirectoryItem.__init__(self, parent, display_name, self.path, "/Mergin/" + self.project_name)
         self.setSortKey(f"0 {self.name()}")
         self.project = project
@@ -957,22 +947,6 @@ class MerginRootItem(QgsDataCollectionItem):
             items.append(self.create_new_project_item)
         return items
 
-    def createChildrenGroups(self):
-        items = []
-        my_projects = MerginGroupItem(self, "My projects", "created", "user.svg", 1, self.plugin)
-        my_projects.setState(QgsDataItem.Populated)
-        my_projects.refresh()
-        sip.transferto(my_projects, self)
-        items.append(my_projects)
-
-        shared_projects = MerginGroupItem(self, "Shared with me", "shared", "users.svg", 2, self.plugin)
-        shared_projects.setState(QgsDataItem.Populated)
-        shared_projects.refresh()
-        sip.transferto(shared_projects, self)
-        items.append(shared_projects)
-
-        return items
-
     def fetch_projects(self, page=1, per_page=PROJS_PER_PAGE):
         """Get paginated projects list from Mergin Maps service. If anything goes wrong, return an error item."""
         if self.project_manager is None:
@@ -1015,9 +989,6 @@ class MerginRootItem(QgsDataCollectionItem):
             self.fetch_more_item = FetchMoreItem(self)
             self.fetch_more_item.setState(QgsDataItem.Populated)
             sip.transferto(self.fetch_more_item, self)
-        if isinstance(self, MerginGroupItem):
-            group_name = f"{self.base_name} ({self.total_projects_count})"
-            self.setName(group_name)
 
     def fetch_more(self):
         """Fetch another page of projects and add them to the group item."""
@@ -1075,33 +1046,6 @@ class MerginRootItem(QgsDataCollectionItem):
                 actions.append(action_find)
                 actions.append(action_switch)
                 actions.append(action_explore)
-        return actions
-
-
-class MerginGroupItem(MerginRootItem):
-    """Mergin group data item. Contains filtered list of Mergin Maps projects."""
-
-    def __init__(self, parent, grp_name, grp_filter, icon, order, plugin):
-        MerginRootItem.__init__(self, parent, grp_name, grp_filter, icon, order, plugin)
-
-    def isMerginGroupItem(self):
-        return True
-
-    def createChildren(self):
-        return self.createChildrenProjects()
-
-    def actions(self, parent):
-        action_refresh = QAction(QIcon(icon_path("repeat.svg")), "Reload", parent)
-        action_refresh.triggered.connect(self.reload)
-        actions = [action_refresh]
-        if self.fetch_more_item is not None:
-            action_fetch_more = QAction(QIcon(icon_path("dots.svg")), "Fetch more", parent)
-            action_fetch_more.triggered.connect(self.fetch_more)
-            actions.append(action_fetch_more)
-        if self.name().startswith("My projects"):
-            action_create = QAction(QIcon(icon_path("square-plus.svg")), "Create new project", parent)
-            action_create.triggered.connect(self.new_project)
-            actions.append(action_create)
         return actions
 
 
