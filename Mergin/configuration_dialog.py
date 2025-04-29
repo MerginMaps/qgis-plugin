@@ -99,14 +99,14 @@ class ConfigurationDialog(QDialog):
 
     def writeSettings(self):
         url = self.server_url()
-        username = self.ui.username.text()
-        password = self.ui.password.text()
+        login_name = self.ui.username.text()
+        login_password = self.ui.password.text()
         settings = QSettings()
         settings.setValue("Mergin/auth_token", None)  # reset token
         settings.setValue("Mergin/saveCredentials", str(self.ui.save_credentials.isChecked()))
 
         if self.ui.save_credentials.isChecked():
-            set_mergin_auth(url, username, password)
+            set_mergin_auth(url, login_name, login_password)
             try:
                 mc = create_mergin_client()
             except (URLError, ClientError, LoginError):
@@ -114,7 +114,7 @@ class ConfigurationDialog(QDialog):
         else:
             try:
                 proxy_config = get_qgis_proxy_config(url)
-                mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
+                mc = MerginClient(url, None, login_name, login_password, get_plugin_version(), proxy_config)
                 settings.setValue("Mergin/auth_token", mc._auth_session["token"])
                 settings.setValue("Mergin/server", url)
             except (URLError, ClientError, LoginError) as e:
@@ -125,16 +125,17 @@ class ConfigurationDialog(QDialog):
         QgsExpressionContextUtils.setGlobalVariable("mm_url", url)
         if mc:
             # username can be username or email, so we fetch it from api
-            username_api = mc.username()
-            user_email = mc.user_info()["email"]
-            user_full_name = mc.user_info()["name"]
-            settings.setValue("Mergin/username", username_api)
+            user_info = mc.user_info()
+            username = user_info["username"]
+            user_email = user_info["email"]
+            user_full_name = user_info["name"]
+            settings.setValue("Mergin/username", username)
             settings.setValue("Mergin/user_email", user_email)
-            settings.setValue("Mergin/full_name", username)
-            QgsExpressionContextUtils.setGlobalVariable("mergin_username", username_api)
+            settings.setValue("Mergin/full_name", user_full_name)
+            QgsExpressionContextUtils.setGlobalVariable("mergin_username", username)
             QgsExpressionContextUtils.setGlobalVariable("mergin_user_email", user_email)
             QgsExpressionContextUtils.setGlobalVariable("mergin_full_name", user_full_name)
-            QgsExpressionContextUtils.setGlobalVariable("mm_username", username_api)
+            QgsExpressionContextUtils.setGlobalVariable("mm_username", username)
             QgsExpressionContextUtils.setGlobalVariable("mm_user_email", user_email)
             QgsExpressionContextUtils.setGlobalVariable("mm_full_name", user_full_name)
         else:
