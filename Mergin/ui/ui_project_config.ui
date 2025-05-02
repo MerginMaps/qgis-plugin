@@ -44,9 +44,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-422</y>
-        <width>624</width>
-        <height>978</height>
+        <y>-442</y>
+        <width>617</width>
+        <height>1104</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -221,7 +221,7 @@
           <item row="1" column="1" colspan="2">
            <widget class="QLabel" name="label_6">
             <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;strong&gt;Photo name format&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Set up custom photo names format based on an expression. Make sure that the name is unique for each photo.&lt;/p&gt;&lt;p&gt;Pro tip: use variables like &lt;code&gt;@mergin_username&lt;/code&gt;, &lt;code&gt;@layer_name&lt;/code&gt; or layer fields in combination with &lt;code&gt;now()&lt;/code&gt; (to get the current time) in order to generate unique photo names.&lt;/p&gt;&lt;p&gt;For further details, please refer to &lt;a href=&quot;https://merginmaps.com/docs/layer/settingup_forms_photo/#customising-photo-name-format-with-expressions&quot;&gt;our documentation&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Photo name format&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Set up custom photo names format based on an expression. Make sure that the name is unique for each photo.&lt;/p&gt;&lt;p&gt;Pro tip: use variables like &lt;span style=&quot; font-family:'Noto Sans Mono';&quot;&gt;@mm_user_email&lt;/span&gt;, &lt;span style=&quot; font-family:'Noto Sans Mono';&quot;&gt;@layer_name&lt;/span&gt; or layer fields in combination with &lt;span style=&quot; font-family:'Noto Sans Mono';&quot;&gt;now()&lt;/span&gt; (to get the current time) in order to generate unique photo names.&lt;/p&gt;&lt;p&gt;For further details, please refer to &lt;a href=&quot;https://merginmaps.com/docs/layer/settingup_forms_photo/#customising-photo-name-format-with-expressions&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#1d99f3;&quot;&gt;our documentation&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
