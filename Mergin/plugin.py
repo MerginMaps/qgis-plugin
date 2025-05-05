@@ -394,13 +394,9 @@ class MerginPlugin:
         user_info = self.mc.user_info()
         workspaces = user_info.get("workspaces", None)
         if not workspaces:
-            if workspaces is None:
-                # server is old, does not support workspaces
-                self.current_workspace = dict()
-            else:
-                # User has no workspaces
-                self.show_no_workspaces_dialog()
-                self.current_workspace = dict()
+            # User has no workspaces
+            self.show_no_workspaces_dialog()
+            self.current_workspace = dict()
             return
 
         if len(workspaces) == 1:
@@ -901,10 +897,9 @@ class MerginRootItem(QgsDataCollectionItem):
     def updateName(self):
         name = self.base_name
         try:
-            if self.plugin.current_workspace.get("name", None):
-                name = f"{self.base_name} [{self.plugin.current_workspace['name']}]"
-        except AttributeError:
-            # self.mc might not be set yet
+            name = f"{self.base_name} [{self.plugin.current_workspace['name']}]"
+        except KeyError:
+            # self.mc might not be set yet or there is no workspace
             pass
         self.setName(name)
 
@@ -1050,7 +1045,7 @@ class MerginRootItem(QgsDataCollectionItem):
 
 
 class DataItemProvider(QgsDataItemProvider):
-    def __init__(self, plugin):
+    def __init__(self, plugin: MerginPlugin):
         QgsDataItemProvider.__init__(self)
         self.root_item = None
         self.plugin = plugin
