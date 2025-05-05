@@ -1024,9 +1024,15 @@ def set_qgis_project_mergin_variables(project_dir):
     try:
         mp = MerginProject(project_dir)
         settings = QSettings()
-        server = settings.value(f"Mergin/localProjects/{mp.project_full_name()}/server", "")
+        server_key = f"Mergin/localProjects/{mp.project_full_name()}/server"
+        proj_server = settings.value(server_key, "")
 
-        write_project_variables(mp.project_name(), mp.project_full_name(), mp.version(), server)
+        if proj_server is None:
+            config_server = settings.value("Mergin/server", None)
+            proj_server = config_server
+            settings.setValue(server_key, config_server)
+
+        write_project_variables(mp.project_name(), mp.project_full_name(), mp.version(), proj_server)
     except InvalidProject:
         remove_project_variables()
 
