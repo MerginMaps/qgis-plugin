@@ -64,6 +64,7 @@ from .utils import (
     PROJS_PER_PAGE,
     remove_project_variables,
     same_dir,
+    set_qgis_project_mergin_variables,
     unhandled_exception_message,
     unsaved_project_check,
     UnsavedChangesStrategy,
@@ -513,6 +514,7 @@ class MerginPlugin:
         self.mergin_proj_dir = mergin_project_local_path()
         if self.mergin_proj_dir is not None:
             self.enable_toolbar_actions()
+            set_qgis_project_mergin_variables(self.mergin_proj_dir)
 
     def add_context_menu_actions(self, layers):
         provider_names = "vectortile"

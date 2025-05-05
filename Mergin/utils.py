@@ -947,14 +947,12 @@ def unhandled_exception_message(error_details, dialog_title, error_text, log_fil
     box.exec()
 
 
-def write_project_variables(project_owner, project_name, project_full_name, version, server):
+def write_project_variables(project_name, project_full_name, version, server):
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_name", project_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_owner", project_owner)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_full_name", project_full_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_version", int_version(version))
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_server", server)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_name", project_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_owner", project_owner)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_full_name", project_full_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_version", int_version(version))
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_server", server)
@@ -964,12 +962,10 @@ def remove_project_variables():
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_full_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_version")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_owner")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_server")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_full_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_version")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_owner")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_server")
 
 
@@ -1022,20 +1018,17 @@ def get_local_mergin_projects_info():
     return local_projects_info
 
 
-def set_qgis_project_mergin_variables():
-    """Check if current QGIS project is a local Mergin Maps project and set QGIS project variables for Mergin Maps."""
-    qgis_project_path = QgsProject.instance().absolutePath()
-    if not qgis_project_path:
-        return None
-    for local_path, owner, name, server in get_local_mergin_projects_info():
-        if same_dir(path, qgis_project_path):
-            try:
-                mp = MerginProject(path)
-                write_project_variables(owner, name, mp.project_full_name(), mp.version(), server)
-                return mp.project_full_name()
-            except InvalidProject:
-                remove_project_variables()
-    return None
+def set_qgis_project_mergin_variables(project_dir):
+    """Check if QGIS project project_dir is a local Mergin Maps project and set QGIS project variables for Mergin Maps."""
+
+    try:
+        mp = MerginProject(project_dir)
+        settings = QSettings()
+        server = settings.value(f"Mergin/localProjects/{mp.project_full_name()}/server", "")
+
+        write_project_variables(mp.project_name(), mp.project_full_name(), mp.version(), server)
+    except InvalidProject:
+        remove_project_variables()
 
 
 def mergin_project_local_path(project_name=None):
