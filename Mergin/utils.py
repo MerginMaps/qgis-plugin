@@ -1250,7 +1250,14 @@ def test_server_connection(url, username, password):
     result = True, "<font color=green> OK </font>"
     proxy_config = get_qgis_proxy_config(url)
     try:
-        MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
+        mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
+
+        if mc.server_type() == ServerType.OLD:
+            QMessageBox.information(
+                None,
+                "Deprecated server version",
+                "The server is using an older, deprecated version. The support for this version will be removed in the next release, please contact your server administrator.",
+            )
     except (LoginError, ClientError) as e:
         QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
         result = False, f"<font color=red> Connection failed, {str(e)} </font>"
