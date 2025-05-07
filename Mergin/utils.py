@@ -1256,7 +1256,7 @@ def test_server_connection(url, username, password):
             QMessageBox.information(
                 None,
                 "Deprecated server version",
-                "The server is using an older, deprecated version. The support for this version will be removed in the next release, please contact your server administrator.",
+                "This server is running an outdated version that will no longer be supported. Please contact your server administrator to upgrade.",
             )
     except (LoginError, ClientError) as e:
         QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
