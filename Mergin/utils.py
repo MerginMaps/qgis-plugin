@@ -947,26 +947,22 @@ def unhandled_exception_message(error_details, dialog_title, error_text, log_fil
     box.exec()
 
 
-def write_project_variables(project_name, project_full_name, version, server):
+def write_project_variables(project_name, project_full_name, version):
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_name", project_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_full_name", project_full_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_version", int_version(version))
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_server", server)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_name", project_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_full_name", project_full_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_version", int_version(version))
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_server", server)
 
 
 def remove_project_variables():
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_full_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_version")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_server")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_full_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_version")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_server")
 
 
 def pretty_summary(summary):
@@ -1023,16 +1019,8 @@ def set_qgis_project_mergin_variables(project_dir):
 
     try:
         mp = MerginProject(project_dir)
-        settings = QSettings()
-        server_key = f"Mergin/localProjects/{mp.project_full_name()}/server"
-        proj_server = settings.value(server_key, "")
 
-        if proj_server is None:
-            config_server = settings.value("Mergin/server", None)
-            proj_server = config_server
-            settings.setValue(server_key, config_server)
-
-        write_project_variables(mp.project_name(), mp.project_full_name(), mp.version(), proj_server)
+        write_project_variables(mp.project_name(), mp.project_full_name(), mp.version())
     except InvalidProject:
         remove_project_variables()
 
