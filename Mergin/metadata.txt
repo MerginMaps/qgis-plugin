@@ -4,14 +4,20 @@ name=Mergin
 qgisMinimumVersion=3.22
 qgisMaximumVersion=3.99
 description=Handle Mergin Maps projects
-version=2025.1.1
+version=2025.2
 author=Lutra Consulting
 email=info@merginmaps.com
 about=Mergin Maps is a repository for storing and tracking changes to QGIS projects/data and has its mobile app for field geo-surveys. With this plugin, users can upload and sync their data to Mergin Maps service.
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2025.1.1
+changelog=2025.2
+  * Fixed project home path creating issues in the mobile app 
+  * Added user friendly display expression for tracking layer 
+  * Fixed  changes visualisation not working in the history viewer if the geopackage was in a sub folder
+  * Improved Mergin Maps QGIS expression( added variable mergin_user_email, fixed mergin_project_* variables unavailable)
+  * Make plugin compatible with Qt6
+  <p>2025.1.1
   - Fixed the plugin on older QGIS version (< 3.34)
   <p>2025.1
   - Added a new history viewer window
