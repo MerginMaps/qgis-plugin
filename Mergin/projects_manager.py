@@ -176,7 +176,7 @@ class MerginProjectsManager(object):
             project_dir == QgsProject.instance().absolutePath()
             or project_dir + "/" in QgsProject.instance().absolutePath()
         ):
-            write_project_variables(self.mc.username(), project_name, full_project_name, "v1")
+            write_project_variables(project_name, full_project_name, "v1")
 
         QMessageBox.information(
             None,
