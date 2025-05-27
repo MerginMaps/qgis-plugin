@@ -63,7 +63,7 @@ from qgis.core import (
     QgsCoordinateTransformContext,
     QgsDefaultValue,
     QgsMapLayer,
-    QgsProperty
+    QgsProperty,
 )
 
 from .mergin.utils import int_version, bytes_to_human_size
@@ -1059,9 +1059,11 @@ def icon_path(icon_filename):
     ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, "tabler_icons", icon_filename)
     return ipath
 
+
 def style_path(style_name):
     ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "styles", style_name)
-    return ipath 
+    return ipath
+
 
 def mm_logo_path():
     if is_dark_theme():
@@ -1422,6 +1424,7 @@ def prefix_for_relative_path(mode, home_path, target_dir):
     else:
         return ""
 
+
 def create_tracking_layer(project_path):
     """
     Creates a GPKG layer for tracking in the mobile app
@@ -1455,6 +1458,7 @@ def create_tracking_layer(project_path):
 
     return filename
 
+
 def create_map_annotations_layer(project_path):
     filename = get_unique_filename(os.path.join(project_path, "map_annotations_layer.gpkg"))
 
@@ -1484,7 +1488,6 @@ def create_map_annotations_layer(project_path):
 
     layer = QgsVectorLayer(filename, "map_annotations_layer", "ogr")
 
-
     """
     Configures tracking layer:
      - set default values for fields
@@ -1504,25 +1507,7 @@ def create_map_annotations_layer(project_path):
     draw_by_default.setExpression("@mm_username")
     layer.setDefaultValueDefinition(idx, draw_by_default)
 
-
-    symbol = QgsLineSymbol.createSimple(
-        {
-            "capstyle": "square",
-            "joinstyle": "bevel",
-            "line_style": "solid",
-            "line_width": "0.35",
-            "line_width_unit": "MM",
-            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFA500")),
-            
-            # "line_color": QgsExpression('"color"').evaluate(), 
-            "line_color":  QgsProperty.fromExpression('"color"')
-            
-        }
-    )
-
-    print("style path:", style_path("map_annotations_style.qml"))
     layer.loadNamedStyle(style_path("map_annotations_style.qml"))
-    # layer.setRenderer(QgsSingleSymbolRenderer(symbol))
 
     QgsProject.instance().addMapLayer(layer)
     QgsProject.instance().writeEntry("Mergin", "MapAnnotations/MapAnnotationsLayer", layer.id())
