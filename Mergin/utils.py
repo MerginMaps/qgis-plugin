@@ -1489,7 +1489,7 @@ def create_map_annotations_layer(project_path):
     layer = QgsVectorLayer(filename, "map_annotations_layer", "ogr")
 
     """
-    Configures tracking layer:
+    Configures map annotations layer:
      - set default values for fields
      - apply default styling
     """
@@ -1497,15 +1497,20 @@ def create_map_annotations_layer(project_path):
     cfg = QgsEditorWidgetSetup("Hidden", {})
     layer.setEditorWidgetSetup(idx, cfg)
 
+    idx = layer.fields().indexFromName("draw_by")
+    draw_by_default = QgsDefaultValue()
+    draw_by_default.setExpression("@mm_username")
+    layer.setDefaultValueDefinition(idx, draw_by_default)
+
     idx = layer.fields().indexFromName("created_at")
     created_at_default = QgsDefaultValue()
     created_at_default.setExpression("now()")
     layer.setDefaultValueDefinition(idx, created_at_default)
 
-    idx = layer.fields().indexFromName("draw_by")
-    draw_by_default = QgsDefaultValue()
-    draw_by_default.setExpression("@mm_username")
-    layer.setDefaultValueDefinition(idx, draw_by_default)
+    idx = layer.fields().indexFromName("width")
+    width_default = QgsDefaultValue()
+    width_default.setExpression("0.35")
+    layer.setDefaultValueDefinition(idx, width_default)
 
     layer.loadNamedStyle(style_path("map_annotations_style.qml"))
 

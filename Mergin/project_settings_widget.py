@@ -255,7 +255,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             return
 
         # map annotation layer does not exists or was removed from the project
-        # create a new layer and add it as a tracking layer
+        # create a new layer and add it as a map annotations layer
         create_map_annotations_layer(QgsProject.instance().absolutePath())
 
     def apply(self):
