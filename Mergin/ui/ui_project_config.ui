@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>638</width>
+    <width>639</width>
     <height>556</height>
    </rect>
   </property>
@@ -44,9 +44,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-442</y>
-        <width>617</width>
-        <height>1104</height>
+        <y>-294</y>
+        <width>625</width>
+        <height>1273</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -318,6 +318,66 @@
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="title">
+          <string>Map annotations</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>Place holder explain map annotations</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>Color set</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <item>
+             <widget class="QgsColorButton" name="mColorButton_2">
+              <property name="color">
+               <color>
+                <red>145</red>
+                <green>65</green>
+                <blue>172</blue>
+               </color>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QgsColorButton" name="mColorButton_6"/>
+            </item>
+            <item>
+             <widget class="QgsColorButton" name="mColorButton_5"/>
+            </item>
+            <item>
+             <widget class="QgsColorButton" name="mColorButton_4"/>
+            </item>
+            <item>
+             <widget class="QgsColorButton" name="mColorButton_3"/>
+            </item>
+            <item>
+             <widget class="QgsColorButton" name="mColorButton"/>
+            </item>
+           </layout>
+          </item>
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="chk_map_annotations_enabled">
+            <property name="text">
+             <string>Enable map annotations layer</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -337,6 +397,11 @@
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>QgsColorButton</class>
+   <extends>QToolButton</extends>
+   <header>qgscolorbutton.h</header>
+  </customwidget>
   <customwidget>
    <class>QgsExpressionLineEdit</class>
    <extends>QWidget</extends>

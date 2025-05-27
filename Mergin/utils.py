@@ -63,6 +63,7 @@ from qgis.core import (
     QgsCoordinateTransformContext,
     QgsDefaultValue,
     QgsMapLayer,
+    QgsProperty
 )
 
 from .mergin.utils import int_version, bytes_to_human_size
@@ -1448,6 +1449,77 @@ def create_tracking_layer(project_path):
     setup_tracking_layer(layer)
     QgsProject.instance().addMapLayer(layer)
     QgsProject.instance().writeEntry("Mergin", "PositionTracking/TrackingLayer", layer.id())
+
+    return filename
+
+def create_map_annotations_layer(project_path):
+    filename = get_unique_filename(os.path.join(project_path, "map_annotations_layer.gpkg"))
+
+    fields = QgsFields()
+    fields.append(QgsField("color", QVariant.String))
+    fields.append(QgsField("draw_by", QVariant.String))
+    fields.append(QgsField("created_at", QVariant.DateTime))
+    fields.append(QgsField("width", QVariant.Double))
+    fields.append(QgsField("attr4", QVariant.String))
+    fields.append(QgsField("attr5", QVariant.String))
+    fields.append(QgsField("attr6", QVariant.Int))
+    fields.append(QgsField("attr7", QVariant.Double))
+
+    options = QgsVectorFileWriter.SaveVectorOptions()
+    options.driverName = "GPKG"
+    options.layerName = "map_annotations_layer"
+
+    writer = QgsVectorFileWriter.create(
+        filename,
+        fields,
+        QgsWkbTypes.MultiLineStringZM,
+        QgsCoordinateReferenceSystem("EPSG:4326"),
+        QgsCoordinateTransformContext(),
+        options,
+    )
+    del writer
+
+    layer = QgsVectorLayer(filename, "map_annotations_layer", "ogr")
+
+
+    """
+    Configures tracking layer:
+     - set default values for fields
+     - apply default styling
+    """
+    idx = layer.fields().indexFromName("fid")
+    cfg = QgsEditorWidgetSetup("Hidden", {})
+    layer.setEditorWidgetSetup(idx, cfg)
+
+    idx = layer.fields().indexFromName("created_at")
+    created_at_default = QgsDefaultValue()
+    created_at_default.setExpression("now()")
+    layer.setDefaultValueDefinition(idx, created_at_default)
+
+    idx = layer.fields().indexFromName("draw_by")
+    draw_by_default = QgsDefaultValue()
+    draw_by_default.setExpression("@mm_username")
+    layer.setDefaultValueDefinition(idx, draw_by_default)
+
+
+    symbol = QgsLineSymbol.createSimple(
+        {
+            "capstyle": "square",
+            "joinstyle": "bevel",
+            "line_style": "solid",
+            "line_width": "0.35",
+            "line_width_unit": "MM",
+            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFA500")),
+            
+            # "line_color": QgsExpression('"color"').evaluate(), 
+            "line_color":  QgsProperty.fromExpression('"color"')
+            
+        }
+    )
+    layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+
+    QgsProject.instance().addMapLayer(layer)
+    QgsProject.instance().writeEntry("Mergin", "MapAnnotations/MapAnnotationsLayer", layer.id())
 
     return filename
 

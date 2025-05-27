@@ -15,6 +15,7 @@ from qgis.core import (
     QgsFeatureRequest,
     QgsExpression,
     QgsVectorLayer,
+    QgsMapLayer
 )
 from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
 from .attachment_fields_model import AttachmentFieldsModel
@@ -24,6 +25,7 @@ from .utils import (
     prefix_for_relative_path,
     resolve_target_dir,
     create_tracking_layer,
+    create_map_annotations_layer,
     set_tracking_layer_flags,
 )
 
@@ -81,6 +83,13 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         mode, ok = QgsProject.instance().readNumEntry("Mergin", "PositionTracking/UpdateFrequency")
         idx = self.cmb_tracking_precision.findData(mode) if ok else 1
         self.cmb_tracking_precision.setCurrentIndex(idx)
+
+        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "MapAnnotations/Enabled")
+        if ok:
+            self.chk_map_annotations_enabled.setChecked(enabled)
+        else:
+            self.chk_map_annotations_enabled.setChecked(False)
+
 
         self.local_project_dir = mergin_project_local_path()
 
@@ -228,6 +237,26 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         # tracking layer does not exists or was removed from the project
         # create a new layer and add it as a tracking layer
         create_tracking_layer(QgsProject.instance().absolutePath())
+    
+    def setup_map_annotations(self):
+        if self.chk_map_annotations_enabled.checkState() == Qt.CheckState.Unchecked:
+            print("unchecked")
+            return
+        # check if map annotations layer already exists
+        map_annotations_layer_id, ok = QgsProject.instance().readEntry("Mergin", "MapAnnotations/MapAnnotationsLayer")
+
+        if map_annotations_layer_id != "" and map_annotations_layer_id in QgsProject.instance().mapLayers():
+            # map annotations layer already exists in the project, make sure it has correct flags
+            layer = QgsProject.instance().mapLayers()[map_annotations_layer_id]
+            if layer is not None and layer.isValid():
+                layer.setReadOnly(False)
+                layer.setFlags(QgsMapLayer.LayerFlag(QgsMapLayer.Identifiable + QgsMapLayer.Searchable + QgsMapLayer.Removable))
+            return
+
+        # map annotation layer does not exists or was removed from the project
+        # create a new layer and add it as a tracking layer
+        create_map_annotations_layer(QgsProject.instance().absolutePath())
+
 
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
@@ -236,6 +265,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         QgsProject.instance().writeEntry(
             "Mergin", "PositionTracking/UpdateFrequency", self.cmb_tracking_precision.currentData()
         )
+        QgsProject.instance().writeEntry("Mergin", "MapAnnotations/Enabled", self.chk_map_annotations_enabled.isChecked())
         for i in range(self.attachments_model.rowCount()):
             index = self.attachments_model.index(i, 1)
             if index.isValid():
@@ -247,3 +277,4 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
         self.save_config_file()
         self.setup_tracking()
+        self.setup_map_annotations()
