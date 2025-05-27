@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>639</width>
+    <width>642</width>
     <height>556</height>
    </rect>
   </property>
@@ -44,9 +44,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-294</y>
-        <width>625</width>
-        <height>1273</height>
+        <y>-713</y>
+        <width>628</width>
+        <height>1291</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -323,51 +323,94 @@
           <string>Map annotations</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_11">
-            <property name="text">
-             <string>Place holder explain map annotations</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_12">
-            <property name="text">
-             <string>Color set</string>
-            </property>
-           </widget>
-          </item>
           <item row="2" column="1">
            <layout class="QHBoxLayout" name="horizontalLayout">
             <item>
              <widget class="QgsColorButton" name="mColorButton_2">
               <property name="color">
                <color>
-                <red>145</red>
-                <green>65</green>
-                <blue>172</blue>
+                <red>0</red>
+                <green>0</green>
+                <blue>0</blue>
                </color>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QgsColorButton" name="mColorButton_6"/>
+             <widget class="QgsColorButton" name="mColorButton_6">
+              <property name="color">
+               <color>
+                <red>255</red>
+                <green>255</green>
+                <blue>255</blue>
+               </color>
+              </property>
+             </widget>
             </item>
             <item>
-             <widget class="QgsColorButton" name="mColorButton_5"/>
+             <widget class="QgsColorButton" name="mColorButton_5">
+              <property name="color">
+               <color>
+                <red>166</red>
+                <green>203</green>
+                <blue>244</blue>
+               </color>
+              </property>
+             </widget>
             </item>
             <item>
-             <widget class="QgsColorButton" name="mColorButton_4"/>
+             <widget class="QgsColorButton" name="mColorButton_4">
+              <property name="color">
+               <color>
+                <red>155</red>
+                <green>209</green>
+                <blue>169</blue>
+               </color>
+              </property>
+             </widget>
             </item>
             <item>
-             <widget class="QgsColorButton" name="mColorButton_3"/>
+             <widget class="QgsColorButton" name="mColorButton_3">
+              <property name="color">
+               <color>
+                <red>244</red>
+                <green>203</green>
+                <blue>70</blue>
+               </color>
+              </property>
+             </widget>
             </item>
             <item>
-             <widget class="QgsColorButton" name="mColorButton"/>
+             <widget class="QgsColorButton" name="mColorButton">
+              <property name="color">
+               <color>
+                <red>255</red>
+                <green>186</green>
+                <blue>188</blue>
+               </color>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>
-          <item row="1" column="0">
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>Color set </string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="2">
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>Map annotations allows to draw quick drawing and annotations on top of your existings layers</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="2">
            <widget class="QCheckBox" name="chk_map_annotations_enabled">
             <property name="text">
              <string>Enable map annotations layer</string>
