@@ -1059,6 +1059,9 @@ def icon_path(icon_filename):
     ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, "tabler_icons", icon_filename)
     return ipath
 
+def style_path(style_name):
+    ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "styles", style_name)
+    return ipath 
 
 def mm_logo_path():
     if is_dark_theme():
@@ -1516,7 +1519,10 @@ def create_map_annotations_layer(project_path):
             
         }
     )
-    layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+
+    print("style path:", style_path("map_annotations_style.qml"))
+    layer.loadNamedStyle(style_path("map_annotations_style.qml"))
+    # layer.setRenderer(QgsSingleSymbolRenderer(symbol))
 
     QgsProject.instance().addMapLayer(layer)
     QgsProject.instance().writeEntry("Mergin", "MapAnnotations/MapAnnotationsLayer", layer.id())
