@@ -1418,20 +1418,6 @@ def prefix_for_relative_path(mode, home_path, target_dir):
     else:
         return ""
 
-    symbol = QgsLineSymbol.createSimple(
-        {
-            "capstyle": "square",
-            "joinstyle": "bevel",
-            "line_style": "solid",
-            "line_width": "0.35",
-            "line_width_unit": "MM",
-            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFA500")),
-        }
-    )
-    layer.setRenderer(QgsSingleSymbolRenderer(symbol))
-    set_tracking_layer_flags(layer)
-
-
 def create_tracking_layer(project_path):
     """
     Creates a GPKG layer for tracking in the mobile app
