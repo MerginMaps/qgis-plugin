@@ -281,6 +281,9 @@ def json_response(url: str) -> dict:
     br = QgsBlockingNetworkRequest()
     error = br.get(QNetworkRequest(QUrl(url)))
 
+    if error == QgsBlockingNetworkRequest.ErrorCode.ServerExceptionError:
+        raise ValueError("Server error")
+
     if error != QgsBlockingNetworkRequest.ErrorCode.NoError:
         raise URLError("Failed to get url")
 
@@ -396,6 +399,10 @@ def sso_login_allowed(url: str) -> typing.Tuple[bool, typing.Optional[str]]:
 
 def sso_ask_for_email(url: str) -> typing.Tuple[bool, typing.Optional[str]]:
     """Tests if SSO login should ask for email. Returns a tuple with a boolean and an optional error message."""
+    try:
+        requests.get(url, timeout=3)
+    except requests.RequestException:
+        return True, None
 
     try:
         json_data = json_response(f"{url}/v2/sso/config")
