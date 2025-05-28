@@ -1497,7 +1497,7 @@ def setup_tracking_layer(layer: QgsVectorLayer):
     layer.setDefaultValueDefinition(idx, user_default)
 
     layer.setDisplayExpression(
-        "\"tracked_by\" ||' on '|| format_date( \"tracking_end_time\", 'dd MMM yyyy') ||' at '|| format_date(\"tracking_end_time\", 'H:MM')"
+        "\"tracked_by\" ||' on '|| format_date( \"tracking_end_time\", 'dd MMM yyyy') ||' at '|| format_date(\"tracking_end_time\", 'H:mm')"
     )
 
     symbol = QgsLineSymbol.createSimple(
