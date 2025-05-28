@@ -7,36 +7,29 @@ from qgis.PyQt.QtWidgets import QDialog, QApplication, QDialogButtonBox, QMessag
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, QSettings, QTimer
 from qgis.PyQt.QtGui import QPixmap
-from qgis.core import QgsApplication, QgsExpressionContextUtils
+from qgis.core import QgsApplication
 from urllib.error import URLError
 
-try:
-    from .mergin.client import MerginClient, ClientError, LoginError
-except ImportError:
-    import sys
 
-    this_dir = os.path.dirname(os.path.realpath(__file__))
-    path = os.path.join(this_dir, "mergin_client.whl")
-    sys.path.append(path)
-    from mergin.client import MerginClient, ClientError, LoginError
-
-from .utils import (
-    get_mergin_auth,
-    set_mergin_auth,
-    MERGIN_URL,
-    create_mergin_client,
-    get_plugin_version,
-    get_qgis_proxy_config,
-    test_server_connection,
-    mm_logo_path,
-    is_dark_theme,
+from .utils_auth import (
     LoginType,
     get_login_type,
-    login_sso,
-    validate_sso_login,
+    get_mergin_sso_email,
     json_response,
+    get_stored_mergin_server_url,
+    get_mergin_username_password,
+    login_sso,
+    set_mergin_settings,
+    test_server_connection,
+    set_mergin_auth_password,
+    validate_sso_login,
     sso_oauth_client_id,
-    SSOLoginError,
+    validate_mergin_url,
+)
+from .utils import (
+    MERGIN_URL,
+    mm_logo_path,
+    is_dark_theme,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_config.ui")
@@ -61,13 +54,14 @@ class ConfigurationDialog(QDialog):
         if save_credentials or login_type == LoginType.PASSWORD:
             QgsApplication.authManager().setMasterPassword()
 
+        url = get_stored_mergin_server_url()
+
         if login_type == LoginType.PASSWORD:
-            url, username, password = get_mergin_auth()
+            username, password = get_mergin_username_password()
             self.ui.username.setText(username)
             self.ui.password.setText(password)
         elif login_type == LoginType.SSO:
-            url, sso_email, _ = get_mergin_auth()
-            self.ui.sso_email.setText(sso_email)
+            self.ui.sso_email.setText(get_mergin_sso_email())
             self.ui.stacked_widget_login.setCurrentIndex(1)
 
         self.ui.label_logo.setPixmap(QPixmap(mm_logo_path()))
@@ -90,11 +84,20 @@ class ConfigurationDialog(QDialog):
         self.check_credentials()
         self.allow_sso_login()
 
-        # self.ui.sso_btn.clicked.connect(self.sso)
-
     def accept(self):
         if not self.test_connection():
             return
+
+        url = self.server_url()
+        set_mergin_settings(url=url, login_type=self.login_type())
+
+        if self.login_type() == LoginType.PASSWORD:
+            set_mergin_auth_password(url=url, username=self.ui.username.text(), password=self.ui.password.text())
+        else:
+            if not validate_sso_login(server_url=url):
+                sso_email = self.get_sso_email()
+                oauth2_client_id = sso_oauth_client_id(url, sso_email)
+                login_sso(url, oauth2_client_id, sso_email)
 
         super().accept()
 
@@ -113,6 +116,7 @@ class ConfigurationDialog(QDialog):
                 enable_buttons = bool(self.ui.sso_email.text())
             else:
                 enable_buttons = True
+
         self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(enable_buttons)
         self.ui.test_connection_btn.setEnabled(enable_buttons)
 
@@ -135,46 +139,16 @@ class ConfigurationDialog(QDialog):
             return LoginType.SSO
         return LoginType.PASSWORD
 
-    def writeSettings(self):
-        url = self.server_url()
-        username = self.ui.username.text()
-        password = self.ui.password.text()
-        settings = QSettings()
-        settings.setValue("Mergin/auth_token", None)  # reset token
-        settings.setValue("Mergin/saveCredentials", str(self.ui.save_credentials.isChecked()))
-        settings.setValue("Mergin/username", username)
-        settings.setValue("Mergin/sso_email", self.ui.sso_email.text())
-        settings.setValue("Mergin/login_type", str(self.login_type()))
-
-        if self.ui.save_credentials.isChecked():
-            set_mergin_auth(url, username, password)
-            try:
-                mc = create_mergin_client()
-            except (URLError, ClientError, LoginError):
-                mc = None
-        else:
-            try:
-                proxy_config = get_qgis_proxy_config(url)
-                mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
-                settings.setValue("Mergin/auth_token", mc._auth_session["token"])
-                settings.setValue("Mergin/server", url)
-            except (URLError, ClientError, LoginError) as e:
-                QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
-                mc = None
-
-        QgsExpressionContextUtils.setGlobalVariable("mergin_url", url)
-        if mc:
-            QgsExpressionContextUtils.setGlobalVariable("mergin_username", username)
-        else:
-            QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
-
-        return mc
-
     def test_connection(self):
+        if validate_sso_login(self.server_url()):
+            self.ui.test_status.setText("<font color=green> OK </font>")
+            return True
+
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         if self.login_type() == LoginType.PASSWORD:
             ok, msg = test_server_connection(self.server_url(), self.ui.username.text(), self.ui.password.text())
         else:
+            self.ui.test_status.setText(f"<font color=orange>Follow the instructions in the browser...</font>")
             ok, msg = test_server_connection(self.server_url(), use_sso=True, sso_email=self.get_sso_email())
         QApplication.restoreOverrideCursor()
         self.ui.test_status.setText(msg)
@@ -183,10 +157,16 @@ class ConfigurationDialog(QDialog):
     def allow_sso_login(self) -> None:
         self.ui.button_sign_sso.setVisible(False)
 
+        if validate_mergin_url(self.server_url()) is not None:
+            return
+
         try:
             server_config_data = json_response(f"{self.server_url()}/config")
-        except (URLError, ValueError) as e:
-            QMessageBox.critical(self, "SSO allowed check", str(e))
+        except URLError as e:
+            QMessageBox.critical(self, "SSO allowed check", f"Could not connect to server: {str(e)}")
+            return
+        except ValueError as e:
+            QMessageBox.critical(self, "SSO allowed check", f"Could not parse server response: {str(e)}")
             return
 
         if "sso_enabled" in server_config_data:
@@ -209,16 +189,21 @@ class ConfigurationDialog(QDialog):
         self.ui.stacked_widget_login.setCurrentIndex(0)
 
     def get_sso_email(self) -> typing.Optional[str]:
-        if self.ui.sso_email.isVisible():
-            return self.ui.sso_email.text()
+        if self.sso_ask_for_email():
+            if self.ui.sso_email.isVisible():
+                return self.ui.sso_email.text()
         return None
 
     def sso_ask_for_email(self) -> bool:
 
         try:
             json_data = json_response(f"{self.server_url()}/v2/sso/config")
-        except (URLError, ValueError) as e:
-            QMessageBox.critical(self, "SSO configuration check", str(e))
+        except URLError as e:
+            QMessageBox.critical(self, "SSO configuration check", f"Could not connect to server: {str(e)}")
+            return True
+        except ValueError as e:
+            QMessageBox.critical(self, "SSO configuration check", f"Could not parse server response: {str(e)}")
+            return True
 
         if "tenant_flow_type" not in json_data:
             QMessageBox.critical(
@@ -234,20 +219,3 @@ class ConfigurationDialog(QDialog):
             return True
 
         return False
-
-    def login_using_sso(self) -> None:
-
-        if validate_sso_login():
-            return
-
-        email = None
-        if self.ui.sso_email.isVisible():
-            email = self.ui.sso_email.text()
-
-        try:
-            oauth2_client_id = sso_oauth_client_id(self.server_url(), email)
-        except (URLError, ValueError, SSOLoginError) as e:
-            QMessageBox.critical(self, "SSO login check", str(e))
-            return
-
-        login_sso(self.server_url(), oauth2_client_id)

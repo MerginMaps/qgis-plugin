@@ -53,9 +53,7 @@ from .utils import (
     LoginError,
     InvalidProject,
     check_mergin_subdirs,
-    create_mergin_client,
     find_qgis_files,
-    get_mergin_auth,
     icon_path,
     mm_symbol_path,
     is_number,
@@ -67,6 +65,12 @@ from .utils import (
     unhandled_exception_message,
     unsaved_project_check,
     UnsavedChangesStrategy,
+)
+from .utils_auth import (
+    create_mergin_client,
+    MissingAuthConfigError,
+    AuthTokenExpiredError,
+    get_stored_mergin_server_url,
 )
 from .mergin.utils import int_version, is_versioned_file
 from .mergin.merginproject import MerginProject
@@ -116,7 +120,6 @@ class MerginPlugin:
         # things will get horribly wrong when QGIS tries to display GUI and the app would crash.
         # Triggering auth request to QGIS auth framework already at this point will make sure that
         # the dialog asking for master password is started from the main thread -> no crash.
-        get_mergin_auth()
 
         self.initProcessing()
 
@@ -307,7 +310,19 @@ class MerginPlugin:
         """Open plugin configuration dialog."""
         dlg = ConfigurationDialog()
         if dlg.exec():
-            self.mc = dlg.writeSettings()
+            try:
+                self.mc = create_mergin_client()
+            except (MissingAuthConfigError, AuthTokenExpiredError, ClientError, ValueError) as e:
+                QMessageBox.critical(None, "Login failed", f"Could not login: {str(e)}")
+                QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
+                return
+
+            QgsExpressionContextUtils.setGlobalVariable("mergin_url", get_stored_mergin_server_url())
+            if self.mc:
+                QgsExpressionContextUtils.setGlobalVariable("mergin_username", self.mc.username())
+            else:
+                QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
+
             self.on_config_changed()
             self.show_browser_panel()
 

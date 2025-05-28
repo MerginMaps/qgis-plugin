@@ -76,7 +76,7 @@ def set_mergin_auth_password(url: str, username: str, password: str, auth_token:
     store_mergin_authcfg_id(cfg)
 
 
-def set_mergin_auth_sso(url: str, auth_token: str, sso_email: str) -> None:
+def set_mergin_auth_sso(url: str, auth_token: str, sso_email: typing.Optional[str]) -> None:
     cfg = get_mergin_auth_cfg()
 
     cfg.setUri(url)
@@ -130,7 +130,7 @@ def get_mergin_username_password() -> typing.Tuple[str, str]:
     return "", ""
 
 
-def get_sso_email() -> str:
+def get_mergin_sso_email() -> str:
     settings = QSettings()
     email = settings.value("Mergin/sso_email", None)
     return email
@@ -200,7 +200,7 @@ def validate_sso_login(server_url: str) -> bool:
         return False
 
 
-def login_sso(server_url: str, oauth2_client_id: str) -> None:
+def login_sso(server_url: str, oauth2_client_id: str, email: typing.Optional[str] = None) -> None:
     """
     Login to Mergin Maps using SSO.
 
@@ -269,7 +269,7 @@ def login_sso(server_url: str, oauth2_client_id: str) -> None:
         mc = None
 
     if mc:
-        set_mergin_auth_sso(url=server_url, auth_token=mc._auth_session["token"], sso_email=get_sso_email())
+        set_mergin_auth_sso(url=server_url, auth_token=mc._auth_session["token"], sso_email=email)
 
 
 def json_response(url: str) -> dict:
