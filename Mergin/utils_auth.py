@@ -302,13 +302,15 @@ def sso_oauth_client_id(server_url: str, email: typing.Optional[str] = None) -> 
     """
     if email:
         json_data = json_response(f"{server_url}/v2/sso/connections?email={email}")
+        id_name = "id"
     else:
         json_data = json_response(f"{server_url}/v2/sso/config")
+        id_name = "client_id"
 
-    if "client_id" not in json_data:
+    if id_name not in json_data:
         raise SSOLoginError("SSO login failed missing id in response.")
 
-    oauth2_client_id = json_data["client_id"]
+    oauth2_client_id = json_data[id_name]
     return oauth2_client_id
 
 
