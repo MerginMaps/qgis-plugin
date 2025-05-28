@@ -15,7 +15,6 @@ from .utils_auth import (
     LoginType,
     get_login_type,
     get_mergin_sso_email,
-    json_response,
     get_stored_mergin_server_url,
     get_mergin_username_password,
     login_sso,
@@ -24,7 +23,8 @@ from .utils_auth import (
     set_mergin_auth_password,
     validate_sso_login,
     sso_oauth_client_id,
-    validate_mergin_url,
+    sso_login_allowed,
+    sso_ask_for_email,
 )
 from .utils import (
     MERGIN_URL,
@@ -157,22 +157,12 @@ class ConfigurationDialog(QDialog):
     def allow_sso_login(self) -> None:
         self.ui.button_sign_sso.setVisible(False)
 
-        if validate_mergin_url(self.server_url()) is not None:
+        allowed, msg = sso_login_allowed(self.server_url())
+        if msg:
+            QMessageBox.critical(self, "SSO allowed check", msg)
             return
 
-        try:
-            server_config_data = json_response(f"{self.server_url()}/config")
-        except URLError as e:
-            QMessageBox.critical(self, "SSO allowed check", f"Could not connect to server: {str(e)}")
-            return
-        except ValueError as e:
-            QMessageBox.critical(self, "SSO allowed check", f"Could not parse server response: {str(e)}")
-            return
-
-        if "sso_enabled" in server_config_data:
-            sso_enabled = server_config_data["sso_enabled"]
-            if sso_enabled:
-                self.ui.button_sign_sso.setVisible(True)
+        self.ui.button_sign_sso.setVisible(allowed)
 
     def check_sso_availability(self) -> None:
         self.sso_timer = QTimer(self)
@@ -195,27 +185,8 @@ class ConfigurationDialog(QDialog):
         return None
 
     def sso_ask_for_email(self) -> bool:
-
-        try:
-            json_data = json_response(f"{self.server_url()}/v2/sso/config")
-        except URLError as e:
-            QMessageBox.critical(self, "SSO configuration check", f"Could not connect to server: {str(e)}")
-            return True
-        except ValueError as e:
-            QMessageBox.critical(self, "SSO configuration check", f"Could not parse server response: {str(e)}")
-            return True
-
-        if "tenant_flow_type" not in json_data:
-            QMessageBox.critical(
-                self, "Server Response Error", "Server response did not contain required tenant_flow_type data"
-            )
-            return True
-
-        if json_data["tenant_flow_type"] not in ["multi", "single"]:
-            QMessageBox.critical(self, "Server Response Error", "SSO tenant_flow_type is not valid")
-            return True
-
-        if json_data["tenant_flow_type"] == "multi":
-            return True
-
-        return False
+        ask_for_email, msg = sso_ask_for_email(self.server_url())
+        if msg:
+            QMessageBox.critical(self, "SSO email check", msg)
+            return ask_for_email
+        return ask_for_email

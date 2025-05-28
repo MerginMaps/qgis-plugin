@@ -3,6 +3,7 @@ import typing
 import uuid
 import json
 from urllib.error import URLError
+import requests
 
 from qgis.core import QgsApplication, QgsAuthMethodConfig, QgsBlockingNetworkRequest, QgsNetworkAccessManager
 from qgis.PyQt.QtCore import QSettings, QUrl
@@ -367,3 +368,47 @@ def validate_mergin_url(url):
     except ValueError:
         return "Invalid URL"
     return None
+
+
+def sso_login_allowed(url: str) -> typing.Tuple[bool, typing.Optional[str]]:
+    """Tests if SSO login is allowed on the server. Returns a tuple with a boolean and an optional error message."""
+    try:
+        requests.get(url, timeout=3)
+    except requests.RequestException:
+        return False, None
+
+    try:
+        server_config_data = json_response(f"{url}/config")
+    except URLError as e:
+        return False, f"Could not connect to server: {str(e)}"
+    except ValueError as e:
+        return False, f"Could not parse server response: {str(e)}"
+
+    if "sso_enabled" in server_config_data:
+        sso_enabled = server_config_data["sso_enabled"]
+        if sso_enabled:
+            return True, None
+
+    return False, None
+
+
+def sso_ask_for_email(url: str) -> typing.Tuple[bool, typing.Optional[str]]:
+    """Tests if SSO login should ask for email. Returns a tuple with a boolean and an optional error message."""
+
+    try:
+        json_data = json_response(f"{url}/v2/sso/config")
+    except URLError as e:
+        return True, f"Could not connect to server: {str(e)}"
+    except ValueError as e:
+        return True, f"Could not parse server response: {str(e)}"
+
+    if "tenant_flow_type" not in json_data:
+        return True, "Server response did not contain required tenant_flow_type data"
+
+    if json_data["tenant_flow_type"] not in ["multi", "single"]:
+        return True, "SSO tenant_flow_type is not valid"
+
+    if json_data["tenant_flow_type"] == "multi":
+        return True, None
+
+    return False, None
