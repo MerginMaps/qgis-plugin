@@ -4,7 +4,6 @@ import uuid
 import json
 from urllib.error import URLError
 
-from pysftp import cd
 from qgis.core import QgsApplication, QgsAuthMethodConfig, QgsBlockingNetworkRequest, QgsNetworkAccessManager
 from qgis.PyQt.QtCore import QSettings, QUrl
 from qgis.PyQt.QtNetwork import QNetworkRequest
