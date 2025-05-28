@@ -16,7 +16,6 @@ import tempfile
 import json
 import glob
 import re
-import typing
 
 from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
