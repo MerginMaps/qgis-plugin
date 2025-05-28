@@ -140,14 +140,15 @@ class ConfigurationDialog(QDialog):
         return LoginType.PASSWORD
 
     def test_connection(self):
-        if validate_sso_login(self.server_url()):
-            self.ui.test_status.setText("<font color=green> OK </font>")
-            return True
 
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         if self.login_type() == LoginType.PASSWORD:
             ok, msg = test_server_connection(self.server_url(), self.ui.username.text(), self.ui.password.text())
         else:
+            if validate_sso_login(self.server_url()):
+                self.ui.test_status.setText("<font color=green> OK </font>")
+                return True
+
             self.ui.test_status.setText(f"<font color=orange>Follow the instructions in the browser...</font>")
             ok, msg = test_server_connection(self.server_url(), use_sso=True, sso_email=self.get_sso_email())
         QApplication.restoreOverrideCursor()
