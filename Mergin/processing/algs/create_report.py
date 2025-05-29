@@ -12,7 +12,8 @@ from qgis.core import (
     QgsProcessingParameterFileDestination,
 )
 
-from ...utils import mm_symbol_path, create_mergin_client, create_report, ClientError, InvalidProject
+from ...utils import mm_symbol_path, create_report, InvalidProject
+from ...utils_auth import create_mergin_client, MissingAuthConfigError, AuthTokenExpiredError, ClientError
 
 
 class CreateReport(QgsProcessingAlgorithm):
@@ -73,7 +74,11 @@ class CreateReport(QgsProcessingAlgorithm):
             end = ""
         output_file = self.parameterAsFileOutput(parameters, self.REPORT, context)
 
-        mc = create_mergin_client()
+        try:
+            mc = create_mergin_client()
+        except (MissingAuthConfigError, AuthTokenExpiredError, ClientError, ValueError) as e:
+            raise QgsProcessingException(f"Error creating Mergin Maps client: {e}")
+
         warnings = None
         try:
             warnings = create_report(mc, project_dir, f"v{start}", f"v{end}" if end else "", output_file)
