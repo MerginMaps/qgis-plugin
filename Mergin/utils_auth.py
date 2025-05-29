@@ -153,7 +153,9 @@ def create_mergin_client() -> MerginClient:
     if cfg.id():
         auth_token = get_mergin_auth_token(cfg)
         if auth_token:
-            mc = MerginClient(url, auth_token, None, None, get_plugin_version(), get_qgis_proxy_config(url))
+            mc = MerginClient(
+                url, auth_token, None, None, get_plugin_version(), get_qgis_proxy_config(url), login_type=login_type
+            )
             if validate_mergin_session_not_expired(mc):
                 return mc
             else:
