@@ -539,11 +539,19 @@ def set_qgis_project_relative_paths(qgis_project):
         _ = qgis_project.writeEntry("Paths", "/Absolute", "false")
 
 
-def save_current_project(project_path, warn=False, relative_paths=True):
+def set_qgis_project_home_ignore(qgis_project):
+    """Check if given QGIS project have home path set up. If yes - remove it from the project."""
+    if qgis_project.presetHomePath():
+        qgis_project.setPresetHomePath("")
+
+
+def save_current_project(project_path, warn=False):
     """Save current QGIS project to project_path. Set the project to use relative paths if relative_paths is True."""
     cur_project = QgsProject.instance()
-    if relative_paths:
-        set_qgis_project_relative_paths(cur_project)
+
+    set_qgis_project_relative_paths(cur_project)
+    set_qgis_project_home_ignore(cur_project)
+
     cur_project.setFileName(project_path)
     write_success = cur_project.write()
     if not write_success and warn:
@@ -855,20 +863,22 @@ def unhandled_exception_message(error_details, dialog_title, error_text, log_fil
     box.exec()
 
 
-def write_project_variables(project_owner, project_name, project_full_name, version, server):
+def write_project_variables(project_name, project_full_name, version):
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_name", project_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_owner", project_owner)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_full_name", project_full_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_version", int_version(version))
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_server", server)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_name", project_name)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_full_name", project_full_name)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_version", int_version(version))
 
 
 def remove_project_variables():
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_full_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_version")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_owner")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_server")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_name")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_full_name")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_version")
 
 
 def pretty_summary(summary):
@@ -920,20 +930,15 @@ def get_local_mergin_projects_info():
     return local_projects_info
 
 
-def set_qgis_project_mergin_variables():
-    """Check if current QGIS project is a local Mergin Maps project and set QGIS project variables for Mergin Maps."""
-    qgis_project_path = QgsProject.instance().absolutePath()
-    if not qgis_project_path:
-        return None
-    for local_path, owner, name, server in get_local_mergin_projects_info():
-        if same_dir(path, qgis_project_path):
-            try:
-                mp = MerginProject(path)
-                write_project_variables(owner, name, mp.project_full_name(), mp.version(), server)
-                return mp.project_full_name()
-            except InvalidProject:
-                remove_project_variables()
-    return None
+def set_qgis_project_mergin_variables(project_dir):
+    """Check if QGIS project project_dir is a local Mergin Maps project and set QGIS project variables for Mergin Maps."""
+
+    try:
+        mp = MerginProject(project_dir)
+
+        write_project_variables(mp.project_name(), mp.project_full_name(), mp.version())
+    except InvalidProject:
+        remove_project_variables()
 
 
 def mergin_project_local_path(project_name=None):
@@ -1132,6 +1137,28 @@ def get_primary_keys(layer):
     if table:
         cols = [c["name"] for c in table["columns"] if "primary_key" in c]
         return cols
+
+
+def test_server_connection(url, username, password):
+    """
+    Test connection to Mergin Maps server. This includes check for valid server URL
+    and user credentials correctness.
+    """
+    err_msg = validate_mergin_url(url)
+    if err_msg:
+        msg = f"<font color=red>{err_msg}</font>"
+        QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {err_msg}")
+        return False, msg
+
+    result = True, "<font color=green> OK </font>"
+    proxy_config = get_qgis_proxy_config(url)
+    try:
+        MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
+    except (LoginError, ClientError) as e:
+        QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
+        result = False, f"<font color=red> Connection failed, {str(e)} </font>"
+
+    return result
 
 
 def is_dark_theme():
@@ -1348,7 +1375,7 @@ def create_tracking_layer(project_path):
     return filename
 
 
-def setup_tracking_layer(layer):
+def setup_tracking_layer(layer: QgsVectorLayer):
     """
     Configures tracking layer:
      - set default values for fields
@@ -1375,8 +1402,12 @@ def setup_tracking_layer(layer):
 
     idx = layer.fields().indexFromName("tracked_by")
     user_default = QgsDefaultValue()
-    user_default.setExpression("@mergin_username")
+    user_default.setExpression("@mm_username")
     layer.setDefaultValueDefinition(idx, user_default)
+
+    layer.setDisplayExpression(
+        "\"tracked_by\" ||' on '|| format_date( \"tracking_end_time\", 'dd MMM yyyy') ||' at '|| format_date(\"tracking_end_time\", 'H:MM')"
+    )
 
     symbol = QgsLineSymbol.createSimple(
         {

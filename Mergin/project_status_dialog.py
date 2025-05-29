@@ -22,7 +22,7 @@ from qgis.utils import OverrideCursor
 from .diff_dialog import DiffViewerDialog
 from .validation import MultipleLayersWarning, warning_display_string, MerginProjectValidator, SingleLayerWarning
 from .utils import is_versioned_file, icon_path, unsaved_project_check, UnsavedChangesStrategy
-from .repair import fix_datum_shift_grids
+from .repair import fix_datum_shift_grids, fix_project_home_path
 
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_status_dialog.ui")
@@ -241,7 +241,8 @@ class ProjectStatusDialog(QDialog):
         if parsed_url.path == "reset_file":
             query_parameters = parse_qs(parsed_url.query)
             self.reset_local_changes(query_parameters["layer"][0])
-
+        if parsed_url.path == "fix_project_home_path":
+            fix_project_home_path()
         self.validate_project()
 
     def validate_project(self):

@@ -25,6 +25,7 @@ from .utils_auth import (
     sso_oauth_client_id,
     sso_login_allowed,
     sso_ask_for_email,
+    mergin_server_deprecated_version,
 )
 from .utils import (
     MERGIN_URL,
@@ -141,6 +142,16 @@ class ConfigurationDialog(QDialog):
         return LoginType.PASSWORD
 
     def test_connection(self):
+
+        if mergin_server_deprecated_version(self.server_url()):
+            msg = "This server is running an outdated version that will no longer be supported. Please contact your server administrator to upgrade."
+            QMessageBox.information(
+                self,
+                "Deprecated server version",
+                msg,
+            )
+            self.ui.test_status.setText(f"<font color=red> {msg} </font>")
+            return False
 
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         if self.login_type() == LoginType.PASSWORD:
