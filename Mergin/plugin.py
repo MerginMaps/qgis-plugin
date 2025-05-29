@@ -71,7 +71,7 @@ from .utils_auth import (
     create_mergin_client,
     MissingAuthConfigError,
     AuthTokenExpiredError,
-    get_stored_mergin_server_url,
+    set_qgsexpressionscontext,
 )
 from .mergin.utils import int_version, is_versioned_file
 from .mergin.merginproject import MerginProject
@@ -319,16 +319,11 @@ class MerginPlugin:
         if dlg.exec():
             try:
                 self.mc = create_mergin_client()
+                set_qgsexpressionscontext(dlg.server_url(), mc=self.mc)
             except (MissingAuthConfigError, AuthTokenExpiredError, ClientError, ValueError) as e:
                 QMessageBox.critical(None, "Login failed", f"Could not login: {str(e)}")
-                QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
+                set_qgsexpressionscontext(dlg.server_url(), mc=None)
                 return
-
-            QgsExpressionContextUtils.setGlobalVariable("mergin_url", get_stored_mergin_server_url())
-            if self.mc:
-                QgsExpressionContextUtils.setGlobalVariable("mergin_username", self.mc.username())
-            else:
-                QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
 
             self.on_config_changed()
             self.show_browser_panel()

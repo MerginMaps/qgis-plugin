@@ -1139,28 +1139,6 @@ def get_primary_keys(layer):
         return cols
 
 
-def test_server_connection(url, username, password):
-    """
-    Test connection to Mergin Maps server. This includes check for valid server URL
-    and user credentials correctness.
-    """
-    err_msg = validate_mergin_url(url)
-    if err_msg:
-        msg = f"<font color=red>{err_msg}</font>"
-        QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {err_msg}")
-        return False, msg
-
-    result = True, "<font color=green> OK </font>"
-    proxy_config = get_qgis_proxy_config(url)
-    try:
-        MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
-    except (LoginError, ClientError) as e:
-        QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
-        result = False, f"<font color=red> Connection failed, {str(e)} </font>"
-
-    return result
-
-
 def is_dark_theme():
     """
     Checks whether dark theme is used:

@@ -5,11 +5,17 @@ import json
 from urllib.error import URLError
 import requests
 
-from qgis.core import QgsApplication, QgsAuthMethodConfig, QgsBlockingNetworkRequest, QgsNetworkAccessManager
+from qgis.core import (
+    QgsApplication,
+    QgsAuthMethodConfig,
+    QgsBlockingNetworkRequest,
+    QgsNetworkAccessManager,
+    QgsExpressionContextUtils,
+)
 from qgis.PyQt.QtCore import QSettings, QUrl
 from qgis.PyQt.QtNetwork import QNetworkRequest
 
-from .mergin.client import LoginType, MerginClient, AuthTokenExpiredError
+from .mergin.client import LoginType, MerginClient, AuthTokenExpiredError, ServerType
 from .mergin.common import ClientError, LoginError
 
 from .utils import MERGIN_URL, get_qgis_proxy_config, get_plugin_version
@@ -325,7 +331,7 @@ def test_server_connection(
     password: typing.Optional[str] = None,
     use_sso: bool = False,
     sso_email: typing.Optional[str] = None,
-):
+) -> typing.Tuple[bool, str]:
     """
     Test connection to Mergin Maps server. This includes check for valid server URL
     and user credentials correctness.
@@ -423,3 +429,47 @@ def sso_ask_for_email(url: str) -> typing.Tuple[bool, typing.Optional[str]]:
         return True, None
 
     return False, None
+
+
+def set_qgsexpressionscontext(url: str, mc: typing.Optional[MerginClient] = None):
+    QgsExpressionContextUtils.setGlobalVariable("mergin_url", url)
+    QgsExpressionContextUtils.setGlobalVariable("mm_url", url)
+    if mc:
+        # username can be username or email, so we fetch it from api
+        user_info = mc.user_info()
+        username = user_info["username"]
+        user_email = user_info["email"]
+        user_full_name = user_info["name"]
+        settings = QSettings()
+        settings.setValue("Mergin/username", username)
+        settings.setValue("Mergin/user_email", user_email)
+        settings.setValue("Mergin/full_name", user_full_name)
+        QgsExpressionContextUtils.setGlobalVariable("mergin_username", username)
+        QgsExpressionContextUtils.setGlobalVariable("mergin_user_email", user_email)
+        QgsExpressionContextUtils.setGlobalVariable("mergin_full_name", user_full_name)
+        QgsExpressionContextUtils.setGlobalVariable("mm_username", username)
+        QgsExpressionContextUtils.setGlobalVariable("mm_user_email", user_email)
+        QgsExpressionContextUtils.setGlobalVariable("mm_full_name", user_full_name)
+    else:
+        QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
+        QgsExpressionContextUtils.removeGlobalVariable("mergin_user_email")
+        QgsExpressionContextUtils.removeGlobalVariable("mergin_full_name")
+        QgsExpressionContextUtils.removeGlobalVariable("mm_username")
+        QgsExpressionContextUtils.removeGlobalVariable("mm_user_email")
+        QgsExpressionContextUtils.removeGlobalVariable("mm_full_name")
+
+
+def mergin_server_deprecated_version(url: str) -> bool:
+    mc = MerginClient(
+        url=url,
+        auth_token=None,
+        login=None,
+        password=None,
+        plugin_version=get_plugin_version(),
+        proxy_config=get_qgis_proxy_config(url),
+    )
+
+    if mc.server_type() == ServerType.OLD:
+        return True
+
+    return False
