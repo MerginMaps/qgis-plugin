@@ -268,6 +268,16 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         QgsProject.instance().writeEntry(
             "Mergin", "MapAnnotations/Enabled", self.chk_map_annotations_enabled.isChecked()
         )
+
+        colors: typing.List[str] = []
+        for i in range(self.mColorsHorizontalLayout.count()):
+            item = self.mColorsHorizontalLayout.itemAt(i).widget()
+            if isinstance(item, QgsColorButton):
+                color = item.color().name()
+                if color:
+                    colors.append(color)
+        QgsProject.instance().writeEntry("Mergin", "MapAnnotations/Colors", colors)
+
         for i in range(self.attachments_model.rowCount()):
             index = self.attachments_model.index(i, 1)
             if index.isValid():
