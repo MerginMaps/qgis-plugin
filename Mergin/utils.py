@@ -1061,11 +1061,6 @@ def icon_path(icon_filename):
     return ipath
 
 
-def style_path(style_name):
-    ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "styles", style_name)
-    return ipath
-
-
 def mm_logo_path():
     if is_dark_theme():
         icon_set = "white"
