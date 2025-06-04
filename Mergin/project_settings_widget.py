@@ -253,7 +253,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             print("unchecked")
             return
         # check if map annotations layer already exists
-        map_annotations_layer_id, ok = QgsProject.instance().readEntry("Mergin", "MapAnnotations/MapAnnotationsLayer")
+        map_annotations_layer_id, ok = QgsProject.instance().readEntry("Mergin", "MapAnnotations/Layer")
 
         if map_annotations_layer_id != "" and map_annotations_layer_id in QgsProject.instance().mapLayers():
             # map annotations layer already exists in the project, make sure it has correct flags

@@ -1515,7 +1515,7 @@ def create_map_annotations_layer(project_path):
     layer.loadNamedStyle(style_path("map_annotations_style.qml"))
 
     QgsProject.instance().addMapLayer(layer)
-    QgsProject.instance().writeEntry("Mergin", "MapAnnotations/MapAnnotationsLayer", layer.id())
+    QgsProject.instance().writeEntry("Mergin", "MapAnnotations/Layer", layer.id())
 
     return filename
 
