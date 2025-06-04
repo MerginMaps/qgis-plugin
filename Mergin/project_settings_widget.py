@@ -250,7 +250,6 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
     def setup_map_annotations(self):
         if self.chk_map_annotations_enabled.checkState() == Qt.CheckState.Unchecked:
-            print("unchecked")
             return
         # check if map annotations layer already exists
         map_annotations_layer_id, ok = QgsProject.instance().readEntry("Mergin", "MapAnnotations/Layer")
