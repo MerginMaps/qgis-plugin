@@ -3,8 +3,9 @@
 
 import json
 import os
+import typing
 from qgis.PyQt import uic
-from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QFileDialog, QMessageBox
 from qgis.core import (
@@ -17,7 +18,7 @@ from qgis.core import (
     QgsVectorLayer,
     QgsMapLayer,
 )
-from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
+from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget, QgsColorButton
 from .attachment_fields_model import AttachmentFieldsModel
 from .utils import (
     mm_symbol_path,
@@ -89,6 +90,16 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             self.chk_map_annotations_enabled.setChecked(enabled)
         else:
             self.chk_map_annotations_enabled.setChecked(False)
+
+        colors, ok = QgsProject.instance().readListEntry("Mergin", "MapAnnotations/Colors")
+        if ok:
+            for i in range(self.mColorsHorizontalLayout.count()):
+                item = self.mColorsHorizontalLayout.itemAt(i).widget()
+                if isinstance(item, QgsColorButton):
+                    if i < len(colors):
+                        item.setColor(QColor(colors[i]))
+                    else:
+                        item.setColor(QColor("#ffffff"))
 
         self.local_project_dir = mergin_project_local_path()
 
