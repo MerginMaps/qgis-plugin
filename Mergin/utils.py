@@ -64,6 +64,7 @@ from qgis.core import (
     QgsDefaultValue,
     QgsMapLayer,
     QgsProperty,
+    QgsSymbolLayer,
 )
 
 from .mergin.utils import int_version, bytes_to_human_size
@@ -1512,7 +1513,25 @@ def create_map_annotations_layer(project_path):
     width_default.setExpression("0.35")
     layer.setDefaultValueDefinition(idx, width_default)
 
-    layer.loadNamedStyle(style_path("map_annotations_style.qml"))
+    # create default symbo, with settings
+    symbol = QgsLineSymbol.createSimple(
+        {
+            "line_width": "0.6",
+            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFFFFF")),
+        }
+    )
+
+    # get symbol layer and set it to expression for color
+    symbol_layer = symbol.takeSymbolLayer(0)
+    symbol_layer.setDataDefinedProperty(QgsSymbolLayer.Property.StrokeColor, QgsProperty.fromExpression('"color"'))
+    # put it back to the symbol
+    symbol.appendSymbolLayer(symbol_layer)
+
+    # create renderer with the symbol
+    renderer = QgsSingleSymbolRenderer(symbol)
+
+    # set renderer to the layer
+    layer.setRenderer(renderer)
 
     QgsProject.instance().addMapLayer(layer)
     QgsProject.instance().writeEntry("Mergin", "MapAnnotations/Layer", layer.id())
