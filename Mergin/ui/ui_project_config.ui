@@ -381,7 +381,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QgsColorButton" name="mColorButton">
+             <widget class="QgsColorButton" name="mColorButton_1">
               <property name="color">
                <color>
                 <red>255</red>
