@@ -391,6 +391,17 @@
               </property>
              </widget>
             </item>
+            <item>
+             <widget class="QgsColorButton" name="mColorButton_7">
+              <property name="color">
+               <color>
+                <red>205</red>
+                <green>171</green>
+                <blue>143</blue>
+               </color>
+              </property>
+             </widget>
+            </item>
            </layout>
           </item>
           <item row="2" column="0">
