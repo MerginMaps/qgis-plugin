@@ -1464,6 +1464,10 @@ def create_map_annotations_layer(project_path):
         fields.append(QgsField("author", QVariant.String))
         fields.append(QgsField("created_at", QVariant.DateTime))
         fields.append(QgsField("width", QVariant.Double))
+        fields.append(QgsField("attr1", QVariant.Double))
+        fields.append(QgsField("attr2", QVariant.Double))
+        fields.append(QgsField("attr3", QVariant.String))
+        fields.append(QgsField("attr4", QVariant.String))
 
         options = QgsVectorFileWriter.SaveVectorOptions()
         options.driverName = "GPKG"
