@@ -329,17 +329,6 @@
              <widget class="QgsColorButton" name="mColorButton_2">
               <property name="color">
                <color>
-                <red>0</red>
-                <green>0</green>
-                <blue>0</blue>
-               </color>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QgsColorButton" name="mColorButton_6">
-              <property name="color">
-               <color>
                 <red>255</red>
                 <green>255</green>
                 <blue>255</blue>
@@ -348,12 +337,23 @@
              </widget>
             </item>
             <item>
+             <widget class="QgsColorButton" name="mColorButton_6">
+              <property name="color">
+               <color>
+                <red>18</red>
+                <green>24</green>
+                <blue>31</blue>
+               </color>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QgsColorButton" name="mColorButton_5">
               <property name="color">
                <color>
-                <red>166</red>
-                <green>203</green>
-                <blue>244</blue>
+                <red>94</red>
+                <green>158</green>
+                <blue>228</blue>
                </color>
               </property>
              </widget>
@@ -362,9 +362,9 @@
              <widget class="QgsColorButton" name="mColorButton_4">
               <property name="color">
                <color>
-                <red>155</red>
-                <green>209</green>
-                <blue>169</blue>
+                <red>87</red>
+                <green>180</green>
+                <blue>111</blue>
                </color>
               </property>
              </widget>
@@ -373,9 +373,9 @@
              <widget class="QgsColorButton" name="mColorButton_3">
               <property name="color">
                <color>
-                <red>244</red>
+                <red>253</red>
                 <green>203</green>
-                <blue>70</blue>
+                <blue>42</blue>
                </color>
               </property>
              </widget>
@@ -385,8 +385,8 @@
               <property name="color">
                <color>
                 <red>255</red>
-                <green>186</green>
-                <blue>188</blue>
+                <green>156</green>
+                <blue>64</blue>
                </color>
               </property>
              </widget>
@@ -395,9 +395,9 @@
              <widget class="QgsColorButton" name="mColorButton_7">
               <property name="color">
                <color>
-                <red>205</red>
-                <green>171</green>
-                <blue>143</blue>
+                <red>255</red>
+                <green>143</green>
+                <blue>147</blue>
                </color>
               </property>
              </widget>
