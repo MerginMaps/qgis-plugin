@@ -1460,7 +1460,7 @@ def create_map_annotations_layer(project_path):
 
     fields = QgsFields()
     fields.append(QgsField("color", QVariant.String))
-    fields.append(QgsField("draw_by", QVariant.String))
+    fields.append(QgsField("author", QVariant.String))
     fields.append(QgsField("created_at", QVariant.DateTime))
     fields.append(QgsField("width", QVariant.Double))
 
@@ -1489,10 +1489,10 @@ def create_map_annotations_layer(project_path):
     cfg = QgsEditorWidgetSetup("Hidden", {})
     layer.setEditorWidgetSetup(idx, cfg)
 
-    idx = layer.fields().indexFromName("draw_by")
-    draw_by_default = QgsDefaultValue()
-    draw_by_default.setExpression("@mm_username")
-    layer.setDefaultValueDefinition(idx, draw_by_default)
+    idx = layer.fields().indexFromName("author")
+    author_default = QgsDefaultValue()
+    author_default.setExpression("@mm_username")
+    layer.setDefaultValueDefinition(idx, author_default)
 
     idx = layer.fields().indexFromName("created_at")
     created_at_default = QgsDefaultValue()
