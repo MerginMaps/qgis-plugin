@@ -1501,7 +1501,7 @@ def create_map_annotations_layer(project_path):
 
     idx = layer.fields().indexFromName("width")
     width_default = QgsDefaultValue()
-    width_default.setExpression("0.35")
+    width_default.setExpression("0.6")
     layer.setDefaultValueDefinition(idx, width_default)
 
     # create default symbo, with settings
