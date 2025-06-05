@@ -1456,27 +1456,28 @@ def create_tracking_layer(project_path):
 
 
 def create_map_annotations_layer(project_path):
-    filename = get_unique_filename(os.path.join(project_path, "map_annotations_layer.gpkg"))
+    filename = os.path.join(project_path, "map_annotations_layer.gpkg")
 
-    fields = QgsFields()
-    fields.append(QgsField("color", QVariant.String))
-    fields.append(QgsField("author", QVariant.String))
-    fields.append(QgsField("created_at", QVariant.DateTime))
-    fields.append(QgsField("width", QVariant.Double))
+    if not os.path.exists(filename):
+        fields = QgsFields()
+        fields.append(QgsField("color", QVariant.String))
+        fields.append(QgsField("author", QVariant.String))
+        fields.append(QgsField("created_at", QVariant.DateTime))
+        fields.append(QgsField("width", QVariant.Double))
 
-    options = QgsVectorFileWriter.SaveVectorOptions()
-    options.driverName = "GPKG"
-    options.layerName = "map_annotations_layer"
+        options = QgsVectorFileWriter.SaveVectorOptions()
+        options.driverName = "GPKG"
+        options.layerName = "map_annotations_layer"
 
-    writer = QgsVectorFileWriter.create(
-        filename,
-        fields,
-        QgsWkbTypes.MultiLineStringZM,
-        QgsCoordinateReferenceSystem("EPSG:4326"),
-        QgsCoordinateTransformContext(),
-        options,
-    )
-    del writer
+        writer = QgsVectorFileWriter.create(
+            filename,
+            fields,
+            QgsWkbTypes.MultiLineStringZM,
+            QgsCoordinateReferenceSystem("EPSG:4326"),
+            QgsCoordinateTransformContext(),
+            options,
+        )
+        del writer
 
     layer = QgsVectorLayer(filename, "map_annotations_layer", "ogr")
 
