@@ -1515,6 +1515,7 @@ def create_map_annotations_layer(project_path):
     # get symbol layer and set it to expression for color
     symbol_layer = symbol.takeSymbolLayer(0)
     symbol_layer.setDataDefinedProperty(QgsSymbolLayer.Property.StrokeColor, QgsProperty.fromExpression('"color"'))
+    symbol_layer.setDataDefinedProperty(QgsSymbolLayer.Property.StrokeWidth, QgsProperty.fromExpression('"width"'))
     # put it back to the symbol
     symbol.appendSymbolLayer(symbol_layer)
 
