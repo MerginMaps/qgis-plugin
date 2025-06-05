@@ -251,6 +251,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
     def setup_map_annotations(self):
         if self.chk_map_annotations_enabled.checkState() == Qt.CheckState.Unchecked:
             return
+
         # check if map annotations layer already exists
         map_annotations_layer_id, ok = QgsProject.instance().readEntry("Mergin", "MapAnnotations/Layer")
 
@@ -262,11 +263,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 layer.setFlags(
                     QgsMapLayer.LayerFlag(QgsMapLayer.Identifiable + QgsMapLayer.Searchable + QgsMapLayer.Removable)
                 )
-            return
 
-        # map annotation layer does not exists or was removed from the project
-        # create a new layer and add it as a map annotations layer
-        create_map_annotations_layer(QgsProject.instance().absolutePath())
+        else:
+            # map annotation layer does not exists or was removed from the project
+            # create a new layer and add it as a map annotations layer
+            create_map_annotations_layer(QgsProject.instance().absolutePath())
 
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
