@@ -3,8 +3,9 @@
 
 import json
 import os
+import typing
 from qgis.PyQt import uic
-from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QFileDialog, QMessageBox
 from qgis.core import (
@@ -15,8 +16,9 @@ from qgis.core import (
     QgsFeatureRequest,
     QgsExpression,
     QgsVectorLayer,
+    QgsMapLayer,
 )
-from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
+from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget, QgsColorButton
 from .attachment_fields_model import AttachmentFieldsModel
 from .utils import (
     mm_symbol_path,
@@ -24,6 +26,7 @@ from .utils import (
     prefix_for_relative_path,
     resolve_target_dir,
     create_tracking_layer,
+    create_map_annotations_layer,
     set_tracking_layer_flags,
 )
 
@@ -81,6 +84,22 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         mode, ok = QgsProject.instance().readNumEntry("Mergin", "PositionTracking/UpdateFrequency")
         idx = self.cmb_tracking_precision.findData(mode) if ok else 1
         self.cmb_tracking_precision.setCurrentIndex(idx)
+
+        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "MapAnnotations/Enabled")
+        if ok:
+            self.chk_map_annotations_enabled.setChecked(enabled)
+        else:
+            self.chk_map_annotations_enabled.setChecked(False)
+
+        colors, ok = QgsProject.instance().readListEntry("Mergin", "MapAnnotations/Colors")
+        if ok:
+            for i in range(self.mColorsHorizontalLayout.count()):
+                item = self.mColorsHorizontalLayout.itemAt(i).widget()
+                if isinstance(item, QgsColorButton):
+                    if i < len(colors):
+                        item.setColor(QColor(colors[i]))
+                    else:
+                        item.setColor(QColor("#ffffff"))
 
         self.local_project_dir = mergin_project_local_path()
 
@@ -229,6 +248,27 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         # create a new layer and add it as a tracking layer
         create_tracking_layer(QgsProject.instance().absolutePath())
 
+    def setup_map_annotations(self):
+        if self.chk_map_annotations_enabled.checkState() == Qt.CheckState.Unchecked:
+            return
+
+        # check if map annotations layer already exists
+        map_annotations_layer_id, ok = QgsProject.instance().readEntry("Mergin", "MapAnnotations/Layer")
+
+        if map_annotations_layer_id != "" and map_annotations_layer_id in QgsProject.instance().mapLayers():
+            # map annotations layer already exists in the project, make sure it has correct flags
+            layer = QgsProject.instance().mapLayers()[map_annotations_layer_id]
+            if layer is not None and layer.isValid():
+                layer.setReadOnly(False)
+                layer.setFlags(
+                    QgsMapLayer.LayerFlag(QgsMapLayer.Identifiable + QgsMapLayer.Searchable + QgsMapLayer.Removable)
+                )
+
+        else:
+            # map annotation layer does not exists or was removed from the project
+            # create a new layer and add it as a map annotations layer
+            create_map_annotations_layer(QgsProject.instance().absolutePath())
+
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
         QgsProject.instance().writeEntry("Mergin", "Snapping", self.cmb_snapping_mode.currentData())
@@ -236,6 +276,19 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         QgsProject.instance().writeEntry(
             "Mergin", "PositionTracking/UpdateFrequency", self.cmb_tracking_precision.currentData()
         )
+        QgsProject.instance().writeEntry(
+            "Mergin", "MapAnnotations/Enabled", self.chk_map_annotations_enabled.isChecked()
+        )
+
+        colors: typing.List[str] = []
+        for i in range(self.mColorsHorizontalLayout.count()):
+            item = self.mColorsHorizontalLayout.itemAt(i).widget()
+            if isinstance(item, QgsColorButton):
+                color = item.color().name()
+                if color:
+                    colors.append(color)
+        QgsProject.instance().writeEntry("Mergin", "MapAnnotations/Colors", colors)
+
         for i in range(self.attachments_model.rowCount()):
             index = self.attachments_model.index(i, 1)
             if index.isValid():
@@ -247,3 +300,4 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
         self.save_config_file()
         self.setup_tracking()
+        self.setup_map_annotations()
