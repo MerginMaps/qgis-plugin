@@ -442,6 +442,9 @@
             <property name="text">
              <string>Enable photo annotations</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
          </layout>
