@@ -12,6 +12,7 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 
 ; start of optional metadata
 changelog=2025.2
+  * Added option to enable map annotations in the mobile app.
   * Fixed issue with project home path causing problems in the mobile app.
   * Added a user-friendly display expression for the tracking layer.
   * Fixed visualization of changes not working in the history viewer when the GeoPackage was in a subfolder.
