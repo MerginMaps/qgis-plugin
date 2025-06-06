@@ -85,6 +85,12 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         idx = self.cmb_tracking_precision.findData(mode) if ok else 1
         self.cmb_tracking_precision.setCurrentIndex(idx)
 
+        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "PhotoAnnotations/Enabled")
+        if ok:
+            self.chk_photo_annotations_enabled.setChecked(enabled)
+        else:
+            self.chk_photo_annotations_enabled.setChecked(False)
+
         enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "MapAnnotations/Enabled")
         if ok:
             self.chk_map_annotations_enabled.setChecked(enabled)
@@ -275,6 +281,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         QgsProject.instance().writeEntry("Mergin", "PositionTracking/Enabled", self.chk_tracking_enabled.isChecked())
         QgsProject.instance().writeEntry(
             "Mergin", "PositionTracking/UpdateFrequency", self.cmb_tracking_precision.currentData()
+        )
+        QgsProject.instance().writeEntry(
+            "Mergin", "PhotoAnnotations/Enabled", self.chk_photo_annotations_enabled.isChecked()
         )
         QgsProject.instance().writeEntry(
             "Mergin", "MapAnnotations/Enabled", self.chk_map_annotations_enabled.isChecked()
