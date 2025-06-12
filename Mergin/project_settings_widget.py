@@ -91,6 +91,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         else:
             self.chk_map_sketches_enabled.setChecked(False)
 
+        self.colors_change_state()
+        self.chk_map_sketches_enabled.stateChanged.connect(self.colors_change_state)
+
         colors, ok = QgsProject.instance().readListEntry("Mergin", "MapSketches/Colors")
         if ok:
             for i in range(self.mColorsHorizontalLayout.count()):
@@ -299,3 +302,12 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.save_config_file()
         self.setup_tracking()
         self.setup_map_sketches()
+
+    def colors_change_state(self) -> None:
+        """
+        Enable/disable color buttons based on the state of the map sketches checkbox.
+        """
+        for i in range(self.mColorsHorizontalLayout.count()):
+            item = self.mColorsHorizontalLayout.itemAt(i).widget()
+            if isinstance(item, QgsColorButton):
+                item.setEnabled(self.chk_map_sketches_enabled.isChecked())
