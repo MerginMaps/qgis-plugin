@@ -429,7 +429,7 @@ class MerginProjectsManager(object):
             return
 
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        log_file_name, error = send_logs(self.mc.username(), logs_path)
+        log_file_name, error = send_logs(self.mc, logs_path)
         QApplication.restoreOverrideCursor()
 
         if error:
