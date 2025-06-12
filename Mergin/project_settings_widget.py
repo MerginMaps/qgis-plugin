@@ -26,7 +26,7 @@ from .utils import (
     prefix_for_relative_path,
     resolve_target_dir,
     create_tracking_layer,
-    create_map_annotations_layer,
+    create_map_sketches_layer,
     set_tracking_layer_flags,
 )
 
@@ -85,13 +85,13 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         idx = self.cmb_tracking_precision.findData(mode) if ok else 1
         self.cmb_tracking_precision.setCurrentIndex(idx)
 
-        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "MapAnnotations/Enabled")
+        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "MapSketches/Enabled")
         if ok:
-            self.chk_map_annotations_enabled.setChecked(enabled)
+            self.chk_map_sketches_enabled.setChecked(enabled)
         else:
-            self.chk_map_annotations_enabled.setChecked(False)
+            self.chk_map_sketches_enabled.setChecked(False)
 
-        colors, ok = QgsProject.instance().readListEntry("Mergin", "MapAnnotations/Colors")
+        colors, ok = QgsProject.instance().readListEntry("Mergin", "MapSketches/Colors")
         if ok:
             for i in range(self.mColorsHorizontalLayout.count()):
                 item = self.mColorsHorizontalLayout.itemAt(i).widget()
@@ -248,16 +248,16 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         # create a new layer and add it as a tracking layer
         create_tracking_layer(QgsProject.instance().absolutePath())
 
-    def setup_map_annotations(self):
-        if self.chk_map_annotations_enabled.checkState() == Qt.CheckState.Unchecked:
+    def setup_map_sketches(self):
+        if self.chk_map_sketches_enabled.checkState() == Qt.CheckState.Unchecked:
             return
 
-        # check if map annotations layer already exists
-        map_annotations_layer_id, ok = QgsProject.instance().readEntry("Mergin", "MapAnnotations/Layer")
+        # check if map sketches layer already exists
+        map_sketches_layer_id, ok = QgsProject.instance().readEntry("Mergin", "MapSketches/Layer")
 
-        if map_annotations_layer_id != "" and map_annotations_layer_id in QgsProject.instance().mapLayers():
-            # map annotations layer already exists in the project, make sure it has correct flags
-            layer = QgsProject.instance().mapLayers()[map_annotations_layer_id]
+        if map_sketches_layer_id != "" and map_sketches_layer_id in QgsProject.instance().mapLayers():
+            # map sketches layer already exists in the project, make sure it has correct flags
+            layer = QgsProject.instance().mapLayers()[map_sketches_layer_id]
             if layer is not None and layer.isValid():
                 layer.setReadOnly(False)
                 layer.setFlags(
@@ -265,9 +265,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 )
 
         else:
-            # map annotation layer does not exists or was removed from the project
-            # create a new layer and add it as a map annotations layer
-            create_map_annotations_layer(QgsProject.instance().absolutePath())
+            # map sketches layer does not exists or was removed from the project
+            # create a new layer and add it as a map sketches layer
+            create_map_sketches_layer(QgsProject.instance().absolutePath())
 
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
@@ -276,9 +276,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         QgsProject.instance().writeEntry(
             "Mergin", "PositionTracking/UpdateFrequency", self.cmb_tracking_precision.currentData()
         )
-        QgsProject.instance().writeEntry(
-            "Mergin", "MapAnnotations/Enabled", self.chk_map_annotations_enabled.isChecked()
-        )
+        QgsProject.instance().writeEntry("Mergin", "MapSketches/Enabled", self.chk_map_sketches_enabled.isChecked())
 
         colors: typing.List[str] = []
         for i in range(self.mColorsHorizontalLayout.count()):
@@ -287,7 +285,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 color = item.color().name()
                 if color:
                     colors.append(color)
-        QgsProject.instance().writeEntry("Mergin", "MapAnnotations/Colors", colors)
+        QgsProject.instance().writeEntry("Mergin", "MapSketches/Colors", colors)
 
         for i in range(self.attachments_model.rowCount()):
             index = self.attachments_model.index(i, 1)
@@ -300,4 +298,4 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
         self.save_config_file()
         self.setup_tracking()
-        self.setup_map_annotations()
+        self.setup_map_sketches()

@@ -1455,8 +1455,8 @@ def create_tracking_layer(project_path):
     return filename
 
 
-def create_map_annotations_layer(project_path):
-    filename = os.path.join(project_path, "map_annotations_layer.gpkg")
+def create_map_sketches_layer(project_path):
+    filename = os.path.join(project_path, "map_sketches.gpkg")
 
     if not os.path.exists(filename):
         fields = QgsFields()
@@ -1471,7 +1471,7 @@ def create_map_annotations_layer(project_path):
 
         options = QgsVectorFileWriter.SaveVectorOptions()
         options.driverName = "GPKG"
-        options.layerName = "map_annotations_layer"
+        options.layerName = "Map sketches"
 
         writer = QgsVectorFileWriter.create(
             filename,
@@ -1483,10 +1483,10 @@ def create_map_annotations_layer(project_path):
         )
         del writer
 
-    layer = QgsVectorLayer(filename, "map_annotations_layer", "ogr")
+    layer = QgsVectorLayer(filename, "Map sketches", "ogr")
 
     """
-    Configures map annotations layer:
+    Configures map sketches layer:
      - set default values for fields
      - apply default styling
     """
@@ -1531,7 +1531,7 @@ def create_map_annotations_layer(project_path):
     layer.setRenderer(renderer)
 
     QgsProject.instance().addMapLayer(layer)
-    QgsProject.instance().writeEntry("Mergin", "MapAnnotations/Layer", layer.id())
+    QgsProject.instance().writeEntry("Mergin", "MapSketches/Layer", layer.id())
 
     return filename
 
