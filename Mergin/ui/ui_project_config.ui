@@ -44,9 +44,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-713</y>
+        <y>-612</y>
         <width>628</width>
-        <height>1291</height>
+        <height>1168</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -414,7 +414,7 @@
           <item row="0" column="0" colspan="2">
            <widget class="QLabel" name="label_11">
             <property name="text">
-             <string>Map sketching lets mobile app users draw quick, informal sketches directly on the map. Sketches are saved in a separate GeoPackage that’s created automatically. [Learn more here](Link TBD) about how map sketching works and how to use it in the mobile app.</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Map sketching lets mobile app users draw quick, informal sketches directly on the map. Sketches are saved in a separate GeoPackage that’s created automatically. &lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://merginmaps.com/docs/field/map-sketching&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Learn more here&lt;/span&gt;&lt;/a&gt; about how map sketching works and how to use it in the mobile app.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
