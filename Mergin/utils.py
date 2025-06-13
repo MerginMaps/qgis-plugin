@@ -1531,7 +1531,7 @@ def create_map_sketches_layer(project_path):
     layer.setRenderer(renderer)
 
     QgsProject.instance().addMapLayer(layer)
-    QgsProject.instance().writeEntry("Mergin", "MapSketches/Layer", layer.id())
+    QgsProject.instance().writeEntry("Mergin", "MapSketching/Layer", layer.id())
 
     return filename
 

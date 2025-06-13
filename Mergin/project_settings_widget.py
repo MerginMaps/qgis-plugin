@@ -85,7 +85,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         idx = self.cmb_tracking_precision.findData(mode) if ok else 1
         self.cmb_tracking_precision.setCurrentIndex(idx)
 
-        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "MapSketches/Enabled")
+        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "MapSketching/Enabled")
         if ok:
             self.chk_map_sketches_enabled.setChecked(enabled)
         else:
@@ -94,7 +94,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.colors_change_state()
         self.chk_map_sketches_enabled.stateChanged.connect(self.colors_change_state)
 
-        colors, ok = QgsProject.instance().readListEntry("Mergin", "MapSketches/Colors")
+        colors, ok = QgsProject.instance().readListEntry("Mergin", "MapSketching/Colors")
         if ok:
             for i in range(self.mColorsHorizontalLayout.count()):
                 item = self.mColorsHorizontalLayout.itemAt(i).widget()
@@ -256,7 +256,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             return
 
         # check if map sketches layer already exists
-        map_sketches_layer_id, ok = QgsProject.instance().readEntry("Mergin", "MapSketches/Layer")
+        map_sketches_layer_id, ok = QgsProject.instance().readEntry("Mergin", "MapSketching/Layer")
 
         if map_sketches_layer_id != "" and map_sketches_layer_id in QgsProject.instance().mapLayers():
             # map sketches layer already exists in the project, make sure it has correct flags
@@ -279,7 +279,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         QgsProject.instance().writeEntry(
             "Mergin", "PositionTracking/UpdateFrequency", self.cmb_tracking_precision.currentData()
         )
-        QgsProject.instance().writeEntry("Mergin", "MapSketches/Enabled", self.chk_map_sketches_enabled.isChecked())
+        QgsProject.instance().writeEntry("Mergin", "MapSketching/Enabled", self.chk_map_sketches_enabled.isChecked())
 
         colors: typing.List[str] = []
         for i in range(self.mColorsHorizontalLayout.count()):
@@ -288,7 +288,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 color = item.color().name()
                 if color:
                     colors.append(color)
-        QgsProject.instance().writeEntry("Mergin", "MapSketches/Colors", colors)
+        QgsProject.instance().writeEntry("Mergin", "MapSketching/Colors", colors)
 
         for i in range(self.attachments_model.rowCount()):
             index = self.attachments_model.index(i, 1)
