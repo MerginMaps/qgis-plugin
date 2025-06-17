@@ -1694,3 +1694,8 @@ def duplicate_layer(layer: QgsVectorLayer) -> QgsVectorLayer:
         raise Exception(err_msg)
 
     return lyr_clone
+
+
+def is_experimental_plugin_enabled():
+    settings = QSettings()
+    return settings.value("plugin-manager/allow-experimental", False)

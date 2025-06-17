@@ -28,6 +28,7 @@ from .utils import (
     create_tracking_layer,
     create_map_sketches_layer,
     set_tracking_layer_flags,
+    is_experimental_plugin_enabled,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -117,6 +118,12 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.attachment_fields.setModel(self.attachments_model)
         self.attachment_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
         self.edit_photo_expression.expressionChanged.connect(self.expression_changed)
+
+        if not is_experimental_plugin_enabled():
+            # Hide by default
+            self.groupBox_map_sketching.setVisible(False)
+        else:
+            self.groupBox_map_sketching.setTitle(self.groupBox_map_sketching.title() + " (Experimental)")
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
