@@ -67,6 +67,7 @@ from .utils import (
     unhandled_exception_message,
     unsaved_project_check,
     UnsavedChangesStrategy,
+    get_local_mergin_projects_info,
 )
 from .mergin.utils import int_version, is_versioned_file
 from .mergin.merginproject import MerginProject
@@ -878,6 +879,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.error = ""
         self.wizard = None
         self.projects = []
+        self.local_projects = []
         self.total_projects_count = None
         self.fetch_more_item = None
         self.create_new_project_item = None
@@ -921,15 +923,26 @@ class MerginRootItem(QgsDataCollectionItem):
             error = self.fetch_projects()
             if error is not None:
                 return error
+        print("self.plugin.current_workspace['name']", self.plugin.current_workspace['name'])
+        if not self.local_projects:
+            self.local_projects = [ { "namespace": i[1], "name": i[2] } for i in get_local_mergin_projects_info( self.plugin.current_workspace['name'] ) ]
         items = []
+        # print("testffff")
+        print("len:", len(self.local_projects))
+
+
+        for project in self.local_projects:
+            print("project:", project)
+            item = MerginLocalProjectItem(self, project, self.project_manager)
+            sip.transferto(item, self)
+            items.append( item )
         for project in self.projects:
             project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
             local_proj_path = mergin_project_local_path(project_name)
             if local_proj_path is None or not os.path.exists(local_proj_path):
                 item = MerginRemoteProjectItem(self, project, self.project_manager)
                 item.setState(QgsDataItem.Populated)  # make it non-expandable
-            else:
-                item = MerginLocalProjectItem(self, project, self.project_manager)
+
             sip.transferto(item, self)
             items.append(item)
         self.set_fetch_more_item()
@@ -999,6 +1012,7 @@ class MerginRootItem(QgsDataCollectionItem):
             self.plugin.choose_active_workspace()
 
         self.projects = []
+        self.local_projects = [ { "namespace": i[1], "name": i[2] } for i in get_local_mergin_projects_info( self.plugin.current_workspace["name"] ) ]
         self.refresh()
 
     def new_project(self):
