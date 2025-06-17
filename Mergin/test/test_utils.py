@@ -218,7 +218,7 @@ class test_utils(unittest.TestCase):
 
             layer = QgsVectorLayer(file_path, "", "ogr")
             self.assertTrue(layer.isValid())
-            self.assertEqual(layer.wkbType(), QgsWkbTypes.LineStringZM)
+            self.assertEqual(layer.wkbType(), QgsWkbTypes.MultiLineStringZM)
 
             fields = layer.fields()
             self.assertEqual(len(fields), 9)
