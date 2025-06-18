@@ -1694,3 +1694,9 @@ def duplicate_layer(layer: QgsVectorLayer) -> QgsVectorLayer:
         raise Exception(err_msg)
 
     return lyr_clone
+
+
+def is_experimental_plugin_enabled() -> bool:
+    """Returns True if the experimental flag is enable in the plugin manager else false"""
+    settings = QSettings()
+    return settings.value("plugin-manager/allow-experimental", False)
