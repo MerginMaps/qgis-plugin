@@ -434,13 +434,13 @@
        <item>
         <widget class="QGroupBox" name="groupBox_4">
          <property name="title">
-          <string>Photo annotations</string>
+          <string>Photo sketches</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
           <item row="0" column="0">
-           <widget class="QCheckBox" name="chk_photo_annotations_enabled">
+           <widget class="QCheckBox" name="chk_photo_sketches_enabled">
             <property name="text">
-             <string>Enable photo annotations</string>
+             <string>Enable photo sketches</string>
             </property>
             <property name="checked">
              <bool>true</bool>
