@@ -216,7 +216,8 @@ class test_utils(unittest.TestCase):
             dir_name, file_name = os.path.split(file_path)
             self.assertEqual(file_name, "map_sketches.gpkg")
 
-            layer = QgsVectorLayer(file_path, "", "ogr")
+            layer = QgsProject().instance().mapLayersByName("Map sketches")[0]
+
             self.assertTrue(layer.isValid())
             self.assertEqual(layer.wkbType(), QgsWkbTypes.MultiLineStringZM)
 
