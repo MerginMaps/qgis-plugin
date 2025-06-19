@@ -130,8 +130,6 @@ def get_mergin_username_password() -> typing.Tuple[str, str]:
         password = cfg.config("password", None)
         if username and password:
             return username, password
-    else:
-        raise MissingAuthConfigError
 
     return "", ""
 
