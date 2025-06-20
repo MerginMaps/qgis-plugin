@@ -78,6 +78,9 @@ class ConfigurationDialog(QDialog):
         self.ui.password.textChanged.connect(self.check_credentials)
         self.ui.merginURL.textChanged.connect(self.check_sso_availability)
         self.ui.merginURL.textChanged.connect(self.check_sso_email)
+        self.ui.sso_email.textChanged.connect(self.check_credentials)
+
+        self.sso_email_required = False
 
         self.ui.button_sign_sso.clicked.connect(self.show_sign_sso)
         self.ui.button_sign_password.clicked.connect(self.show_sign_email)
@@ -108,7 +111,7 @@ class ConfigurationDialog(QDialog):
         if self.login_type() == LoginType.PASSWORD:
             enable_buttons = bool(self.ui.username.text()) and bool(self.ui.password.text())
         elif self.login_type() == LoginType.SSO:
-            if self.sso_ask_for_email():
+            if self.sso_email_required:
                 enable_buttons = bool(self.ui.sso_email.text())
             else:
                 enable_buttons = True
@@ -175,8 +178,12 @@ class ConfigurationDialog(QDialog):
             QMessageBox.critical(self, "SSO allowed check", msg)
             return
 
+        self.sso_email_required, msg = sso_ask_for_email(self.server_url())
+        if msg:
+            QMessageBox.critical(self, "SSO email check", msg)
+
         self.ui.button_sign_sso.setVisible(allowed)
-        self.ui.sso_email.setVisible(self.sso_ask_for_email())
+        self.ui.sso_email.setVisible(self.sso_email_required)
 
     def check_sso_availability(self) -> None:
         self.sso_timer = QTimer(self)
@@ -195,13 +202,13 @@ class ConfigurationDialog(QDialog):
         self.enable_sso_email_input()
 
     def enable_sso_email_input(self) -> None:
-        self.ui.sso_email.setVisible(self.sso_ask_for_email())
+        self.ui.sso_email.setVisible(self.sso_email_required)
 
     def show_sign_email(self) -> None:
         self.ui.stacked_widget_login.setCurrentIndex(0)
 
     def get_sso_email(self) -> typing.Optional[str]:
-        if self.sso_ask_for_email():
+        if self.sso_email_required:
             if self.ui.sso_email.isVisible():
                 return self.ui.sso_email.text()
         return None
