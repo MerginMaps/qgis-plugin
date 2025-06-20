@@ -185,6 +185,9 @@ class ConfigurationDialog(QDialog):
         self.ui.button_sign_sso.setVisible(allowed)
         self.ui.sso_email.setVisible(self.sso_email_required)
 
+        if not allowed:
+            self.ui.stacked_widget_login.setCurrentIndex(0)
+
     def check_sso_availability(self) -> None:
         self.sso_timer = QTimer(self)
         self.sso_timer.setSingleShot(True)
