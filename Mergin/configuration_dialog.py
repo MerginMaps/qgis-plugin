@@ -143,16 +143,6 @@ class ConfigurationDialog(QDialog):
 
     def test_connection(self):
 
-        if mergin_server_deprecated_version(self.server_url()):
-            msg = "This server is running an outdated version that will no longer be supported. Please contact your server administrator to upgrade."
-            QMessageBox.information(
-                self,
-                "Deprecated server version",
-                msg,
-            )
-            self.ui.test_status.setText(f"<font color=red> {msg} </font>")
-            return False
-
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         if self.login_type() == LoginType.PASSWORD:
             ok, msg = test_server_connection(self.server_url(), self.ui.username.text(), self.ui.password.text())
@@ -163,6 +153,17 @@ class ConfigurationDialog(QDialog):
 
             self.ui.test_status.setText(f"<font color=orange>Follow the instructions in the browser...</font>")
             ok, msg = test_server_connection(self.server_url(), use_sso=True, sso_email=self.get_sso_email())
+
+        if mergin_server_deprecated_version(self.server_url()):
+            msg = "This server is running an outdated version that will no longer be supported. Please contact your server administrator to upgrade."
+            QMessageBox.information(
+                self,
+                "Deprecated server version",
+                msg,
+            )
+            self.ui.test_status.setText(f"<font color=red> {msg} </font>")
+            return False
+
         QApplication.restoreOverrideCursor()
         self.ui.test_status.setText(msg)
         return ok
