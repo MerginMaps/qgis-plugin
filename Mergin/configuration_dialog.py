@@ -178,9 +178,10 @@ class ConfigurationDialog(QDialog):
             QMessageBox.critical(self, "SSO allowed check", msg)
             return
 
-        self.sso_email_required, msg = sso_ask_for_email(self.server_url())
-        if msg:
-            QMessageBox.critical(self, "SSO email check", msg)
+        if allowed:
+            self.sso_email_required, msg = sso_ask_for_email(self.server_url())
+            if msg:
+                QMessageBox.critical(self, "SSO email check", msg)
 
         self.ui.button_sign_sso.setVisible(allowed)
         self.ui.sso_email.setVisible(self.sso_email_required)
