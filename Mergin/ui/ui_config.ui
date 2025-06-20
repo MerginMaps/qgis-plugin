@@ -320,9 +320,15 @@
   </customwidget>
  </customwidgets>
  <tabstops>
+  <tabstop>username</tabstop>
+  <tabstop>password</tabstop>
+  <tabstop>button_sign_sso</tabstop>
+  <tabstop>sso_email</tabstop>
+  <tabstop>button_sign_password</tabstop>
   <tabstop>save_credentials</tabstop>
   <tabstop>custom_url</tabstop>
   <tabstop>merginURL</tabstop>
+  <tabstop>test_connection_btn</tabstop>
  </tabstops>
  <resources/>
  <connections>
