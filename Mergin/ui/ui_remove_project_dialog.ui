@@ -29,7 +29,7 @@ In order to delete project, enter project name in the field below and click &quo
    <item>
     <widget class="QLineEdit" name="edit_project_name">
      <property name="placeholderText">
-      <string>Enter project name</string>
+      <string>Enter [workspace name]/[project name]</string>
      </property>
     </widget>
    </item>
