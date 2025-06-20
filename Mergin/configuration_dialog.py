@@ -79,7 +79,7 @@ class ConfigurationDialog(QDialog):
         self.ui.username.textChanged.connect(self.check_credentials)
         self.ui.password.textChanged.connect(self.check_credentials)
         self.ui.merginURL.textChanged.connect(self.check_sso_availability)
-        self.ui.merginURL.textChanged.connect(self.enable_sso_email_input)
+        self.ui.merginURL.textChanged.connect(self.check_sso_email)
 
         self.ui.button_sign_sso.clicked.connect(self.show_sign_sso)
         self.ui.button_sign_password.clicked.connect(self.show_sign_email)
@@ -190,6 +190,12 @@ class ConfigurationDialog(QDialog):
         self.sso_timer.setSingleShot(True)
         self.sso_timer.start(1000)
         self.sso_timer.timeout.connect(self.allow_sso_login)
+
+    def check_sso_email(self) -> None:
+        self.sso_email_timer = QTimer(self)
+        self.sso_email_timer.setSingleShot(True)
+        self.sso_email_timer.start(1000)
+        self.sso_email_timer.timeout.connect(self.enable_sso_email_input)
 
     def show_sign_sso(self) -> None:
         self.ui.stacked_widget_login.setCurrentIndex(1)
