@@ -390,7 +390,7 @@ def validate_mergin_url(url):
 def sso_login_allowed(url: str) -> typing.Tuple[bool, typing.Optional[str]]:
     """Tests if SSO login is allowed on the server. Returns a tuple with a boolean and an optional error message."""
     if not url_reachable(url):
-        return False, "Server URL is not reachable"
+        return False, None
 
     try:
         server_config_data = json_response(f"{url}/config")
