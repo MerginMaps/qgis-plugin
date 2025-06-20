@@ -96,11 +96,6 @@ class ConfigurationDialog(QDialog):
 
         if self.login_type() == LoginType.PASSWORD:
             set_mergin_auth_password(url=url, username=self.ui.username.text(), password=self.ui.password.text())
-        else:
-            if not validate_sso_login(server_url=url):
-                sso_email = self.get_sso_email()
-                oauth2_client_id = sso_oauth_client_id(url, sso_email)
-                login_sso(url, oauth2_client_id, sso_email)
 
         super().accept()
 
