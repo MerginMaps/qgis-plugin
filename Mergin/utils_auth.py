@@ -4,6 +4,7 @@ import uuid
 import json
 from urllib.error import URLError
 import requests
+import urllib3
 
 from qgis.core import (
     QgsApplication,
@@ -334,6 +335,11 @@ def test_server_connection(
     Test connection to Mergin Maps server. This includes check for valid server URL
     and user credentials correctness.
     """
+    if not url_reachable(url):
+        msg = "<font color=red> Server URL is not reachable </font>"
+        QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {msg}")
+        return False, msg
+
     err_msg = validate_mergin_url(url)
     if err_msg:
         msg = f"<font color=red>{err_msg}</font>"
@@ -383,10 +389,8 @@ def validate_mergin_url(url):
 
 def sso_login_allowed(url: str) -> typing.Tuple[bool, typing.Optional[str]]:
     """Tests if SSO login is allowed on the server. Returns a tuple with a boolean and an optional error message."""
-    try:
-        requests.get(url, timeout=3)
-    except requests.RequestException:
-        return False, None
+    if not url_reachable(url):
+        return False, "Server URL is not reachable"
 
     try:
         server_config_data = json_response(f"{url}/config")
@@ -405,9 +409,7 @@ def sso_login_allowed(url: str) -> typing.Tuple[bool, typing.Optional[str]]:
 
 def sso_ask_for_email(url: str) -> typing.Tuple[bool, typing.Optional[str]]:
     """Tests if SSO login should ask for email. Returns a tuple with a boolean and an optional error message."""
-    try:
-        requests.get(url, timeout=3)
-    except requests.RequestException:
+    if not url_reachable(url):
         return True, None
 
     try:
@@ -471,3 +473,11 @@ def mergin_server_deprecated_version(url: str) -> bool:
         return True
 
     return False
+
+
+def url_reachable(url: str) -> bool:
+    try:
+        requests.get(url, timeout=3)
+    except (requests.RequestException, urllib3.exceptions.LocationParseError):
+        return False
+    return True

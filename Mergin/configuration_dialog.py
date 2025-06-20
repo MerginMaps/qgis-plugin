@@ -26,6 +26,7 @@ from .utils_auth import (
     sso_login_allowed,
     sso_ask_for_email,
     mergin_server_deprecated_version,
+    url_reachable,
 )
 from .utils import (
     MERGIN_URL,
@@ -154,14 +155,19 @@ class ConfigurationDialog(QDialog):
             self.ui.test_status.setText(f"<font color=orange>Follow the instructions in the browser...</font>")
             ok, msg = test_server_connection(self.server_url(), use_sso=True, sso_email=self.get_sso_email())
 
-        if mergin_server_deprecated_version(self.server_url()):
-            msg = "This server is running an outdated version that will no longer be supported. Please contact your server administrator to upgrade."
-            QMessageBox.information(
-                self,
-                "Deprecated server version",
-                msg,
-            )
-            self.ui.test_status.setText(f"<font color=red> {msg} </font>")
+        if url_reachable(self.server_url()):
+            if mergin_server_deprecated_version(self.server_url()):
+                msg = "This server is running an outdated version that will no longer be supported. Please contact your server administrator to upgrade."
+                QMessageBox.information(
+                    self,
+                    "Deprecated server version",
+                    msg,
+                )
+                self.ui.test_status.setText(f"<font color=red> {msg} </font>")
+                return False
+        else:
+            msg = "<font color=red> Server URL is not reachable </font>"
+            self.ui.test_status.setText(msg)
             return False
 
         QApplication.restoreOverrideCursor()
