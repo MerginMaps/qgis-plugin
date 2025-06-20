@@ -232,7 +232,7 @@ def login_sso(server_url: str, oauth2_client_id: str, email: typing.Optional[str
         "persistToken": False,
         "queryPairs": {"state": str(uuid.uuid4())},
         "redirectHost": "localhost",  # if this changes we need to inform server team about it to update the SSO config
-        "redirectPort": 10042,  # if this changes we need to inform server team about it to update the SSO config
+        "redirectPort": 8082,  # if this changes we need to inform server team about it to update the SSO config
         "redirectUrl": "qgis",
         "refreshTokenUrl": "",
         "requestTimeout": 30,
