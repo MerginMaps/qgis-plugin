@@ -205,10 +205,3 @@ class ConfigurationDialog(QDialog):
             if self.ui.sso_email.isVisible():
                 return self.ui.sso_email.text()
         return None
-
-    def sso_ask_for_email(self) -> bool:
-        ask_for_email, msg = sso_ask_for_email(self.server_url())
-        if msg:
-            QMessageBox.critical(self, "SSO email check", msg)
-            return ask_for_email
-        return ask_for_email
