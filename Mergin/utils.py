@@ -1105,6 +1105,16 @@ def is_number(s):
         return False
 
 
+def remove_prefix(text: str, prefix: str):
+    """
+    Remove the ::prefix:: from the ::text:: if it exists otherwise return original ::text::
+    Similar to str.removeprefix remove once we drop support for 3.22/python 3.8
+    """
+    if text.startswith(prefix):
+        return text[len(prefix) :]
+    return text
+
+
 def get_schema(layer_path):
     """
     Return JSON representation of the layer schema
