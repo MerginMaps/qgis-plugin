@@ -1105,6 +1105,16 @@ def is_number(s):
         return False
 
 
+def remove_prefix(text: str, prefix: str):
+    """
+    Remove the ::prefix:: from the ::text:: if it exists otherwise return original ::text::
+    Similar to str.removeprefix remove once we drop support for 3.22/python 3.8
+    """
+    if text.startswith(prefix):
+        return text[len(prefix) :]
+    return text
+
+
 def get_schema(layer_path):
     """
     Return JSON representation of the layer schema
@@ -1699,4 +1709,8 @@ def duplicate_layer(layer: QgsVectorLayer) -> QgsVectorLayer:
 def is_experimental_plugin_enabled() -> bool:
     """Returns True if the experimental flag is enable in the plugin manager else false"""
     settings = QSettings()
-    return settings.value("plugin-manager/allow-experimental", False)
+    if Qgis.versionInt() <= 33000:  # Changed QSettings key in 3.30
+        value = settings.value("app/plugin_installer/allowExperimental", False)
+    else:
+        value = settings.value("plugin-manager/allow-experimental", False)
+    return value
