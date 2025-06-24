@@ -29,6 +29,7 @@ from .utils import (
     create_map_sketches_layer,
     set_tracking_layer_flags,
     is_experimental_plugin_enabled,
+    remove_prefix,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -220,7 +221,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             config.get("RelativeStorage", 0), QgsProject.instance().homePath(), target_dir
         )
         if prefix:
-            self.label_preview.setText(f"<i>{prefix.removeprefix(QgsProject.instance().homePath())}/{val}.jpg</i>")
+            self.label_preview.setText(f"<i>{remove_prefix(prefix, QgsProject.instance().homePath())}/{val}.jpg</i>")
         else:
             self.label_preview.setText(f"<i>{val}.jpg</i>")
 
