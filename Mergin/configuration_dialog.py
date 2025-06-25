@@ -149,6 +149,7 @@ class ConfigurationDialog(QDialog):
         else:
             if validate_sso_login(self.server_url(), self.get_sso_email()):
                 self.ui.test_status.setText("<font color=green> OK </font>")
+                QApplication.restoreOverrideCursor()
                 return True
 
             self.ui.test_status.setText(f"<font color=orange>Follow the instructions in the browser...</font>")
@@ -163,14 +164,16 @@ class ConfigurationDialog(QDialog):
                     msg,
                 )
                 self.ui.test_status.setText(f"<font color=red> {msg} </font>")
+                QApplication.restoreOverrideCursor()
                 return False
         else:
             msg = "<font color=red> Server URL is not reachable </font>"
             self.ui.test_status.setText(msg)
+            QApplication.restoreOverrideCursor()
             return False
 
-        QApplication.restoreOverrideCursor()
         self.ui.test_status.setText(msg)
+        QApplication.restoreOverrideCursor()
         return ok
 
     def allow_sso_login(self) -> None:
