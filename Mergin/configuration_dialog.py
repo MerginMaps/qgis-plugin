@@ -79,6 +79,7 @@ class ConfigurationDialog(QDialog):
         self.ui.merginURL.textChanged.connect(self.check_sso_availability)
         self.ui.merginURL.textChanged.connect(self.check_sso_email)
         self.ui.sso_email.textChanged.connect(self.check_credentials)
+        self.ui.stacked_widget_login.currentChanged.connect(self.check_credentials)
 
         self.sso_email_required = False
 
