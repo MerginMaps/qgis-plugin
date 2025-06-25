@@ -147,7 +147,7 @@ class ConfigurationDialog(QDialog):
         if self.login_type() == LoginType.PASSWORD:
             ok, msg = test_server_connection(self.server_url(), self.ui.username.text(), self.ui.password.text())
         else:
-            if validate_sso_login(self.server_url()):
+            if validate_sso_login(self.server_url(), self.get_sso_email()):
                 self.ui.test_status.setText("<font color=green> OK </font>")
                 return True
 
