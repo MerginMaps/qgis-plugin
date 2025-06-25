@@ -31,6 +31,7 @@ class MissingAuthConfigError(Exception):
 
 
 def get_login_type() -> LoginType:
+    """Get login type from Settings."""
     settings = QSettings()
     # default is password login
     login_type = LoginType(settings.value("Mergin/login_type", LoginType.PASSWORD))
@@ -38,18 +39,21 @@ def get_login_type() -> LoginType:
 
 
 def get_stored_mergin_server_url() -> str:
+    """Get stored Mergin server URL from Settings."""
     settings = QSettings()
     mergin_url = settings.value("Mergin/server", MERGIN_URL)
     return mergin_url
 
 
 def get_authcfg() -> typing.Optional[str]:
+    """Get Mergin auth config ID from Settings."""
     settings = QSettings()
     authcfg = settings.value("Mergin/authcfg", None)
     return authcfg
 
 
 def get_mergin_auth_cfg() -> QgsAuthMethodConfig:
+    """Get Mergin auth config from QGIS auth manager."""
     authcfg = get_authcfg()
 
     cfg = QgsAuthMethodConfig()
@@ -61,6 +65,11 @@ def get_mergin_auth_cfg() -> QgsAuthMethodConfig:
 
 
 def set_mergin_auth_password(url: str, username: str, password: str, auth_token: typing.Optional[str] = None) -> None:
+    """
+    Set Mergin auth config with username, password and optional auth token.
+    Stored in QGIS auth manager.
+    """
+
     cfg = get_mergin_auth_cfg()
 
     cfg.setUri(url)
@@ -84,6 +93,11 @@ def set_mergin_auth_password(url: str, username: str, password: str, auth_token:
 
 
 def set_mergin_auth_sso(url: str, auth_token: str, sso_email: typing.Optional[str]) -> None:
+    """
+    Set Mergin auth config for SSO login with auth token and optional email.
+    Stored in QGIS auth manager.
+    """
+
     cfg = get_mergin_auth_cfg()
 
     cfg.setUri(url)
@@ -96,6 +110,7 @@ def set_mergin_auth_sso(url: str, auth_token: str, sso_email: typing.Optional[st
 
 
 def store_mergin_authcfg_id(cfg: QgsAuthMethodConfig) -> None:
+    """Store Mergin auth config ID in QGIS auth manager and settings."""
     if not cfg.id():
         cfg.setMethod("Basic")
         cfg.setName("mergin")
@@ -108,6 +123,7 @@ def store_mergin_authcfg_id(cfg: QgsAuthMethodConfig) -> None:
 
 
 def set_mergin_settings(url: str, login_type: LoginType) -> None:
+    """Set Mergin server URL and login type in Settings."""
     settings = QSettings()
     settings.setValue("Mergin/server", url)
     settings.setValue("Mergin/login_type", str(login_type))
@@ -124,6 +140,7 @@ def validate_mergin_session_not_expired(mc: MerginClient) -> bool:
 
 
 def get_mergin_username_password() -> typing.Tuple[str, str]:
+    """Get Mergin username and password from auth config."""
     cfg = get_mergin_auth_cfg()
 
     if cfg.id():
@@ -136,17 +153,24 @@ def get_mergin_username_password() -> typing.Tuple[str, str]:
 
 
 def get_mergin_sso_email() -> str:
+    """Get Mergin SSO email from Settings."""
     settings = QSettings()
     email = settings.value("Mergin/sso_email", None)
     return email
 
 
 def get_mergin_auth_token(cfg: QgsAuthMethodConfig) -> str:
+    """Get Mergin auth token from auth config."""
     auth_token = cfg.config("mergin_access_token", None)
     return auth_token
 
 
 def create_mergin_client() -> MerginClient:
+    """
+    Create a MerginClient instance based on stored auth config.
+    Raises exceptions if auth config is missing or invalid.
+    """
+
     login_type = get_login_type()
     url = get_stored_mergin_server_url()
 
