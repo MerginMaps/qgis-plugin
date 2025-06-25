@@ -1247,7 +1247,7 @@ def test_server_connection(url, username, password):
                 "Deprecated server version",
                 "This server is running an outdated version that will no longer be supported. Please contact your server administrator to upgrade.",
             )
-    except (LoginError, ClientError) as e:
+    except (LoginError, ClientError, ValueError) as e:
         QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
         result = False, f"<font color=red> Connection failed, {str(e)} </font>"
 
