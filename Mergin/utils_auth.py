@@ -271,6 +271,7 @@ def login_sso(server_url: str, oauth2_client_id: str, email: typing.Optional[str
         "tokenUrl": f"{server_url}/v2/sso/token",
         "username": "",
         "version": 1,
+        "login_hint": email,
     }
     config_json = json.dumps(config_dict)
     config = QgsAuthMethodConfig(method="OAuth2")
@@ -315,6 +316,7 @@ def json_response(url: str) -> dict:
 
     Raise errors if the response is not JSON or if the request fails.
     """
+    QNetworkRequest()
     br = QgsBlockingNetworkRequest()
     error = br.get(QNetworkRequest(QUrl(url)))
 
