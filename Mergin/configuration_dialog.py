@@ -60,6 +60,7 @@ class ConfigurationDialog(QDialog):
             username, password = get_mergin_username_password()
             self.ui.username.setText(username)
             self.ui.password.setText(password)
+            self.ui.stacked_widget_login.setCurrentIndex(0)
         elif login_type == LoginType.SSO:
             self.ui.sso_email.setText(get_mergin_sso_email())
             self.ui.stacked_widget_login.setCurrentIndex(1)
@@ -87,7 +88,7 @@ class ConfigurationDialog(QDialog):
         self.ui.button_sign_password.clicked.connect(self.show_sign_email)
 
         self.check_credentials()
-        self.allow_sso_login()
+        self.check_sso_availability()
 
     def accept(self):
         if not self.test_connection():
