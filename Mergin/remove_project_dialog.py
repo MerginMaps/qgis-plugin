@@ -16,7 +16,7 @@ class RemoveProjectDialog(QDialog):
 
         self.project_name = project_name
         self.label.setText(
-            f"This action will remove your MerginMaps project '{workspace_name}/<b>{project_name}</b>' from the server. "
+            f"This action will remove your Mergin Maps project '{workspace_name}/<b>{project_name}</b>' from the server. "
             "This action cannot be undone.<br><br>"
             "In order to delete project, enter project name in the field below and click 'Yes'."
         )
