@@ -194,7 +194,11 @@
         </widget>
        </item>
        <item row="1" column="0" colspan="3">
-        <widget class="QLineEdit" name="sso_email"/>
+        <widget class="QLineEdit" name="sso_email">
+         <property name="placeholderText">
+          <string>Email for login</string>
+         </property>
+        </widget>
        </item>
        <item row="3" column="0">
         <spacer name="verticalSpacer_3">
