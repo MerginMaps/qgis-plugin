@@ -5,7 +5,7 @@ import json
 from urllib.error import URLError
 import requests
 import urllib3
-import enum
+from enum import Enum
 
 from qgis.core import (
     QgsApplication,
@@ -23,7 +23,7 @@ from .mergin.common import ClientError, LoginError
 from .utils import MERGIN_URL, get_qgis_proxy_config, get_plugin_version
 
 
-class LoginType(enum.Enum):
+class LoginType(Enum):
     """Types of login supported by Mergin Maps."""
 
     PASSWORD = "password"  # classic login with username and password
