@@ -29,6 +29,9 @@ class LoginType(enum.Enum):
     PASSWORD = "password"  # classic login with username and password
     SSO = "sso"  # login with SSO token
 
+    def __str__(self) -> str:
+        return self.value
+
 
 class SSOLoginError(Exception):
     pass
