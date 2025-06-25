@@ -260,7 +260,10 @@ def login_sso(server_url: str, oauth2_client_id: str, email: typing.Optional[str
         "objectName": "",
         "password": "",
         "persistToken": False,
-        "queryPairs": {"state": str(uuid.uuid4())},
+        "queryPairs": {
+            "state": str(uuid.uuid4()),
+            "login_hint": email,
+        },
         "redirectHost": "localhost",  # if this changes we need to inform server team about it to update the SSO config
         "redirectPort": 10042,  # if this changes we need to inform server team about it to update the SSO config
         "redirectUrl": "qgis",
@@ -271,7 +274,6 @@ def login_sso(server_url: str, oauth2_client_id: str, email: typing.Optional[str
         "tokenUrl": f"{server_url}/v2/sso/token",
         "username": "",
         "version": 1,
-        "login_hint": email,
     }
     config_json = json.dumps(config_dict)
     config = QgsAuthMethodConfig(method="OAuth2")
