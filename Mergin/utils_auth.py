@@ -185,13 +185,19 @@ def create_mergin_client() -> MerginClient:
         raise ValueError("Auth config not found.")
 
 
-def validate_sso_login(server_url: str) -> bool:
+def validate_sso_login(server_url: str, sso_email: typing.Optional[str] = None) -> bool:
     """Validate that there is existing sso login that is not expired."""
     try:
         cfg = get_mergin_auth_cfg()
 
         # validating against different server than is stored
         if cfg.uri() != server_url:
+            return False
+
+        if cfg.config("password", None) or cfg.config("username", None):
+            return False
+
+        if cfg.config("email", None) != sso_email:
             return False
 
         token = get_mergin_auth_token(cfg)
@@ -360,10 +366,10 @@ def test_server_connection(
             QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
             result = False, f"<font color=red> Connection failed, {str(e)} </font>"
     else:
-        if not validate_sso_login(url):
+        if not validate_sso_login(url, sso_email):
             try:
                 oauth2_client_id = sso_oauth_client_id(url, sso_email)
-                login_sso(url, oauth2_client_id)
+                login_sso(url, oauth2_client_id, sso_email)
             except (URLError, ValueError, SSOLoginError) as e:
                 result = False, f"<font color=red> Connection failed, {str(e)} </font>"
     return result
