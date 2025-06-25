@@ -5,6 +5,7 @@ import json
 from urllib.error import URLError
 import requests
 import urllib3
+import enum
 
 from qgis.core import (
     QgsApplication,
@@ -16,10 +17,17 @@ from qgis.core import (
 from qgis.PyQt.QtCore import QSettings, QUrl
 from qgis.PyQt.QtNetwork import QNetworkRequest
 
-from .mergin.client import LoginType, MerginClient, AuthTokenExpiredError, ServerType
+from .mergin.client import MerginClient, ServerType, AuthTokenExpiredError
 from .mergin.common import ClientError, LoginError
 
 from .utils import MERGIN_URL, get_qgis_proxy_config, get_plugin_version
+
+
+class LoginType(enum.Enum):
+    """Types of login supported by Mergin Maps."""
+
+    PASSWORD = "password"  # classic login with username and password
+    SSO = "sso"  # login with SSO token
 
 
 class SSOLoginError(Exception):
@@ -318,7 +326,6 @@ def json_response(url: str) -> dict:
 
     Raise errors if the response is not JSON or if the request fails.
     """
-    QNetworkRequest()
     br = QgsBlockingNetworkRequest()
     error = br.get(QNetworkRequest(QUrl(url)))
 
