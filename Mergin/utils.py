@@ -1244,7 +1244,7 @@ def test_server_connection(url, username, password):
         if mc.server_type() == ServerType.OLD:
             result = (
                 False,
-                f"<font color=red> The server is using an older, unsupported version. Please contact your server administrator. <br> If you still require data access, please downgrade your plugin version. </font>",
+                f"<font color=red> The server is running an older, unsupported version of Mergin Maps. Please contact your server administrator. <br> If you still require data access, please downgrade your plugin version. </font>",
             )
 
     except (LoginError, ClientError) as e:
