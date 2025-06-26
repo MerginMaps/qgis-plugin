@@ -942,9 +942,8 @@ class MerginRootItem(QgsDataCollectionItem):
             if local_proj_path is None or not os.path.exists(local_proj_path):
                 item = MerginRemoteProjectItem(self, project, self.project_manager)
                 item.setState(QgsDataItem.Populated)  # make it non-expandable
-
-            sip.transferto(item, self)
-            items.append(item)
+                sip.transferto(item, self)
+                items.append(item)
         self.set_fetch_more_item()
         if self.fetch_more_item is not None:
             items.append(self.fetch_more_item)
@@ -1003,7 +1002,7 @@ class MerginRootItem(QgsDataCollectionItem):
         if self.fetch_more_item is None:
             QMessageBox.information(None, "Fetch Mergin Maps Projects", "All projects already listed.")
             return
-        page_to_get = floor(self.rowCount() / PROJS_PER_PAGE) + 1
+        page_to_get = floor(len(self.projects) / PROJS_PER_PAGE) + 1
         dummy = self.fetch_projects(page=page_to_get)
         self.refresh()
 
