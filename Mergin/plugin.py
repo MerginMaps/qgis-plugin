@@ -923,15 +923,17 @@ class MerginRootItem(QgsDataCollectionItem):
             error = self.fetch_projects()
             if error is not None:
                 return error
-        print("self.plugin.current_workspace['name']", self.plugin.current_workspace['name'])
         if not self.local_projects:
-            self.local_projects = [ { "namespace": i[1], "name": i[2] } for i in get_local_mergin_projects_info( self.plugin.current_workspace['name'] ) ]
+            self.local_projects = [
+                {"namespace": i[1], "name": i[2]}
+                for i in get_local_mergin_projects_info(self.plugin.current_workspace["name"])
+            ]
         items = []
 
         for project in self.local_projects:
             item = MerginLocalProjectItem(self, project, self.project_manager)
             sip.transferto(item, self)
-            items.append( item )
+            items.append(item)
         for project in self.projects:
             project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
             local_proj_path = mergin_project_local_path(project_name)
@@ -971,11 +973,11 @@ class MerginRootItem(QgsDataCollectionItem):
             self.total_projects_count = int(resp["count"]) if is_number(resp["count"]) else 0
 
             # Sometimes we fetched a local, recursivly fetch until we fetched enougth at the same time
-            set_fetched_projects = set( [i["name"] for i in resp["projects"]] ) 
-            set_local_projects = set( [i["name"] for i in self.local_projects] )
+            set_fetched_projects = set([i["name"] for i in resp["projects"]])
+            set_local_projects = set([i["name"] for i in self.local_projects])
 
             new_projs_per_page_left = per_page - len(set_fetched_projects - set_local_projects)
-            if new_projs_per_page_left != 0  and len(self.projects) < self.total_projects_count  :
+            if new_projs_per_page_left != 0 and len(self.projects) < self.total_projects_count:
                 new_page_to_get = floor(len(self.projects) / new_projs_per_page_left) + 1
                 self.fetch_projects(new_page_to_get, per_page=new_projs_per_page_left)
 
@@ -1017,7 +1019,10 @@ class MerginRootItem(QgsDataCollectionItem):
             self.plugin.choose_active_workspace()
 
         self.projects = []
-        self.local_projects = [ { "namespace": i[1], "name": i[2] } for i in get_local_mergin_projects_info( self.plugin.current_workspace["name"] ) ]
+        self.local_projects = [
+            {"namespace": i[1], "name": i[2]}
+            for i in get_local_mergin_projects_info(self.plugin.current_workspace["name"])
+        ]
         self.refresh()
 
     def new_project(self):

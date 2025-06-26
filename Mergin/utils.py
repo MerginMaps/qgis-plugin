@@ -985,7 +985,7 @@ def pretty_summary(summary):
 def get_local_mergin_projects_info(workspace=None):
     """
     Get a list of local Mergin Maps projects info from QSettings.
-    if workspace is specified only the one 
+    if workspace is specified only the one
     """
     local_projects_info = []
     settings = QSettings()
@@ -1000,7 +1000,7 @@ def get_local_mergin_projects_info(workspace=None):
         if len(key_parts) > 2 and key_parts[2] == "path":
             # print("debug", key_parts[0], workspace)
             if workspace != None and key_parts[0] != workspace:
-                continue 
+                continue
 
             local_path = settings.value(key, None)
             # double check if the path exists - it might get deleted manually
