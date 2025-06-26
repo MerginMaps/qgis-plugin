@@ -665,7 +665,7 @@ class MerginRemoteProjectItem(QgsDataItem):
             group_items["My projects"].reload()
 
     def remove_remote_project(self):
-        dlg = RemoveProjectDialog(self.project_name)
+        dlg = RemoveProjectDialog(self.project["namespace"], self.project["name"])
         if dlg.exec() == QDialog.DialogCode.Rejected:
             return
 
