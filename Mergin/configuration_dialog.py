@@ -7,7 +7,7 @@ from qgis.PyQt.QtWidgets import QDialog, QApplication, QDialogButtonBox, QMessag
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, QSettings, QTimer
 from qgis.PyQt.QtGui import QPixmap
-from qgis.core import QgsApplication
+from qgis.core import QgsApplication, Qgis
 from urllib.error import URLError
 
 
@@ -25,6 +25,7 @@ from .utils_auth import (
     sso_ask_for_email,
     mergin_server_deprecated_version,
     url_reachable,
+    qgis_support_sso,
 )
 from .utils import (
     MERGIN_URL,
@@ -89,6 +90,11 @@ class ConfigurationDialog(QDialog):
 
         self.check_credentials()
         self.check_sso_availability()
+
+        if not qgis_support_sso():
+            self.ui.button_sign_sso.setVisible(False)
+            self.ui.stacked_widget_login.setCurrentIndex(0)
+            self.ui.sso_email.setVisible(False)
 
     def accept(self):
         if not self.test_connection():
@@ -180,6 +186,9 @@ class ConfigurationDialog(QDialog):
 
     def allow_sso_login(self) -> None:
         self.ui.button_sign_sso.setVisible(False)
+
+        if not qgis_support_sso():
+            return
 
         allowed, msg = sso_login_allowed(self.server_url())
         if msg:

@@ -13,6 +13,7 @@ from qgis.core import (
     QgsBlockingNetworkRequest,
     QgsNetworkAccessManager,
     QgsExpressionContextUtils,
+    Qgis,
 )
 from qgis.PyQt.QtCore import QSettings, QUrl
 from qgis.PyQt.QtNetwork import QNetworkRequest
@@ -523,3 +524,12 @@ def url_reachable(url: str) -> bool:
     except (requests.RequestException, urllib3.exceptions.LocationParseError):
         return False
     return True
+
+
+def qgis_support_sso() -> bool:
+    """
+    Check if the current QGIS version supports SSO login.
+    Returns True if SSO is supported, False otherwise.
+    """
+    # QGIS 3.40+ supports SSO
+    return Qgis.versionInt() >= 34000
