@@ -249,7 +249,13 @@ class MerginPlugin:
         error = ""
         try:
             if self.mc is None:
-                self.mc = create_mergin_client()
+                try:
+                    self.mc = create_mergin_client()
+                # if the client creation fails with AuthTokenExpiredError, we need relogin user - it should only happen for SSO
+                except AuthTokenExpiredError:
+                    self.configure()
+                    return
+
             self.choose_active_workspace()
             self.manager = MerginProjectsManager(self.mc)
         except (URLError, ClientError, LoginError):
