@@ -444,25 +444,6 @@ class MerginProjectsManager(object):
             QMessageBox.StandardButton.Close,
         )
 
-    def get_mergin_browser_groups(self):
-        """
-        Return browser tree items of Mergin Maps provider. These should be the 2 projects groups, or Error item, if
-        the plugin is not properly configured.
-        """
-        browser_model = self.iface.browserModel()
-        root_idx = browser_model.findPath("Mergin Maps")
-        if not root_idx.isValid():
-            return {}
-        group_items = []
-        for i in range(browser_model.rowCount(root_idx)):
-            item = browser_model.dataItem(browser_model.index(i, 0, parent=root_idx))
-            try:
-                if item.isMerginGroupItem():
-                    group_items.append(item)
-            except AttributeError as e:
-                pass
-        return {i.path().replace("/Mergin", ""): i for i in group_items}
-
     def report_conflicts(self, conflicts):
         """
         Shows a dialog with the list of conflicted copies.
@@ -571,11 +552,6 @@ class MerginProjectsManager(object):
         )
         if btn_reply == QMessageBox.StandardButton.Yes:
             self.open_project(target_dir)
-
-        # reload the two browser groups (in case server is old)
-        groups = self.get_mergin_browser_groups()
-        for group in groups:
-            groups[group].reload()
 
         # reload the Mergin Maps browser entry (in case server is ee/ce)
         browser_model = self.iface.browserModel()
