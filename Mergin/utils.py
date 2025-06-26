@@ -63,6 +63,8 @@ from qgis.core import (
     QgsCoordinateTransformContext,
     QgsDefaultValue,
     QgsMapLayer,
+    QgsProperty,
+    QgsSymbolLayer,
 )
 
 from .mergin.utils import int_version, bytes_to_human_size
@@ -947,20 +949,22 @@ def unhandled_exception_message(error_details, dialog_title, error_text, log_fil
     box.exec()
 
 
-def write_project_variables(project_owner, project_name, project_full_name, version, server):
+def write_project_variables(project_name, project_full_name, version):
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_name", project_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_owner", project_owner)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_full_name", project_full_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_version", int_version(version))
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_server", server)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_name", project_name)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_full_name", project_full_name)
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_version", int_version(version))
 
 
 def remove_project_variables():
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_full_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_version")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_owner")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_server")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_name")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_full_name")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_version")
 
 
 def pretty_summary(summary):
@@ -1012,20 +1016,15 @@ def get_local_mergin_projects_info():
     return local_projects_info
 
 
-def set_qgis_project_mergin_variables():
-    """Check if current QGIS project is a local Mergin Maps project and set QGIS project variables for Mergin Maps."""
-    qgis_project_path = QgsProject.instance().absolutePath()
-    if not qgis_project_path:
-        return None
-    for local_path, owner, name, server in get_local_mergin_projects_info():
-        if same_dir(path, qgis_project_path):
-            try:
-                mp = MerginProject(path)
-                write_project_variables(owner, name, mp.project_full_name(), mp.version(), server)
-                return mp.project_full_name()
-            except InvalidProject:
-                remove_project_variables()
-    return None
+def set_qgis_project_mergin_variables(project_dir):
+    """Check if QGIS project project_dir is a local Mergin Maps project and set QGIS project variables for Mergin Maps."""
+
+    try:
+        mp = MerginProject(project_dir)
+
+        write_project_variables(mp.project_name(), mp.project_full_name(), mp.version())
+    except InvalidProject:
+        remove_project_variables()
 
 
 def mergin_project_local_path(project_name=None):
@@ -1421,19 +1420,6 @@ def prefix_for_relative_path(mode, home_path, target_dir):
     else:
         return ""
 
-    symbol = QgsLineSymbol.createSimple(
-        {
-            "capstyle": "square",
-            "joinstyle": "bevel",
-            "line_style": "solid",
-            "line_width": "0.35",
-            "line_width_unit": "MM",
-            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFA500")),
-        }
-    )
-    layer.setRenderer(QgsSingleSymbolRenderer(symbol))
-    set_tracking_layer_flags(layer)
-
 
 def create_tracking_layer(project_path):
     """
@@ -1469,7 +1455,88 @@ def create_tracking_layer(project_path):
     return filename
 
 
-def setup_tracking_layer(layer):
+def create_map_sketches_layer(project_path):
+    filename = os.path.join(project_path, "map_sketches.gpkg")
+
+    if not os.path.exists(filename):
+        fields = QgsFields()
+        fields.append(QgsField("color", QVariant.String))
+        fields.append(QgsField("author", QVariant.String))
+        fields.append(QgsField("created_at", QVariant.DateTime))
+        fields.append(QgsField("width", QVariant.Double))
+        fields.append(QgsField("attr1", QVariant.Double))
+        fields.append(QgsField("attr2", QVariant.Double))
+        fields.append(QgsField("attr3", QVariant.String))
+        fields.append(QgsField("attr4", QVariant.String))
+
+        options = QgsVectorFileWriter.SaveVectorOptions()
+        options.driverName = "GPKG"
+        options.layerName = "Map sketches"
+
+        writer = QgsVectorFileWriter.create(
+            filename,
+            fields,
+            QgsWkbTypes.MultiLineStringZM,
+            QgsCoordinateReferenceSystem("EPSG:4326"),
+            QgsCoordinateTransformContext(),
+            options,
+        )
+        del writer
+
+    layer = QgsVectorLayer(filename, "Map sketches", "ogr")
+
+    """
+    Configures map sketches layer:
+     - set default values for fields
+     - apply default styling
+    """
+    idx = layer.fields().indexFromName("fid")
+    cfg = QgsEditorWidgetSetup("Hidden", {})
+    layer.setEditorWidgetSetup(idx, cfg)
+
+    idx = layer.fields().indexFromName("author")
+    author_default = QgsDefaultValue()
+    author_default.setExpression("@mm_username")
+    layer.setDefaultValueDefinition(idx, author_default)
+
+    idx = layer.fields().indexFromName("created_at")
+    created_at_default = QgsDefaultValue()
+    created_at_default.setExpression("now()")
+    layer.setDefaultValueDefinition(idx, created_at_default)
+
+    idx = layer.fields().indexFromName("width")
+    width_default = QgsDefaultValue()
+    width_default.setExpression("0.6")
+    layer.setDefaultValueDefinition(idx, width_default)
+
+    # create default symbo, with settings
+    symbol = QgsLineSymbol.createSimple(
+        {
+            "line_width": "0.6",
+            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFFFFF")),
+        }
+    )
+
+    # get symbol layer and set it to expression for color
+    symbol_layer = symbol.takeSymbolLayer(0)
+    symbol_layer.setDataDefinedProperty(QgsSymbolLayer.PropertyStrokeColor, QgsProperty.fromExpression('"color"'))
+    symbol_layer.setDataDefinedProperty(QgsSymbolLayer.PropertyStrokeWidth, QgsProperty.fromExpression('"width"'))
+    # put it back to the symbol
+    symbol.appendSymbolLayer(symbol_layer)
+
+    # create renderer with the symbol
+    renderer = QgsSingleSymbolRenderer(symbol)
+
+    # set renderer to the layer
+    layer.setRenderer(renderer)
+
+    QgsProject.instance().addMapLayer(layer)
+    QgsProject.instance().writeEntry("Mergin", "MapSketching/Layer", layer.id())
+
+    return filename
+
+
+def setup_tracking_layer(layer: QgsVectorLayer):
     """
     Configures tracking layer:
      - set default values for fields
@@ -1496,8 +1563,12 @@ def setup_tracking_layer(layer):
 
     idx = layer.fields().indexFromName("tracked_by")
     user_default = QgsDefaultValue()
-    user_default.setExpression("@mergin_username")
+    user_default.setExpression("@mm_username")
     layer.setDefaultValueDefinition(idx, user_default)
+
+    layer.setDisplayExpression(
+        "\"tracked_by\" ||' on '|| format_date( \"tracking_end_time\", 'dd MMM yyyy') ||' at '|| format_date(\"tracking_end_time\", 'H:mm (t)')"
+    )
 
     symbol = QgsLineSymbol.createSimple(
         {
@@ -1623,3 +1694,9 @@ def duplicate_layer(layer: QgsVectorLayer) -> QgsVectorLayer:
         raise Exception(err_msg)
 
     return lyr_clone
+
+
+def is_experimental_plugin_enabled() -> bool:
+    """Returns True if the experimental flag is enable in the plugin manager else false"""
+    settings = QSettings()
+    return settings.value("plugin-manager/allow-experimental", False)

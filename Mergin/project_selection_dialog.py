@@ -160,7 +160,7 @@ class ProjectItemDelegate(QAbstractItemDelegate):
         painter.drawText(nameRect, Qt.AlignmentFlag.AlignLeading, elided_text)
         painter.setFont(option.font)
         fm = QFontMetrics(QFont(option.font))
-        elided_status = fm.elidedText(index.data(ProjectsModel.STATUS), Qt.TextElideModeElideRight, infoRect.width())
+        elided_status = fm.elidedText(index.data(ProjectsModel.STATUS), Qt.TextElideMode.ElideRight, infoRect.width())
         painter.drawText(infoRect, Qt.AlignmentFlag.AlignLeading, elided_status)
         icon = index.data(ProjectsModel.ICON)
         if icon:

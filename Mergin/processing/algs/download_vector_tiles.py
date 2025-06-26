@@ -154,8 +154,9 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
 
         self.max_zoom = self.parameterAsInt(parameters, self.MAX_ZOOM, context)
         if self.max_zoom > layer.sourceMaxZoom():
-            raise QgsProcessingException(
-                f"Requested maximum zoom level is bigger than available zoom level in the source layer. Please, select zoom level lower or equal to {layer.sourceMaxZoom()}."
+            self.max_zoom = layer.sourceMaxZoom()
+            feedback.pushWarning(
+                f"Requested maximum zoom level is bigger than available zoom level in the source layer. Zoom level will be clamped to {layer.sourceMaxZoom()}."
             )
 
         self.tile_limit = self.parameterAsInt(parameters, self.TILE_LIMIT, context)

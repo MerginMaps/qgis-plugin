@@ -64,6 +64,7 @@ from .utils import (
     PROJS_PER_PAGE,
     remove_project_variables,
     same_dir,
+    set_qgis_project_mergin_variables,
     unhandled_exception_message,
     unsaved_project_check,
     UnsavedChangesStrategy,
@@ -103,7 +104,13 @@ class MerginPlugin:
 
         settings = QSettings()
         QgsExpressionContextUtils.setGlobalVariable("mergin_username", settings.value("Mergin/username", ""))
+        QgsExpressionContextUtils.setGlobalVariable("mm_username", settings.value("Mergin/username", ""))
         QgsExpressionContextUtils.setGlobalVariable("mergin_url", settings.value("Mergin/server", ""))
+        QgsExpressionContextUtils.setGlobalVariable("mm_url", settings.value("Mergin/server", ""))
+        QgsExpressionContextUtils.setGlobalVariable("mergin_full_name", settings.value("Mergin/full_name", ""))
+        QgsExpressionContextUtils.setGlobalVariable("mm_full_name", settings.value("Mergin/full_name", ""))
+        QgsExpressionContextUtils.setGlobalVariable("mergin_user_email", settings.value("Mergin/user_email", ""))
+        QgsExpressionContextUtils.setGlobalVariable("mm_user_email", settings.value("Mergin/user_email", ""))
 
     def initProcessing(self):
         QgsApplication.processingRegistry().addProvider(self.provider)
@@ -501,6 +508,7 @@ class MerginPlugin:
         self.mergin_proj_dir = mergin_project_local_path()
         if self.mergin_proj_dir is not None:
             self.enable_toolbar_actions()
+            set_qgis_project_mergin_variables(self.mergin_proj_dir)
 
     def add_context_menu_actions(self, layers):
         provider_names = "vectortile"
@@ -527,7 +535,13 @@ class MerginPlugin:
 
         remove_project_variables()
         QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
+        QgsExpressionContextUtils.removeGlobalVariable("mm_username")
         QgsExpressionContextUtils.removeGlobalVariable("mergin_url")
+        QgsExpressionContextUtils.removeGlobalVariable("mm_url")
+        QgsExpressionContextUtils.removeGlobalVariable("mergin_full_name")
+        QgsExpressionContextUtils.removeGlobalVariable("mm_full_name")
+        QgsExpressionContextUtils.removeGlobalVariable("mergin_user_email")
+        QgsExpressionContextUtils.removeGlobalVariable("mm_user_email")
         QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.data_item_provider)
         self.data_item_provider = None
         # this is crashing qgis on exit
