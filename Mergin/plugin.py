@@ -927,12 +927,8 @@ class MerginRootItem(QgsDataCollectionItem):
         if not self.local_projects:
             self.local_projects = [ { "namespace": i[1], "name": i[2] } for i in get_local_mergin_projects_info( self.plugin.current_workspace['name'] ) ]
         items = []
-        # print("testffff")
-        print("len:", len(self.local_projects))
-
 
         for project in self.local_projects:
-            print("project:", project)
             item = MerginLocalProjectItem(self, project, self.project_manager)
             sip.transferto(item, self)
             items.append( item )
@@ -973,6 +969,16 @@ class MerginRootItem(QgsDataCollectionItem):
             )
             self.projects += resp["projects"]
             self.total_projects_count = int(resp["count"]) if is_number(resp["count"]) else 0
+
+            # Sometimes we fetched a local, recursivly fetch until we fetched enougth at the same time
+            set_fetched_projects = set( [i["name"] for i in resp["projects"]] ) 
+            set_local_projects = set( [i["name"] for i in self.local_projects] )
+
+            new_projs_per_page_left = per_page - len(set_fetched_projects - set_local_projects)
+            if new_projs_per_page_left != 0  and len(self.projects) < self.total_projects_count  :
+                new_page_to_get = floor(len(self.projects) / new_projs_per_page_left) + 1
+                self.fetch_projects(new_page_to_get, per_page=new_projs_per_page_left)
+
         except URLError:
             error_item = QgsErrorItem(self, "Failed to get projects from server", "/Mergin/error")
             sip.transferto(error_item, self)

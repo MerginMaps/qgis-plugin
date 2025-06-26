@@ -141,7 +141,7 @@ QGIS_FILE_BASED_PROVIDERS = (
 )
 PACKABLE_PROVIDERS = ("ogr", "gdal", "delimitedtext", "gpx", "postgres", "memory")
 
-PROJS_PER_PAGE = 10
+PROJS_PER_PAGE = 50
 
 TILES_URL = "https://tiles.merginmaps.com"
 
