@@ -179,13 +179,14 @@ jobs:
         with:
           path: qgis-mergin-plugin
 
-      # Build Input App
       - name: Calculate build number
         env:
           OFFFSET: 10 # offset for build number - due to previous builds ~ new builds must always have a higher number
         run: |
             BUILD_NUM=$GITHUB_RUN_NUMBER$((GITHUB_RUN_ATTEMPT + OFFFSET))
             echo "BUILD_NUM=${BUILD_NUM}" >> $GITHUB_ENV
+
+            echo "Build number: ${BUILD_NUM}"
 
       - name: create package
         run: |
@@ -194,7 +195,6 @@ jobs:
           # from 1 June 2024, plugins are required to include LICENSE file
           cp qgis-mergin-plugin/LICENSE.txt output/Mergin/LICENSE
           (cd output && zip -r9 ../mergin.zip Mergin/)
-
 
 
       - uses: actions/upload-artifact@v4
