@@ -116,6 +116,14 @@ jobs:
           name: artifact-pygeodiff-macos
           path: ./pygeodiff-binaries/*.dylib
 
+      # Build Input App
+      - name: Calculate build number
+        env:
+          OFFFSET: 10 # offset for build number - due to previous builds ~ new builds must always have a higher number
+        run: |
+            BUILD_NUM=$GITHUB_RUN_NUMBER$((GITHUB_RUN_ATTEMPT + OFFFSET))
+            echo "INPUT_VERSION_CODE=${BUILD_NUM}" >> $GITHUB_ENV
+
   create_mergin_plugin_package:
     needs: [build_windows_binaries, build_linux_binary, build_macos_binary]
     runs-on: ubuntu-latest
@@ -163,9 +171,7 @@ jobs:
         uses: actions/upload-artifact/merge@v4
         with:
           name: artifact
-          path: artifact-pygeodiff
           pattern: artifact-pygeodiff-*
-          merge-multiple: true
           delete-merged: true
 
       - uses: actions/download-artifact@v4
@@ -181,6 +187,14 @@ jobs:
         with:
           path: qgis-mergin-plugin
 
+      # Build Input App
+      - name: Calculate build number
+        env:
+          OFFFSET: 10 # offset for build number - due to previous builds ~ new builds must always have a higher number
+        run: |
+            BUILD_NUM=$GITHUB_RUN_NUMBER$((GITHUB_RUN_ATTEMPT + OFFFSET))
+            echo "INPUT_VERSION_CODE=${BUILD_NUM}" >> $GITHUB_ENV
+
       - name: create package
         run: |
           cp -r python-api-client/mergin qgis-mergin-plugin/Mergin
@@ -193,7 +207,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Mergin ${{ env.GITHUB_RUN_ATTEMPT }}
+          name: Mergin ${{ env.INPUT_VERSION_CODE }} test_aab
           path: output/
 
       - name: upload asset on tagged release
