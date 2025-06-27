@@ -119,16 +119,7 @@ jobs:
   create_mergin_plugin_package:
     needs: [build_windows_binaries, build_linux_binary, build_macos_binary]
     runs-on: ubuntu-latest
-    steps:
-      
-      - name: Output Run ID
-        run: echo ${{ github.run_id }}
-      - name: Output Run Number
-        run: echo ${{ github.run_number }}
-      - name: Output Run Attempt
-        run: echo ${{ github.run_attempt }}
-    
-
+    steps:  
       - uses: actions/checkout@v3
         with:
           repository: MerginMaps/python-api-client
