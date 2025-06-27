@@ -393,7 +393,7 @@ class VersionViewerDialog(QDialog):
             self.pan_tool = QgsMapToolPan(self.map_canvas)
             self.map_canvas.setMapTool(self.pan_tool)
 
-            self.current_diff = None
+            self.current_diff: QgsVectorLayer = None
             self.diff_layers = []
             self.filter_model = None
             self.layer_list.currentRowChanged.connect(self.diff_layer_changed)
@@ -590,6 +590,9 @@ class VersionViewerDialog(QDialog):
             self.map_canvas.setDestinationCrs(QgsProject.instance().crs())
             if layers:
                 extent = layers[0].extent()
+                print("layers[0].name()", layers[0].name())
+                print("layers[0].extent()", layers[0].extent())
+
                 d = min(extent.width(), extent.height())
                 if d == 0:
                     d = 1
@@ -597,9 +600,18 @@ class VersionViewerDialog(QDialog):
                 extent = (
                     self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
                     if not layers[0].extent().isEmpty()
-                    else extent
+                    else self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], layers[0].extent() )
                 )
                 self.map_canvas.setExtent(extent)
+
+
+        # if self.current_diff:
+        #     layerExtent = self.current_diff.extent()
+        #     # transform extent
+        #     layerExtent = self.map_canvas.mapSettings().layerExtentToOutputExtent(self.current_diff, layerExtent)
+
+        #     self.map_canvas.setExtent(layerExtent)
+        #     self.map_canvas.refresh()
 
         self.map_canvas.refresh()
 
@@ -652,8 +664,8 @@ class VersionViewerDialog(QDialog):
             "There was an issue loading this version. Please try again later or contact our support if the issue persists. Refer to the QGIS messages log for more details."
         )
 
-    def collect_layers(self, checked: bool):
-        if checked:
+    def collect_layers(self, collect_background_lyr: bool):
+        if collect_background_lyr:
             layers = iface.mapCanvas().layers()
 
             # Filter only "Background" type
@@ -711,6 +723,8 @@ class VersionViewerDialog(QDialog):
 
     def zoom_full(self):
         if self.current_diff:
+            print("self.current_diff.name()", self.current_diff.name())
+            print("self.current_diff.extent()", self.current_diff.extent())
             layerExtent = self.current_diff.extent()
             # transform extent
             layerExtent = self.map_canvas.mapSettings().layerExtentToOutputExtent(self.current_diff, layerExtent)
