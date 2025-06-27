@@ -14,7 +14,7 @@ on:
         type: string
 env:
   # Assign the version provided by 'workflow_dispatch' if available; otherwise, use the default.
-  PYTHON_API_CLIENT_VER: ${{ inputs.PYTHON_API_CLIENT_VER != '' && inputs.PYTHON_API_CLIENT_VER || '0.9.3' }}
+  PYTHON_API_CLIENT_VER: ${{ inputs.PYTHON_API_CLIENT_VER != '' && inputs.PYTHON_API_CLIENT_VER || '0.10.0' }}
   GEODIFF_VER:  ${{ inputs.GEODIFF_VER != '' && inputs.GEODIFF_VER || '2.0.4' }}
   PYTHON_VER: "38"
   PLUGIN_NAME: Mergin  
@@ -31,8 +31,8 @@ jobs:
       - name: Download pygeodiff binaries
         run: |
           pip3 download --only-binary=:all: \
-            --no-deps --platform ${PY_PLATFORM} \
             --python-version ${PYTHON_VER} \
+            --no-deps --platform ${PY_PLATFORM} \
             --implementation cp \
             --abi cp${PYTHON_VER} pygeodiff==${GEODIFF_VER}
           unzip -o pygeodiff-$GEODIFF_VER-cp${PYTHON_VER}-cp${PYTHON_VER}-manylinux_2_17_x86_64.${PY_PLATFORM}.whl -d tmp || true
@@ -47,8 +47,9 @@ jobs:
           patchelf --replace-needed ${SQLITE_LIB} libsqlite3.so.0 ./pygeodiff-binaries/libpygeodiff-${GEODIFF_VER}-python.so
           patchelf --remove-rpath ./pygeodiff-binaries/libpygeodiff-${GEODIFF_VER}-python.so
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
+          name: artifact-pygeodiff-linux
           path: ./pygeodiff-binaries/*.so
 
   build_windows_binaries:
@@ -75,8 +76,9 @@ jobs:
           unzip -o pygeodiff-$env:GEODIFF_VER-cp$env:PYTHON_VER-cp$env:PYTHON_VER-win_amd64.whl -d tmp64
           copy tmp64\pygeodiff\*.pyd pygeodiff-binaries\
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
+          name: artifact-pygeodiff-windows
           path: ./pygeodiff-binaries/*.pyd
 
   build_macos_binary:
@@ -109,8 +111,9 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
+          name: artifact-pygeodiff-macos
           path: ./pygeodiff-binaries/*.dylib
 
   create_mergin_plugin_package:
@@ -156,8 +159,16 @@ jobs:
             echo "geodiff version defined in python-api-client requires.txt $GEODIFF_VER_FROM_CLIENT does not equal $GEODIFF_VER from the workpackage file"
             exit 1; # or just warning??
           fi
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: artifact
+          path: artifact-pygeodiff
+          pattern: artifact-pygeodiff-*
+          merge-multiple: true
+          delete-merged: true
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: artifact
           path: pygeodiff-binaries
@@ -178,7 +189,9 @@ jobs:
           cp qgis-mergin-plugin/LICENSE.txt output/Mergin/LICENSE
           (cd output && zip -r9 ../mergin.zip Mergin/)
 
-      - uses: actions/upload-artifact@v3
+
+
+      - uses: actions/upload-artifact@v4
         with:
           name: Mergin ${{ env.GITHUB_RUN_ATTEMPT }}
           path: output/

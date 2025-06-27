@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 import os
 
 from qgis.PyQt import uic
@@ -62,10 +65,10 @@ class GpkgSelectionPage(ui_gpkg_select_page, base_gpkg_select_page):
     def initializePage(self):
         direction = self.field("init_from")
         if direction == "gpkg":
-            self.label.setText("Pick a GeoPackage file that contains data to be synchronized")
+            self.label.setText("Pick a GeoPackage file that contains data to be synchronised")
             self.file_edit_gpkg.setStorageMode(QgsFileWidget.GetFile)
         else:
-            self.label.setText("Pick a GeoPackage file that will contain synchronized data")
+            self.label.setText("Pick a GeoPackage file that will contain synchronised data")
             self.file_edit_gpkg.setStorageMode(QgsFileWidget.SaveFile)
 
         self.file_edit_gpkg.setDialogTitle(self.tr("Select file"))

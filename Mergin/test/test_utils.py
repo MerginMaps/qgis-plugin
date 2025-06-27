@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
+
 import os
 import json
 import copy
@@ -13,10 +17,17 @@ from qgis.core import (
     QgsCoordinateTransformContext,
     QgsVectorLayer,
     QgsWkbTypes,
+    QgsSymbolLayer,
 )
 
 from qgis.testing import start_app, unittest
-from Mergin.utils import same_schema, get_datum_shift_grids, is_valid_name, create_tracking_layer
+from Mergin.utils import (
+    same_schema,
+    get_datum_shift_grids,
+    is_valid_name,
+    create_tracking_layer,
+    create_map_sketches_layer,
+)
 
 test_data_path = os.path.join(os.path.dirname(__file__), "data")
 
@@ -196,6 +207,48 @@ class test_utils(unittest.TestCase):
             self.assertEqual(fields[3].type(), QVariant.Double)
             self.assertEqual(fields[4].name(), "tracked_by")
             self.assertEqual(fields[4].type(), QVariant.String)
+
+    def test_create_map_sketches_layer(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = create_map_sketches_layer(temp_dir)
+
+            self.assertTrue(os.path.exists(file_path))
+            dir_name, file_name = os.path.split(file_path)
+            self.assertEqual(file_name, "map_sketches.gpkg")
+
+            layer = QgsProject().instance().mapLayersByName("Map sketches")[0]
+
+            self.assertTrue(layer.isValid())
+            self.assertEqual(layer.wkbType(), QgsWkbTypes.MultiLineStringZM)
+
+            fields = layer.fields()
+            self.assertEqual(len(fields), 9)
+            self.assertEqual(fields[0].name(), "fid")
+            self.assertEqual(fields[1].name(), "color")
+            self.assertEqual(fields[1].type(), QVariant.String)
+            self.assertEqual(fields[2].name(), "author")
+            self.assertEqual(fields[2].type(), QVariant.String)
+            self.assertEqual(fields[3].name(), "created_at")
+            self.assertEqual(fields[3].type(), QVariant.DateTime)
+            self.assertEqual(fields[4].name(), "width")
+            self.assertEqual(fields[4].type(), QVariant.Double)
+            self.assertEqual(fields[5].name(), "attr1")
+            self.assertEqual(fields[5].type(), QVariant.Double)
+            self.assertEqual(fields[6].name(), "attr2")
+            self.assertEqual(fields[6].type(), QVariant.Double)
+            self.assertEqual(fields[7].name(), "attr3")
+            self.assertEqual(fields[7].type(), QVariant.String)
+            self.assertEqual(fields[8].name(), "attr4")
+            self.assertEqual(fields[8].type(), QVariant.String)
+
+            sl = layer.renderer().symbol().symbolLayer(0)
+            self.assertEqual(
+                sl.dataDefinedProperties().property(QgsSymbolLayer.PropertyStrokeColor).expressionString(), '"color"'
+            )
+
+            self.assertEqual(
+                sl.dataDefinedProperties().property(QgsSymbolLayer.PropertyStrokeWidth).expressionString(), '"width"'
+            )
 
 
 if __name__ == "__main__":

@@ -1,14 +1,19 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 import os
 import json
 import base64
 import sqlite3
 import tempfile
+import glob
 
 from qgis.PyQt.QtCore import QVariant
 
 from qgis.PyQt.QtGui import QColor
 
 from qgis.core import (
+    QgsApplication,
     QgsVectorLayer,
     QgsFeature,
     QgsGeometry,
@@ -97,6 +102,18 @@ def parse_db_schema(db_file):
     """Parse GPKG file schema and return map of tables"""
     schema_json = get_schema(db_file)
 
+    tables = {}  # key: name, value: TableSchema
+    for tbl in schema_json:
+        columns = []
+        for col in tbl["columns"]:
+            columns.append(ColumnSchema(col["name"], col["type"], "primary_key" in col and col["primary_key"]))
+
+        tables[tbl["table"]] = TableSchema(tbl["table"], columns)
+    return tables
+
+
+def db_schema_from_json(schema_json):
+    """Create map of tables from the schema JSON file"""
     tables = {}  # key: name, value: TableSchema
     for tbl in schema_json:
         columns = []
@@ -200,12 +217,14 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
 
         f["_op"] = entry_type
 
-        # try to fill in unchanged columns from the database
         if entry_type == "update" and db_conn is not None:
+            # try to fill in unchanged columns from the database
             db_row = get_row_from_db(db_conn, schema_table, entry_changes)
 
             for i in range(len(db_row)):
                 if i == geom_col_index:
+                    if db_row[i] == None:
+                        continue
                     wkb = parse_gpkg_geom_encoding(db_row[i])
                     g = QgsGeometry()
                     g.fromWkb(wkb)
@@ -218,6 +237,25 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
                     f[cols_to_flds[i]] = db_row[i]
                     f[cols_to_flds[i] + fld_old_offset] = db_row[i]
 
+            # try to fill in the old columns from the diff
+            for entry_change in entry_changes:
+                i = entry_change["column"]
+                if "old" in entry_change:
+                    if i == geom_col_index:
+                        if entry_change["old"] == None:
+                            # Empty geometry
+                            continue
+                        wkb_with_gpkg_hdr = base64.decodebytes(entry_change["old"].encode("ascii"))
+                        wkb = parse_gpkg_geom_encoding(wkb_with_gpkg_hdr)
+                        g = QgsGeometry()
+                        g.fromWkb(wkb)
+                        f.setGeometry(g)
+
+                        f[fld_geometry_idx] = g.asWkt()
+                        f[fld_geometry_idx + fld_old_offset] = g.asWkt()
+                    else:
+                        f[cols_to_flds[i] + fld_old_offset] = entry_change["old"]
+
         for entry_change in entry_changes:
             i = entry_change["column"]
             if "new" in entry_change:
@@ -228,6 +266,9 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
                 value = "?"
 
             if i == geom_col_index:
+                if value == None:
+                    # Empty geometry
+                    continue
                 wkb_with_gpkg_hdr = base64.decodebytes(value.encode("ascii"))
                 wkb = parse_gpkg_geom_encoding(wkb_with_gpkg_hdr)
                 g = QgsGeometry()
@@ -309,6 +350,80 @@ def make_local_changes_layer(mp, layer):
 
     style_diff_layer(vl, db_schema[table_name])
     return vl, ""
+
+
+def make_version_changes_layers(project_path, version):
+    geodiff = pygeodiff.GeoDiff()
+
+    layers = []
+    version_dir = os.path.join(project_path, ".mergin", ".cache", f"v{version}")
+    for f in glob.iglob(f"{version_dir}/**/*.gpkg", recursive=True):
+        gpkg_file = os.path.join(version_dir, f)
+        schema_file = gpkg_file + "-schema.json"
+        if not os.path.exists(schema_file):
+            geodiff.schema("sqlite", "", gpkg_file, schema_file)
+
+        changeset_file = find_changeset_file(f, version_dir)
+        if changeset_file is None:
+            continue
+
+        with open(schema_file, encoding="utf-8") as fl:
+            data = fl.read()
+            schema_json = json.loads(data.replace("\n", "")).get("geodiff_schema")
+
+        db_schema = db_schema_from_json(schema_json)
+        diff = parse_diff(geodiff, changeset_file)
+
+        for table_name in diff.keys():
+            if table_name.startswith("gpkg_"):
+                # db schema reported by geodiff exclude layer named "gpkg_*"
+                # We skip it in the layer displayed to the user
+                continue
+            fields, cols_to_fields = create_field_list(db_schema[table_name])
+            geom_type, geom_crs = get_layer_geometry_info(schema_json, table_name)
+
+            db_conn = None  # no ref. db
+            db_conn = sqlite3.connect(gpkg_file)
+
+            features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn)
+
+            # create diff layer
+            if geom_type is None:
+                continue
+
+            uri = f"{geom_type}?crs=epsg:{geom_crs}" if geom_crs else geom_type
+            vl = QgsVectorLayer(uri, table_name, "memory")
+            if not vl.isValid():
+                continue
+
+            vl.dataProvider().addAttributes(fields)
+            vl.updateFields()
+            vl.dataProvider().addFeatures(features)
+
+            style_diff_layer(vl, db_schema[table_name])
+            layers.append(vl)
+
+    return layers
+
+
+def find_changeset_file(file_name, version_dir):
+    """Returns path to the diff file for the given version file"""
+    for f in glob.iglob(f"{version_dir}/**/*.gpkg-diff*", recursive=True):
+        if f.startswith(file_name):
+            return os.path.join(version_dir, f)
+    return None
+
+
+def get_layer_geometry_info(schema_json, table_name):
+    """Returns geometry type and CRS for a given table"""
+    for tbl in schema_json:
+        if tbl["table"] == table_name:
+            for col in tbl["columns"]:
+                if col["type"] == "geometry":
+                    return col["geometry"]["type"], col["geometry"]["srs_id"]
+            return "NoGeometry", ""
+
+    return None, None
 
 
 def style_diff_layer(layer, schema_table):

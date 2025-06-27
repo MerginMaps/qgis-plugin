@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
+
 import os
 import sqlite3
 
@@ -57,7 +61,7 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
         )
 
     def shortHelpString(self):
-        return "Extracts local changes made in the specific layer of the Mergin project to make it easier to revise changes."
+        return "Extracts local changes made in the specific layer of the Mergin Maps project to make it easier to revise changes."
 
     def icon(self):
         return QIcon(mm_symbol_path())

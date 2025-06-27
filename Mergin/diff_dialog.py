@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 import os
 
 from qgis.PyQt import uic
@@ -19,7 +22,7 @@ from qgis.utils import iface, OverrideCursor
 
 from .mergin.merginproject import MerginProject
 from .diff import make_local_changes_layer
-from .utils import icon_path
+from .utils import icon_path, icon_for_layer
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_diff_viewer_dialog.ui")
 
@@ -29,7 +32,7 @@ class DiffViewerDialog(QDialog):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
 
-        with OverrideCursor(Qt.WaitCursor):
+        with OverrideCursor(Qt.CursorShape.WaitCursor):
             QgsGui.instance().enableAutoGeometryRestore(self)
             settings = QSettings()
             state = settings.value("Mergin/changesViewerSplitterSize")
@@ -46,7 +49,7 @@ class DiffViewerDialog(QDialog):
             )
             self.toggle_layers_action.setCheckable(True)
             self.toggle_layers_action.setChecked(True)
-            self.toggle_layers_action.toggled.connect(self.toggle_project_layers)
+            self.toggle_layers_action.toggled.connect(self.toggle_background_layers)
             self.toolbar.addAction(self.toggle_layers_action)
 
             self.toolbar.addSeparator()
@@ -80,7 +83,7 @@ class DiffViewerDialog(QDialog):
             self.toolbar.setIconSize(iface.iconSize())
 
             self.map_canvas.enableAntiAliasing(True)
-            self.map_canvas.setSelectionColor(QColor(Qt.cyan))
+            self.map_canvas.setSelectionColor(QColor(Qt.GlobalColor.cyan))
             self.pan_tool = QgsMapToolPan(self.map_canvas)
             self.map_canvas.setMapTool(self.pan_tool)
 
@@ -122,10 +125,10 @@ class DiffViewerDialog(QDialog):
                 continue
 
             self.diff_layers.append(vl)
-            self.tab_bar.addTab(self.icon_for_layer(vl), f"{layer.name()} ({vl.featureCount()})")
+            self.tab_bar.addTab(icon_for_layer(vl), f"{layer.name()} ({vl.featureCount()})")
         self.tab_bar.setCurrentIndex(0)
 
-    def toggle_project_layers(self, checked):
+    def toggle_background_layers(self, checked):
         layers = self.collect_layers(checked)
         self.update_canvas(layers)
 
@@ -141,8 +144,8 @@ class DiffViewerDialog(QDialog):
             self.map_canvas.setExtent(extent)
         self.map_canvas.refresh()
 
-    def collect_layers(self, checked):
-        if checked:
+    def collect_layers(self, include_background_layers: bool):
+        if include_background_layers:
             layers = iface.mapCanvas().layers()
         else:
             layers = []
@@ -198,19 +201,6 @@ class DiffViewerDialog(QDialog):
         if self.current_diff:
             self.map_canvas.zoomToSelected([self.current_diff])
             self.map_canvas.refresh()
-
-    def icon_for_layer(self, layer):
-        geom_type = layer.geometryType()
-        if geom_type == QgsWkbTypes.PointGeometry:
-            return QgsApplication.getThemeIcon("/mIconPointLayer.svg")
-        elif geom_type == QgsWkbTypes.LineGeometry:
-            return QgsApplication.getThemeIcon("/mIconLineLayer.svg")
-        elif geom_type == QgsWkbTypes.PolygonGeometry:
-            return QgsApplication.getThemeIcon("/mIconPolygonLayer.svg")
-        elif geom_type == QgsWkbTypes.UnknownGeometry:
-            return QgsApplication.getThemeIcon("/mIconGeometryCollectionLayer.svg")
-        else:
-            return QgsApplication.getThemeIcon("/mIconTableLayer.svg")
 
     def show_unsaved_changes_warning(self):
         self.ui.messageBar.pushMessage(

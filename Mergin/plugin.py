@@ -4,7 +4,11 @@
 # Copyright Lutra Consulting Limited
 
 from math import floor
-import sip
+
+try:
+    import sip
+except ImportError:
+    from PyQt6 import sip
 import os
 import shutil
 from pathlib import Path
@@ -42,10 +46,12 @@ from .projects_manager import MerginProjectsManager
 from .sync_dialog import SyncDialog
 from .configure_sync_wizard import DbSyncConfigWizard
 from .remove_project_dialog import RemoveProjectDialog
+from .version_viewer_dialog import VersionViewerDialog
 from .utils import (
     ServerType,
     ClientError,
     LoginError,
+    InvalidProject,
     check_mergin_subdirs,
     create_mergin_client,
     find_qgis_files,
@@ -58,11 +64,12 @@ from .utils import (
     PROJS_PER_PAGE,
     remove_project_variables,
     same_dir,
+    set_qgis_project_mergin_variables,
     unhandled_exception_message,
     unsaved_project_check,
     UnsavedChangesStrategy,
 )
-
+from .mergin.utils import int_version, is_versioned_file
 from .mergin.merginproject import MerginProject
 from .processing.provider import MerginProvider
 import processing
@@ -92,11 +99,18 @@ class MerginPlugin:
             self.toolbar.setObjectName("MerginMapsToolbar")
 
             self.iface.projectRead.connect(self.on_qgis_project_changed)
+            self.on_qgis_project_changed()
             self.iface.newProjectCreated.connect(self.on_qgis_project_changed)
 
         settings = QSettings()
         QgsExpressionContextUtils.setGlobalVariable("mergin_username", settings.value("Mergin/username", ""))
+        QgsExpressionContextUtils.setGlobalVariable("mm_username", settings.value("Mergin/username", ""))
         QgsExpressionContextUtils.setGlobalVariable("mergin_url", settings.value("Mergin/server", ""))
+        QgsExpressionContextUtils.setGlobalVariable("mm_url", settings.value("Mergin/server", ""))
+        QgsExpressionContextUtils.setGlobalVariable("mergin_full_name", settings.value("Mergin/full_name", ""))
+        QgsExpressionContextUtils.setGlobalVariable("mm_full_name", settings.value("Mergin/full_name", ""))
+        QgsExpressionContextUtils.setGlobalVariable("mergin_user_email", settings.value("Mergin/user_email", ""))
+        QgsExpressionContextUtils.setGlobalVariable("mm_user_email", settings.value("Mergin/user_email", ""))
 
     def initProcessing(self):
         QgsApplication.processingRegistry().addProvider(self.provider)
@@ -155,10 +169,17 @@ class MerginPlugin:
                 add_to_menu=True,
                 add_to_toolbar=None,
             )
+            self.add_action(
+                "history.svg",
+                text="Project History",
+                callback=self.open_project_history_window,
+                add_to_menu=False,
+                add_to_toolbar=self.toolbar,
+                enabled=False,
+                always_on=False,
+            )
 
             self.enable_toolbar_actions()
-
-        self.post_login()
 
         self.data_item_provider = DataItemProvider(self)
         QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
@@ -249,7 +270,6 @@ class MerginPlugin:
         """Called when plugin config (connection settings) were changed."""
         self.create_manager()
         self.enable_toolbar_actions()
-        self.post_login()
 
     def open_configured_url(self, path=None):
         """Opens configured Mergin Maps server url in default browser
@@ -287,8 +307,8 @@ class MerginPlugin:
         q += "Would you like to open it and see your Mergin projects?"
         if not browser.isVisible():
             res = QMessageBox.question(None, "Mergin Maps - QGIS Browser Panel", q)
-            if res == QMessageBox.Yes:
-                self.iface.addDockWidget(Qt.LeftDockWidgetArea, browser)
+            if res == QMessageBox.StandardButton.Yes:
+                self.iface.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, browser)
 
     def configure(self):
         """Open plugin configuration dialog."""
@@ -324,13 +344,19 @@ class MerginPlugin:
         if not wizard.exec():
             return
 
+    def open_project_history_window(self):
+        dlg = VersionViewerDialog(self.mc)
+        dlg.exec()
+
     def show_no_workspaces_dialog(self):
         msg = (
             "Workspace is a place to store your projects and share them with your colleagues. "
             "Click on the button below to create one. \n\n"
             "A minimum of one workspace is required to use Mergin Maps."
         )
-        msg_box = QMessageBox(QMessageBox.Icon.Critical, "You do not have any workspace", msg, QMessageBox.Close)
+        msg_box = QMessageBox(
+            QMessageBox.Icon.Critical, "You do not have any workspace", msg, QMessageBox.StandardButton.Close
+        )
         create_button = msg_box.addButton("Create workspace", msg_box.ActionRole)
         create_button.clicked.disconnect()
         create_button.clicked.connect(partial(self.open_configured_url, "/workspaces"))
@@ -351,20 +377,21 @@ class MerginPlugin:
 
         if self.mc.server_type() == ServerType.SAAS and workspace_id:
             # check action required flag
-            service_response = self.mc.workspace_service(workspace_id)
+            try:
+                service_response = self.mc.workspace_service(workspace_id)
+            except ClientError as e:
+                return
 
-            if service_response and type(service_response) is dict:
-                requires_action = service_response.get("action_required", False)
-
-                if requires_action:
-                    iface.messageBar().pushMessage(
-                        "Mergin Maps",
-                        "Your attention is required.&nbsp;Please visit the "
-                        f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required'>"
-                        "Mergin dashboard</a>",
-                        level=Qgis.Critical,
-                        duration=0,
-                    )
+            requires_action = service_response.get("action_required", False)
+            if requires_action:
+                iface.messageBar().pushMessage(
+                    "Mergin Maps",
+                    "Your attention is required.&nbsp;Please visit the "
+                    f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required'>"
+                    "Mergin dashboard</a>",
+                    level=Qgis.Critical,
+                    duration=0,
+                )
 
     def choose_active_workspace(self):
         """
@@ -401,32 +428,6 @@ class MerginPlugin:
                     break
 
         self.set_current_workspace(workspace)
-
-    def post_login(self):
-        """Groups actions that needs to be done when auth information changes"""
-        if not self.mc:
-            return
-
-        if self.mc.server_type() != ServerType.OLD:
-            return
-
-        settings = QSettings()
-
-        # check action required flag
-        service_response = self.mc.user_service()
-
-        if service_response and type(service_response) is dict:
-            requires_action = service_response.get("action_required", False)
-
-            if requires_action:
-                iface.messageBar().pushMessage(
-                    "Mergin Maps",
-                    "Your attention is required.&nbsp;Please visit the "
-                    f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required'>"
-                    "Mergin dashboard</a>",
-                    level=Qgis.Critical,
-                    duration=0,
-                )
 
     def create_new_project(self):
         """Open new Mergin Maps project creation dialog."""
@@ -513,6 +514,7 @@ class MerginPlugin:
         self.mergin_proj_dir = mergin_project_local_path()
         if self.mergin_proj_dir is not None:
             self.enable_toolbar_actions()
+            set_qgis_project_mergin_variables(self.mergin_proj_dir)
 
     def add_context_menu_actions(self, layers):
         provider_names = "vectortile"
@@ -539,7 +541,13 @@ class MerginPlugin:
 
         remove_project_variables()
         QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
+        QgsExpressionContextUtils.removeGlobalVariable("mm_username")
         QgsExpressionContextUtils.removeGlobalVariable("mergin_url")
+        QgsExpressionContextUtils.removeGlobalVariable("mm_url")
+        QgsExpressionContextUtils.removeGlobalVariable("mergin_full_name")
+        QgsExpressionContextUtils.removeGlobalVariable("mm_full_name")
+        QgsExpressionContextUtils.removeGlobalVariable("mergin_user_email")
+        QgsExpressionContextUtils.removeGlobalVariable("mm_user_email")
         QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.data_item_provider)
         self.data_item_provider = None
         # this is crashing qgis on exit
@@ -643,13 +651,13 @@ class MerginRemoteProjectItem(QgsDataItem):
             self.mc.clone_project(self.project_name, dlg.project_name, dlg.project_namespace)
         except (URLError, ClientError) as e:
             msg = "Failed to clone project {}:\n\n{}".format(self.project_name, str(e))
-            QMessageBox.critical(None, "Clone project", msg, QMessageBox.Close)
+            QMessageBox.critical(None, "Clone project", msg, QMessageBox.StandardButton.Close)
             return
         except LoginError as e:
             login_error_message(e)
             return
         msg = "Mergin Maps project cloned successfully."
-        QMessageBox.information(None, "Clone project", msg, QMessageBox.Close)
+        QMessageBox.information(None, "Clone project", msg, QMessageBox.StandardButton.Close)
         self.parent().reload()
         # we also need to reload My projects group as the cloned project could appear there
         group_items = self.project_manager.get_mergin_browser_groups()
@@ -658,17 +666,17 @@ class MerginRemoteProjectItem(QgsDataItem):
 
     def remove_remote_project(self):
         dlg = RemoveProjectDialog(self.project_name)
-        if dlg.exec() == QDialog.Rejected:
+        if dlg.exec() == QDialog.DialogCode.Rejected:
             return
 
         try:
             self.mc.delete_project(self.project_name)
             msg = "Mergin Maps project removed successfully."
-            QMessageBox.information(None, "Remove project", msg, QMessageBox.Close)
+            QMessageBox.information(None, "Remove project", msg, QMessageBox.StandardButton.Close)
             self.parent().reload()
         except (URLError, ClientError) as e:
             msg = "Failed to remove project {}:\n\n{}".format(self.project_name, str(e))
-            QMessageBox.critical(None, "Remove project", msg, QMessageBox.Close)
+            QMessageBox.critical(None, "Remove project", msg, QMessageBox.StandardButton.Close)
         except LoginError as e:
             login_error_message(e)
 
@@ -725,9 +733,13 @@ class MerginLocalProjectItem(QgsDirectoryItem):
             "Do you want to proceed?".format(self.project_name)
         )
         btn_reply = QMessageBox.question(
-            None, "Remove local project", msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+            None,
+            "Remove local project",
+            msg,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
         )
-        if btn_reply == QMessageBox.No:
+        if btn_reply == QMessageBox.StandardButton.No:
             return
 
         if os.path.exists(self.path):
@@ -738,9 +750,13 @@ class MerginLocalProjectItem(QgsDirectoryItem):
                         "Proceed anyway?".format(self.project_name)
                     )
                     btn_reply = QMessageBox.question(
-                        None, "Remove local project", msg, QMessageBox.No | QMessageBox.No, QMessageBox.Yes
+                        None,
+                        "Remove local project",
+                        msg,
+                        QMessageBox.StandardButton.No | QMessageBox.StandardButton.No,
+                        QMessageBox.StandardButton.Yes,
                     )
-                    if btn_reply == QMessageBox.No:
+                    if btn_reply == QMessageBox.StandardButton.No:
                         return
 
                     cur_proj.clear()
@@ -767,7 +783,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
                     f"Failed to delete your project {self.project_name} because it is open.\n"
                     "You might need to close project or QGIS to remove its files."
                 )
-                QMessageBox.critical(None, "Project delete", msg, QMessageBox.Close)
+                QMessageBox.critical(None, "Project delete", msg, QMessageBox.StandardButton.Close)
                 return
 
         settings = QSettings()
@@ -789,11 +805,11 @@ class MerginLocalProjectItem(QgsDirectoryItem):
         try:
             self.mc.clone_project(self.project_name, dlg.project_name, dlg.project_namespace)
             msg = "Mergin Maps project cloned successfully."
-            QMessageBox.information(None, "Clone project", msg, QMessageBox.Close)
+            QMessageBox.information(None, "Clone project", msg, QMessageBox.StandardButton.Close)
             self.parent().reload()
         except (URLError, ClientError) as e:
             msg = "Failed to clone project {}:\n\n{}".format(self.project_name, str(e))
-            QMessageBox.critical(None, "Clone project", msg, QMessageBox.Close)
+            QMessageBox.critical(None, "Clone project", msg, QMessageBox.StandardButton.Close)
         except LoginError as e:
             login_error_message(e)
 
@@ -804,7 +820,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
         action_open_project = QAction("Open QGIS project", parent)
         action_open_project.triggered.connect(self.open_project)
 
-        action_sync_project = QAction(QIcon(icon_path("refresh.svg")), "Synchronize", parent)
+        action_sync_project = QAction(QIcon(icon_path("refresh.svg")), "Synchronise", parent)
         action_sync_project.triggered.connect(self.sync_project)
 
         action_clone_remote = QAction(QIcon(icon_path("copy.svg")), "Clone", parent)
