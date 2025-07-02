@@ -217,48 +217,6 @@ def find_qgis_files(directory):
     return qgis_files
 
 
-def get_mergin_auth():
-    settings = QSettings()
-    save_credentials = settings.value("Mergin/saveCredentials", "false").lower() == "true"
-    mergin_url = settings.value("Mergin/server", MERGIN_URL)
-    auth_manager = QgsApplication.authManager()
-    if not save_credentials or not auth_manager.masterPasswordHashInDatabase():
-        return mergin_url, "", ""
-
-    authcfg = settings.value("Mergin/authcfg", None)
-    cfg = QgsAuthMethodConfig()
-    auth_manager.loadAuthenticationConfig(authcfg, cfg, True)
-    url = cfg.uri()
-    username = cfg.config("username")
-    password = cfg.config("password")
-    return url, username, password
-
-
-def set_mergin_auth(url, username, password):
-    settings = QSettings()
-    authcfg = settings.value("Mergin/authcfg", None)
-    cfg = QgsAuthMethodConfig()
-    auth_manager = QgsApplication.authManager()
-    auth_manager.setMasterPassword()
-    auth_manager.loadAuthenticationConfig(authcfg, cfg, True)
-
-    if cfg.id():
-        cfg.setUri(url)
-        cfg.setConfig("username", username)
-        cfg.setConfig("password", password)
-        auth_manager.updateAuthenticationConfig(cfg)
-    else:
-        cfg.setMethod("Basic")
-        cfg.setName("mergin")
-        cfg.setUri(url)
-        cfg.setConfig("username", username)
-        cfg.setConfig("password", password)
-        auth_manager.storeAuthenticationConfig(cfg)
-        settings.setValue("Mergin/authcfg", cfg.id())
-
-    settings.setValue("Mergin/server", url)
-
-
 def get_qgis_proxy_config(url=None):
     """Check if a proxy is enabled and needed for the given url. Return the settings and additional info."""
     proxy_config = None
@@ -301,30 +259,6 @@ def get_qgis_proxy_config(url=None):
             proxy_config["user"] = s.value("proxy/proxyUser", None)
             proxy_config["password"] = s.value("proxy/proxyPassword", None)
     return proxy_config
-
-
-def create_mergin_client():
-    url, username, password = get_mergin_auth()
-    settings = QSettings()
-    auth_token = settings.value("Mergin/auth_token", None)
-    proxy_config = get_qgis_proxy_config(url)
-    if auth_token:
-        mc = MerginClient(url, auth_token, username, password, get_plugin_version(), proxy_config)
-        # check token expiration
-        delta = mc._auth_session["expire"] - datetime.now(timezone.utc)
-        if delta.total_seconds() > 1:
-            return mc
-
-    if not (username and password):
-        raise ClientError()
-
-    try:
-        mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
-    except (URLError, ClientError) as e:
-        QgsApplication.messageLog().logMessage(str(e))
-        raise
-    settings.setValue("Mergin/auth_token", mc._auth_session["token"])
-    return MerginClient(url, mc._auth_session["token"], username, password, get_plugin_version(), proxy_config)
 
 
 def get_qgis_version_str():
@@ -404,24 +338,6 @@ def send_logs(username, logfile):
         return log_file_name, None
     except (HTTPError, URLError) as e:
         return None, str(e)
-
-
-def validate_mergin_url(url):
-    """
-    Initiates connection to the provided server URL to check if the server is accessible
-    :param url: String Mergin Maps URL to ping.
-    :return: String error message as result of validation. If None, URL is valid.
-    """
-    try:
-        MerginClient(url, proxy_config=get_qgis_proxy_config(url))
-
-    # Valid but not Mergin URl
-    except ClientError:
-        return "Invalid Mergin Maps URL"
-    # Cannot parse URL
-    except ValueError:
-        return "Invalid URL"
-    return None
 
 
 def same_dir(dir1, dir2):
@@ -1233,35 +1149,6 @@ def get_primary_keys(layer):
     if table:
         cols = [c["name"] for c in table["columns"] if "primary_key" in c]
         return cols
-
-
-def test_server_connection(url, username, password):
-    """
-    Test connection to Mergin Maps server. This includes check for valid server URL
-    and user credentials correctness.
-    """
-    err_msg = validate_mergin_url(url)
-    if err_msg:
-        msg = f"<font color=red>{err_msg}</font>"
-        QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {err_msg}")
-        return False, msg
-
-    result = True, "<font color=green> OK </font>"
-    proxy_config = get_qgis_proxy_config(url)
-    try:
-        mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
-
-        if mc.server_type() == ServerType.OLD:
-            QMessageBox.information(
-                None,
-                "Deprecated server version",
-                "This server is running an outdated version that will no longer be supported. Please contact your server administrator to upgrade.",
-            )
-    except (LoginError, ClientError, ValueError) as e:
-        QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
-        result = False, f"<font color=red> Connection failed, {str(e)} </font>"
-
-    return result
 
 
 def is_dark_theme():
