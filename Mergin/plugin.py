@@ -72,6 +72,7 @@ from .utils_auth import (
     MissingAuthConfigError,
     AuthTokenExpiredError,
     set_qgsexpressionscontext,
+    get_authcfg,
 )
 from .mergin.utils import int_version, is_versioned_file
 from .mergin.merginproject import MerginProject
@@ -248,7 +249,7 @@ class MerginPlugin:
         """Create Mergin Maps projects manager."""
         error = ""
         try:
-            if self.mc is None:
+            if self.mc is None and get_authcfg():
                 try:
                     self.mc = create_mergin_client()
                 # if the client creation fails with AuthTokenExpiredError, we need relogin user - it should only happen for SSO
