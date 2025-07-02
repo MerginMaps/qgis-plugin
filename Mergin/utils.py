@@ -63,6 +63,8 @@ from qgis.core import (
     QgsCoordinateTransformContext,
     QgsDefaultValue,
     QgsMapLayer,
+    QgsProperty,
+    QgsSymbolLayer,
 )
 
 from .mergin.utils import int_version, bytes_to_human_size
@@ -1019,6 +1021,16 @@ def is_number(s):
         return False
 
 
+def remove_prefix(text: str, prefix: str):
+    """
+    Remove the ::prefix:: from the ::text:: if it exists otherwise return original ::text::
+    Similar to str.removeprefix remove once we drop support for 3.22/python 3.8
+    """
+    if text.startswith(prefix):
+        return text[len(prefix) :]
+    return text
+
+
 def get_schema(layer_path):
     """
     Return JSON representation of the layer schema
@@ -1305,19 +1317,6 @@ def prefix_for_relative_path(mode, home_path, target_dir):
     else:
         return ""
 
-    symbol = QgsLineSymbol.createSimple(
-        {
-            "capstyle": "square",
-            "joinstyle": "bevel",
-            "line_style": "solid",
-            "line_width": "0.35",
-            "line_width_unit": "MM",
-            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFA500")),
-        }
-    )
-    layer.setRenderer(QgsSingleSymbolRenderer(symbol))
-    set_tracking_layer_flags(layer)
-
 
 def create_tracking_layer(project_path):
     """
@@ -1353,6 +1352,87 @@ def create_tracking_layer(project_path):
     return filename
 
 
+def create_map_sketches_layer(project_path):
+    filename = os.path.join(project_path, "map_sketches.gpkg")
+
+    if not os.path.exists(filename):
+        fields = QgsFields()
+        fields.append(QgsField("color", QVariant.String))
+        fields.append(QgsField("author", QVariant.String))
+        fields.append(QgsField("created_at", QVariant.DateTime))
+        fields.append(QgsField("width", QVariant.Double))
+        fields.append(QgsField("attr1", QVariant.Double))
+        fields.append(QgsField("attr2", QVariant.Double))
+        fields.append(QgsField("attr3", QVariant.String))
+        fields.append(QgsField("attr4", QVariant.String))
+
+        options = QgsVectorFileWriter.SaveVectorOptions()
+        options.driverName = "GPKG"
+        options.layerName = "Map sketches"
+
+        writer = QgsVectorFileWriter.create(
+            filename,
+            fields,
+            QgsWkbTypes.MultiLineStringZM,
+            QgsCoordinateReferenceSystem("EPSG:4326"),
+            QgsCoordinateTransformContext(),
+            options,
+        )
+        del writer
+
+    layer = QgsVectorLayer(filename, "Map sketches", "ogr")
+
+    """
+    Configures map sketches layer:
+     - set default values for fields
+     - apply default styling
+    """
+    idx = layer.fields().indexFromName("fid")
+    cfg = QgsEditorWidgetSetup("Hidden", {})
+    layer.setEditorWidgetSetup(idx, cfg)
+
+    idx = layer.fields().indexFromName("author")
+    author_default = QgsDefaultValue()
+    author_default.setExpression("@mm_username")
+    layer.setDefaultValueDefinition(idx, author_default)
+
+    idx = layer.fields().indexFromName("created_at")
+    created_at_default = QgsDefaultValue()
+    created_at_default.setExpression("now()")
+    layer.setDefaultValueDefinition(idx, created_at_default)
+
+    idx = layer.fields().indexFromName("width")
+    width_default = QgsDefaultValue()
+    width_default.setExpression("0.6")
+    layer.setDefaultValueDefinition(idx, width_default)
+
+    # create default symbo, with settings
+    symbol = QgsLineSymbol.createSimple(
+        {
+            "line_width": "0.6",
+            "line_color": QgsSymbolLayerUtils.encodeColor(QColor("#FFFFFF")),
+        }
+    )
+
+    # get symbol layer and set it to expression for color
+    symbol_layer = symbol.takeSymbolLayer(0)
+    symbol_layer.setDataDefinedProperty(QgsSymbolLayer.PropertyStrokeColor, QgsProperty.fromExpression('"color"'))
+    symbol_layer.setDataDefinedProperty(QgsSymbolLayer.PropertyStrokeWidth, QgsProperty.fromExpression('"width"'))
+    # put it back to the symbol
+    symbol.appendSymbolLayer(symbol_layer)
+
+    # create renderer with the symbol
+    renderer = QgsSingleSymbolRenderer(symbol)
+
+    # set renderer to the layer
+    layer.setRenderer(renderer)
+
+    QgsProject.instance().addMapLayer(layer)
+    QgsProject.instance().writeEntry("Mergin", "MapSketching/Layer", layer.id())
+
+    return filename
+
+
 def setup_tracking_layer(layer: QgsVectorLayer):
     """
     Configures tracking layer:
@@ -1384,7 +1464,7 @@ def setup_tracking_layer(layer: QgsVectorLayer):
     layer.setDefaultValueDefinition(idx, user_default)
 
     layer.setDisplayExpression(
-        "\"tracked_by\" ||' on '|| format_date( \"tracking_end_time\", 'dd MMM yyyy') ||' at '|| format_date(\"tracking_end_time\", 'H:MM')"
+        "\"tracked_by\" ||' on '|| format_date( \"tracking_end_time\", 'dd MMM yyyy') ||' at '|| format_date(\"tracking_end_time\", 'H:mm (t)')"
     )
 
     symbol = QgsLineSymbol.createSimple(
@@ -1511,3 +1591,13 @@ def duplicate_layer(layer: QgsVectorLayer) -> QgsVectorLayer:
         raise Exception(err_msg)
 
     return lyr_clone
+
+
+def is_experimental_plugin_enabled() -> bool:
+    """Returns True if the experimental flag is enable in the plugin manager else false"""
+    settings = QSettings()
+    if Qgis.versionInt() <= 33000:  # Changed QSettings key in 3.30
+        value = settings.value("app/plugin_installer/allowExperimental", False)
+    else:
+        value = settings.value("plugin-manager/allow-experimental", False)
+    return value

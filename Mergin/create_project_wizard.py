@@ -2,6 +2,7 @@
 # Copyright Lutra Consulting Limited
 
 import os
+import shutil
 from pathlib import Path
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QSettings, Qt, QVariant, QSortFilterProxyModel
@@ -488,10 +489,6 @@ class NewMerginProjectWizard(QWizard):
 
         if self.init_page.basic_proj_btn.isChecked():
             self.project_file = create_basic_qgis_project(project_path=self.project_file)
-            self.iface.addProject(self.project_file)
-            # workaround to set proper extent
-            self.iface.mapCanvas().zoomToFullExtent()
-            QgsProject.instance().write()
             reload_project = True
 
         elif self.init_page.cur_proj_pack_btn.isChecked():
@@ -538,9 +535,22 @@ class NewMerginProjectWizard(QWizard):
         QApplication.processEvents()
         QApplication.restoreOverrideCursor()
 
-        self.project_manager.create_project(self.project_name, self.project_dir, self.is_public, self.project_namespace)
-        if reload_project:
-            self.project_manager.open_project(self.project_dir)
+        ok = self.project_manager.create_project(
+            self.project_name, self.project_dir, self.is_public, self.project_namespace
+        )
+        if not ok:
+            # Cleanup the local project if failed
+            if self.init_page.cur_proj_pack_btn.isChecked() or self.init_page.basic_proj_btn.isChecked():
+                shutil.rmtree(self.project_dir)
+
+        if reload_project and ok:
+            if self.init_page.basic_proj_btn.isChecked():
+                # workaround to set the proper extent
+                self.iface.addProject(self.project_file)
+                self.iface.mapCanvas().zoomToFullExtent()
+                QgsProject.instance().write()
+            else:
+                self.project_manager.open_project(self.project_dir)
 
         if failed_packaging:
             warn = "Failed to package following layers:\n"
