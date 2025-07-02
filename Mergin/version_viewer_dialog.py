@@ -600,16 +600,15 @@ class VersionViewerDialog(QDialog):
 
                 if sys.platform in ("darwin", "linux"):
                     extent = self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
-                else :
+                else:
                     # TODO bug specific on windows and older QGIS version
                     # remove this madness and only keep above once you drop support for <=QGIS 3.34
                     extent = (
                         self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
                         if not layers[0].extent().isEmpty()
-                        else extent 
+                        else extent
                     )
                 self.map_canvas.setExtent(extent)
-
 
         # if self.current_diff:
         #     layerExtent = self.current_diff.extent()
