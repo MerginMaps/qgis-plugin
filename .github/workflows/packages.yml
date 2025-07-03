@@ -14,7 +14,7 @@ on:
         type: string
 env:
   # Assign the version provided by 'workflow_dispatch' if available; otherwise, use the default.
-  PYTHON_API_CLIENT_VER: ${{ inputs.PYTHON_API_CLIENT_VER != '' && inputs.PYTHON_API_CLIENT_VER || '0.10.0' }}
+  PYTHON_API_CLIENT_VER: ${{ inputs.PYTHON_API_CLIENT_VER != '' && inputs.PYTHON_API_CLIENT_VER || '0.10.1' }}
   GEODIFF_VER:  ${{ inputs.GEODIFF_VER != '' && inputs.GEODIFF_VER || '2.0.4' }}
   PYTHON_VER: "38"
   PLUGIN_NAME: Mergin  
