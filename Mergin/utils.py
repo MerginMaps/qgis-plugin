@@ -69,7 +69,6 @@ from qgis.core import (
 
 from .mergin.utils import int_version, bytes_to_human_size
 from .mergin.merginproject import MerginProject
-from .utils_auth import get_stored_mergin_server_url
 
 try:
     from .mergin.common import ClientError, ErrorCode, LoginError, InvalidProject
@@ -303,7 +302,7 @@ def send_logs(username, logfile):
     :param logfile: path to logfile
     :returns: name of submitted file, error message
     """
-    mergin_url = get_stored_mergin_server_url()
+    mergin_url, _, _ = get_mergin_auth()
     system = platform.system().lower()
     version = plugin_version()
     # also read global mergin client log
