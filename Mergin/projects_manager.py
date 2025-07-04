@@ -29,6 +29,7 @@ from .utils import (
     write_project_variables,
     bytes_to_human_size,
 )
+from .utils_auth import get_stored_mergin_server_url
 
 from .mergin.merginproject import MerginProject
 from .project_status_dialog import ProjectStatusDialog
@@ -433,7 +434,7 @@ class MerginProjectsManager(object):
             return
 
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        log_file_name, error = send_logs(self.mc.username(), logs_path)
+        log_file_name, error = send_logs(get_stored_mergin_server_url(), self.mc.username(), logs_path)
         QApplication.restoreOverrideCursor()
 
         if error:

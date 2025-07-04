@@ -296,13 +296,12 @@ def is_versioned_file(file):
     return f_extension in diff_extensions
 
 
-def send_logs(username, logfile):
+def send_logs(mergin_url: str, username: str, logfile: str):
     """Send mergin-client logs to dedicated server
 
     :param logfile: path to logfile
     :returns: name of submitted file, error message
     """
-    mergin_url, _, _ = get_mergin_auth()
     system = platform.system().lower()
     version = plugin_version()
     # also read global mergin client log
