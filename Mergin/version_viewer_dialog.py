@@ -590,8 +590,6 @@ class VersionViewerDialog(QDialog):
             self.map_canvas.setDestinationCrs(QgsProject.instance().crs())
             if layers:
                 extent = layers[0].extent()
-                print("layers[0].name()", layers[0].name())
-                print("layers[0].extent()", layers[0].extent())
 
                 d = min(extent.width(), extent.height())
                 if d == 0:
@@ -609,14 +607,6 @@ class VersionViewerDialog(QDialog):
                         else extent
                     )
                 self.map_canvas.setExtent(extent)
-
-        # if self.current_diff:
-        #     layerExtent = self.current_diff.extent()
-        #     # transform extent
-        #     layerExtent = self.map_canvas.mapSettings().layerExtentToOutputExtent(self.current_diff, layerExtent)
-
-        #     self.map_canvas.setExtent(layerExtent)
-        #     self.map_canvas.refresh()
 
         self.map_canvas.refresh()
 
@@ -728,8 +718,6 @@ class VersionViewerDialog(QDialog):
 
     def zoom_full(self):
         if self.current_diff:
-            print("self.current_diff.name()", self.current_diff.name())
-            print("self.current_diff.extent()", self.current_diff.extent())
             layerExtent = self.current_diff.extent()
             # transform extent
             layerExtent = self.map_canvas.mapSettings().layerExtentToOutputExtent(self.current_diff, layerExtent)
