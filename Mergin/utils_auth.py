@@ -525,7 +525,7 @@ def mergin_server_deprecated_version(url: str) -> bool:
 def url_reachable(url: str) -> bool:
     try:
         requests.get(url, timeout=3)
-    except (requests.RequestException, urllib3.exceptions.LocationParseError):
+    except (requests.RequestException, urllib3.exceptions.LocationParseError, UnicodeError):
         return False
     return True
 
