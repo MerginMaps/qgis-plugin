@@ -513,16 +513,20 @@ class NewMerginProjectWizard(QWizard):
                     elif layer_state == proxy_model.IGNORE_COL:
                         layers_to_remove.append(lid)
 
-                new_proj.removeMapLayers(layers_to_remove)
-                new_proj.write()
-                reload_project = True
+            new_proj.removeMapLayers(layers_to_remove)
+
+            new_proj.writeEntry("Mergin", "SortLayersAlphabetical/Enabled", False)
+            new_proj.write()
+            reload_project = True
 
                 # copy datum shift grids
                 package_datum_grids(os.path.join(self.project_dir, "proj"))
 
-            elif self.init_page.cur_proj_no_pack_btn.isChecked():
-                cur_proj = QgsProject.instance()
-                cur_proj.write()
+        elif self.init_page.cur_proj_no_pack_btn.isChecked():
+            cur_proj = QgsProject.instance()
+
+            cur_proj.writeEntry("Mergin", "SortLayersAlphabetical/Enabled", False)
+            cur_proj.write()
 
                 # copy datum shift grids
                 package_datum_grids(os.path.join(self.project_dir, "proj"))

@@ -113,6 +113,13 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                     else:
                         item.setColor(QColor("#ffffff"))
 
+        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "SortLayersAlphabetical/Enabled")
+        if ok:
+            self.chk_sort_alphabetical.setChecked(enabled)
+        else:
+            # Backward compatibility used to be the default
+            self.chk_sort_alphabetical.setChecked(True)
+
         self.local_project_dir = mergin_project_local_path()
 
         if self.local_project_dir:
@@ -320,6 +327,10 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
                 expression = item.data(AttachmentFieldsModel.EXPRESSION)
                 QgsProject.instance().writeEntry("Mergin", f"PhotoNaming/{layer_id}/{field_name}", expression)
+
+        QgsProject.instance().writeEntry(
+            "Mergin", "SortLayersAlphabetical/Enabled", self.chk_sort_alphabetical.isChecked()
+        )
 
         self.save_config_file()
         self.setup_tracking()
