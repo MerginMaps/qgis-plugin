@@ -440,7 +440,7 @@
           <item>
            <widget class="QLabel" name="label_13">
             <property name="text">
-             <string>This option override the default sorting layer in the mobile app to layer alphabetically</string>
+             <string>This option override the default sorting layer in the mobile app to sort layer alphabetically</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
