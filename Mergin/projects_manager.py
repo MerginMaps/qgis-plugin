@@ -392,7 +392,7 @@ class MerginProjectsManager(object):
                     # To note we check for a string since error in flask doesn't return server error code
                     msg = "Somebody else is syncing, please try again later"
                 elif dlg.exception.server_code == ErrorCode.StorageLimitHit.value:
-                    msg = f"{e.detail}\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response['storage_limit'])}"
+                    msg = f"{dlg.exception.detail}\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response['storage_limit'])}"
                 else:
                     msg = str(dlg.exception)
                 QMessageBox.critical(None, "Project sync", "Client error: \n" + msg)
