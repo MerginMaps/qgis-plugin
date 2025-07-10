@@ -190,6 +190,7 @@ class ConfigurationDialog(QDialog):
 
     def allow_sso_login(self) -> None:
         self.ui.button_sign_sso.setVisible(False)
+        self.ui.button_sign_sso.setEnabled(False)
 
         if not qgis_support_sso():
             return
@@ -205,6 +206,7 @@ class ConfigurationDialog(QDialog):
                 QMessageBox.critical(self, "SSO email check", msg)
 
         self.ui.button_sign_sso.setVisible(allowed)
+        self.ui.button_sign_sso.setEnabled(allowed)
         self.ui.sso_email.setVisible(self.sso_email_required)
 
         if not allowed:
