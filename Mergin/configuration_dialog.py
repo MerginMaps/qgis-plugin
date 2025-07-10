@@ -3,7 +3,6 @@
 
 import os
 import typing
-from functools import partial
 from qgis.PyQt.QtWidgets import QDialog, QApplication, QDialogButtonBox, QMessageBox
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, QSettings, QTimer
@@ -42,7 +41,7 @@ class ConfigurationDialog(QDialog):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
         settings = QSettings()
-        if is_dark_theme():
+        if is_dark_theme():1000
             self.ui.label.setText(
                 "Don't have an account yet? <a style='color:#88b2f5' href='https://app.merginmaps.com/register'>Sign up</a> now!"
             )
