@@ -44,9 +44,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-849</y>
+        <y>-888</y>
         <width>628</width>
-        <height>1424</height>
+        <height>1444</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -436,8 +436,8 @@
          <property name="title">
           <string>Set layer order</string>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <item>
+         <layout class="QGridLayout" name="gridLayout_7">
+          <item row="0" column="0" colspan="2">
            <widget class="QLabel" name="label_13">
             <property name="text">
              <string>This option override the default sorting layer in the mobile app to sort layer alphabetically</string>
@@ -447,10 +447,13 @@
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QCheckBox" name="chk_sort_alphabetical">
+          <item row="1" column="1">
+           <widget class="QComboBox" name="cmb_sort_method"/>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_14">
             <property name="text">
-             <string>Enable sort layer alphabetically</string>
+             <string>Sorting method</string>
             </property>
            </widget>
           </item>
