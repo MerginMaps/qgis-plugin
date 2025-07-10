@@ -53,6 +53,7 @@ class ConfigurationDialog(QDialog):
 
         self.sso_timer = QTimer(self)
         self.sso_timer.setSingleShot(True)
+        self.sso_timer.setInterval(1000)
         self.sso_timer.timeout.connect(self.allow_sso_login)
 
         save_credentials = settings.value("Mergin/saveCredentials", "false").lower() == "true"
@@ -83,7 +84,7 @@ class ConfigurationDialog(QDialog):
         self.ui.save_credentials.stateChanged.connect(self.check_master_password)
         self.ui.username.textChanged.connect(self.check_credentials)
         self.ui.password.textChanged.connect(self.check_credentials)
-        self.ui.merginURL.textChanged.connect(partial(self.sso_timer.start, 1000))
+        self.ui.merginURL.textChanged.connect(self.sso_timer.start)
         self.ui.sso_email.textChanged.connect(self.check_credentials)
         self.ui.stacked_widget_login.currentChanged.connect(self.check_credentials)
 
@@ -93,7 +94,7 @@ class ConfigurationDialog(QDialog):
         self.ui.button_sign_password.clicked.connect(self.show_sign_email)
 
         self.check_credentials()
-        self.sso_timer.start(1000)
+        self.sso_timer.start()
 
         if not qgis_support_sso():
             self.ui.button_sign_sso.setVisible(False)
