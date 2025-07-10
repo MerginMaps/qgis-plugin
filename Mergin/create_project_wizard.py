@@ -515,7 +515,7 @@ class NewMerginProjectWizard(QWizard):
 
             new_proj.removeMapLayers(layers_to_remove)
 
-            new_proj.writeEntry("Mergin", "SortLayersAlphabetical/Enabled", False)
+            new_proj.writeEntry("Mergin", "SortLayersMethod/Method", 0)  # 0 - Preserve QGIS layer order
             new_proj.write()
             reload_project = True
 
@@ -525,7 +525,7 @@ class NewMerginProjectWizard(QWizard):
         elif self.init_page.cur_proj_no_pack_btn.isChecked():
             cur_proj = QgsProject.instance()
 
-            cur_proj.writeEntry("Mergin", "SortLayersAlphabetical/Enabled", False)
+            cur_proj.writeEntry("Mergin", "SortLayersMethod/Method", 0)  # 0 - Preserve QGIS layer order
             cur_proj.write()
 
                 # copy datum shift grids

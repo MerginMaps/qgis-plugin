@@ -113,12 +113,12 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                     else:
                         item.setColor(QColor("#ffffff"))
 
-        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "SortLayersAlphabetical/Enabled")
-        if ok:
-            self.chk_sort_alphabetical.setChecked(enabled)
-        else:
-            # Backward compatibility used to be the default
-            self.chk_sort_alphabetical.setChecked(True)
+        self.cmb_sort_method.addItem("Preserve QGIS layer order ", 0)
+        self.cmb_sort_method.addItem("Alphabetical", 1)
+
+        mode, ok = QgsProject.instance().readNumEntry("Mergin", "SortLayersMethod/Method")
+        idx = self.cmb_sort_method.findData(mode) if ok else 1
+        self.cmb_sort_method.setCurrentIndex(idx)
 
         self.local_project_dir = mergin_project_local_path()
 
@@ -328,10 +328,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 expression = item.data(AttachmentFieldsModel.EXPRESSION)
                 QgsProject.instance().writeEntry("Mergin", f"PhotoNaming/{layer_id}/{field_name}", expression)
 
-        QgsProject.instance().writeEntry(
-            "Mergin", "SortLayersAlphabetical/Enabled", self.chk_sort_alphabetical.isChecked()
-        )
-
+        QgsProject.instance().writeEntry("Mergin", "SortLayersMethod/Method", self.cmb_sort_method.currentData())
         self.save_config_file()
         self.setup_tracking()
         self.setup_map_sketches()
