@@ -189,6 +189,9 @@ class MerginPlugin:
         # if self.iface.browserModel().initialized():
         #     self.iface.browserModel().reload()
 
+        # create manager based on status of QGIS
+        # if main window is visible, we can create the manager immediately - QGIS is already initialized
+        # if not, we need to wait for initializationCompleted signal so that QGIS is fully initialized
         if self.iface.mainWindow().isVisible():
             self.create_manager()
         else:
