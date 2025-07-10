@@ -41,7 +41,7 @@ class ConfigurationDialog(QDialog):
         QDialog.__init__(self)
         self.ui = uic.loadUi(ui_file, self)
         settings = QSettings()
-        if is_dark_theme():1000
+        if is_dark_theme():
             self.ui.label.setText(
                 "Don't have an account yet? <a style='color:#88b2f5' href='https://app.merginmaps.com/register'>Sign up</a> now!"
             )
