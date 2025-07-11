@@ -131,8 +131,6 @@ class MerginPlugin:
 
         self.initProcessing()
 
-        self.create_manager()
-
         if self.iface is not None:
             self.add_action(
                 mm_symbol_path(),
@@ -190,6 +188,14 @@ class MerginPlugin:
         # related to https://github.com/MerginMaps/qgis-mergin-plugin/issues/3
         # if self.iface.browserModel().initialized():
         #     self.iface.browserModel().reload()
+
+        # create manager based on status of QGIS
+        # if main window is visible, we can create the manager immediately - QGIS is already initialized
+        # if not, we need to wait for initializationCompleted signal so that QGIS is fully initialized
+        if self.iface.mainWindow().isVisible():
+            self.create_manager()
+        else:
+            self.iface.initializationCompleted.connect(self.create_manager)
 
         if self.iface is not None:
             # register custom mergin widget in project properties
