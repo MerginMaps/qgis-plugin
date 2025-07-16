@@ -260,7 +260,7 @@ class MerginPlugin:
                     self.mc = create_mergin_client()
                 # if the client creation fails with AuthTokenExpiredError, we need relogin user - it should only happen for SSO
                 except AuthTokenExpiredError:
-                    self.configure()
+                    self.auth_token_expired()
                     return
 
             self.choose_active_workspace()
@@ -404,6 +404,9 @@ class MerginPlugin:
                 service_response = self.mc.workspace_service(workspace_id)
             except ClientError as e:
                 return
+            except AuthTokenExpiredError:
+                self.auth_token_expired()
+                return
 
             requires_action = service_response.get("action_required", False)
             if requires_action:
@@ -506,6 +509,9 @@ class MerginPlugin:
             workspaces = self.mc.workspaces_list()
         except (URLError, ClientError) as e:
             return  # Server does not support workspaces
+        except AuthTokenExpiredError:
+            self.auth_token_expired()
+            return
 
         if not workspaces:
             self.show_no_workspaces_dialog()
