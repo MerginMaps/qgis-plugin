@@ -434,16 +434,23 @@
        <item>
         <widget class="QGroupBox" name="groupBox_4">
          <property name="title">
-          <string>Photo sketches</string>
+          <string>Photo sketching</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
-          <item row="0" column="0">
-           <widget class="QCheckBox" name="chk_photo_sketches_enabled">
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="chk_photo_sketching_enabled">
             <property name="text">
-             <string>Enable photo sketches</string>
+             <string>Enable photo sketching</string>
             </property>
             <property name="checked">
              <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_13">
+            <property name="text">
+             <string>Photo sketching lets mobile app users modify captured photos by adding freehand annotations to them</string>
             </property>
            </widget>
           </item>
