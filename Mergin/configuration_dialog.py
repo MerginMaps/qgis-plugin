@@ -50,6 +50,11 @@ class ConfigurationDialog(QDialog):
                 "Don't have an account yet? <a href='https://app.merginmaps.com/register'>Sign up</a> now!"
             )
 
+        self.sso_timer = QTimer(self)
+        self.sso_timer.setSingleShot(True)
+        self.sso_timer.setInterval(1000)
+        self.sso_timer.timeout.connect(self.allow_sso_login)
+
         save_credentials = settings.value("Mergin/saveCredentials", "false").lower() == "true"
         login_type = get_login_type()
         if save_credentials or login_type == LoginType.PASSWORD:
@@ -78,18 +83,17 @@ class ConfigurationDialog(QDialog):
         self.ui.save_credentials.stateChanged.connect(self.check_master_password)
         self.ui.username.textChanged.connect(self.check_credentials)
         self.ui.password.textChanged.connect(self.check_credentials)
-        self.ui.merginURL.textChanged.connect(self.check_sso_availability)
-        self.ui.merginURL.textChanged.connect(self.check_sso_email)
+        self.ui.merginURL.textChanged.connect(self.sso_timer.start)
         self.ui.sso_email.textChanged.connect(self.check_credentials)
         self.ui.stacked_widget_login.currentChanged.connect(self.check_credentials)
 
         self.sso_email_required = False
 
         self.ui.button_sign_sso.clicked.connect(self.show_sign_sso)
-        self.ui.button_sign_password.clicked.connect(self.show_sign_email)
+        self.ui.button_sign_password.clicked.connect(self.show_sign_password)
 
         self.check_credentials()
-        self.check_sso_availability()
+        self.sso_timer.start()
 
         if not qgis_support_sso():
             self.ui.button_sign_sso.setVisible(False)
@@ -191,14 +195,15 @@ class ConfigurationDialog(QDialog):
             return
 
         allowed, msg = sso_login_allowed(self.server_url())
-        if msg:
-            QMessageBox.critical(self, "SSO allowed check", msg)
+        if not allowed:
+            self.show_sign_password()
             return
 
         if allowed:
             self.sso_email_required, msg = sso_ask_for_email(self.server_url())
             if msg:
-                QMessageBox.critical(self, "SSO email check", msg)
+                self.show_sign_password()
+                return
 
         self.ui.button_sign_sso.setVisible(allowed)
         self.ui.sso_email.setVisible(self.sso_email_required)
@@ -206,26 +211,11 @@ class ConfigurationDialog(QDialog):
         if not allowed:
             self.ui.stacked_widget_login.setCurrentIndex(0)
 
-    def check_sso_availability(self) -> None:
-        self.sso_timer = QTimer(self)
-        self.sso_timer.setSingleShot(True)
-        self.sso_timer.start(1000)
-        self.sso_timer.timeout.connect(self.allow_sso_login)
-
-    def check_sso_email(self) -> None:
-        self.sso_email_timer = QTimer(self)
-        self.sso_email_timer.setSingleShot(True)
-        self.sso_email_timer.start(1000)
-        self.sso_email_timer.timeout.connect(self.enable_sso_email_input)
-
     def show_sign_sso(self) -> None:
         self.ui.stacked_widget_login.setCurrentIndex(1)
-        self.enable_sso_email_input()
-
-    def enable_sso_email_input(self) -> None:
         self.ui.sso_email.setVisible(self.sso_email_required)
 
-    def show_sign_email(self) -> None:
+    def show_sign_password(self) -> None:
         self.ui.stacked_widget_login.setCurrentIndex(0)
 
     def get_sso_email(self) -> typing.Optional[str]:
