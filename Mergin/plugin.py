@@ -634,6 +634,13 @@ class MerginPlugin:
 
         processing.execAlgorithmDialog("mergin:downloadvectortiles", params)
 
+    def auth_token_expired(self):
+        QMessageBox.information(
+            self.iface.mainWindow(), "MerginMaps Token Expired", "Your login token has expired. Please re-authenticate."
+        )
+
+        self.configure()
+
 
 class MerginRemoteProjectItem(QgsDataItem):
     """Data item to represent a remote Mergin Maps project."""
