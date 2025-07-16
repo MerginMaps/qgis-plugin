@@ -90,7 +90,7 @@ class ConfigurationDialog(QDialog):
         self.sso_email_required = False
 
         self.ui.button_sign_sso.clicked.connect(self.show_sign_sso)
-        self.ui.button_sign_password.clicked.connect(self.show_sign_email)
+        self.ui.button_sign_password.clicked.connect(self.show_sign_password)
 
         self.check_credentials()
         self.sso_timer.start()
@@ -190,24 +190,22 @@ class ConfigurationDialog(QDialog):
 
     def allow_sso_login(self) -> None:
         self.ui.button_sign_sso.setVisible(False)
-        self.ui.button_sign_sso.setEnabled(False)
 
         if not qgis_support_sso():
             return
 
         allowed, msg = sso_login_allowed(self.server_url())
         if not allowed:
-            self.show_sign_email()
+            self.show_sign_password()
             return
 
         if allowed:
             self.sso_email_required, msg = sso_ask_for_email(self.server_url())
             if msg:
-                self.show_sign_email()
+                self.show_sign_password()
                 return
 
         self.ui.button_sign_sso.setVisible(allowed)
-        self.ui.button_sign_sso.setEnabled(allowed)
         self.ui.sso_email.setVisible(self.sso_email_required)
 
         if not allowed:
@@ -215,9 +213,9 @@ class ConfigurationDialog(QDialog):
 
     def show_sign_sso(self) -> None:
         self.ui.stacked_widget_login.setCurrentIndex(1)
-        self.enable_sso_email_input()
+        self.ui.sso_email.setVisible(self.sso_email_required)
 
-    def show_sign_email(self) -> None:
+    def show_sign_password(self) -> None:
         self.ui.stacked_widget_login.setCurrentIndex(0)
 
     def get_sso_email(self) -> typing.Optional[str]:
