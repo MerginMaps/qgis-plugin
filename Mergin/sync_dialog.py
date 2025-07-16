@@ -4,10 +4,11 @@
 import os
 import sys
 import traceback
-from qgis.PyQt.QtWidgets import QDialog, QApplication
+from qgis.PyQt.QtWidgets import QDialog
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, QTimer
 from qgis.PyQt.QtGui import QPixmap
+from qgis.utils import OverrideCursor
 
 from .utils import (
     download_project_async,
@@ -110,26 +111,22 @@ class SyncDialog(QDialog):
         QTimer.singleShot(250, self.download_start_internal)
 
     def download_start_internal(self):
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        with OverrideCursor(Qt.CursorShape.WaitCursor):
+            try:
+                self.job = download_project_async(self.mergin_client, self.project_name, self.target_dir)
+            except Exception as e:
+                self.reset_operation(success=False, close=True, exception=e)
+                return
 
-        try:
-            self.job = download_project_async(self.mergin_client, self.project_name, self.target_dir)
-        except Exception as e:
-            QApplication.restoreOverrideCursor()
-            self.reset_operation(success=False, close=True, exception=e)
-            return
+            assert self.job  # if there was no error thrown, we should have a job
+    
+            # use kilobytes as a unit, so we do not need to worry about int overflow with projects of few GB size
+            self.progress.setMaximum(int(self.job.total_size / 1024))
+            self.progress.setValue(0)
 
-        QApplication.restoreOverrideCursor()
+            self.timer.start()
 
-        assert self.job  # if there was no error thrown, we should have a job
-
-        # use kilobytes as a unit so we do not need to worry about int overflow with projects of few GB size
-        self.progress.setMaximum(int(self.job.total_size / 1024))
-        self.progress.setValue(0)
-
-        self.timer.start()
-
-        self.labelStatus.setText("Downloading project...")
+            self.labelStatus.setText("Downloading project...")
 
     def download_timer_tick(self):
         self.progress.setValue(int(self.job.transferred_size / 1024))
@@ -177,23 +174,19 @@ class SyncDialog(QDialog):
         QTimer.singleShot(250, self.push_start_internal)
 
     def push_start_internal(self):
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-
-        try:
-            self.job = push_project_async(self.mergin_client, self.target_dir)
-        except Exception as e:
-            QApplication.restoreOverrideCursor()
-            self.reset_operation(success=False, close=True, exception=e)
-            return
-
-        QApplication.restoreOverrideCursor()
+        with OverrideCursor(Qt.CursorShape.WaitCursor):
+            try:
+                self.job = push_project_async(self.mergin_client, self.target_dir)
+            except Exception as e:
+                self.reset_operation(success=False, close=True, exception=e)
+                return
 
         if not self.job:
             # there are no changes (or push required no uploads)
             self.reset_operation(success=True, close=True)
             return
 
-        # use kilobytes as a unit so we do not need to worry about int overflow with projects of few GB size
+        # use kilobytes as a unit, so we do not need to worry about int overflow with projects of few GB size
         self.progress.setMaximum(int(self.job.total_size / 1024))
         self.progress.setValue(0)
 
@@ -247,23 +240,19 @@ class SyncDialog(QDialog):
         QTimer.singleShot(250, self.pull_start_internal)
 
     def pull_start_internal(self):
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-
-        try:
-            self.job = pull_project_async(self.mergin_client, self.target_dir)
-        except Exception as e:
-            QApplication.restoreOverrideCursor()
-            self.reset_operation(success=False, close=True, exception=e)
-            return
-
-        QApplication.restoreOverrideCursor()
+        with OverrideCursor(Qt.CursorShape.WaitCursor):
+            try:
+                self.job = pull_project_async(self.mergin_client, self.target_dir)
+            except Exception as e:
+                self.reset_operation(success=False, close=True, exception=e)
+                return
 
         if not self.job:
             # there are no changes
             self.reset_operation(success=True, close=True)
             return
 
-        # use kilobytes as a unit so we do not need to worry about int overflow with projects of few GB size
+        # use kilobytes as a unit, so we do not need to worry about int overflow with projects of few GB size
         self.progress.setMaximum(int(self.job.total_size / 1024))
         self.progress.setValue(0)
 
@@ -307,7 +296,7 @@ class SyncDialog(QDialog):
     def cancel_sync_operation(self, msg, cancel_func):
         self.timer.stop()
         self.labelStatus.setText(msg)
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        cancel_func(self.job)
-        QApplication.restoreOverrideCursor()
+        with OverrideCursor(Qt.CursorShape.WaitCursor):
+            cancel_func(self.job)
+
         self.reset_operation(success=False, close=True)
