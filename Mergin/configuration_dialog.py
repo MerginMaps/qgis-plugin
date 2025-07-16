@@ -3,11 +3,12 @@
 
 import os
 import typing
-from qgis.PyQt.QtWidgets import QDialog, QApplication, QDialogButtonBox, QMessageBox
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, QSettings, QTimer
 from qgis.PyQt.QtGui import QPixmap
 from qgis.core import QgsApplication, Qgis
+from qgis.utils import OverrideCursor
 from urllib.error import URLError
 
 
@@ -155,38 +156,34 @@ class ConfigurationDialog(QDialog):
 
     def test_connection(self):
 
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        if self.login_type() == LoginType.PASSWORD:
-            ok, msg = test_server_connection(self.server_url(), self.ui.username.text(), self.ui.password.text())
-        else:
-            if validate_sso_login(self.server_url(), self.get_sso_email()):
-                self.ui.test_status.setText("<font color=green> OK </font>")
-                QApplication.restoreOverrideCursor()
-                return True
+        with OverrideCursor(Qt.CursorShape.WaitCursor):
+            if self.login_type() == LoginType.PASSWORD:
+                ok, msg = test_server_connection(self.server_url(), self.ui.username.text(), self.ui.password.text())
+            else:
+                if validate_sso_login(self.server_url(), self.get_sso_email()):
+                    self.ui.test_status.setText("<font color=green> OK </font>")
+                    return True
 
-            self.ui.test_status.setText(f"<font color=orange>Follow the instructions in the browser...</font>")
-            ok, msg = test_server_connection(self.server_url(), use_sso=True, sso_email=self.get_sso_email())
+                self.ui.test_status.setText(f"<font color=orange>Follow the instructions in the browser...</font>")
+                ok, msg = test_server_connection(self.server_url(), use_sso=True, sso_email=self.get_sso_email())
 
-        if url_reachable(self.server_url()):
-            if mergin_server_deprecated_version(self.server_url()):
-                msg = "This server is running an outdated version that will no longer be supported. Please contact your server administrator to upgrade."
-                QMessageBox.information(
-                    self,
-                    "Deprecated server version",
-                    msg,
-                )
-                self.ui.test_status.setText(f"<font color=red> {msg} </font>")
-                QApplication.restoreOverrideCursor()
+            if url_reachable(self.server_url()):
+                if mergin_server_deprecated_version(self.server_url()):
+                    msg = "This server is running an outdated version that will no longer be supported. Please contact your server administrator to upgrade."
+                    QMessageBox.information(
+                        self,
+                        "Deprecated server version",
+                        msg,
+                    )
+                    self.ui.test_status.setText(f"<font color=red> {msg} </font>")
+                    return False
+            else:
+                msg = "<font color=red> Server URL is not reachable </font>"
+                self.ui.test_status.setText(msg)
                 return False
-        else:
-            msg = "<font color=red> Server URL is not reachable </font>"
-            self.ui.test_status.setText(msg)
-            QApplication.restoreOverrideCursor()
-            return False
 
-        self.ui.test_status.setText(msg)
-        QApplication.restoreOverrideCursor()
-        return ok
+            self.ui.test_status.setText(msg)
+            return ok
 
     def allow_sso_login(self) -> None:
         self.ui.button_sign_sso.setVisible(False)
