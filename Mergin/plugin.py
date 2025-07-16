@@ -53,9 +53,7 @@ from .utils import (
     LoginError,
     InvalidProject,
     check_mergin_subdirs,
-    create_mergin_client,
     find_qgis_files,
-    get_mergin_auth,
     icon_path,
     mm_symbol_path,
     is_number,
@@ -68,6 +66,13 @@ from .utils import (
     unhandled_exception_message,
     unsaved_project_check,
     UnsavedChangesStrategy,
+)
+from .utils_auth import (
+    create_mergin_client,
+    MissingAuthConfigError,
+    AuthTokenExpiredError,
+    set_qgsexpressionscontext,
+    get_authcfg,
 )
 from .mergin.utils import int_version, is_versioned_file
 from .mergin.merginproject import MerginProject
@@ -123,11 +128,8 @@ class MerginPlugin:
         # things will get horribly wrong when QGIS tries to display GUI and the app would crash.
         # Triggering auth request to QGIS auth framework already at this point will make sure that
         # the dialog asking for master password is started from the main thread -> no crash.
-        get_mergin_auth()
 
         self.initProcessing()
-
-        self.create_manager()
 
         if self.iface is not None:
             self.add_action(
@@ -187,6 +189,14 @@ class MerginPlugin:
         # if self.iface.browserModel().initialized():
         #     self.iface.browserModel().reload()
 
+        # create manager based on status of QGIS
+        # if main window is visible, we can create the manager immediately - QGIS is already initialized
+        # if not, we need to wait for initializationCompleted signal so that QGIS is fully initialized
+        if self.iface.mainWindow().isVisible():
+            self.create_manager()
+        else:
+            self.iface.initializationCompleted.connect(self.create_manager)
+
         if self.iface is not None:
             # register custom mergin widget in project properties
             self.mergin_project_config_factory = MerginProjectConfigFactory()
@@ -245,8 +255,14 @@ class MerginPlugin:
         """Create Mergin Maps projects manager."""
         error = ""
         try:
-            if self.mc is None:
-                self.mc = create_mergin_client()
+            if self.mc is None and get_authcfg():
+                try:
+                    self.mc = create_mergin_client()
+                # if the client creation fails with AuthTokenExpiredError, we need relogin user - it should only happen for SSO
+                except AuthTokenExpiredError:
+                    self.configure()
+                    return
+
             self.choose_active_workspace()
             self.manager = MerginProjectsManager(self.mc)
         except (URLError, ClientError, LoginError):
@@ -314,7 +330,14 @@ class MerginPlugin:
         """Open plugin configuration dialog."""
         dlg = ConfigurationDialog()
         if dlg.exec():
-            self.mc = dlg.writeSettings()
+            try:
+                self.mc = create_mergin_client()
+                set_qgsexpressionscontext(dlg.server_url(), mc=self.mc)
+            except (MissingAuthConfigError, AuthTokenExpiredError, ClientError, ValueError) as e:
+                QMessageBox.critical(None, "Login failed", f"Could not login: {str(e)}")
+                set_qgsexpressionscontext(dlg.server_url(), mc=None)
+                return
+
             self.on_config_changed()
             self.show_browser_panel()
 
@@ -665,7 +688,7 @@ class MerginRemoteProjectItem(QgsDataItem):
             group_items["My projects"].reload()
 
     def remove_remote_project(self):
-        dlg = RemoveProjectDialog(self.project_name)
+        dlg = RemoveProjectDialog(self.project["namespace"], self.project["name"])
         if dlg.exec() == QDialog.DialogCode.Rejected:
             return
 

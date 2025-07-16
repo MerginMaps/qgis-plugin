@@ -7,7 +7,7 @@ from pathlib import Path
 import posixpath
 
 from qgis.core import QgsProject, Qgis, QgsApplication
-from qgis.utils import iface
+from qgis.utils import iface, OverrideCursor
 from qgis.PyQt.QtWidgets import QMessageBox, QDialog, QApplication, QPushButton, QFileDialog
 from qgis.PyQt.QtCore import QSettings, Qt, QTimer
 from urllib.error import URLError
@@ -29,6 +29,7 @@ from .utils import (
     write_project_variables,
     bytes_to_human_size,
 )
+from .utils_auth import get_stored_mergin_server_url
 
 from .mergin.merginproject import MerginProject
 from .project_status_dialog import ProjectStatusDialog
@@ -89,55 +90,49 @@ class MerginProjectsManager(object):
         """
 
         full_project_name = "{}/{}".format(namespace, project_name)
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        try:
-            self.mc.create_project(full_project_name, is_public)
-        except ClientError as e:
-            QApplication.restoreOverrideCursor()
-            msg = str(e)
-            # User friendly error messages
-            if e.http_error == 409:
-                msg = f'Project named "{project_name}" already exists in the workspace "{namespace}".\nPlease try renaming the project.'
-            elif e.server_code == ErrorCode.ProjectsLimitHit.value:
-                msg = (
-                    "Maximum number of projects reached. Please upgrade your subscription to create new projects.\n"
-                    f"Projects quota: {e.server_response['projects_quota']}"
+        with OverrideCursor(Qt.CursorShape.WaitCursor):
+            try:
+                self.mc.create_project(full_project_name, is_public)
+            except ClientError as e:
+                msg = str(e)
+                # User friendly error messages
+                if e.http_error == 409:
+                    msg = (
+                        f'Naming conflict with the name "{project_name}" in the workspace "{namespace}".\n\n'
+                        f"Details: {e.detail}\n"
+                        "Please try renaming the project."
+                    )
+                elif e.server_code == ErrorCode.ProjectsLimitHit.value:
+                    msg = (
+                        "Maximum number of projects reached. Please upgrade your subscription to create new projects.\n"
+                        f"Projects quota: {e.server_response['projects_quota']}"
+                    )
+                elif e.server_code == ErrorCode.StorageLimitHit.value:
+                    msg = f"{e.detail}\nCurrent limit: {bytes_to_human_size(e.server_response['storage_limit'])}"
+
+                QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + msg)
+                return False
+            except Exception as e:
+                QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + str(e))
+                return False
+
+            if not project_dir:
+                # not going to upload anything so just pop a "success" message and exit
+                QMessageBox.information(
+                    None,
+                    "Create Project",
+                    "An empty project has been created on the server",
+                    QMessageBox.StandardButton.Close,
                 )
-            elif e.server_code == ErrorCode.StorageLimitHit.value:
-                msg = (
-                    f"{e.detail}\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response['storage_limit'])}"
-                )
+                return True
 
-            QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + msg)
-            return False
-        except Exception as e:
-            QApplication.restoreOverrideCursor()
-            QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + str(e))
-            return False
-
-        QApplication.restoreOverrideCursor()
-
-        if not project_dir:
-            # not going to upload anything so just pop a "success" message and exit
-            QMessageBox.information(
-                None,
-                "Create Project",
-                "An empty project has been created on the server",
-                QMessageBox.StandardButton.Close,
-            )
-            return True
-
-        # get project's metadata from the server and store it locally
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        try:
-            project_info = self.mc.project_info(full_project_name)
-            MerginProject.write_metadata(project_dir, project_info)
-        except Exception as e:
-            QApplication.restoreOverrideCursor()
-            QMessageBox.critical(None, "Create Project", "Failed to initialize Mergin Maps project.\n" + str(e))
-            return False
-
-        QApplication.restoreOverrideCursor()
+            # get project's metadata from the server and store it locally
+            try:
+                project_info = self.mc.project_info(full_project_name)
+                MerginProject.write_metadata(project_dir, project_info)
+            except Exception as e:
+                QMessageBox.critical(None, "Create Project", "Failed to initialize Mergin Maps project.\n" + str(e))
+                return False
 
         # let's do initial upload of the project data
         mp = MerginProject(project_dir)
@@ -387,7 +382,7 @@ class MerginProjectsManager(object):
                     # To note we check for a string since error in flask doesn't return server error code
                     msg = "Somebody else is syncing, please try again later"
                 elif dlg.exception.server_code == ErrorCode.StorageLimitHit.value:
-                    msg = f"{e.detail}\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response['storage_limit'])}"
+                    msg = f"{dlg.exception.detail}\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response['storage_limit'])}"
                 else:
                     msg = str(dlg.exception)
                 QMessageBox.critical(None, "Project sync", "Client error: \n" + msg)
@@ -428,9 +423,8 @@ class MerginProjectsManager(object):
         if btn_reply != QMessageBox.StandardButton.Ok:
             return
 
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        log_file_name, error = send_logs(self.mc.username(), logs_path)
-        QApplication.restoreOverrideCursor()
+        with OverrideCursor(Qt.CursorShape.WaitCursor):
+            log_file_name, error = send_logs(get_stored_mergin_server_url(), self.mc.username(), logs_path)
 
         if error:
             QMessageBox.warning(

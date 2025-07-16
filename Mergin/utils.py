@@ -217,48 +217,6 @@ def find_qgis_files(directory):
     return qgis_files
 
 
-def get_mergin_auth():
-    settings = QSettings()
-    save_credentials = settings.value("Mergin/saveCredentials", "false").lower() == "true"
-    mergin_url = settings.value("Mergin/server", MERGIN_URL)
-    auth_manager = QgsApplication.authManager()
-    if not save_credentials or not auth_manager.masterPasswordHashInDatabase():
-        return mergin_url, "", ""
-
-    authcfg = settings.value("Mergin/authcfg", None)
-    cfg = QgsAuthMethodConfig()
-    auth_manager.loadAuthenticationConfig(authcfg, cfg, True)
-    url = cfg.uri()
-    username = cfg.config("username")
-    password = cfg.config("password")
-    return url, username, password
-
-
-def set_mergin_auth(url, username, password):
-    settings = QSettings()
-    authcfg = settings.value("Mergin/authcfg", None)
-    cfg = QgsAuthMethodConfig()
-    auth_manager = QgsApplication.authManager()
-    auth_manager.setMasterPassword()
-    auth_manager.loadAuthenticationConfig(authcfg, cfg, True)
-
-    if cfg.id():
-        cfg.setUri(url)
-        cfg.setConfig("username", username)
-        cfg.setConfig("password", password)
-        auth_manager.updateAuthenticationConfig(cfg)
-    else:
-        cfg.setMethod("Basic")
-        cfg.setName("mergin")
-        cfg.setUri(url)
-        cfg.setConfig("username", username)
-        cfg.setConfig("password", password)
-        auth_manager.storeAuthenticationConfig(cfg)
-        settings.setValue("Mergin/authcfg", cfg.id())
-
-    settings.setValue("Mergin/server", url)
-
-
 def get_qgis_proxy_config(url=None):
     """Check if a proxy is enabled and needed for the given url. Return the settings and additional info."""
     proxy_config = None
@@ -303,30 +261,6 @@ def get_qgis_proxy_config(url=None):
     return proxy_config
 
 
-def create_mergin_client():
-    url, username, password = get_mergin_auth()
-    settings = QSettings()
-    auth_token = settings.value("Mergin/auth_token", None)
-    proxy_config = get_qgis_proxy_config(url)
-    if auth_token:
-        mc = MerginClient(url, auth_token, username, password, get_plugin_version(), proxy_config)
-        # check token expiration
-        delta = mc._auth_session["expire"] - datetime.now(timezone.utc)
-        if delta.total_seconds() > 1:
-            return mc
-
-    if not (username and password):
-        raise ClientError()
-
-    try:
-        mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
-    except (URLError, ClientError) as e:
-        QgsApplication.messageLog().logMessage(str(e))
-        raise
-    settings.setValue("Mergin/auth_token", mc._auth_session["token"])
-    return MerginClient(url, mc._auth_session["token"], username, password, get_plugin_version(), proxy_config)
-
-
 def get_qgis_version_str():
     """Returns QGIS verion as 'MAJOR.MINOR.PATCH', for example '3.10.6'"""
     # there's also Qgis.QGIS_VERSION which is string but also includes release name (possibly with unicode characters)
@@ -362,13 +296,12 @@ def is_versioned_file(file):
     return f_extension in diff_extensions
 
 
-def send_logs(username, logfile):
+def send_logs(mergin_url: str, username: str, logfile: str):
     """Send mergin-client logs to dedicated server
 
     :param logfile: path to logfile
     :returns: name of submitted file, error message
     """
-    mergin_url, _, _ = get_mergin_auth()
     system = platform.system().lower()
     version = plugin_version()
     # also read global mergin client log
@@ -404,24 +337,6 @@ def send_logs(username, logfile):
         return log_file_name, None
     except (HTTPError, URLError) as e:
         return None, str(e)
-
-
-def validate_mergin_url(url):
-    """
-    Initiates connection to the provided server URL to check if the server is accessible
-    :param url: String Mergin Maps URL to ping.
-    :return: String error message as result of validation. If None, URL is valid.
-    """
-    try:
-        MerginClient(url, proxy_config=get_qgis_proxy_config(url))
-
-    # Valid but not Mergin URl
-    except ClientError:
-        return "Invalid Mergin Maps URL"
-    # Cannot parse URL
-    except ValueError:
-        return "Invalid URL"
-    return None
 
 
 def same_dir(dir1, dir2):
@@ -1105,6 +1020,16 @@ def is_number(s):
         return False
 
 
+def remove_prefix(text: str, prefix: str):
+    """
+    Remove the ::prefix:: from the ::text:: if it exists otherwise return original ::text::
+    Similar to str.removeprefix remove once we drop support for 3.22/python 3.8
+    """
+    if text.startswith(prefix):
+        return text[len(prefix) :]
+    return text
+
+
 def get_schema(layer_path):
     """
     Return JSON representation of the layer schema
@@ -1223,35 +1148,6 @@ def get_primary_keys(layer):
     if table:
         cols = [c["name"] for c in table["columns"] if "primary_key" in c]
         return cols
-
-
-def test_server_connection(url, username, password):
-    """
-    Test connection to Mergin Maps server. This includes check for valid server URL
-    and user credentials correctness.
-    """
-    err_msg = validate_mergin_url(url)
-    if err_msg:
-        msg = f"<font color=red>{err_msg}</font>"
-        QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {err_msg}")
-        return False, msg
-
-    result = True, "<font color=green> OK </font>"
-    proxy_config = get_qgis_proxy_config(url)
-    try:
-        mc = MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
-
-        if mc.server_type() == ServerType.OLD:
-            QMessageBox.information(
-                None,
-                "Deprecated server version",
-                "This server is running an outdated version that will no longer be supported. Please contact your server administrator to upgrade.",
-            )
-    except (LoginError, ClientError) as e:
-        QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
-        result = False, f"<font color=red> Connection failed, {str(e)} </font>"
-
-    return result
 
 
 def is_dark_theme():
@@ -1455,8 +1351,8 @@ def create_tracking_layer(project_path):
     return filename
 
 
-def create_map_annotations_layer(project_path):
-    filename = os.path.join(project_path, "map_annotations_layer.gpkg")
+def create_map_sketches_layer(project_path):
+    filename = os.path.join(project_path, "map_sketches.gpkg")
 
     if not os.path.exists(filename):
         fields = QgsFields()
@@ -1471,7 +1367,7 @@ def create_map_annotations_layer(project_path):
 
         options = QgsVectorFileWriter.SaveVectorOptions()
         options.driverName = "GPKG"
-        options.layerName = "map_annotations_layer"
+        options.layerName = "Map sketches"
 
         writer = QgsVectorFileWriter.create(
             filename,
@@ -1483,10 +1379,10 @@ def create_map_annotations_layer(project_path):
         )
         del writer
 
-    layer = QgsVectorLayer(filename, "map_annotations_layer", "ogr")
+    layer = QgsVectorLayer(filename, "Map sketches", "ogr")
 
     """
-    Configures map annotations layer:
+    Configures map sketches layer:
      - set default values for fields
      - apply default styling
     """
@@ -1519,8 +1415,8 @@ def create_map_annotations_layer(project_path):
 
     # get symbol layer and set it to expression for color
     symbol_layer = symbol.takeSymbolLayer(0)
-    symbol_layer.setDataDefinedProperty(QgsSymbolLayer.Property.StrokeColor, QgsProperty.fromExpression('"color"'))
-    symbol_layer.setDataDefinedProperty(QgsSymbolLayer.Property.StrokeWidth, QgsProperty.fromExpression('"width"'))
+    symbol_layer.setDataDefinedProperty(QgsSymbolLayer.PropertyStrokeColor, QgsProperty.fromExpression('"color"'))
+    symbol_layer.setDataDefinedProperty(QgsSymbolLayer.PropertyStrokeWidth, QgsProperty.fromExpression('"width"'))
     # put it back to the symbol
     symbol.appendSymbolLayer(symbol_layer)
 
@@ -1531,7 +1427,7 @@ def create_map_annotations_layer(project_path):
     layer.setRenderer(renderer)
 
     QgsProject.instance().addMapLayer(layer)
-    QgsProject.instance().writeEntry("Mergin", "MapAnnotations/Layer", layer.id())
+    QgsProject.instance().writeEntry("Mergin", "MapSketching/Layer", layer.id())
 
     return filename
 
@@ -1694,3 +1590,13 @@ def duplicate_layer(layer: QgsVectorLayer) -> QgsVectorLayer:
         raise Exception(err_msg)
 
     return lyr_clone
+
+
+def is_experimental_plugin_enabled() -> bool:
+    """Returns True if the experimental flag is enable in the plugin manager else false"""
+    settings = QSettings()
+    if Qgis.versionInt() <= 33000:  # Changed QSettings key in 3.30
+        value = settings.value("app/plugin_installer/allowExperimental", False)
+    else:
+        value = settings.value("plugin-manager/allow-experimental", False)
+    return value

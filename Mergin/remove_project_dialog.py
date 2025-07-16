@@ -10,13 +10,13 @@ ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_re
 
 
 class RemoveProjectDialog(QDialog):
-    def __init__(self, project_name, parent=None):
+    def __init__(self, workspace_name, project_name, parent=None):
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
 
         self.project_name = project_name
         self.label.setText(
-            f"This action will remove your MerginMaps project '<b>{self.project_name}</b>' from the server. "
+            f"This action will remove your Mergin Maps project '{workspace_name}/<b>{project_name}</b>' from the server. "
             "This action cannot be undone.<br><br>"
             "In order to delete project, enter project name in the field below and click 'Yes'."
         )
