@@ -119,7 +119,7 @@ class SyncDialog(QDialog):
                 return
 
             assert self.job  # if there was no error thrown, we should have a job
-    
+
             # use kilobytes as a unit, so we do not need to worry about int overflow with projects of few GB size
             self.progress.setMaximum(int(self.job.total_size / 1024))
             self.progress.setValue(0)
