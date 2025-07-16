@@ -264,7 +264,7 @@ class MerginPlugin:
                     return
 
             self.choose_active_workspace()
-            self.manager = MerginProjectsManager(self.mc)
+            self.manager = MerginProjectsManager(self)
         except (URLError, ClientError, LoginError):
             error = "Plugin not configured or \nQGIS master password not set up"
         except Exception as err:
