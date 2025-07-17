@@ -115,7 +115,12 @@ class CreateDiff(QgsProcessingAlgorithm):
 
         try:
             mc = create_mergin_client()
-        except (MissingAuthConfigError, AuthTokenExpiredError, ClientError, ValueError) as e:
+        except (MissingAuthConfigError, AuthTokenExpiredError) as e:
+            raise QgsProcessingException(
+                "You need to be login into MerginMaps for this tool work. Please login using MerginMaps Settings Dialog. "
+                f"Error: {e}"
+            )
+        except (ClientError, ValueError) as e:
             raise QgsProcessingException(f"Error creating Mergin Maps client: {e}")
 
         mp = MerginProject(project_dir)
