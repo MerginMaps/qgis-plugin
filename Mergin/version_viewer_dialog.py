@@ -541,6 +541,7 @@ class VersionViewerDialog(QDialog):
             return
         except AuthTokenExpiredError:
             self.plugin.auth_token_expired()
+            return
         self.populate_details()
         self.details_treeview.expandAll()
 
