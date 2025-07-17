@@ -642,7 +642,9 @@ class MerginPlugin:
 
     def auth_token_expired(self):
         QMessageBox.information(
-            self.iface.mainWindow(), "MerginMaps Token Expired", "Your login token has expired. Please re-authenticate."
+            self.iface.mainWindow(),
+            "SSO login has expired",
+            "Your SSO login has expired. To access your remote projects and be able to synchronize, you need to log in again.",
         )
 
         self.configure()
