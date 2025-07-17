@@ -141,16 +141,6 @@ def set_mergin_settings(url: str, login_type: LoginType) -> None:
     settings.setValue("Mergin/login_type", str(login_type))
 
 
-def validate_mergin_session_not_expired(mc: MerginClient) -> bool:
-    """Check if there are at least 5 seconds left before the Mergin Maps session expires."""
-    if not mc._auth_session:
-        return False
-    delta = mc._auth_session["expire"] - datetime.datetime.now(datetime.timezone.utc)
-    if delta.total_seconds() > 5:
-        return True
-    return False
-
-
 def get_mergin_username_password() -> typing.Tuple[str, str]:
     """Get Mergin username and password from auth config."""
     cfg = get_mergin_auth_cfg()
@@ -196,24 +186,20 @@ def create_mergin_client() -> MerginClient:
         if auth_token:
             if login_type == LoginType.SSO:
                 mc = MerginClient(url, auth_token, None, None, get_plugin_version(), get_qgis_proxy_config(url))
+                return mc
             else:
                 username, password = get_mergin_username_password()
                 mc = MerginClient(url, auth_token, username, password, get_plugin_version(), get_qgis_proxy_config(url))
-            if validate_mergin_session_not_expired(mc):
+                mc.validate_auth()
                 return mc
-            else:
-                raise AuthTokenExpiredError("Auth token expired.")
-
         else:
             if login_type == LoginType.PASSWORD:
                 username = cfg.config("username", None)
                 password = cfg.config("password", None)
                 if username and password:
                     mc = MerginClient(url, None, username, password, get_plugin_version(), get_qgis_proxy_config(url))
-                    if validate_mergin_session_not_expired(mc):
-                        return mc
-                    else:
-                        raise AuthTokenExpiredError("Auth token expired after re-log.")
+                    mc.validate_auth()
+                    return mc
                 else:
                     raise ClientError("Username and password not found in config.")
 
@@ -245,7 +231,11 @@ def validate_sso_login(server_url: str, sso_email: typing.Optional[str] = None) 
             plugin_version=get_plugin_version(),
             proxy_config=get_qgis_proxy_config(server_url),
         )
-        return validate_mergin_session_not_expired(mc)
+        try:
+            mc.validate_auth()
+            return True
+        except (AuthTokenExpiredError, ClientError):
+            return False
 
     except MissingAuthConfigError:
         return False

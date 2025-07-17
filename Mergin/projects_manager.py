@@ -33,14 +33,16 @@ from .utils_auth import get_stored_mergin_server_url
 
 from .mergin.merginproject import MerginProject
 from .project_status_dialog import ProjectStatusDialog
+from .mergin.client import AuthTokenExpiredError, MerginClient
 
 
 class MerginProjectsManager(object):
     """Class for managing Mergin Maps projects in QGIS."""
 
-    def __init__(self, mergin_client):
-        self.mc = mergin_client
+    def __init__(self, plugin: "MerginPlugin"):
+        self.mc: MerginClient = plugin.mc
         self.iface = iface
+        self.plugin = plugin
 
     @staticmethod
     def unsaved_changes_check(project_dir):
@@ -112,6 +114,8 @@ class MerginProjectsManager(object):
 
                 QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + msg)
                 return False
+            except AuthTokenExpiredError:
+                self.plugin.auth_token_expired()
             except Exception as e:
                 QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + str(e))
                 return False
@@ -222,6 +226,8 @@ class MerginProjectsManager(object):
         except (URLError, ClientError, InvalidProject) as e:
             msg = f"Failed to get status for project {project_name}:\n\n{str(e)}"
             QMessageBox.critical(None, "Project status", msg, QMessageBox.StandardButton.Close)
+        except AuthTokenExpiredError:
+            self.plugin.auth_token_expired()
         except LoginError as e:
             login_error_message(e)
 
@@ -328,6 +334,8 @@ class MerginProjectsManager(object):
                 login_error_message(dlg.exception)
             elif isinstance(dlg.exception, ClientError):
                 QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
+            elif isinstance(dlg.exception, AuthTokenExpiredError):
+                self.plugin.auth_token_expired()
             else:
                 unhandled_exception_message(
                     dlg.exception_details(),
@@ -386,6 +394,8 @@ class MerginProjectsManager(object):
                 else:
                     msg = str(dlg.exception)
                 QMessageBox.critical(None, "Project sync", "Client error: \n" + msg)
+            elif isinstance(dlg.exception, AuthTokenExpiredError):
+                self.plugin.auth_token_expired()
             else:
                 unhandled_exception_message(
                     dlg.exception_details(),
