@@ -531,6 +531,14 @@ class VersionViewerDialog(QDialog):
 
         try:
             self.version_details = self.mc.project_version_info(self.mp.project_id(), version_name)
+        except ClientError:
+            QMessageBox.critical(
+                self.parent(),
+                "Project version info",
+                "Failed to get project version info",
+                QMessageBox.StandardButton.Close,
+            )
+            return
         except AuthTokenExpiredError:
             self.plugin.auth_token_expired()
         self.populate_details()
