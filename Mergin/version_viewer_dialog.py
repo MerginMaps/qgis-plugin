@@ -296,7 +296,7 @@ class VersionViewerDialog(QDialog):
     the methods of the class also follow this pattern
     """
 
-    def __init__(self, mc, parent=None):
+    def __init__(self, plugin, parent=None):
 
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
@@ -304,7 +304,8 @@ class VersionViewerDialog(QDialog):
         with OverrideCursor(Qt.CursorShape.WaitCursor):
             QgsGui.instance().enableAutoGeometryRestore(self)
 
-            self.mc = mc
+            self.plugin = plugin
+            self.mc: MerginClient = self.plugin.mc
 
             self.failed_to_fetch = False
 

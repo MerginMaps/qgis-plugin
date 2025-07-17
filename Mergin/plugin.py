@@ -368,7 +368,7 @@ class MerginPlugin:
             return
 
     def open_project_history_window(self):
-        dlg = VersionViewerDialog(self.mc)
+        dlg = VersionViewerDialog(self)
         dlg.exec()
 
     def show_no_workspaces_dialog(self):
