@@ -343,6 +343,7 @@ class VersionViewerDialog(QDialog):
             try:
                 self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
                 self.fetcher.finished.connect(lambda: self.on_finish_fetching())
+                self.fetcher.error_occured.connect(self.handle_exception)
                 self.diff_downloader = None
 
                 self.fetch_from_server()
