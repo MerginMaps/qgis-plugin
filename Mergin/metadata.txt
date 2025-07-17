@@ -11,12 +11,15 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2025.2
-  * Fixed issue with project home path causing problems in the mobile app.
-  * Added a user-friendly display expression for the tracking layer.
-  * Fixed visualization of changes not working in the history viewer when the GeoPackage was in a subfolder.
-  * Improved Mergin Maps QGIS expressions (added mergin_user_email variable, fixed mergin_project_* variables being unavailable)
-  * Make the plugin compatible with Qt6
+changelog=2025.3
+  - Added SSO support for SAML/OIDC connections
+  - Various bug fixes
+  <p>2025.2
+  - Fixed issue with project home path causing problems in the mobile app.
+  - Added a user-friendly display expression for the tracking layer.
+  - Fixed visualization of changes not working in the history viewer when the GeoPackage was in a subfolder.
+  - Improved Mergin Maps QGIS expressions (added mergin_user_email variable, fixed mergin_project_* variables being unavailable)
+  - Make the plugin compatible with Qt6
   <p>2025.1.1
   - Fixed the plugin on older QGIS version (< 3.34)
   <p>2025.1
