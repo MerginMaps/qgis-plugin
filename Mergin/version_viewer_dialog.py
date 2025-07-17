@@ -541,7 +541,7 @@ class VersionViewerDialog(QDialog):
 
             self.diff_downloader = ChangesetsDownloader(self.mc, self.mp, version)
             self.diff_downloader.finished.connect(lambda msg: self.show_version_changes(version))
-            self.diff_downloader.error_occured.connect(self.show_download_error)
+            self.diff_downloader.error_occured.connect(self.handle_exception)
             self.diff_downloader.start()
         else:
             self.show_version_changes(version)
@@ -659,7 +659,7 @@ class VersionViewerDialog(QDialog):
             self.tabWidget.setCurrentIndex(1)
             self.tabWidget.setTabEnabled(0, False)
 
-    def show_download_error(self, e: Exception):
+    def handle_exception(self, e: Exception):
         if isinstance(e, AuthTokenExpiredError):
             self.plugin.auth_token_expired()
             return
