@@ -262,6 +262,7 @@ class ChangesetsDownloader(QThread):
 class VersionsFetcher(QThread):
 
     finished = pyqtSignal()
+    error_occured = pyqtSignal(Exception)
 
     def __init__(self, mc: MerginClient, project_path, model: VersionsTableModel):
         super(VersionsFetcher, self).__init__()
@@ -272,7 +273,11 @@ class VersionsFetcher(QThread):
         self.current_page = 1
         self.per_page = 50
 
-        version_count = self.mc.project_versions_count(self.project_path)
+        try:
+            version_count = self.mc.project_versions_count(self.project_path)
+        except Exception as e:
+            self.error_occured.emit(e)
+            return
         self.nb_page = math.ceil(version_count / self.per_page)
 
     def run(self):
@@ -286,9 +291,13 @@ class VersionsFetcher(QThread):
         if self.has_more_page() == False:
             return
         self.model.beginFetching()
-        page_versions, _ = self.mc.paginated_project_versions(
-            self.project_path, self.current_page, per_page=self.per_page, descending=True
-        )
+        try:
+            page_versions, _ = self.mc.paginated_project_versions(
+                self.project_path, self.current_page, per_page=self.per_page, descending=True
+            )
+        except Exception as e:
+            self.error_occured.emit(e)
+            return
         self.model.endFetching()
         self.model.append_versions(page_versions)
 
