@@ -186,6 +186,7 @@ def create_mergin_client() -> MerginClient:
         if auth_token:
             if login_type == LoginType.SSO:
                 mc = MerginClient(url, auth_token, None, None, get_plugin_version(), get_qgis_proxy_config(url))
+                return mc
             else:
                 username, password = get_mergin_username_password()
                 mc = MerginClient(url, auth_token, username, password, get_plugin_version(), get_qgis_proxy_config(url))
