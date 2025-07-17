@@ -53,6 +53,7 @@ from qgis.utils import OverrideCursor, iface
 
 from .diff import make_version_changes_layers
 from .mergin import MerginClient
+from .mergin.client import AuthTokenExpiredError
 from .mergin.merginproject import MerginProject
 from .mergin.utils import bytes_to_human_size, int_version
 from .utils import (
@@ -206,7 +207,11 @@ class ChangesetsDownloader(QThread):
         self.version = version
 
     def run(self):
-        version_info = self.mc.project_version_info(self.mp.project_id(), version=f"v{self.version}")
+        try:
+            version_info = self.mc.project_version_info(self.mp.project_id(), version=f"v{self.version}")
+        except AuthTokenExpiredError:
+            self.error_occured.emit(e)
+            return
 
         files_updated = version_info["changes"]["updated"]
 
@@ -239,6 +244,9 @@ class ChangesetsDownloader(QThread):
                     self.mc.download_file(self.mp.dir, f["path"], full_gpkg, f"v{self.version}")
             except ClientError as e:
                 self.error_occured.emit(e)
+                return
+            except AuthTokenExpiredError:
+                self.error_occured.emit(AuthTokenExpiredError)
                 return
             except Exception as e:
                 self.error_occured.emit(e)
@@ -436,6 +444,8 @@ class VersionViewerDialog(QDialog):
         except ClientError:
             # Some versions e.g CE, EE edition doesn't have
             pass
+        except AuthTokenExpiredError as e:
+            self.plugin.auth_token_expired()
         super().exec()
 
     def closeEvent(self, event):
@@ -511,7 +521,10 @@ class VersionViewerDialog(QDialog):
 
         self.setWindowTitle(f"Changes Viewer | {version_name}")
 
-        self.version_details = self.mc.project_version_info(self.mp.project_id(), version_name)
+        try:
+            self.version_details = self.mc.project_version_info(self.mp.project_id(), version_name)
+        except AuthTokenExpiredError:
+            self.plugin.auth_token_expired()
         self.populate_details()
         self.details_treeview.expandAll()
 
@@ -647,11 +660,15 @@ class VersionViewerDialog(QDialog):
             self.tabWidget.setTabEnabled(0, False)
 
     def show_download_error(self, e: Exception):
-        additional_log = str(e)
-        QgsMessageLog.logMessage(f"Download history error: " + additional_log, "Mergin")
-        self.label_info.setText(
-            "There was an issue loading this version. Please try again later or contact our support if the issue persists. Refer to the QGIS messages log for more details."
-        )
+        if isinstance(e, AuthTokenExpiredError):
+            self.plugin.auth_token_expired()
+            return
+        else:
+            additional_log = str(e)
+            QgsMessageLog.logMessage(f"Download history error: " + additional_log, "Mergin")
+            self.label_info.setText(
+                "There was an issue loading this version. Please try again later or contact our support if the issue persists. Refer to the QGIS messages log for more details."
+            )
 
     def collect_layers(self, checked: bool):
         if checked:
