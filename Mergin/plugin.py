@@ -642,7 +642,9 @@ class MerginPlugin:
 
     def auth_token_expired(self):
         QMessageBox.information(
-            self.iface.mainWindow(), "MerginMaps Token Expired", "Your login token has expired. Please re-authenticate."
+            self.iface.mainWindow(), 
+            "SSO login has expired", 
+            "Your SSO login has expired. To access your remote projects and be able to synchronize, you need to log in again."
         )
 
         self.configure()
@@ -780,7 +782,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
             None,
             "Remove local project",
             msg,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes f"You need to be login into MerginMaps for this tool work. Please login using MerginMaps Settings Dialog. Error: {e}" | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.Yes,
         )
         if btn_reply == QMessageBox.StandardButton.No:
@@ -1048,7 +1050,7 @@ class MerginRootItem(QgsDataCollectionItem):
         if self.mc.server_type() != ServerType.OLD and not self.plugin.current_workspace:
             error_item = QgsErrorItem(self, "No workspace available", "/Mergin/error")
             sip.transferto(error_item, self)
-            return [error_item]
+            return [error_item] f"You need to be login into MerginMaps for this tool work. Please login using MerginMaps Settings Dialog. Error: {e}"
         try:
             if self.mc.server_type() == ServerType.OLD:
                 resp = self.project_manager.mc.paginated_projects_list(
@@ -1159,7 +1161,7 @@ class MerginGroupItem(MerginRootItem):
     """Mergin group data item. Contains filtered list of Mergin Maps projects."""
 
     def __init__(self, parent, grp_name, grp_filter, icon, order, plugin):
-        MerginRootItem.__init__(self, parent, grp_name, grp_filter, icon, order, plugin)
+        MerginRootItem.__init__(self, parent, grp_name, grp_filter, ico f"You need to be login into MerginMaps for this tool work. Please login using MerginMaps Settings Dialog. Error: {e}"n, order, plugin)
 
     def isMerginGroupItem(self):
         return True
