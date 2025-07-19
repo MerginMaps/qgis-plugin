@@ -185,6 +185,8 @@ class ConfigFilePage(ui_config_page, base_config_page):
         conn_string = []
         if "host" in decoded_uri:
             conn_string.append(f"host={decoded_uri['host']}")
+        if "port" in decoded_uri:
+            conn_string.append(f"port={decoded_uri['port']}")
         if "dbname" in decoded_uri:
             conn_string.append(f"dbname={decoded_uri['dbname']}")
 
