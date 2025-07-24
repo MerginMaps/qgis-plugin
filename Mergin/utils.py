@@ -296,46 +296,27 @@ def is_versioned_file(file):
     return f_extension in diff_extensions
 
 
-def send_logs(mergin_url: str, username: str, logfile: str):
+def send_logs(mc: MerginClient, logfile: str):
     """Send mergin-client logs to dedicated server
 
+    :param mc: MerginClient instance
     :param logfile: path to logfile
     :returns: name of submitted file, error message
     """
-    system = platform.system().lower()
+    system = platform.system()
     version = plugin_version()
-    # also read global mergin client log
-    global_log_file = os.environ.get("MERGIN_CLIENT_LOG", None)
-
-    params = {"app": "plugin-{}-{}".format(system, version), "username": username}
-    url = MERGIN_LOGS_URL + "?" + urllib.parse.urlencode(params)
-    header = {"content-type": "text/plain"}
 
     meta = "Plugin: {} \nQGIS: {} \nSystem: {} \nMergin Maps URL: {} \nMergin Maps user: {} \n--------------------------------\n\n".format(
-        version, get_qgis_version_str(), system, mergin_url, username
+        version, get_qgis_version_str(), system, mc.url, mc.username()
     )
+    global_log_file = os.environ.get("MERGIN_CLIENT_LOG", None)
 
-    global_logs = b""
-    if global_log_file and os.path.exists(global_log_file):
-        with open(global_log_file, "rb") as f:
-            if os.path.getsize(global_log_file) > 100 * 1024:
-                f.seek(-100 * 1024, os.SEEK_END)
-            global_logs = f.read() + b"\n--------------------------------\n\n"
-
-    with open(logfile, "rb") as f:
-        if os.path.getsize(logfile) > 512 * 1024:
-            f.seek(-512 * 1024, os.SEEK_END)
-        logs = f.read()
-
-    payload = meta.encode() + global_logs + logs
     try:
-        req = urllib.request.Request(url, data=payload, headers=header)
-        resp = urllib.request.urlopen(req)
-        log_file_name = resp.read().decode()
+        resp = mc.send_logs(logfile, global_log_file, application="plugin-{}-{}".format(system, version), meta=meta)
         if resp.msg != "OK":
             return None, str(resp.reason)
-        return log_file_name, None
-    except (HTTPError, URLError) as e:
+        return logfile, None
+    except (HTTPError, URLError, ClientError) as e:
         return None, str(e)
 
 

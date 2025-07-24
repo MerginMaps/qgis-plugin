@@ -434,7 +434,7 @@ class MerginProjectsManager(object):
             return
 
         with OverrideCursor(Qt.CursorShape.WaitCursor):
-            log_file_name, error = send_logs(get_stored_mergin_server_url(), self.mc.username(), logs_path)
+            log_file_name, error = send_logs(self.mc, logs_path)
 
         if error:
             QMessageBox.warning(
