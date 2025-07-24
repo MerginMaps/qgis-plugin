@@ -2,31 +2,34 @@
 # Copyright Lutra Consulting Limited
 
 import os
-from qgis.PyQt.QtWidgets import QDialog, QApplication, QDialogButtonBox, QMessageBox
+import typing
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import Qt, QSettings
+from qgis.PyQt.QtCore import Qt, QSettings, QTimer
 from qgis.PyQt.QtGui import QPixmap
-from qgis.core import QgsApplication, QgsExpressionContextUtils
+from qgis.core import QgsApplication, Qgis
+from qgis.utils import OverrideCursor
 from urllib.error import URLError
 
-try:
-    from .mergin.client import MerginClient, ClientError, LoginError
-except ImportError:
-    import sys
 
-    this_dir = os.path.dirname(os.path.realpath(__file__))
-    path = os.path.join(this_dir, "mergin_client.whl")
-    sys.path.append(path)
-    from mergin.client import MerginClient, ClientError, LoginError
-
-from .utils import (
-    get_mergin_auth,
-    set_mergin_auth,
-    MERGIN_URL,
-    create_mergin_client,
-    get_plugin_version,
-    get_qgis_proxy_config,
+from .utils_auth import (
+    LoginType,
+    get_login_type,
+    get_mergin_sso_email,
+    get_stored_mergin_server_url,
+    get_mergin_username_password,
+    set_mergin_settings,
     test_server_connection,
+    set_mergin_auth_password,
+    validate_sso_login,
+    sso_login_allowed,
+    sso_ask_for_email,
+    mergin_server_deprecated_version,
+    url_reachable,
+    qgis_support_sso,
+)
+from .utils import (
+    MERGIN_URL,
     mm_logo_path,
     is_dark_theme,
 )
@@ -48,14 +51,29 @@ class ConfigurationDialog(QDialog):
                 "Don't have an account yet? <a href='https://app.merginmaps.com/register'>Sign up</a> now!"
             )
 
+        self.sso_timer = QTimer(self)
+        self.sso_timer.setSingleShot(True)
+        self.sso_timer.setInterval(1000)
+        self.sso_timer.timeout.connect(self.allow_sso_login)
+
         save_credentials = settings.value("Mergin/saveCredentials", "false").lower() == "true"
-        if save_credentials:
+        login_type = get_login_type()
+        if save_credentials or login_type == LoginType.PASSWORD:
             QgsApplication.authManager().setMasterPassword()
-        url, username, password = get_mergin_auth()
+
+        url = get_stored_mergin_server_url()
+
+        if login_type == LoginType.PASSWORD:
+            username, password = get_mergin_username_password()
+            self.ui.username.setText(username)
+            self.ui.password.setText(password)
+            self.ui.stacked_widget_login.setCurrentIndex(0)
+        elif login_type == LoginType.SSO:
+            self.ui.sso_email.setText(get_mergin_sso_email())
+            self.ui.stacked_widget_login.setCurrentIndex(1)
+
         self.ui.label_logo.setPixmap(QPixmap(mm_logo_path()))
         self.ui.merginURL.setText(url)
-        self.ui.username.setText(username)
-        self.ui.password.setText(password)
         self.ui.save_credentials.setChecked(save_credentials)
         self.ui.test_connection_btn.clicked.connect(self.test_connection)
         self.ui.test_status.setText("")
@@ -66,11 +84,35 @@ class ConfigurationDialog(QDialog):
         self.ui.save_credentials.stateChanged.connect(self.check_master_password)
         self.ui.username.textChanged.connect(self.check_credentials)
         self.ui.password.textChanged.connect(self.check_credentials)
+        self.ui.merginURL.textChanged.connect(self.sso_timer.start)
+        self.ui.sso_email.textChanged.connect(self.check_credentials)
+        self.ui.stacked_widget_login.currentChanged.connect(self.check_credentials)
+
+        self.sso_email_required = False
+
+        self.ui.button_sign_sso.clicked.connect(self.show_sign_sso)
+        self.ui.button_sign_password.clicked.connect(self.show_sign_password)
+
         self.check_credentials()
+        self.sso_timer.start()
+
+        if not qgis_support_sso():
+            self.ui.button_sign_sso.setVisible(False)
+            self.ui.stacked_widget_login.setCurrentIndex(0)
+            self.ui.sso_email.setVisible(False)
 
     def accept(self):
         if not self.test_connection():
             return
+
+        url = self.server_url()
+        set_mergin_settings(url=url, login_type=self.login_type())
+
+        if self.login_type() == LoginType.PASSWORD:
+            set_mergin_auth_password(url=url, username=self.ui.username.text(), password=self.ui.password.text())
+        else:
+            settings = QSettings()
+            settings.setValue("Mergin/sso_email", self.ui.sso_email.text())
 
         super().accept()
 
@@ -81,9 +123,17 @@ class ConfigurationDialog(QDialog):
         return self.ui.merginURL.text() if self.ui.custom_url.isChecked() else MERGIN_URL
 
     def check_credentials(self):
-        credentials_are_set = bool(self.ui.username.text()) and bool(self.ui.password.text())
-        self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(credentials_are_set)
-        self.ui.test_connection_btn.setEnabled(credentials_are_set)
+        enable_buttons = False
+        if self.login_type() == LoginType.PASSWORD:
+            enable_buttons = bool(self.ui.username.text()) and bool(self.ui.password.text())
+        elif self.login_type() == LoginType.SSO:
+            if self.sso_email_required:
+                enable_buttons = bool(self.ui.sso_email.text())
+            else:
+                enable_buttons = True
+
+        self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(enable_buttons)
+        self.ui.test_connection_btn.setEnabled(enable_buttons)
 
     def check_master_password(self):
         if not self.ui.save_credentials.isChecked():
@@ -97,60 +147,76 @@ class ConfigurationDialog(QDialog):
                 "<font color=red> Warning: You may be prompted for QGIS master password </font>"
             )
 
-    def writeSettings(self):
-        url = self.server_url()
-        login_name = self.ui.username.text()
-        login_password = self.ui.password.text()
-        settings = QSettings()
-        settings.setValue("Mergin/auth_token", None)  # reset token
-        settings.setValue("Mergin/saveCredentials", str(self.ui.save_credentials.isChecked()))
-
-        if self.ui.save_credentials.isChecked():
-            set_mergin_auth(url, login_name, login_password)
-            try:
-                mc = create_mergin_client()
-            except (URLError, ClientError, LoginError):
-                mc = None
-        else:
-            try:
-                proxy_config = get_qgis_proxy_config(url)
-                mc = MerginClient(url, None, login_name, login_password, get_plugin_version(), proxy_config)
-                settings.setValue("Mergin/auth_token", mc._auth_session["token"])
-                settings.setValue("Mergin/server", url)
-            except (URLError, ClientError, LoginError) as e:
-                QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
-                mc = None
-
-        QgsExpressionContextUtils.setGlobalVariable("mergin_url", url)
-        QgsExpressionContextUtils.setGlobalVariable("mm_url", url)
-        if mc:
-            # username can be username or email, so we fetch it from api
-            user_info = mc.user_info()
-            username = user_info["username"]
-            user_email = user_info["email"]
-            user_full_name = user_info["name"]
-            settings.setValue("Mergin/username", username)
-            settings.setValue("Mergin/user_email", user_email)
-            settings.setValue("Mergin/full_name", user_full_name)
-            QgsExpressionContextUtils.setGlobalVariable("mergin_username", username)
-            QgsExpressionContextUtils.setGlobalVariable("mergin_user_email", user_email)
-            QgsExpressionContextUtils.setGlobalVariable("mergin_full_name", user_full_name)
-            QgsExpressionContextUtils.setGlobalVariable("mm_username", username)
-            QgsExpressionContextUtils.setGlobalVariable("mm_user_email", user_email)
-            QgsExpressionContextUtils.setGlobalVariable("mm_full_name", user_full_name)
-        else:
-            QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
-            QgsExpressionContextUtils.removeGlobalVariable("mergin_user_email")
-            QgsExpressionContextUtils.removeGlobalVariable("mergin_full_name")
-            QgsExpressionContextUtils.removeGlobalVariable("mm_username")
-            QgsExpressionContextUtils.removeGlobalVariable("mm_user_email")
-            QgsExpressionContextUtils.removeGlobalVariable("mm_full_name")
-
-        return mc
+    def login_type(self) -> LoginType:
+        if self.ui.stacked_widget_login.currentIndex() == 0:
+            return LoginType.PASSWORD
+        elif self.ui.stacked_widget_login.currentIndex() == 1:
+            return LoginType.SSO
+        return LoginType.PASSWORD
 
     def test_connection(self):
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        ok, msg = test_server_connection(self.server_url(), self.ui.username.text(), self.ui.password.text())
-        QApplication.restoreOverrideCursor()
-        self.ui.test_status.setText(msg)
-        return ok
+
+        with OverrideCursor(Qt.CursorShape.WaitCursor):
+            if self.login_type() == LoginType.PASSWORD:
+                ok, msg = test_server_connection(self.server_url(), self.ui.username.text(), self.ui.password.text())
+            else:
+                if validate_sso_login(self.server_url(), self.get_sso_email()):
+                    self.ui.test_status.setText("<font color=green> OK </font>")
+                    return True
+
+                self.ui.test_status.setText(f"<font color=orange>Follow the instructions in the browser...</font>")
+                ok, msg = test_server_connection(self.server_url(), use_sso=True, sso_email=self.get_sso_email())
+
+            if url_reachable(self.server_url()):
+                if mergin_server_deprecated_version(self.server_url()):
+                    msg = "The server is running an older, unsupported version of Mergin Maps. Please contact your server administrator. <br> If you still require data access, please downgrade your plugin version."
+                    QMessageBox.information(
+                        self,
+                        "Deprecated server version",
+                        msg,
+                    )
+                    self.ui.test_status.setText(f"<font color=red> {msg} </font>")
+                    return False
+            else:
+                msg = "<font color=red> Server URL is not reachable </font>"
+                self.ui.test_status.setText(msg)
+                return False
+
+            self.ui.test_status.setText(msg)
+            return ok
+
+    def allow_sso_login(self) -> None:
+        self.ui.button_sign_sso.setVisible(False)
+
+        if not qgis_support_sso():
+            return
+
+        allowed, msg = sso_login_allowed(self.server_url())
+        if not allowed:
+            self.show_sign_password()
+            return
+
+        if allowed:
+            self.sso_email_required, msg = sso_ask_for_email(self.server_url())
+            if msg:
+                self.show_sign_password()
+                return
+
+        self.ui.button_sign_sso.setVisible(allowed)
+        self.ui.sso_email.setVisible(self.sso_email_required)
+
+        if not allowed:
+            self.ui.stacked_widget_login.setCurrentIndex(0)
+
+    def show_sign_sso(self) -> None:
+        self.ui.stacked_widget_login.setCurrentIndex(1)
+        self.ui.sso_email.setVisible(self.sso_email_required)
+
+    def show_sign_password(self) -> None:
+        self.ui.stacked_widget_login.setCurrentIndex(0)
+
+    def get_sso_email(self) -> typing.Optional[str]:
+        if self.sso_email_required:
+            if self.ui.sso_email.isVisible():
+                return self.ui.sso_email.text()
+        return None

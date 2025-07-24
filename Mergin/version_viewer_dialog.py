@@ -53,6 +53,7 @@ from qgis.utils import OverrideCursor, iface
 
 from .diff import make_version_changes_layers
 from .mergin import MerginClient
+from .mergin.client import AuthTokenExpiredError
 from .mergin.merginproject import MerginProject
 from .mergin.utils import bytes_to_human_size, int_version
 from .utils import (
@@ -206,7 +207,11 @@ class ChangesetsDownloader(QThread):
         self.version = version
 
     def run(self):
-        version_info = self.mc.project_version_info(self.mp.project_id(), version=f"v{self.version}")
+        try:
+            version_info = self.mc.project_version_info(self.mp.project_id(), version=f"v{self.version}")
+        except AuthTokenExpiredError:
+            self.error_occured.emit(e)
+            return
 
         files_updated = version_info["changes"]["updated"]
 
@@ -240,6 +245,9 @@ class ChangesetsDownloader(QThread):
             except ClientError as e:
                 self.error_occured.emit(e)
                 return
+            except AuthTokenExpiredError:
+                self.error_occured.emit(AuthTokenExpiredError)
+                return
             except Exception as e:
                 self.error_occured.emit(e)
                 return
@@ -254,6 +262,7 @@ class ChangesetsDownloader(QThread):
 class VersionsFetcher(QThread):
 
     finished = pyqtSignal()
+    error_occured = pyqtSignal(Exception)
 
     def __init__(self, mc: MerginClient, project_path, model: VersionsTableModel):
         super(VersionsFetcher, self).__init__()
@@ -263,11 +272,17 @@ class VersionsFetcher(QThread):
 
         self.current_page = 1
         self.per_page = 50
-
-        version_count = self.mc.project_versions_count(self.project_path)
-        self.nb_page = math.ceil(version_count / self.per_page)
+        self.nb_page = -1
 
     def run(self):
+        if self.nb_page < 0:
+            try:
+                version_count = self.mc.project_versions_count(self.project_path)
+            except Exception as e:
+                self.error_occured.emit(e)
+                return
+            self.nb_page = math.ceil(version_count / self.per_page)
+
         self.fetch_another_page()
         self.finished.emit()
 
@@ -278,9 +293,13 @@ class VersionsFetcher(QThread):
         if self.has_more_page() == False:
             return
         self.model.beginFetching()
-        page_versions, _ = self.mc.paginated_project_versions(
-            self.project_path, self.current_page, per_page=self.per_page, descending=True
-        )
+        try:
+            page_versions, _ = self.mc.paginated_project_versions(
+                self.project_path, self.current_page, per_page=self.per_page, descending=True
+            )
+        except Exception as e:
+            self.error_occured.emit(e)
+            return
         self.model.endFetching()
         self.model.append_versions(page_versions)
 
@@ -296,7 +315,7 @@ class VersionViewerDialog(QDialog):
     the methods of the class also follow this pattern
     """
 
-    def __init__(self, mc, parent=None):
+    def __init__(self, plugin, parent=None):
 
         QDialog.__init__(self, parent)
         self.ui = uic.loadUi(ui_file, self)
@@ -304,7 +323,8 @@ class VersionViewerDialog(QDialog):
         with OverrideCursor(Qt.CursorShape.WaitCursor):
             QgsGui.instance().enableAutoGeometryRestore(self)
 
-            self.mc = mc
+            self.plugin = plugin
+            self.mc: MerginClient = self.plugin.mc
 
             self.failed_to_fetch = False
 
@@ -322,15 +342,12 @@ class VersionViewerDialog(QDialog):
 
             self.has_selected_latest = False
 
-            try:
-                self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
-                self.fetcher.finished.connect(lambda: self.on_finish_fetching())
-                self.diff_downloader = None
+            self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
+            self.fetcher.finished.connect(lambda: self.on_finish_fetching())
+            self.fetcher.error_occured.connect(self.handle_exception)
+            self.diff_downloader = None
 
-                self.fetch_from_server()
-            except ClientError as e:
-                self.failed_to_fetch = True
-                return
+            self.fetch_from_server()
 
             height = 30
             self.toolbar.setMinimumHeight(height)
@@ -435,6 +452,8 @@ class VersionViewerDialog(QDialog):
         except ClientError:
             # Some versions e.g CE, EE edition doesn't have
             pass
+        except AuthTokenExpiredError as e:
+            self.plugin.auth_token_expired()
         super().exec()
 
     def closeEvent(self, event):
@@ -510,7 +529,19 @@ class VersionViewerDialog(QDialog):
 
         self.setWindowTitle(f"Changes Viewer | {version_name}")
 
-        self.version_details = self.mc.project_version_info(self.mp.project_id(), version_name)
+        try:
+            self.version_details = self.mc.project_version_info(self.mp.project_id(), version_name)
+        except ClientError:
+            QMessageBox.critical(
+                self.parent(),
+                "Project version info",
+                "Failed to get project version info",
+                QMessageBox.StandardButton.Close,
+            )
+            return
+        except AuthTokenExpiredError:
+            self.plugin.auth_token_expired()
+            return
         self.populate_details()
         self.details_treeview.expandAll()
 
@@ -527,7 +558,7 @@ class VersionViewerDialog(QDialog):
 
             self.diff_downloader = ChangesetsDownloader(self.mc, self.mp, version)
             self.diff_downloader.finished.connect(lambda msg: self.show_version_changes(version))
-            self.diff_downloader.error_occured.connect(self.show_download_error)
+            self.diff_downloader.error_occured.connect(self.handle_exception)
             self.diff_downloader.start()
         else:
             self.show_version_changes(version)
@@ -645,12 +676,17 @@ class VersionViewerDialog(QDialog):
             self.tabWidget.setCurrentIndex(1)
             self.tabWidget.setTabEnabled(0, False)
 
-    def show_download_error(self, e: Exception):
-        additional_log = str(e)
-        QgsMessageLog.logMessage(f"Download history error: " + additional_log, "Mergin")
-        self.label_info.setText(
-            "There was an issue loading this version. Please try again later or contact our support if the issue persists. Refer to the QGIS messages log for more details."
-        )
+    def handle_exception(self, e: Exception):
+        if isinstance(e, AuthTokenExpiredError):
+            self.plugin.auth_token_expired()
+            return
+        else:
+            self.failed_to_fetch = True
+            additional_log = str(e)
+            QgsMessageLog.logMessage(f"Download history error: " + additional_log, "Mergin")
+            self.label_info.setText(
+                "There was an issue loading this version. Please try again later or contact our support if the issue persists. Refer to the QGIS messages log for more details."
+            )
 
     def collect_layers(self, checked: bool):
         if checked:

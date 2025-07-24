@@ -22,6 +22,7 @@ from qgis.PyQt.QtGui import QPixmap, QFont, QFontMetrics, QIcon, QStandardItem, 
 
 from .mergin.client import MerginProject, ServerType
 from .mergin.common import InvalidProject
+from .mergin.client import AuthTokenExpiredError
 from .utils import (
     icon_path,
     mm_logo_path,
@@ -208,6 +209,8 @@ class ResultFetcher(QThread):
             self.finished.emit(projects)
 
         except (URLError, ClientError) as e:
+            return
+        except AuthTokenExpiredError:
             return
 
 

@@ -32,9 +32,9 @@ from ...diff import parse_db_schema, parse_diff, get_table_name, create_field_li
 
 from ...utils import (
     mm_symbol_path,
-    create_mergin_client,
     check_mergin_subdirs,
 )
+from ...utils_auth import create_mergin_client, MissingAuthConfigError, AuthTokenExpiredError, ClientError
 
 
 class CreateDiff(QgsProcessingAlgorithm):
@@ -113,7 +113,16 @@ class CreateDiff(QgsProcessingAlgorithm):
         layer_path = layer.source().split("|")[0]
         file_name = os.path.split(layer_path)[1]
 
-        mc = create_mergin_client()
+        try:
+            mc = create_mergin_client()
+        except (MissingAuthConfigError, AuthTokenExpiredError) as e:
+            raise QgsProcessingException(
+                "You need to be login into MerginMaps for this tool work. Please login using MerginMaps Settings Dialog. "
+                f"Error: {e}"
+            )
+        except (ClientError, ValueError) as e:
+            raise QgsProcessingException(f"Error creating Mergin Maps client: {e}")
+
         mp = MerginProject(project_dir)
 
         feedback.pushInfo("Downloading base file…")
