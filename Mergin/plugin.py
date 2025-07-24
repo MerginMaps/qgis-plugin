@@ -53,9 +53,7 @@ from .utils import (
     LoginError,
     InvalidProject,
     check_mergin_subdirs,
-    create_mergin_client,
     find_qgis_files,
-    get_mergin_auth,
     icon_path,
     mm_symbol_path,
     is_number,
@@ -68,6 +66,13 @@ from .utils import (
     unhandled_exception_message,
     unsaved_project_check,
     UnsavedChangesStrategy,
+)
+from .utils_auth import (
+    create_mergin_client,
+    MissingAuthConfigError,
+    AuthTokenExpiredError,
+    set_qgsexpressionscontext,
+    get_authcfg,
 )
 from .mergin.utils import int_version, is_versioned_file
 from .mergin.merginproject import MerginProject
@@ -123,11 +128,8 @@ class MerginPlugin:
         # things will get horribly wrong when QGIS tries to display GUI and the app would crash.
         # Triggering auth request to QGIS auth framework already at this point will make sure that
         # the dialog asking for master password is started from the main thread -> no crash.
-        get_mergin_auth()
 
         self.initProcessing()
-
-        self.create_manager()
 
         if self.iface is not None:
             self.add_action(
@@ -187,6 +189,14 @@ class MerginPlugin:
         # if self.iface.browserModel().initialized():
         #     self.iface.browserModel().reload()
 
+        # create manager based on status of QGIS
+        # if main window is visible, we can create the manager immediately - QGIS is already initialized
+        # if not, we need to wait for initializationCompleted signal so that QGIS is fully initialized
+        if self.iface.mainWindow().isVisible():
+            self.create_manager()
+        else:
+            self.iface.initializationCompleted.connect(self.create_manager)
+
         if self.iface is not None:
             # register custom mergin widget in project properties
             self.mergin_project_config_factory = MerginProjectConfigFactory()
@@ -245,10 +255,16 @@ class MerginPlugin:
         """Create Mergin Maps projects manager."""
         error = ""
         try:
-            if self.mc is None:
-                self.mc = create_mergin_client()
+            if self.mc is None and get_authcfg():
+                try:
+                    self.mc = create_mergin_client()
+                # if the client creation fails with AuthTokenExpiredError, we need relogin user - it should only happen for SSO
+                except AuthTokenExpiredError:
+                    self.auth_token_expired()
+                    return
+
             self.choose_active_workspace()
-            self.manager = MerginProjectsManager(self.mc)
+            self.manager = MerginProjectsManager(self)
         except (URLError, ClientError, LoginError):
             error = "Plugin not configured or \nQGIS master password not set up"
         except Exception as err:
@@ -314,7 +330,14 @@ class MerginPlugin:
         """Open plugin configuration dialog."""
         dlg = ConfigurationDialog()
         if dlg.exec():
-            self.mc = dlg.writeSettings()
+            try:
+                self.mc = create_mergin_client()
+                set_qgsexpressionscontext(dlg.server_url(), mc=self.mc)
+            except (MissingAuthConfigError, AuthTokenExpiredError, ClientError, ValueError) as e:
+                QMessageBox.critical(None, "Login failed", f"Could not login: {str(e)}")
+                set_qgsexpressionscontext(dlg.server_url(), mc=None)
+                return
+
             self.on_config_changed()
             self.show_browser_panel()
 
@@ -345,7 +368,7 @@ class MerginPlugin:
             return
 
     def open_project_history_window(self):
-        dlg = VersionViewerDialog(self.mc)
+        dlg = VersionViewerDialog(self)
         dlg.exec()
 
     def show_no_workspaces_dialog(self):
@@ -380,6 +403,9 @@ class MerginPlugin:
             try:
                 service_response = self.mc.workspace_service(workspace_id)
             except ClientError as e:
+                return
+            except AuthTokenExpiredError:
+                self.auth_token_expired()
                 return
 
             requires_action = service_response.get("action_required", False)
@@ -483,6 +509,9 @@ class MerginPlugin:
             workspaces = self.mc.workspaces_list()
         except (URLError, ClientError) as e:
             return  # Server does not support workspaces
+        except AuthTokenExpiredError:
+            self.auth_token_expired()
+            return
 
         if not workspaces:
             self.show_no_workspaces_dialog()
@@ -611,12 +640,22 @@ class MerginPlugin:
 
         processing.execAlgorithmDialog("mergin:downloadvectortiles", params)
 
+    def auth_token_expired(self):
+        QMessageBox.information(
+            self.iface.mainWindow(),
+            "SSO login has expired",
+            "Your SSO login has expired. To access your remote projects and be able to synchronize, you need to log in again.",
+        )
+
+        self.configure()
+
 
 class MerginRemoteProjectItem(QgsDataItem):
     """Data item to represent a remote Mergin Maps project."""
 
-    def __init__(self, parent, project, project_manager):
+    def __init__(self, parent, project, project_manager, plugin: MerginPlugin):
         self.project = project
+        self.plugin = plugin
         self.project_name = posixpath.join(
             project["namespace"], project["name"]
         )  # we need posix path for server API calls
@@ -653,6 +692,9 @@ class MerginRemoteProjectItem(QgsDataItem):
             msg = "Failed to clone project {}:\n\n{}".format(self.project_name, str(e))
             QMessageBox.critical(None, "Clone project", msg, QMessageBox.StandardButton.Close)
             return
+        except AuthTokenExpiredError:
+            self.plugin.auth_token_expired()
+            return
         except LoginError as e:
             login_error_message(e)
             return
@@ -665,7 +707,7 @@ class MerginRemoteProjectItem(QgsDataItem):
             group_items["My projects"].reload()
 
     def remove_remote_project(self):
-        dlg = RemoveProjectDialog(self.project_name)
+        dlg = RemoveProjectDialog(self.project["namespace"], self.project["name"])
         if dlg.exec() == QDialog.DialogCode.Rejected:
             return
 
@@ -677,6 +719,9 @@ class MerginRemoteProjectItem(QgsDataItem):
         except (URLError, ClientError) as e:
             msg = "Failed to remove project {}:\n\n{}".format(self.project_name, str(e))
             QMessageBox.critical(None, "Remove project", msg, QMessageBox.StandardButton.Close)
+        except AuthTokenExpiredError:
+            self.plugin.auth_token_expired()
+            return
         except LoginError as e:
             login_error_message(e)
 
@@ -699,7 +744,8 @@ class MerginRemoteProjectItem(QgsDataItem):
 class MerginLocalProjectItem(QgsDirectoryItem):
     """Data item to represent a local Mergin Maps project."""
 
-    def __init__(self, parent, project, project_manager):
+    def __init__(self, parent, project, project_manager, plugin: MerginPlugin):
+        self.plugin = plugin
         self.project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
         self.path = mergin_project_local_path(self.project_name)
         display_name = project["name"]
@@ -810,6 +856,9 @@ class MerginLocalProjectItem(QgsDirectoryItem):
         except (URLError, ClientError) as e:
             msg = "Failed to clone project {}:\n\n{}".format(self.project_name, str(e))
             QMessageBox.critical(None, "Clone project", msg, QMessageBox.StandardButton.Close)
+        except AuthTokenExpiredError:
+            self.plugin.auth_token_expired()
+            return
         except LoginError as e:
             login_error_message(e)
 
@@ -894,7 +943,7 @@ class MerginRootItem(QgsDataCollectionItem):
         name="Mergin Maps",
         flag=None,
         order=None,
-        plugin=None,
+        plugin: MerginPlugin = None,
     ):
         providerKey = "Mergin Maps"
         if name != providerKey:
@@ -960,10 +1009,10 @@ class MerginRootItem(QgsDataCollectionItem):
             project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
             local_proj_path = mergin_project_local_path(project_name)
             if local_proj_path is None or not os.path.exists(local_proj_path):
-                item = MerginRemoteProjectItem(self, project, self.project_manager)
+                item = MerginRemoteProjectItem(self, project, self.project_manager, self.plugin)
                 item.setState(QgsDataItem.Populated)  # make it non-expandable
             else:
-                item = MerginLocalProjectItem(self, project, self.project_manager)
+                item = MerginLocalProjectItem(self, project, self.project_manager, self.plugin)
             sip.transferto(item, self)
             items.append(item)
         self.set_fetch_more_item()
