@@ -432,7 +432,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox_4">
+        <widget class="QGroupBox" name="groupBox_photo_sketching">
          <property name="title">
           <string>Photo sketching</string>
          </property>
@@ -450,7 +450,7 @@
           <item row="0" column="0">
            <widget class="QLabel" name="label_13">
             <property name="text">
-             <string>Photo sketching lets mobile app users modify captured photos by adding freehand annotations to them</string>
+             <string>Photo sketching lets mobile app users modify captured photos by adding freehand annotations</string>
             </property>
            </widget>
           </item>
