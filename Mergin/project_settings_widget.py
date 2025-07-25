@@ -87,7 +87,14 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         idx = self.cmb_tracking_precision.findData(mode) if ok else 1
         self.cmb_tracking_precision.setCurrentIndex(idx)
 
+        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "PhotoSketching/Enabled")
+        if ok:
+            self.chk_photo_sketching_enabled.setChecked(enabled)
+        else:
+            self.chk_photo_sketching_enabled.setChecked(False)
+
         enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "MapSketching/Enabled")
+
         if ok:
             self.chk_map_sketches_enabled.setChecked(enabled)
         else:
@@ -120,11 +127,13 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.attachment_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
         self.edit_photo_expression.expressionChanged.connect(self.expression_changed)
 
-        if not is_experimental_plugin_enabled():
+        if is_experimental_plugin_enabled():
+            self.groupBox_map_sketching.setTitle(self.groupBox_map_sketching.title() + " (Experimental)")
+            self.groupBox_photo_sketching.setTitle(self.groupBox_photo_sketching.title() + " (Experimental)")
+        else:
             # Hide by default
             self.groupBox_map_sketching.setVisible(False)
-        else:
-            self.groupBox_map_sketching.setTitle(self.groupBox_map_sketching.title() + " (Experimental)")
+            self.groupBox_photo_sketching.setVisible(False)
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
@@ -287,6 +296,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         QgsProject.instance().writeEntry(
             "Mergin", "PositionTracking/UpdateFrequency", self.cmb_tracking_precision.currentData()
         )
+
+        QgsProject.instance().writeEntry(
+            "Mergin", "PhotoSketching/Enabled", self.chk_photo_sketching_enabled.isChecked()
+        )
+
         QgsProject.instance().writeEntry("Mergin", "MapSketching/Enabled", self.chk_map_sketches_enabled.isChecked())
 
         colors: typing.List[str] = []
