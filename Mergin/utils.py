@@ -507,6 +507,8 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     vector_layer.setEditorWidgetSetup(3, photo_ws)
     new_project.addMapLayer(vector_layer)
 
+    new_project.writeEntry("Mergin", "SortLayersMethod/Method", 0)  # 0 - Preserve QGIS layer order
+
     write_success = new_project.write()
     if not write_success:
         QMessageBox.warning(None, "Error Creating New Project", f"Couldn't create new project:\n{project_path}")
