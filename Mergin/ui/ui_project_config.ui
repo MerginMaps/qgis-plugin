@@ -434,13 +434,13 @@
        <item>
         <widget class="QGroupBox" name="groupBox_3">
          <property name="title">
-          <string>Set layer order</string>
+          <string>Layer order</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
           <item row="0" column="0" colspan="2">
            <widget class="QLabel" name="label_13">
             <property name="text">
-             <string>This option override the default sorting layer in the mobile app to sort layer alphabetically</string>
+             <string>Choose how layers are sorted in the mobile app — either keep the order from your QGIS project or sort them alphabetically.</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
@@ -453,7 +453,7 @@
           <item row="1" column="0">
            <widget class="QLabel" name="label_14">
             <property name="text">
-             <string>Sorting method</string>
+             <string>Sort method</string>
             </property>
            </widget>
           </item>
