@@ -113,7 +113,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                     else:
                         item.setColor(QColor("#ffffff"))
 
-        self.cmb_sort_method.addItem("Preserve QGIS layer order ", 0)
+        self.cmb_sort_method.addItem("QGIS layer order", 0)
         self.cmb_sort_method.addItem("Alphabetical", 1)
 
         mode, ok = QgsProject.instance().readNumEntry("Mergin", "SortLayersMethod/Method")
