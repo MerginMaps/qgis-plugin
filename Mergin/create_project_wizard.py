@@ -96,14 +96,14 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         self.dir_path = None
         self.for_current_proj = None
         self.registerField("project_name*", self.project_name_ledit)
-        self.registerField("project_owner", self.project_owner_cbo)
+        self.registerField("project_namespace", self.project_workspace_cbo)
         self.registerField("is_public", self.public_chbox)
         self.populate_namespace_cbo()
         self.path_ok_ledit.setHidden(True)
         self.path_ledit.setReadOnly(True)
         self.path_ledit.textChanged.connect(self.check_input)
         self.project_name_ledit.textChanged.connect(self.check_input)
-        self.project_owner_cbo.currentTextChanged.connect(self.check_input)
+        self.project_workspace_cbo.currentTextChanged.connect(self.check_input)
 
     def nextId(self):
         return -1
@@ -117,22 +117,11 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
             self.for_current_proj = False
 
     def populate_namespace_cbo(self):
-        if self.parent.workspaces is not None:
-            for ws in sorted(self.parent.workspaces, key=lambda x: x["name"].lower()):
-                is_writable = ws.get("role", "owner") in ["owner", "admin", "writer"]
-                self.project_owner_cbo.addItem(ws["name"], is_writable)
+        for ws in sorted(self.parent.workspaces, key=lambda x: x["name"].lower()):
+            is_writable = ws.get("role", "owner") in ["owner", "admin", "writer"]
+            self.project_workspace_cbo.addItem(ws["name"], is_writable)
 
-        else:
-            # This means server is old and uses namespaces
-            self.projectNamespaceLabel.setText("Owner")
-            username = self.parent.user_info["username"]
-            user_organisations = self.parent.user_info.get("organisations", [])
-            self.project_owner_cbo.addItem(username, True)
-            for o in user_organisations:
-                if user_organisations[o] in ["owner", "admin", "writer"]:
-                    self.project_owner_cbo.addItem(o, True)
-
-        self.project_owner_cbo.setCurrentText(self.parent.default_workspace)
+        self.project_workspace_cbo.setCurrentText(self.parent.default_workspace)
 
     def setup_browsing(self, question=None, current_proj=False, field=None):
         """This will setup label and signals for browse button."""
@@ -174,7 +163,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
     def check_input(self):
         """Check if entered path is not already a Mergin Maps project dir and has at most a single QGIS project file."""
         # TODO: check if the project exists on the server
-        if not self.project_owner_cbo.currentData(Qt.ItemDataRole.UserRole):
+        if not self.project_workspace_cbo.currentData(Qt.ItemDataRole.UserRole):
             self.create_warning("You do not have permissions to create a project in this workspace!")
             return
         proj_name = self.project_name_ledit.text().strip()
@@ -463,7 +452,7 @@ class NewMerginProjectWizard(QWizard):
 
     def accept(self):
         self.project_dir = self.field("project_dir")
-        self.project_namespace = self.field("project_owner")
+        self.project_namespace = self.field("project_namespace")
         self.project_name = self.field("project_name").strip()
         self.is_public = self.field("is_public")
         reload_project = False

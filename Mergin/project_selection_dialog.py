@@ -197,20 +197,13 @@ class ResultFetcher(QThread):
 
     def run(self):
         try:
-            if self.mc.server_type() == ServerType.OLD:
-                projects = self.mc.paginated_projects_list(
-                    order_params="namespace_asc,name_asc",
-                    name=self.name,
-                    page=self.page,
-                )
-            else:
-                projects = self.mc.paginated_projects_list(
-                    only_namespace=self.namespace,
-                    only_public=False if self.namespace else True,
-                    order_params="workspace_asc,name_asc",
-                    name=self.name,
-                    page=self.page,
-                )
+            projects = self.mc.paginated_projects_list(
+                only_namespace=self.namespace,
+                only_public=False if self.namespace else True,
+                order_params="workspace_asc,name_asc",
+                name=self.name,
+                page=self.page,
+            )
             if self.isInterruptionRequested():
                 return
             self.finished.emit(projects)
