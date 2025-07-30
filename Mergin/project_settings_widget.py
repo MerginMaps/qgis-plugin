@@ -120,12 +120,6 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.attachment_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
         self.edit_photo_expression.expressionChanged.connect(self.expression_changed)
 
-        if not is_experimental_plugin_enabled():
-            # Hide by default
-            self.groupBox_map_sketching.setVisible(False)
-        else:
-            self.groupBox_map_sketching.setTitle(self.groupBox_map_sketching.title() + " (Experimental)")
-
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
             None, "Select directory", self.local_project_dir, QFileDialog.Option.ShowDirsOnly
