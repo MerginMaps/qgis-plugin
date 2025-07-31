@@ -12,7 +12,7 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 
 ; start of optional metadata
 changelog=2025.3.1
-  - Introducing map sketching for public use
+  - Added support for map sketching
   <p>2025.3
   - Added SSO support for SAML/OIDC connections
   - Various bug fixes
