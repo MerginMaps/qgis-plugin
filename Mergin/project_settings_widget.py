@@ -87,11 +87,8 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         idx = self.cmb_tracking_precision.findData(mode) if ok else 1
         self.cmb_tracking_precision.setCurrentIndex(idx)
 
-        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "PhotoSketching/Enabled")
-        if ok:
-            self.chk_photo_sketching_enabled.setChecked(enabled)
-        else:
-            self.chk_photo_sketching_enabled.setChecked(False)
+        enabled, _ = QgsProject.instance().readBoolEntry("Mergin", "PhotoSketching/Enabled", True)
+        self.chk_photo_sketching_enabled.setChecked(enabled)
 
         enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "MapSketching/Enabled")
 
