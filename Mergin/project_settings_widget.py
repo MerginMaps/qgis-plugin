@@ -87,11 +87,8 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         idx = self.cmb_tracking_precision.findData(mode) if ok else 1
         self.cmb_tracking_precision.setCurrentIndex(idx)
 
-        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "PhotoSketching/Enabled")
-        if ok:
-            self.chk_photo_sketching_enabled.setChecked(enabled)
-        else:
-            self.chk_photo_sketching_enabled.setChecked(False)
+        enabled, _ = QgsProject.instance().readBoolEntry("Mergin", "PhotoSketching/Enabled", True)
+        self.chk_photo_sketching_enabled.setChecked(enabled)
 
         enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "MapSketching/Enabled")
 
@@ -135,11 +132,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.edit_photo_expression.expressionChanged.connect(self.expression_changed)
 
         if is_experimental_plugin_enabled():
-            self.groupBox_map_sketching.setTitle(self.groupBox_map_sketching.title() + " (Experimental)")
             self.groupBox_photo_sketching.setTitle(self.groupBox_photo_sketching.title() + " (Experimental)")
         else:
             # Hide by default
-            self.groupBox_map_sketching.setVisible(False)
             self.groupBox_photo_sketching.setVisible(False)
 
     def get_sync_dir(self):
