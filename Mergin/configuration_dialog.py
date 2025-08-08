@@ -169,7 +169,7 @@ class ConfigurationDialog(QDialog):
 
             if url_reachable(self.server_url()):
                 if mergin_server_deprecated_version(self.server_url()):
-                    msg = "This server is running an outdated version that will no longer be supported. Please contact your server administrator to upgrade."
+                    msg = "The server is running an older, unsupported version of Mergin Maps. Please contact your server administrator. <br> If you still require data access, please downgrade your plugin version."
                     QMessageBox.information(
                         self,
                         "Deprecated server version",

@@ -27,20 +27,9 @@ class CloneProjectDialog(QDialog):
         self.ui.buttonBox.accepted.connect(self.accept_dialog)
 
         workspaces = user_info.get("workspaces", None)
-        if workspaces is not None:
-            for ws in workspaces:
-                is_writable = ws.get("role", "owner") in ["owner", "admin", "writer"]
-                self.ui.projectNamespace.addItem(ws["name"], is_writable)
-
-        else:
-            # This means server is old and uses namespaces
-            self.ui.projectNamespaceLabel.setText("Owner")
-            username = user_info["username"]
-            user_organisations = user_info.get("organisations", [])
-            self.ui.projectNamespace.addItem(username, True)
-            for o in user_organisations:
-                if user_organisations[o] in ["owner", "admin", "writer"]:
-                    self.ui.projectNamespace.addItem(o, True)
+        for ws in workspaces:
+            is_writable = ws.get("role", "owner") in ["owner", "admin", "writer"]
+            self.ui.projectNamespace.addItem(ws["name"], is_writable)
 
         self.ui.projectNamespace.currentTextChanged.connect(self.validate_input)
         self.ui.edit_project_name.textChanged.connect(self.validate_input)
