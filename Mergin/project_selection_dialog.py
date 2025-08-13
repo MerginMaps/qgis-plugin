@@ -22,6 +22,7 @@ from qgis.PyQt.QtGui import QPixmap, QFont, QFontMetrics, QIcon, QStandardItem, 
 
 from .mergin.client import MerginProject, ServerType
 from .mergin.common import InvalidProject
+from .mergin.client import AuthTokenExpiredError
 from .utils import (
     icon_path,
     mm_logo_path,
@@ -160,7 +161,7 @@ class ProjectItemDelegate(QAbstractItemDelegate):
         painter.drawText(nameRect, Qt.AlignmentFlag.AlignLeading, elided_text)
         painter.setFont(option.font)
         fm = QFontMetrics(QFont(option.font))
-        elided_status = fm.elidedText(index.data(ProjectsModel.STATUS), Qt.TextElideModeElideRight, infoRect.width())
+        elided_status = fm.elidedText(index.data(ProjectsModel.STATUS), Qt.TextElideMode.ElideRight, infoRect.width())
         painter.drawText(infoRect, Qt.AlignmentFlag.AlignLeading, elided_status)
         icon = index.data(ProjectsModel.ICON)
         if icon:
@@ -208,6 +209,8 @@ class ResultFetcher(QThread):
             self.finished.emit(projects)
 
         except (URLError, ClientError) as e:
+            return
+        except AuthTokenExpiredError:
             return
 
 

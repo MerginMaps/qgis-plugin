@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>638</width>
+    <width>642</width>
     <height>556</height>
    </rect>
   </property>
@@ -44,9 +44,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-422</y>
-        <width>624</width>
-        <height>978</height>
+        <y>-888</y>
+        <width>628</width>
+        <height>1444</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -221,7 +221,7 @@
           <item row="1" column="1" colspan="2">
            <widget class="QLabel" name="label_6">
             <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;strong&gt;Photo name format&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Set up custom photo names format based on an expression. Make sure that the name is unique for each photo.&lt;/p&gt;&lt;p&gt;Pro tip: use variables like &lt;code&gt;@mergin_username&lt;/code&gt;, &lt;code&gt;@layer_name&lt;/code&gt; or layer fields in combination with &lt;code&gt;now()&lt;/code&gt; (to get the current time) in order to generate unique photo names.&lt;/p&gt;&lt;p&gt;For further details, please refer to &lt;a href=&quot;https://merginmaps.com/docs/layer/settingup_forms_photo/#customising-photo-name-format-with-expressions&quot;&gt;our documentation&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Photo name format&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Set up custom photo names format based on an expression. Make sure that the name is unique for each photo.&lt;/p&gt;&lt;p&gt;Pro tip: use variables like &lt;span style=&quot; font-family:'Noto Sans Mono';&quot;&gt;@mm_user_email&lt;/span&gt;, &lt;span style=&quot; font-family:'Noto Sans Mono';&quot;&gt;@layer_name&lt;/span&gt; or layer fields in combination with &lt;span style=&quot; font-family:'Noto Sans Mono';&quot;&gt;now()&lt;/span&gt; (to get the current time) in order to generate unique photo names.&lt;/p&gt;&lt;p&gt;For further details, please refer to &lt;a href=&quot;https://merginmaps.com/docs/layer/settingup_forms_photo/#customising-photo-name-format-with-expressions&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#1d99f3;&quot;&gt;our documentation&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
@@ -318,6 +318,178 @@
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="groupBox_map_sketching">
+         <property name="title">
+          <string>Map sketching</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>Colour set</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="2">
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Map sketching lets mobile app users draw quick, informal sketches directly on the map. Sketches are saved in a separate GeoPackage that’s created automatically. &lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://merginmaps.com/docs/field/map-sketching&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Learn more here&lt;/span&gt;&lt;/a&gt; about how map sketching works and how to use it in the mobile app.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <layout class="QHBoxLayout" name="mColorsHorizontalLayout">
+            <item>
+             <widget class="QgsColorButton" name="mColorButton_2">
+              <property name="color">
+               <color>
+                <red>255</red>
+                <green>255</green>
+                <blue>255</blue>
+               </color>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QgsColorButton" name="mColorButton_6">
+              <property name="color">
+               <color>
+                <red>18</red>
+                <green>24</green>
+                <blue>31</blue>
+               </color>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QgsColorButton" name="mColorButton_5">
+              <property name="color">
+               <color>
+                <red>94</red>
+                <green>158</green>
+                <blue>228</blue>
+               </color>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QgsColorButton" name="mColorButton_4">
+              <property name="color">
+               <color>
+                <red>87</red>
+                <green>180</green>
+                <blue>111</blue>
+               </color>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QgsColorButton" name="mColorButton_3">
+              <property name="color">
+               <color>
+                <red>253</red>
+                <green>203</green>
+                <blue>42</blue>
+               </color>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QgsColorButton" name="mColorButton_1">
+              <property name="color">
+               <color>
+                <red>255</red>
+                <green>156</green>
+                <blue>64</blue>
+               </color>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QgsColorButton" name="mColorButton_7">
+              <property name="color">
+               <color>
+                <red>255</red>
+                <green>143</green>
+                <blue>147</blue>
+               </color>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="1" column="0" colspan="2">
+           <widget class="QCheckBox" name="chk_map_sketches_enabled">
+            <property name="text">
+             <string>Enable map sketching</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="title">
+          <string>Layer order</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_7">
+          <item row="0" column="0" colspan="2">
+           <widget class="QLabel" name="label_13">
+            <property name="text">
+             <string>Choose how layers are sorted in the mobile app — either keep the order from your QGIS project or sort them alphabetically.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="openExternalLinks">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="cmb_sort_method"/>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_14">
+            <property name="text">
+             <string>Sort method</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_photo_sketching">
+         <property name="title">
+          <string>Photo sketching</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_7">
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="chk_photo_sketching_enabled">
+            <property name="text">
+             <string>Enable photo sketching</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_13">
+            <property name="text">
+             <string>Photo sketching lets mobile app users modify captured photos by adding freehand annotations</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -337,6 +509,11 @@
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>QgsColorButton</class>
+   <extends>QToolButton</extends>
+   <header>qgscolorbutton.h</header>
+  </customwidget>
   <customwidget>
    <class>QgsExpressionLineEdit</class>
    <extends>QWidget</extends>

@@ -357,7 +357,7 @@ def make_version_changes_layers(project_path, version):
 
     layers = []
     version_dir = os.path.join(project_path, ".mergin", ".cache", f"v{version}")
-    for f in glob.iglob(f"{version_dir}/*.gpkg"):
+    for f in glob.iglob(f"{version_dir}/**/*.gpkg", recursive=True):
         gpkg_file = os.path.join(version_dir, f)
         schema_file = gpkg_file + "-schema.json"
         if not os.path.exists(schema_file):
@@ -408,7 +408,7 @@ def make_version_changes_layers(project_path, version):
 
 def find_changeset_file(file_name, version_dir):
     """Returns path to the diff file for the given version file"""
-    for f in glob.iglob(f"{version_dir}/*.gpkg-diff*"):
+    for f in glob.iglob(f"{version_dir}/**/*.gpkg-diff*", recursive=True):
         if f.startswith(file_name):
             return os.path.join(version_dir, f)
     return None

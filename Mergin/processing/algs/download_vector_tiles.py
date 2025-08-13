@@ -154,8 +154,9 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
 
         self.max_zoom = self.parameterAsInt(parameters, self.MAX_ZOOM, context)
         if self.max_zoom > layer.sourceMaxZoom():
-            raise QgsProcessingException(
-                f"Requested maximum zoom level is bigger than available zoom level in the source layer. Please, select zoom level lower or equal to {layer.sourceMaxZoom()}."
+            self.max_zoom = layer.sourceMaxZoom()
+            feedback.pushWarning(
+                f"Requested maximum zoom level is bigger than available zoom level in the source layer. Zoom level will be clamped to {layer.sourceMaxZoom()}."
             )
 
         self.tile_limit = self.parameterAsInt(parameters, self.TILE_LIMIT, context)
@@ -194,8 +195,8 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
         writer.set_metadata_value("name", self.layer_name)
         writer.set_metadata_value("minzoom", self.source_min_zoom)
         writer.set_metadata_value("maxzoom", self.max_zoom)
-        writer.set_metadata_value("crs", self.tile_matrix_set.rootMatrix().crs().authid())
         try:
+            writer.set_metadata_value("crs", self.tile_matrix_set.rootMatrix().crs().authid())
             ct = QgsCoordinateTransform(
                 self.tile_matrix_set.rootMatrix().crs(),
                 QgsCoordinateReferenceSystem("EPSG:4326"),
@@ -208,6 +209,8 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
             )
             writer.set_metadata_value("bounds", bounds_str)
         except QgsCsException as e:
+            pass
+        except AttributeError as e:
             pass
 
         step_feedback = QgsProcessingMultiStepFeedback(self.max_zoom + 1, feedback)

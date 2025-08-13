@@ -2,6 +2,7 @@
 # Copyright Lutra Consulting Limited
 
 import os
+import shutil
 from pathlib import Path
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QSettings, Qt, QVariant, QSortFilterProxyModel
@@ -17,7 +18,7 @@ from qgis.PyQt.QtWidgets import (
 )
 
 from qgis.core import QgsProject, QgsLayerTreeNode, QgsLayerTreeModel, NULL
-from qgis.utils import iface
+from qgis.utils import iface, OverrideCursor
 
 from .utils import (
     check_mergin_subdirs,
@@ -457,79 +458,86 @@ class NewMerginProjectWizard(QWizard):
         reload_project = False
         failed_packaging = []
 
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        QApplication.processEvents()
-
-        if not self.init_page.cur_proj_no_pack_btn.isChecked():
-            self.project_dir = os.path.join(self.project_dir, self.project_name)
-            if not os.path.exists(self.project_dir):
-                try:
-                    os.mkdir(self.project_dir)
-                except OSError as e:
-                    msg = f"Couldn't create project directory:\n{self.project_dir}\n\n{repr(e)}"
-                    QMessageBox.critical(None, "Create New Project", msg)
-                    QApplication.restoreOverrideCursor()
-                    return
-            self.project_file = os.path.join(self.project_dir, self.project_name + ".qgz")
-
-        self.save_geometry()
-        super().accept()
-
-        if self.init_page.basic_proj_btn.isChecked():
-            self.project_file = create_basic_qgis_project(project_path=self.project_file)
-            self.iface.addProject(self.project_file)
-            # workaround to set proper extent
-            self.iface.mapCanvas().zoomToFullExtent()
-            QgsProject.instance().write()
-            reload_project = True
-
-        elif self.init_page.cur_proj_pack_btn.isChecked():
-            if not save_current_project(self.project_file):
-                msg = f"Couldn't save project to specified location:\n{self.project_file}."
-                msg += "\n\nCheck the path is writable and try again."
-                QMessageBox.warning(None, "Create New Project", msg)
-                return
-            proxy_model = self.package_page.layers_view.proxy_model
-            new_proj = QgsProject.instance()
-            new_root = new_proj.layerTreeRoot()
-            layers_to_remove = []
-            for tree_layer in new_root.findLayers():
-                layer = tree_layer.layer()
-                lid = tree_layer.layerId()
-                if layer is None:
-                    # this is an invalid tree node layer - let's keep it as is
-                    continue
-                layer_state = proxy_model.layers_state[lid]
-                if layer_state == proxy_model.PACK_COL:
+        with OverrideCursor(Qt.CursorShape.WaitCursor):
+            if not self.init_page.cur_proj_no_pack_btn.isChecked():
+                self.project_dir = os.path.join(self.project_dir, self.project_name)
+                if not os.path.exists(self.project_dir):
                     try:
-                        package_layer(layer, self.project_dir)
-                    except PackagingError as e:
-                        failed_packaging.append((layer.name(), repr(e)))
-                elif layer_state == proxy_model.IGNORE_COL:
-                    layers_to_remove.append(lid)
+                        os.mkdir(self.project_dir)
+                    except OSError as e:
+                        msg = f"Couldn't create project directory:\n{self.project_dir}\n\n{repr(e)}"
+                        QMessageBox.critical(None, "Create New Project", msg)
+                        return
+                self.project_file = os.path.join(self.project_dir, self.project_name + ".qgz")
 
-            new_proj.removeMapLayers(layers_to_remove)
-            new_proj.write()
-            reload_project = True
+            self.save_geometry()
+            super().accept()
 
-            # copy datum shift grids
-            package_datum_grids(os.path.join(self.project_dir, "proj"))
+            if self.init_page.basic_proj_btn.isChecked():
+                self.project_file = create_basic_qgis_project(project_path=self.project_file)
+                reload_project = True
 
-        elif self.init_page.cur_proj_no_pack_btn.isChecked():
-            cur_proj = QgsProject.instance()
-            cur_proj.write()
+            elif self.init_page.cur_proj_pack_btn.isChecked():
+                if not save_current_project(self.project_file):
+                    msg = f"Couldn't save project to specified location:\n{self.project_file}."
+                    msg += "\n\nCheck the path is writable and try again."
+                    QMessageBox.warning(None, "Create New Project", msg)
+                    return
+                proxy_model = self.package_page.layers_view.proxy_model
+                new_proj = QgsProject.instance()
+                new_root = new_proj.layerTreeRoot()
+                layers_to_remove = []
+                for tree_layer in new_root.findLayers():
+                    layer = tree_layer.layer()
+                    lid = tree_layer.layerId()
+                    if layer is None:
+                        # this is an invalid tree node layer - let's keep it as is
+                        continue
+                    layer_state = proxy_model.layers_state[lid]
+                    if layer_state == proxy_model.PACK_COL:
+                        try:
+                            package_layer(layer, self.project_dir)
+                        except PackagingError as e:
+                            failed_packaging.append((layer.name(), repr(e)))
+                    elif layer_state == proxy_model.IGNORE_COL:
+                        layers_to_remove.append(lid)
 
-            # copy datum shift grids
-            package_datum_grids(os.path.join(self.project_dir, "proj"))
+                new_proj.removeMapLayers(layers_to_remove)
 
-            reload_project = True
+                new_proj.writeEntry("Mergin", "SortLayersMethod/Method", 0)  # 0 - Preserve QGIS layer order
+                new_proj.write()
+                reload_project = True
 
-        QApplication.processEvents()
-        QApplication.restoreOverrideCursor()
+                # copy datum shift grids
+                package_datum_grids(os.path.join(self.project_dir, "proj"))
 
-        self.project_manager.create_project(self.project_name, self.project_dir, self.is_public, self.project_namespace)
-        if reload_project:
-            self.project_manager.open_project(self.project_dir)
+            elif self.init_page.cur_proj_no_pack_btn.isChecked():
+                cur_proj = QgsProject.instance()
+
+                cur_proj.writeEntry("Mergin", "SortLayersMethod/Method", 0)  # 0 - Preserve QGIS layer order
+                cur_proj.write()
+
+                # copy datum shift grids
+                package_datum_grids(os.path.join(self.project_dir, "proj"))
+
+                reload_project = True
+
+        ok = self.project_manager.create_project(
+            self.project_name, self.project_dir, self.is_public, self.project_namespace
+        )
+        if not ok:
+            # Cleanup the local project if failed
+            if self.init_page.cur_proj_pack_btn.isChecked() or self.init_page.basic_proj_btn.isChecked():
+                shutil.rmtree(self.project_dir)
+
+        if reload_project and ok:
+            if self.init_page.basic_proj_btn.isChecked():
+                # workaround to set the proper extent
+                self.iface.addProject(self.project_file)
+                self.iface.mapCanvas().zoomToFullExtent()
+                QgsProject.instance().write()
+            else:
+                self.project_manager.open_project(self.project_dir)
 
         if failed_packaging:
             warn = "Failed to package following layers:\n"

@@ -14,7 +14,7 @@ on:
         type: string
 env:
   # Assign the version provided by 'workflow_dispatch' if available; otherwise, use the default.
-  PYTHON_API_CLIENT_VER: ${{ inputs.PYTHON_API_CLIENT_VER != '' && inputs.PYTHON_API_CLIENT_VER || '0.10.0' }}
+  PYTHON_API_CLIENT_VER: ${{ inputs.PYTHON_API_CLIENT_VER != '' && inputs.PYTHON_API_CLIENT_VER || '0.10.3' }}
   GEODIFF_VER:  ${{ inputs.GEODIFF_VER != '' && inputs.GEODIFF_VER || '2.0.4' }}
   PYTHON_VER: "38"
   PLUGIN_NAME: Mergin  
@@ -119,7 +119,7 @@ jobs:
   create_mergin_plugin_package:
     needs: [build_windows_binaries, build_linux_binary, build_macos_binary]
     runs-on: ubuntu-latest
-    steps:
+    steps:  
       - uses: actions/checkout@v3
         with:
           repository: MerginMaps/python-api-client
@@ -154,9 +154,7 @@ jobs:
         uses: actions/upload-artifact/merge@v4
         with:
           name: artifact
-          path: artifact-pygeodiff
           pattern: artifact-pygeodiff-*
-          merge-multiple: true
           delete-merged: true
 
       - uses: actions/download-artifact@v4
@@ -172,6 +170,15 @@ jobs:
         with:
           path: qgis-mergin-plugin
 
+      - name: Calculate build number
+        env:
+          OFFFSET: 10 # offset for build number - due to previous builds ~ new builds must always have a higher number
+        run: |
+            BUILD_NUM=$GITHUB_RUN_NUMBER$((GITHUB_RUN_ATTEMPT + OFFFSET))
+            echo "BUILD_NUM=${BUILD_NUM}" >> $GITHUB_ENV
+
+            echo "Build number: ${BUILD_NUM}"
+
       - name: create package
         run: |
           cp -r python-api-client/mergin qgis-mergin-plugin/Mergin
@@ -181,10 +188,9 @@ jobs:
           (cd output && zip -r9 ../mergin.zip Mergin/)
 
 
-
       - uses: actions/upload-artifact@v4
         with:
-          name: Mergin
+          name: Mergin b${{ env.BUILD_NUM }}
           path: output/
 
       - name: upload asset on tagged release

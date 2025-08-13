@@ -10,7 +10,7 @@ from qgis.PyQt.QtWidgets import QWizard, QFileDialog
 from qgis.gui import QgsFileWidget
 from qgis.core import QgsProject, QgsProviderRegistry, QgsApplication, QgsAuthMethodConfig
 
-from .utils import get_mergin_auth
+from .utils_auth import get_stored_mergin_server_url, get_mergin_username_password
 
 base_dir = os.path.dirname(__file__)
 ui_direction_page, base_direction_page = uic.loadUiType(os.path.join(base_dir, "ui", "ui_sync_direction_page.ui"))
@@ -177,13 +177,16 @@ class ConfigFilePage(ui_config_page, base_config_page):
                 f.write(self.text_config_file.toPlainText())
 
     def generate_config(self):
-        url, user, password = get_mergin_auth()
+        url = get_stored_mergin_server_url()
+        user, password = get_mergin_username_password()
         metadata = QgsProviderRegistry.instance().providerMetadata("postgres")
         conn = metadata.dbConnections()[self.field("connection")]
         decoded_uri = metadata.decodeUri(conn.uri())
         conn_string = []
         if "host" in decoded_uri:
             conn_string.append(f"host={decoded_uri['host']}")
+        if "port" in decoded_uri:
+            conn_string.append(f"port={decoded_uri['port']}")
         if "dbname" in decoded_uri:
             conn_string.append(f"dbname={decoded_uri['dbname']}")
 
