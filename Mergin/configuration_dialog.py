@@ -7,9 +7,8 @@ from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, QSettings, QTimer
 from qgis.PyQt.QtGui import QPixmap
-from qgis.core import QgsApplication, Qgis
+from qgis.core import QgsApplication
 from qgis.utils import OverrideCursor
-from urllib.error import URLError
 
 
 from .utils_auth import (
@@ -120,7 +119,12 @@ class ConfigurationDialog(QDialog):
         self.ui.merginURL.setVisible(self.ui.custom_url.isChecked())
 
     def server_url(self):
-        return self.ui.merginURL.text() if self.ui.custom_url.isChecked() else MERGIN_URL
+        if self.ui.custom_url.isChecked():
+            url = self.ui.merginURL.text().strip()
+            if not url.lower().startswith(("http://", "https://")):
+                url = "https://" + url
+            return url
+        return MERGIN_URL
 
     def check_credentials(self):
         enable_buttons = False
