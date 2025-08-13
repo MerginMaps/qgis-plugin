@@ -994,7 +994,7 @@ class MerginRootItem(QgsDataCollectionItem):
         items = []
 
         for project in self.local_projects:
-            item = MerginLocalProjectItem(self, project, self.project_manager)
+            item = MerginLocalProjectItem(self, project, self.project_manager, self.plugin)
             sip.transferto(item, self)
             items.append(item)
         for project in self.projects:
