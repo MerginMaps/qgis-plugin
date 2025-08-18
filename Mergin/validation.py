@@ -117,7 +117,7 @@ class MerginProjectValidator(object):
         self.check_proj_home_path()
         self.check_saved_in_proj_dir()
         self.check_editable_vectors_format()
-        self.check_offline()
+        # self.check_offline()
         self.check_attachment_widget()
         self.check_db_schema()
         self.check_project_relations()
