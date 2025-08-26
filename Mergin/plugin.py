@@ -4,7 +4,7 @@
 # Copyright Lutra Consulting Limited
 
 from math import floor
-from .item import DataItemProvider
+from .data_item import DataItemProvider
 
 import os
 from functools import partial

@@ -224,8 +224,8 @@ class MerginLocalProjectItem(QgsDirectoryItem):
                 # as releasing lock on previously open files takes some time
                 # we have to wait a bit before removing them, otherwise rmtree
                 # will fail and removal of the local rpoject will fail as well
-                QTimer.singleShot(250, lambda: shutil.rmtree(self.path))
-            except PermissionError as e:
+                QTimer.singleShot(500, lambda: shutil.rmtree(self.path))
+            except PermissionError as e: 
                 QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
                 msg = (
                     f"Failed to delete your project {self.project_name} because it is open.\n"
