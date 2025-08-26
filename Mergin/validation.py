@@ -5,6 +5,7 @@ import os
 import re
 from enum import Enum
 from collections import defaultdict
+from pathlib import Path
 
 from qgis.core import (
     QgsMapLayerType,
@@ -381,21 +382,41 @@ class MerginProjectValidator(object):
             context = QgsRenderContext()
             symbols = renderer.symbols(context)
             not_embedded = False
+
             for sym in symbols:
                 for sym_layer in sym.symbolLayers():
                     if sym_layer.layerType() != "SvgMarker":
                         continue
 
+                    # check 1: Embedded (base64-encoded) SVG -> OK
+                    if sym_layer.path().startswith("base64:"):
+                        continue
+
                     if self.qgis_proj_dir is not None:
-                        if not sym_layer.path().startswith(self.qgis_proj_dir) and not sym_layer.path().startswith(
-                            "base64:"
-                        ):
-                            not_embedded = True
-                            break
-                    else:
-                        if not sym_layer.path().startswith("base64:"):
-                            not_embedded = True
-                            break
+                        proj_dir = Path(self.qgis_proj_dir).resolve()
+                        svg_path = Path(sym_layer.path())
+
+                        # sanitize the path and convert to absolute if it is not yet
+                        if not svg_path.is_absolute():
+                            svg_path = (proj_dir / svg_path).resolve()
+                        else:
+                            svg_path = svg_path.resolve()
+
+                        # check 2: Inside project directory
+                        try:
+                            if svg_path.is_relative_to(proj_dir):
+                                continue
+                        except AttributeError:
+                            # fallback for Python < 3.9
+                            try:
+                                svg_path.relative_to(proj_dir)
+                                continue
+                            except ValueError:
+                                pass
+
+                    # both checks failed - not embedded/packaged -> display the warning
+                    not_embedded = True
+                    break
 
                 if not_embedded:
                     self.issues.append(SingleLayerWarning(lid, Warning.SVG_NOT_EMBEDDED))
