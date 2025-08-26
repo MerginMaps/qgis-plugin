@@ -26,7 +26,12 @@ except ImportError:
         pass
 
 
-from qgis.gui import QgsAttributeTableFilterModel, QgsAttributeTableModel, QgsGui, QgsMapToolPan
+from qgis.gui import (
+    QgsAttributeTableFilterModel,
+    QgsAttributeTableModel,
+    QgsGui,
+    QgsMapToolPan,
+)
 from qgis.PyQt import QtCore, uic
 from qgis.PyQt.QtCore import (
     QAbstractTableModel,
@@ -69,7 +74,9 @@ from .utils import (
     duplicate_layer,
 )
 
-ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_versions_viewer.ui")
+ui_file = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "ui", "ui_versions_viewer.ui"
+)
 
 
 class VersionsTableModel(QAbstractTableModel):
@@ -109,7 +116,10 @@ class VersionsTableModel(QAbstractTableModel):
         return len(self.headers)
 
     def headerData(self, section, orientation, role):
-        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
+        if (
+            orientation == Qt.Orientation.Horizontal
+            and role == Qt.ItemDataRole.DisplayRole
+        ):
             return self.headers[section]
         return None
 
@@ -208,7 +218,9 @@ class ChangesetsDownloader(QThread):
 
     def run(self):
         try:
-            version_info = self.mc.project_version_info(self.mp.project_id(), version=f"v{self.version}")
+            version_info = self.mc.project_version_info(
+                self.mp.project_id(), version=f"v{self.version}"
+            )
         except AuthTokenExpiredError:
             self.error_occured.emit(e)
             return
@@ -217,18 +229,24 @@ class ChangesetsDownloader(QThread):
 
         # if file not in project_version_info # skip as well
         if not version_info["changesets"]:
-            self.finished.emit("This version does not contain changes in the project layers.")
+            self.finished.emit(
+                "This version does not contain changes in the project layers."
+            )
             return
 
         files_updated = [f for f in files_updated if is_versioned_file(f["path"])]
 
         if not files_updated:
-            self.finished.emit("This version does not contain changes in the project layers.")
+            self.finished.emit(
+                "This version does not contain changes in the project layers."
+            )
             return
 
         has_history = any("diff" in f for f in files_updated)
         if not has_history:
-            self.finished.emit("This version does not contain changes in the project layers.")
+            self.finished.emit(
+                "This version does not contain changes in the project layers."
+            )
             return
 
         for f in files_updated:
@@ -238,10 +256,14 @@ class ChangesetsDownloader(QThread):
             if "diff" not in f:
                 continue
             try:
-                file_diffs = self.mc.download_file_diffs(self.mp.dir, f["path"], [f"v{self.version}"])
+                file_diffs = self.mc.download_file_diffs(
+                    self.mp.dir, f["path"], [f"v{self.version}"]
+                )
                 full_gpkg = self.mp.fpath_cache(f["path"], version=f"v{self.version}")
                 if not os.path.exists(full_gpkg):
-                    self.mc.download_file(self.mp.dir, f["path"], full_gpkg, f"v{self.version}")
+                    self.mc.download_file(
+                        self.mp.dir, f["path"], full_gpkg, f"v{self.version}"
+                    )
             except ClientError as e:
                 self.error_occured.emit(e)
                 return
@@ -295,7 +317,10 @@ class VersionsFetcher(QThread):
         self.model.beginFetching()
         try:
             page_versions, _ = self.mc.paginated_project_versions(
-                self.project_path, self.current_page, per_page=self.per_page, descending=True
+                self.project_path,
+                self.current_page,
+                per_page=self.per_page,
+                descending=True,
             )
         except Exception as e:
             self.error_occured.emit(e)
@@ -335,14 +360,20 @@ class VersionViewerDialog(QDialog):
 
             self.versionModel = VersionsTableModel()
             self.history_treeview.setModel(self.versionModel)
-            self.history_treeview.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
+            self.history_treeview.verticalScrollBar().valueChanged.connect(
+                self.on_scrollbar_changed
+            )
 
-            self.selectionModel: QItemSelectionModel = self.history_treeview.selectionModel()
+            self.selectionModel: QItemSelectionModel = (
+                self.history_treeview.selectionModel()
+            )
             self.selectionModel.currentChanged.connect(self.selected_version_changed)
 
             self.has_selected_latest = False
 
-            self.fetcher = VersionsFetcher(self.mc, self.mp.project_full_name(), self.versionModel)
+            self.fetcher = VersionsFetcher(
+                self.mc, self.mp.project_full_name(), self.versionModel
+            )
             self.fetcher.finished.connect(lambda: self.on_finish_fetching())
             self.fetcher.error_occured.connect(self.handle_exception)
             self.diff_downloader = None
@@ -356,46 +387,63 @@ class VersionViewerDialog(QDialog):
             self.history_control.setVisible(False)
 
             self.toggle_background_layers_action = QAction(
-                QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Background layers", self
+                QgsApplication.getThemeIcon("/mActionAddLayer.svg"),
+                "Background layers",
+                self,
             )
             self.toggle_background_layers_action.setCheckable(True)
             self.toggle_background_layers_action.setChecked(True)
-            self.toggle_background_layers_action.toggled.connect(self.toggle_background_layers)
+            self.toggle_background_layers_action.toggled.connect(
+                self.toggle_background_layers
+            )
 
             # We use a ToolButton instead of simple action to dislay both icon AND text
             self.toggle_background_layers_button = QToolButton()
-            self.toggle_background_layers_button.setDefaultAction(self.toggle_background_layers_action)
+            self.toggle_background_layers_button.setDefaultAction(
+                self.toggle_background_layers_action
+            )
             self.toggle_background_layers_button.setToolTip(
                 "Toggle the display of background layer(Raster and tiles) in the current project"
             )
-            self.toggle_background_layers_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+            self.toggle_background_layers_button.setToolButtonStyle(
+                Qt.ToolButtonStyle.ToolButtonTextBesideIcon
+            )
             self.toolbar.addWidget(self.toggle_background_layers_button)
 
             self.toolbar.addSeparator()
 
             self.zoom_full_action = QAction(
-                QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"), "Zoom Full", self
+                QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"),
+                "Zoom Full",
+                self,
             )
             self.zoom_full_action.triggered.connect(self.zoom_full)
 
             self.toolbar.addAction(self.zoom_full_action)
 
             self.zoom_selected_action = QAction(
-                QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"), "Zoom To Selection", self
+                QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"),
+                "Zoom To Selection",
+                self,
             )
             self.zoom_selected_action.triggered.connect(self.zoom_selected)
 
             self.toolbar.addAction(self.zoom_selected_action)
 
             btn_add_changes = QPushButton("Add to project")
-            btn_add_changes.setToolTip("Add changes at this version as temporary layers to the project")
+            btn_add_changes.setToolTip(
+                "Add changes at this version as temporary layers to the project"
+            )
             btn_add_changes.setIcon(QgsApplication.getThemeIcon("/mActionAdd.svg"))
             menu = QMenu()
             add_current_action = menu.addAction(
-                QIcon(icon_path("file-plus.svg")), "Add current changes layer to project"
+                QIcon(icon_path("file-plus.svg")),
+                "Add current changes layer to project",
             )
             add_current_action.triggered.connect(self.add_current_to_project)
-            add_all_action = menu.addAction(QIcon(icon_path("folder-plus.svg")), "Add all changes layers to project")
+            add_all_action = menu.addAction(
+                QIcon(icon_path("folder-plus.svg")), "Add all changes layers to project"
+            )
             add_all_action.triggered.connect(self.add_all_to_project)
             btn_add_changes.setMenu(menu)
 
@@ -425,7 +473,9 @@ class VersionViewerDialog(QDialog):
             self.model_detail = QStandardItemModel()
             self.model_detail.setHorizontalHeaderLabels(["Details"])
 
-            self.details_treeview.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+            self.details_treeview.setEditTriggers(
+                QAbstractItemView.EditTrigger.NoEditTriggers
+            )
             self.details_treeview.setModel(self.model_detail)
 
             self.versionModel.current_version = self.mp.version()
@@ -433,7 +483,9 @@ class VersionViewerDialog(QDialog):
     def exec(self):
         if self.failed_to_fetch:
             msg = f"Client error : Failed to reach history version for project {self.project_path}"
-            QMessageBox.critical(None, "Failed requesting history", msg, QMessageBox.StandardButton.Close)
+            QMessageBox.critical(
+                None, "Failed requesting history", msg, QMessageBox.StandardButton.Close
+            )
             return
         try:
             ws_id = self.mp.workspace_id()
@@ -446,7 +498,9 @@ class VersionViewerDialog(QDialog):
             usage = self.mc.workspace_usage(ws_id)
             if not usage["view_history"]["allowed"]:
                 QMessageBox.warning(
-                    None, "Upgrade required", "To view the project history, please upgrade your subscription plan."
+                    None,
+                    "Upgrade required",
+                    "To view the project history, please upgrade your subscription plan.",
                 )
                 return
         except ClientError:
@@ -462,8 +516,13 @@ class VersionViewerDialog(QDialog):
 
     def save_splitters_state(self):
         settings = QSettings()
-        settings.setValue("Mergin/versionViewerSplitterSize", self.splitter_map_table.saveState())
-        settings.setValue("Mergin/versionViewerSplitterVericalSize", self.splitter_vertical.saveState())
+        settings.setValue(
+            "Mergin/versionViewerSplitterSize", self.splitter_map_table.saveState()
+        )
+        settings.setValue(
+            "Mergin/versionViewerSplitterVericalSize",
+            self.splitter_vertical.saveState(),
+        )
 
     def set_splitters_state(self):
         settings = QSettings()
@@ -482,7 +541,12 @@ class VersionViewerDialog(QDialog):
                 do_calc_height = False
 
         if do_calc_height:
-            height = max([self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()])
+            height = max(
+                [
+                    self.map_canvas.minimumSizeHint().height(),
+                    self.attribute_table.minimumSizeHint().height(),
+                ]
+            )
             self.splitter_map_table.setSizes([height, height])
 
     def fetch_from_server(self):
@@ -508,7 +572,8 @@ class VersionViewerDialog(QDialog):
             first_row_index = self.history_treeview.model().index(0, 1, QModelIndex())
             self.selectionModel.setCurrentIndex(
                 first_row_index,
-                QItemSelectionModel.SelectionFlag.ClearAndSelect | QItemSelectionModel.SelectionFlag.Rows,
+                QItemSelectionModel.SelectionFlag.ClearAndSelect
+                | QItemSelectionModel.SelectionFlag.Rows,
             )
 
     def on_scrollbar_changed(self, value):
@@ -530,7 +595,9 @@ class VersionViewerDialog(QDialog):
         self.setWindowTitle(f"Changes Viewer | {version_name}")
 
         try:
-            self.version_details = self.mc.project_version_info(self.mp.project_id(), version_name)
+            self.version_details = self.mc.project_version_info(
+                self.mp.project_id(), version_name
+            )
         except ClientError:
             QMessageBox.critical(
                 self.parent(),
@@ -548,7 +615,9 @@ class VersionViewerDialog(QDialog):
         # Reset layer list
         self.layer_list.clear()
 
-        if not os.path.exists(os.path.join(self.project_path, ".mergin", ".cache", f"v{version}")):
+        if not os.path.exists(
+            os.path.join(self.project_path, ".mergin", ".cache", f"v{version}")
+        ):
 
             self.stackedWidget.setCurrentIndex(1)
             self.label_info.setText("Loading version info…")
@@ -557,16 +626,22 @@ class VersionViewerDialog(QDialog):
                 self.diff_downloader.requestInterruption()
 
             self.diff_downloader = ChangesetsDownloader(self.mc, self.mp, version)
-            self.diff_downloader.finished.connect(lambda msg: self.show_version_changes(version))
+            self.diff_downloader.finished.connect(
+                lambda msg: self.show_version_changes(version)
+            )
             self.diff_downloader.error_occured.connect(self.handle_exception)
             self.diff_downloader.start()
         else:
             self.show_version_changes(version)
 
     def populate_details(self):
-        self.edit_project_size.setText(bytes_to_human_size(self.version_details["project_size"]))
+        self.edit_project_size.setText(
+            bytes_to_human_size(self.version_details["project_size"])
+        )
         self.edit_created.setText(format_datetime(self.version_details["created"]))
-        self.edit_user_agent.setText(parse_user_agent(self.version_details["user_agent"]))
+        self.edit_user_agent.setText(
+            parse_user_agent(self.version_details["user_agent"])
+        )
         self.edit_user_agent.setToolTip(self.version_details["user_agent"])
 
         self.model_detail.clear()
@@ -601,7 +676,11 @@ class VersionViewerDialog(QDialog):
         return items
 
     def _table_summary_items(self, summary):
-        return [QStandardItem("{}: {}".format(k, summary[k])) for k in summary if k != "table"]
+        return [
+            QStandardItem("{}: {}".format(k, summary[k]))
+            for k in summary
+            if k != "table"
+        ]
 
     def toggle_background_layers(self, checked):
         layers = self.collect_layers(checked)
@@ -628,12 +707,16 @@ class VersionViewerDialog(QDialog):
                 extent = extent.buffered(d * 0.07)
 
                 if sys.platform in ("darwin", "linux"):
-                    extent = self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
+                    extent = self.map_canvas.mapSettings().layerExtentToOutputExtent(
+                        layers[0], extent
+                    )
                 else:
                     # TODO bug specific on windows and older QGIS version
                     # remove this madness and only keep above once you drop support for <=QGIS 3.34
                     extent = (
-                        self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
+                        self.map_canvas.mapSettings().layerExtentToOutputExtent(
+                            layers[0], extent
+                        )
                         if not layers[0].extent().isEmpty()
                         else extent
                     )
@@ -653,7 +736,9 @@ class VersionViewerDialog(QDialog):
             self.diff_layers.append(vl)
             icon = icon_for_layer(vl)
 
-            summary = self.find_changeset_summary_for_layer(vl.name(), self.version_details["changesets"])
+            summary = self.find_changeset_summary_for_layer(
+                vl.name(), self.version_details["changesets"]
+            )
             additional_info = []
             if summary["insert"]:
                 additional_info.append(f"{summary['insert']} added")
@@ -664,7 +749,9 @@ class VersionViewerDialog(QDialog):
 
             additional_summary = "\n" + ",".join(additional_info)
 
-            self.layer_list.addItem(QListWidgetItem(icon, vl.name() + additional_summary))
+            self.layer_list.addItem(
+                QListWidgetItem(icon, vl.name() + additional_summary)
+            )
 
         if len(self.diff_layers) >= 1:
             self.toolbar.setEnabled(True)
@@ -672,7 +759,9 @@ class VersionViewerDialog(QDialog):
             self.stackedWidget.setCurrentIndex(0)
             self.tabWidget.setCurrentIndex(0)
             self.tabWidget.setTabEnabled(0, True)
-            layers = self.collect_layers(self.toggle_background_layers_action.isChecked())
+            layers = self.collect_layers(
+                self.toggle_background_layers_action.isChecked()
+            )
             self.update_canvas(layers)
         else:
             self.toolbar.setEnabled(False)
@@ -690,7 +779,9 @@ class VersionViewerDialog(QDialog):
         else:
             self.failed_to_fetch = True
             additional_log = str(e)
-            QgsMessageLog.logMessage(f"Download history error: " + additional_log, "Mergin")
+            QgsMessageLog.logMessage(
+                f"Download history error: " + additional_log, "Mergin"
+            )
             self.label_info.setText(
                 "There was an issue loading this version. Please try again later or contact our support if the issue persists. Refer to the QGIS messages log for more details."
             )
@@ -700,8 +791,16 @@ class VersionViewerDialog(QDialog):
             layers = iface.mapCanvas().layers()
 
             # Filter only "Background" type
-            whitelist_backgound_layer_types = [QgsRasterLayer, QgsVectorTileLayer, QgsTiledSceneLayer]
-            layers = [layer for layer in layers if type(layer) in whitelist_backgound_layer_types]
+            whitelist_backgound_layer_types = [
+                QgsRasterLayer,
+                QgsVectorTileLayer,
+                QgsTiledSceneLayer,
+            ]
+            layers = [
+                layer
+                for layer in layers
+                if type(layer) in whitelist_backgound_layer_types
+            ]
         else:
             layers = []
 
@@ -723,9 +822,13 @@ class VersionViewerDialog(QDialog):
         self.layer_cache.setCacheGeometry(False)
 
         self.table_model = QgsAttributeTableModel(self.layer_cache)
-        self.table_model.setRequest(QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry))
+        self.table_model.setRequest(
+            QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry)
+        )
 
-        self.filter_model = QgsAttributeTableFilterModel(self.map_canvas, self.table_model)
+        self.filter_model = QgsAttributeTableFilterModel(
+            self.map_canvas, self.table_model
+        )
 
         self.layer_cache.setParent(self.table_model)
 
@@ -742,7 +845,9 @@ class VersionViewerDialog(QDialog):
     def add_current_to_project(self):
         if self.current_diff:
             lyr_clone = duplicate_layer(self.current_diff)
-            lyr_clone.setName(self.current_diff.name() + f" ({self.version_details['name']})")
+            lyr_clone.setName(
+                self.current_diff.name() + f" ({self.version_details['name']})"
+            )
             QgsProject.instance().addMapLayer(lyr_clone)
 
     def add_all_to_project(self):
@@ -756,7 +861,9 @@ class VersionViewerDialog(QDialog):
         if self.current_diff:
             layerExtent = self.current_diff.extent()
             # transform extent
-            layerExtent = self.map_canvas.mapSettings().layerExtentToOutputExtent(self.current_diff, layerExtent)
+            layerExtent = self.map_canvas.mapSettings().layerExtentToOutputExtent(
+                self.current_diff, layerExtent
+            )
 
             self.map_canvas.setExtent(layerExtent)
             self.map_canvas.refresh()

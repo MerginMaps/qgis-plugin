@@ -124,9 +124,20 @@ except ImportError:
     from .mergin.deps import pygeodiff
 
 MERGIN_URL = "https://app.merginmaps.com"
-MERGIN_LOGS_URL = "https://g4pfq226j0.execute-api.eu-west-1.amazonaws.com/mergin_client_log_submit"
+MERGIN_LOGS_URL = (
+    "https://g4pfq226j0.execute-api.eu-west-1.amazonaws.com/mergin_client_log_submit"
+)
 
-QGIS_NET_PROVIDERS = ("WFS", "arcgisfeatureserver", "arcgismapserver", "geonode", "ows", "wcs", "wms", "vectortile")
+QGIS_NET_PROVIDERS = (
+    "WFS",
+    "arcgisfeatureserver",
+    "arcgismapserver",
+    "geonode",
+    "ows",
+    "wcs",
+    "wms",
+    "vectortile",
+)
 QGIS_DB_PROVIDERS = ("postgres", "mssql", "oracle", "hana", "postgresraster", "DB2")
 QGIS_MESH_PROVIDERS = ("mdal", "mesh_memory")
 QGIS_FILE_BASED_PROVIDERS = (
@@ -184,7 +195,9 @@ class FieldConverter(QgsVectorFileWriter.FieldValueConverter):
         if not self.check_has_fid_field():
             self.fid_unique = True
             return
-        self.fid_unique = len(self.layer.uniqueValues(self.fid_idx)) == self.layer.featureCount()
+        self.fid_unique = (
+            len(self.layer.uniqueValues(self.fid_idx)) == self.layer.featureCount()
+        )
 
     def get_fid_replacement(self):
         suff = 1
@@ -312,7 +325,12 @@ def send_logs(mc: MerginClient, logfile: str):
     global_log_file = os.environ.get("MERGIN_CLIENT_LOG", None)
 
     try:
-        resp = mc.send_logs(logfile, global_log_file, application="plugin-{}-{}".format(system, version), meta=meta)
+        resp = mc.send_logs(
+            logfile,
+            global_log_file,
+            application="plugin-{}-{}".format(system, version),
+            meta=meta,
+        )
         if resp.msg != "OK":
             return None, str(resp.reason)
         return logfile, None
@@ -374,7 +392,9 @@ def unsaved_project_check():
             None,
             "Unsaved changes",
             msg,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Yes
+            | QMessageBox.StandardButton.No
+            | QMessageBox.StandardButton.Cancel,
         )
         if btn_reply == QMessageBox.StandardButton.Yes:
             for layer in QgsProject.instance().mapLayers().values():
@@ -390,7 +410,9 @@ def unsaved_project_check():
                         write_ok = QgsProject.instance().write()
                         if not write_ok:
                             QMessageBox.warning(
-                                None, "Error Saving Project", "QGIS project was not saved properly. Cancelling..."
+                                None,
+                                "Error Saving Project",
+                                "QGIS project was not saved properly. Cancelling...",
                             )
                             return UnsavedChangesStrategy.HasUnsavedChanges
                     else:
@@ -417,9 +439,14 @@ def save_vector_layer_as_gpkg(layer, target_dir, update_datasource=False):
     if layer.fields().lookupField("fid") >= 0:
         converter = FieldConverter(layer)
         writer_opts.fieldValueConverter = converter
-    res, err = QgsVectorFileWriter.writeAsVectorFormatV2(layer, layer_filename, transform_context, writer_opts)
+    res, err = QgsVectorFileWriter.writeAsVectorFormatV2(
+        layer, layer_filename, transform_context, writer_opts
+    )
     if res != QgsVectorFileWriter.NoError:
-        return layer_filename, f"Couldn't properly save layer: {layer_filename}. \n{err}"
+        return (
+            layer_filename,
+            f"Couldn't properly save layer: {layer_filename}. \n{err}",
+        )
     if update_datasource:
         provider_opts = QgsDataProvider.ProviderOptions()
         provider_opts.fileEncoding = "UTF-8"
@@ -450,7 +477,9 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     ds_uri.setParam("zmin", "0")
     ds_uri.setParam("zmax", "14")
     ds_uri.setParam("styleUrl", f"{TILES_URL}/styles/default.json")
-    vt_layer = QgsVectorTileLayer(bytes(ds_uri.encodedUri()).decode(), "OpenMapTiles (OSM)")
+    vt_layer = QgsVectorTileLayer(
+        bytes(ds_uri.encodedUri()).decode(), "OpenMapTiles (OSM)"
+    )
     vt_layer.loadDefaultStyle()
     metadata = vt_layer.metadata()
     metadata.setRights(["© OpenMapTiles © OpenStreetMap contributors"])
@@ -466,9 +495,15 @@ def create_basic_qgis_project(project_path=None, project_name=None):
         ]
     )
     mem_layer.updateFields()
-    vector_fname, err = save_vector_layer_as_gpkg(mem_layer, os.path.dirname(project_path))
+    vector_fname, err = save_vector_layer_as_gpkg(
+        mem_layer, os.path.dirname(project_path)
+    )
     if err:
-        QMessageBox.warning(None, "Error Creating New Project", f"Couldn't save vector layer to:\n{vector_fname}")
+        QMessageBox.warning(
+            None,
+            "Error Creating New Project",
+            f"Couldn't save vector layer to:\n{vector_fname}",
+        )
     vector_layer = QgsVectorLayer(vector_fname, "Survey", "ogr")
     symbol = QgsMarkerSymbol.createSimple(
         {
@@ -507,11 +542,17 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     vector_layer.setEditorWidgetSetup(3, photo_ws)
     new_project.addMapLayer(vector_layer)
 
-    new_project.writeEntry("Mergin", "SortLayersMethod/Method", 0)  # 0 - Preserve QGIS layer order
+    new_project.writeEntry(
+        "Mergin", "SortLayersMethod/Method", 0
+    )  # 0 - Preserve QGIS layer order
 
     write_success = new_project.write()
     if not write_success:
-        QMessageBox.warning(None, "Error Creating New Project", f"Couldn't create new project:\n{project_path}")
+        QMessageBox.warning(
+            None,
+            "Error Creating New Project",
+            f"Couldn't create new project:\n{project_path}",
+        )
         return None
     return project_path
 
@@ -539,7 +580,9 @@ def save_current_project(project_path, warn=False):
     cur_project.setFileName(project_path)
     write_success = cur_project.write()
     if not write_success and warn:
-        QMessageBox.warning(None, "Error Creating Project", f"Couldn't save project to:\n{project_path}")
+        QMessageBox.warning(
+            None, "Error Creating Project", f"Couldn't save project to:\n{project_path}"
+        )
         return False
     return True
 
@@ -639,7 +682,11 @@ def package_layer(layer, project_dir):
     src_filepath = datasource_filepath(layer)
     if src_filepath and same_dir(os.path.dirname(src_filepath), project_dir):
         # layer already stored in the target project dir
-        if layer.type() in (QgsMapLayerType.RasterLayer, QgsMapLayerType.MeshLayer, QgsMapLayerType.VectorTileLayer):
+        if layer.type() in (
+            QgsMapLayerType.RasterLayer,
+            QgsMapLayerType.MeshLayer,
+            QgsMapLayerType.VectorTileLayer,
+        ):
             return True
         if layer.type() == QgsMapLayerType.VectorLayer:
             # if it is a GPKG we do not need to rewrite it
@@ -647,7 +694,9 @@ def package_layer(layer, project_dir):
                 return True
 
     if layer.type() == QgsMapLayerType.VectorLayer:
-        fname, err = save_vector_layer_as_gpkg(layer, project_dir, update_datasource=True)
+        fname, err = save_vector_layer_as_gpkg(
+            layer, project_dir, update_datasource=True
+        )
         if err:
             raise PackagingError(f"Couldn't properly save layer {layer.name()}: {err}")
     elif layer.type() == QgsMapLayerType.VectorTileLayer:
@@ -679,7 +728,9 @@ def save_raster_layer(raster_layer, project_dir):
         # check if it is a local file
         is_local = os.path.isfile(raster_layer.dataProvider().dataSourceUri())
         if is_local:
-            copy_layer_files(raster_layer, raster_layer.dataProvider().dataSourceUri(), project_dir)
+            copy_layer_files(
+                raster_layer, raster_layer.dataProvider().dataSourceUri(), project_dir
+            )
     elif driver_name == "mbtiles":
         uri = QgsProviderRegistry.instance().decodeUri("wms", raster_layer.source())
         is_local = os.path.isfile(uri["path"]) if "path" in uri else False
@@ -703,7 +754,9 @@ def copy_layer_files(layer, src_path, project_dir):
         raise PackagingError(f"Can't find the source file for {layer.name()}")
 
     # Make sure the destination path is unique by adding suffix to it if necessary
-    new_filename = get_unique_filename(os.path.join(project_dir, os.path.basename(src_path)))
+    new_filename = get_unique_filename(
+        os.path.join(project_dir, os.path.basename(src_path))
+    )
     shutil.copy(src_path, new_filename)
 
     # for GDAL rasters copy overviews and any other auxilary files
@@ -719,11 +772,23 @@ def update_datasource(layer, new_path):
     options = QgsDataProvider.ProviderOptions()
     options.layerName = layer.name()
     if layer.dataProvider().name() in ("vectortile", "mbtilesvectortiles"):
-        layer.setDataSource(f"url={new_path}&type=mbtiles", layer.name(), layer.dataProvider().name(), options)
+        layer.setDataSource(
+            f"url={new_path}&type=mbtiles",
+            layer.name(),
+            layer.dataProvider().name(),
+            options,
+        )
     elif layer.dataProvider().name() == "wms":
-        layer.setDataSource(f"url=file://{new_path}&type=mbtiles", layer.name(), layer.dataProvider().name(), options)
+        layer.setDataSource(
+            f"url=file://{new_path}&type=mbtiles",
+            layer.name(),
+            layer.dataProvider().name(),
+            options,
+        )
     else:
-        layer.setDataSource(new_path, layer.name(), layer.dataProvider().name(), options)
+        layer.setDataSource(
+            new_path, layer.name(), layer.dataProvider().name(), options
+        )
 
 
 def copy_gdal_aux_files(src_path, new_path):
@@ -757,11 +822,15 @@ def copy_gdal_aux_files(src_path, new_path):
 
 def save_raster_to_geopackage(raster_layer, project_dir):
     """Save a GeoPackage raster to GeoPackage table in the project directory."""
-    layer_filename = get_unique_filename(os.path.join(project_dir, raster_layer.name() + ".gpkg"))
+    layer_filename = get_unique_filename(
+        os.path.join(project_dir, raster_layer.name() + ".gpkg")
+    )
 
     raster_writer = QgsRasterFileWriter(layer_filename)
     raster_writer.setOutputFormat("gpkg")
-    raster_writer.setCreateOptions([f"RASTER_TABLE={raster_layer.name()}", "APPEND_SUBDATASET=YES"])
+    raster_writer.setCreateOptions(
+        [f"RASTER_TABLE={raster_layer.name()}", "APPEND_SUBDATASET=YES"]
+    )
 
     write_raster(raster_layer, raster_writer, layer_filename)
 
@@ -772,7 +841,9 @@ def save_raster_as_geotif(raster_layer, project_dir):
     layer_filename = os.path.join(project_dir, os.path.basename(new_raster_filename))
     # Get data type info to set a proper compression type
     dp = raster_layer.dataProvider()
-    is_byte_data = [dp.dataType(i) <= Qgis.Byte for i in range(raster_layer.bandCount())]
+    is_byte_data = [
+        dp.dataType(i) <= Qgis.Byte for i in range(raster_layer.bandCount())
+    ]
     compression = "JPEG" if all(is_byte_data) else "LZW"
     writer_options = [f"COMPRESS={compression}", "TILED=YES"]
 
@@ -800,14 +871,20 @@ def write_raster(raster_layer, raster_writer, write_path):
     dp = raster_layer.dataProvider()
     pipe = QgsRasterPipe()
     if not pipe.set(dp.clone()):
-        raise PackagingError(f"Couldn't set raster pipe projector for layer {write_path}")
+        raise PackagingError(
+            f"Couldn't set raster pipe projector for layer {write_path}"
+        )
 
     projector = QgsRasterProjector()
     projector.setCrs(raster_layer.crs(), raster_layer.crs())
     if not pipe.insert(2, projector):
-        raise PackagingError(f"Couldn't set raster pipe provider for layer {write_path}")
+        raise PackagingError(
+            f"Couldn't set raster pipe provider for layer {write_path}"
+        )
 
-    res = raster_writer.writeRaster(pipe, dp.xSize(), dp.ySize(), dp.extent(), raster_layer.crs())
+    res = raster_writer.writeRaster(
+        pipe, dp.xSize(), dp.ySize(), dp.extent(), raster_layer.crs()
+    )
     if not res == QgsRasterFileWriter.NoError:
         raise PackagingError(f"Couldn't save raster {write_path} - write error: {res}")
 
@@ -820,7 +897,9 @@ def login_error_message(e):
     QMessageBox.critical(None, "Login failed", msg, QMessageBox.StandardButton.Close)
 
 
-def unhandled_exception_message(error_details, dialog_title, error_text, log_file=None, username=None):
+def unhandled_exception_message(
+    error_details, dialog_title, error_text, log_file=None, username=None
+):
     msg = (
         error_text + "<p>This should not happen, "
         '<a href="https://github.com/MerginMaps/qgis-mergin-plugin/issues">'
@@ -848,21 +927,45 @@ def unhandled_exception_message(error_details, dialog_title, error_text, log_fil
 
 
 def write_project_variables(project_name, project_full_name, version):
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_name", project_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_full_name", project_full_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_version", int_version(version))
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_name", project_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_full_name", project_full_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_version", int_version(version))
+    QgsExpressionContextUtils.setProjectVariable(
+        QgsProject.instance(), "mergin_project_name", project_name
+    )
+    QgsExpressionContextUtils.setProjectVariable(
+        QgsProject.instance(), "mergin_project_full_name", project_full_name
+    )
+    QgsExpressionContextUtils.setProjectVariable(
+        QgsProject.instance(), "mergin_project_version", int_version(version)
+    )
+    QgsExpressionContextUtils.setProjectVariable(
+        QgsProject.instance(), "mm_project_name", project_name
+    )
+    QgsExpressionContextUtils.setProjectVariable(
+        QgsProject.instance(), "mm_project_full_name", project_full_name
+    )
+    QgsExpressionContextUtils.setProjectVariable(
+        QgsProject.instance(), "mm_project_version", int_version(version)
+    )
 
 
 def remove_project_variables():
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_name")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_full_name")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_version")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_name")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_full_name")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_version")
+    QgsExpressionContextUtils.removeProjectVariable(
+        QgsProject.instance(), "mergin_project_name"
+    )
+    QgsExpressionContextUtils.removeProjectVariable(
+        QgsProject.instance(), "mergin_project_full_name"
+    )
+    QgsExpressionContextUtils.removeProjectVariable(
+        QgsProject.instance(), "mergin_project_version"
+    )
+    QgsExpressionContextUtils.removeProjectVariable(
+        QgsProject.instance(), "mm_project_name"
+    )
+    QgsExpressionContextUtils.removeProjectVariable(
+        QgsProject.instance(), "mm_project_full_name"
+    )
+    QgsExpressionContextUtils.removeProjectVariable(
+        QgsProject.instance(), "mm_project_version"
+    )
 
 
 def pretty_summary(summary):
@@ -910,7 +1013,9 @@ def get_local_mergin_projects_info():
                 proj_server = config_server
                 settings.setValue(server_key, config_server)
             # project info = (path, project owner, project name, server)
-            local_projects_info.append((local_path, key_parts[0], key_parts[1], proj_server))
+            local_projects_info.append(
+                (local_path, key_parts[0], key_parts[1], proj_server)
+            )
     return local_projects_info
 
 
@@ -955,7 +1060,13 @@ def mergin_project_local_path(project_name=None):
 
 def icon_path(icon_filename):
     icon_set = "white" if is_dark_theme() else "default"
-    ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, "tabler_icons", icon_filename)
+    ipath = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "images",
+        icon_set,
+        "tabler_icons",
+        icon_filename,
+    )
     return ipath
 
 
@@ -967,7 +1078,9 @@ def mm_logo_path():
         icon_set = "default"
         icon_filename = "MM_logo_HORIZ_COLOR_VECTOR.svg"
 
-    ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, icon_filename)
+    ipath = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "images", icon_set, icon_filename
+    )
     return ipath
 
 
@@ -980,7 +1093,9 @@ def mm_symbol_path():
         icon_color = "COLOR"
 
     icon_filename = "MM_symbol_" + icon_color + "_no_padding.svg"
-    ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, icon_filename)
+    ipath = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "images", icon_set, icon_filename
+    )
     return ipath
 
 
@@ -1101,13 +1216,20 @@ def same_schema(schema_a, schema_b):
         table_b = next(item for item in schema_b if item["table"] == table_a["table"])
         equal, msg = compare(table_a["columns"], table_b["columns"], "name")
         if not equal:
-            return equal, "Fields in table '{}' added/removed: {}".format(table_a["table"], msg)
+            return equal, "Fields in table '{}' added/removed: {}".format(
+                table_a["table"], msg
+            )
 
         for column_a in table_a["columns"]:
-            column_b = next(item for item in table_b["columns"] if item["name"] == column_a["name"])
+            column_b = next(
+                item for item in table_b["columns"] if item["name"] == column_a["name"]
+            )
             if column_a != column_b:
-                return False, "Definition of '{}' field in '{}' table is not the same".format(
-                    column_a["name"], table_a["table"]
+                return (
+                    False,
+                    "Definition of '{}' field in '{}' table is not the same".format(
+                        column_a["name"], table_a["table"]
+                    ),
                 )
 
     return True, "No schema changes"
@@ -1147,7 +1269,9 @@ def is_dark_theme():
     # check whether system-wide theme is dark
     palette = QgsApplication.instance().palette()
     bg_color = palette.color(QPalette.ColorRole.Window)
-    brightness = (bg_color.red() * 299 + bg_color.green() * 587 + bg_color.blue() * 114) / 1000
+    brightness = (
+        bg_color.red() * 299 + bg_color.green() * 587 + bg_color.blue() * 114
+    ) / 1000
     return brightness < 155
 
 
@@ -1329,7 +1453,9 @@ def create_tracking_layer(project_path):
     layer = QgsVectorLayer(filename, "tracking_layer", "ogr")
     setup_tracking_layer(layer)
     QgsProject.instance().addMapLayer(layer)
-    QgsProject.instance().writeEntry("Mergin", "PositionTracking/TrackingLayer", layer.id())
+    QgsProject.instance().writeEntry(
+        "Mergin", "PositionTracking/TrackingLayer", layer.id()
+    )
 
     return filename
 
@@ -1398,8 +1524,12 @@ def create_map_sketches_layer(project_path):
 
     # get symbol layer and set it to expression for color
     symbol_layer = symbol.takeSymbolLayer(0)
-    symbol_layer.setDataDefinedProperty(QgsSymbolLayer.PropertyStrokeColor, QgsProperty.fromExpression('"color"'))
-    symbol_layer.setDataDefinedProperty(QgsSymbolLayer.PropertyStrokeWidth, QgsProperty.fromExpression('"width"'))
+    symbol_layer.setDataDefinedProperty(
+        QgsSymbolLayer.PropertyStrokeColor, QgsProperty.fromExpression('"color"')
+    )
+    symbol_layer.setDataDefinedProperty(
+        QgsSymbolLayer.PropertyStrokeWidth, QgsProperty.fromExpression('"width"')
+    )
     # put it back to the symbol
     symbol.appendSymbolLayer(symbol_layer)
 
@@ -1467,7 +1597,11 @@ def set_tracking_layer_flags(layer):
     Resets flags for tracking layer to make it searchable and identifiable
     """
     layer.setReadOnly(False)
-    layer.setFlags(QgsMapLayer.LayerFlag(QgsMapLayer.Identifiable + QgsMapLayer.Searchable + QgsMapLayer.Removable))
+    layer.setFlags(
+        QgsMapLayer.LayerFlag(
+            QgsMapLayer.Identifiable + QgsMapLayer.Searchable + QgsMapLayer.Removable
+        )
+    )
 
 
 def get_layer_by_path(path):

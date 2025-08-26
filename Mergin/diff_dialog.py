@@ -17,14 +17,21 @@ from qgis.core import (
     QgsApplication,
     QgsWkbTypes,
 )
-from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
+from qgis.gui import (
+    QgsGui,
+    QgsMapToolPan,
+    QgsAttributeTableModel,
+    QgsAttributeTableFilterModel,
+)
 from qgis.utils import iface, OverrideCursor
 
 from .mergin.merginproject import MerginProject
 from .diff import make_local_changes_layer
 from .utils import icon_path, icon_for_layer
 
-ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_diff_viewer_dialog.ui")
+ui_file = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "ui", "ui_diff_viewer_dialog.ui"
+)
 
 
 class DiffViewerDialog(QDialog):
@@ -40,12 +47,17 @@ class DiffViewerDialog(QDialog):
                 self.splitter.restoreState(state)
             else:
                 height = max(
-                    [self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()]
+                    [
+                        self.map_canvas.minimumSizeHint().height(),
+                        self.attribute_table.minimumSizeHint().height(),
+                    ]
                 )
                 self.splitter.setSizes([height, height])
 
             self.toggle_layers_action = QAction(
-                QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Toggle Project Layers", self
+                QgsApplication.getThemeIcon("/mActionAddLayer.svg"),
+                "Toggle Project Layers",
+                self,
             )
             self.toggle_layers_action.setCheckable(True)
             self.toggle_layers_action.setChecked(True)
@@ -55,13 +67,17 @@ class DiffViewerDialog(QDialog):
             self.toolbar.addSeparator()
 
             self.zoom_full_action = QAction(
-                QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"), "Zoom Full", self
+                QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"),
+                "Zoom Full",
+                self,
             )
             self.zoom_full_action.triggered.connect(self.zoom_full)
             self.toolbar.addAction(self.zoom_full_action)
 
             self.zoom_selected_action = QAction(
-                QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"), "Zoom To Selection", self
+                QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"),
+                "Zoom To Selection",
+                self,
             )
             self.zoom_selected_action.triggered.connect(self.zoom_selected)
             self.toolbar.addAction(self.zoom_selected_action)
@@ -72,10 +88,13 @@ class DiffViewerDialog(QDialog):
             btn_add_changes.setIcon(QgsApplication.getThemeIcon("/mActionAdd.svg"))
             menu = QMenu()
             add_current_action = menu.addAction(
-                QIcon(icon_path("file-plus.svg")), "Add current changes layer to project"
+                QIcon(icon_path("file-plus.svg")),
+                "Add current changes layer to project",
             )
             add_current_action.triggered.connect(self.add_current_to_project)
-            add_all_action = menu.addAction(QIcon(icon_path("folder-plus.svg")), "Add all changes layers to project")
+            add_all_action = menu.addAction(
+                QIcon(icon_path("folder-plus.svg")), "Add all changes layers to project"
+            )
             add_all_action.triggered.connect(self.add_all_to_project)
             btn_add_changes.setMenu(menu)
 
@@ -116,7 +135,9 @@ class DiffViewerDialog(QDialog):
                 continue
 
             if layer.dataProvider().storageType() != "GPKG":
-                QgsMessageLog.logMessage(f"Layer {layer.name()} is not supported.", "Mergin")
+                QgsMessageLog.logMessage(
+                    f"Layer {layer.name()} is not supported.", "Mergin"
+                )
                 continue
 
             vl, msg = make_local_changes_layer(mp, layer)
@@ -125,7 +146,9 @@ class DiffViewerDialog(QDialog):
                 continue
 
             self.diff_layers.append(vl)
-            self.tab_bar.addTab(icon_for_layer(vl), f"{layer.name()} ({vl.featureCount()})")
+            self.tab_bar.addTab(
+                icon_for_layer(vl), f"{layer.name()} ({vl.featureCount()})"
+            )
         self.tab_bar.setCurrentIndex(0)
 
     def toggle_background_layers(self, checked):
@@ -168,9 +191,13 @@ class DiffViewerDialog(QDialog):
         self.layer_cache.setCacheGeometry(False)
 
         self.table_model = QgsAttributeTableModel(self.layer_cache)
-        self.table_model.setRequest(QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry).setLimit(100))
+        self.table_model.setRequest(
+            QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry).setLimit(100)
+        )
 
-        self.filter_model = QgsAttributeTableFilterModel(self.map_canvas, self.table_model)
+        self.filter_model = QgsAttributeTableFilterModel(
+            self.map_canvas, self.table_model
+        )
 
         self.layer_cache.setParent(self.table_model)
 

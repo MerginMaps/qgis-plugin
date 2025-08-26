@@ -68,14 +68,19 @@ class test_utils(unittest.TestCase):
         modified_schema[0]["columns"][0]["name"] = "id"
         equal, msg = same_schema(self.base_schema, modified_schema)
         self.assertFalse(equal)
-        self.assertEqual(msg, "Fields in table 'Survey_points' added/removed: added: id; removed: fid")
+        self.assertEqual(
+            msg,
+            "Fields in table 'Survey_points' added/removed: added: id; removed: fid",
+        )
         modified_schema[0]["columns"][0]["name"] = "fid"
 
         # change column type from datetime to date
         modified_schema[0]["columns"][2]["type"] = "date"
         equal, msg = same_schema(self.base_schema, modified_schema)
         self.assertFalse(equal)
-        self.assertEqual(msg, "Definition of 'date' field in 'Survey_points' table is not the same")
+        self.assertEqual(
+            msg, "Definition of 'date' field in 'Survey_points' table is not the same"
+        )
 
     def test_datum_shift_grids(self):
         grids = get_datum_shift_grids()
@@ -102,7 +107,10 @@ class test_utils(unittest.TestCase):
 
         grids = get_datum_shift_grids()
         self.assertEqual(len(grids), 1)
-        self.assertTrue("uk_os_OSTN15_NTv2_OSGBtoETRS.tif" in grids or "OSTN15_NTv2_OSGBtoETRS.gsb" in grids)
+        self.assertTrue(
+            "uk_os_OSTN15_NTv2_OSGBtoETRS.tif" in grids
+            or "OSTN15_NTv2_OSGBtoETRS.gsb" in grids
+        )
 
     def test_name_validation(self):
         test_cases = [
@@ -243,11 +251,17 @@ class test_utils(unittest.TestCase):
 
             sl = layer.renderer().symbol().symbolLayer(0)
             self.assertEqual(
-                sl.dataDefinedProperties().property(QgsSymbolLayer.PropertyStrokeColor).expressionString(), '"color"'
+                sl.dataDefinedProperties()
+                .property(QgsSymbolLayer.PropertyStrokeColor)
+                .expressionString(),
+                '"color"',
             )
 
             self.assertEqual(
-                sl.dataDefinedProperties().property(QgsSymbolLayer.PropertyStrokeWidth).expressionString(), '"width"'
+                sl.dataDefinedProperties()
+                .property(QgsSymbolLayer.PropertyStrokeWidth)
+                .expressionString(),
+                '"width"',
             )
 
 

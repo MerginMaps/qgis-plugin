@@ -34,7 +34,9 @@ from .utils import (
     is_dark_theme,
 )
 
-ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_config.ui")
+ui_file = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "ui", "ui_config.ui"
+)
 
 
 class ConfigurationDialog(QDialog):
@@ -56,7 +58,9 @@ class ConfigurationDialog(QDialog):
         self.sso_timer.setInterval(1000)
         self.sso_timer.timeout.connect(self.allow_sso_login)
 
-        save_credentials = settings.value("Mergin/saveCredentials", "false").lower() == "true"
+        save_credentials = (
+            settings.value("Mergin/saveCredentials", "false").lower() == "true"
+        )
         login_type = get_login_type()
         if save_credentials or login_type == LoginType.PASSWORD:
             QgsApplication.authManager().setMasterPassword()
@@ -109,7 +113,11 @@ class ConfigurationDialog(QDialog):
         set_mergin_settings(url=url, login_type=self.login_type())
 
         if self.login_type() == LoginType.PASSWORD:
-            set_mergin_auth_password(url=url, username=self.ui.username.text(), password=self.ui.password.text())
+            set_mergin_auth_password(
+                url=url,
+                username=self.ui.username.text(),
+                password=self.ui.password.text(),
+            )
         else:
             settings = QSettings()
             settings.setValue("Mergin/sso_email", self.ui.sso_email.text())
@@ -120,19 +128,25 @@ class ConfigurationDialog(QDialog):
         self.ui.merginURL.setVisible(self.ui.custom_url.isChecked())
 
     def server_url(self):
-        return self.ui.merginURL.text() if self.ui.custom_url.isChecked() else MERGIN_URL
+        return (
+            self.ui.merginURL.text() if self.ui.custom_url.isChecked() else MERGIN_URL
+        )
 
     def check_credentials(self):
         enable_buttons = False
         if self.login_type() == LoginType.PASSWORD:
-            enable_buttons = bool(self.ui.username.text()) and bool(self.ui.password.text())
+            enable_buttons = bool(self.ui.username.text()) and bool(
+                self.ui.password.text()
+            )
         elif self.login_type() == LoginType.SSO:
             if self.sso_email_required:
                 enable_buttons = bool(self.ui.sso_email.text())
             else:
                 enable_buttons = True
 
-        self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(enable_buttons)
+        self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(
+            enable_buttons
+        )
         self.ui.test_connection_btn.setEnabled(enable_buttons)
 
     def check_master_password(self):
@@ -158,14 +172,20 @@ class ConfigurationDialog(QDialog):
 
         with OverrideCursor(Qt.CursorShape.WaitCursor):
             if self.login_type() == LoginType.PASSWORD:
-                ok, msg = test_server_connection(self.server_url(), self.ui.username.text(), self.ui.password.text())
+                ok, msg = test_server_connection(
+                    self.server_url(), self.ui.username.text(), self.ui.password.text()
+                )
             else:
                 if validate_sso_login(self.server_url(), self.get_sso_email()):
                     self.ui.test_status.setText("<font color=green> OK </font>")
                     return True
 
-                self.ui.test_status.setText(f"<font color=orange>Follow the instructions in the browser...</font>")
-                ok, msg = test_server_connection(self.server_url(), use_sso=True, sso_email=self.get_sso_email())
+                self.ui.test_status.setText(
+                    f"<font color=orange>Follow the instructions in the browser...</font>"
+                )
+                ok, msg = test_server_connection(
+                    self.server_url(), use_sso=True, sso_email=self.get_sso_email()
+                )
 
             if url_reachable(self.server_url()):
                 if mergin_server_deprecated_version(self.server_url()):

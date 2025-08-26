@@ -42,7 +42,12 @@ class MerginProvider(QgsProcessingProvider):
         return False
 
     def getAlgs(self):
-        algs = [CreateReport(), ExtractLocalChanges(), CreateDiff(), DownloadVectorTiles()]
+        algs = [
+            CreateReport(),
+            ExtractLocalChanges(),
+            CreateDiff(),
+            DownloadVectorTiles(),
+        ]
 
         return algs
 

@@ -3,7 +3,11 @@
 
 from qgis.core import QgsProject
 
-from .utils import project_grids_directory, copy_datum_shift_grids, set_qgis_project_home_ignore
+from .utils import (
+    project_grids_directory,
+    copy_datum_shift_grids,
+    set_qgis_project_home_ignore,
+)
 
 
 def fix_datum_shift_grids(mp):

@@ -76,7 +76,9 @@ def get_mergin_auth_cfg() -> QgsAuthMethodConfig:
     return cfg
 
 
-def set_mergin_auth_password(url: str, username: str, password: str, auth_token: typing.Optional[str] = None) -> None:
+def set_mergin_auth_password(
+    url: str, username: str, password: str, auth_token: typing.Optional[str] = None
+) -> None:
     """
     Set Mergin auth config with username, password and optional auth token.
     Stored in QGIS auth manager.
@@ -104,7 +106,9 @@ def set_mergin_auth_password(url: str, username: str, password: str, auth_token:
     store_mergin_authcfg_id(cfg)
 
 
-def set_mergin_auth_sso(url: str, auth_token: str, sso_email: typing.Optional[str]) -> None:
+def set_mergin_auth_sso(
+    url: str, auth_token: str, sso_email: typing.Optional[str]
+) -> None:
     """
     Set Mergin auth config for SSO login with auth token and optional email.
     Stored in QGIS auth manager.
@@ -185,11 +189,25 @@ def create_mergin_client() -> MerginClient:
         auth_token = get_mergin_auth_token(cfg)
         if auth_token:
             if login_type == LoginType.SSO:
-                mc = MerginClient(url, auth_token, None, None, get_plugin_version(), get_qgis_proxy_config(url))
+                mc = MerginClient(
+                    url,
+                    auth_token,
+                    None,
+                    None,
+                    get_plugin_version(),
+                    get_qgis_proxy_config(url),
+                )
                 return mc
             else:
                 username, password = get_mergin_username_password()
-                mc = MerginClient(url, auth_token, username, password, get_plugin_version(), get_qgis_proxy_config(url))
+                mc = MerginClient(
+                    url,
+                    auth_token,
+                    username,
+                    password,
+                    get_plugin_version(),
+                    get_qgis_proxy_config(url),
+                )
                 mc.validate_auth()
                 return mc
         else:
@@ -197,7 +215,14 @@ def create_mergin_client() -> MerginClient:
                 username = cfg.config("username", None)
                 password = cfg.config("password", None)
                 if username and password:
-                    mc = MerginClient(url, None, username, password, get_plugin_version(), get_qgis_proxy_config(url))
+                    mc = MerginClient(
+                        url,
+                        None,
+                        username,
+                        password,
+                        get_plugin_version(),
+                        get_qgis_proxy_config(url),
+                    )
                     mc.validate_auth()
                     return mc
                 else:
@@ -241,7 +266,9 @@ def validate_sso_login(server_url: str, sso_email: typing.Optional[str] = None) 
         return False
 
 
-def login_sso(server_url: str, oauth2_client_id: str, email: typing.Optional[str] = None) -> None:
+def login_sso(
+    server_url: str, oauth2_client_id: str, email: typing.Optional[str] = None
+) -> None:
     """
     Login to Mergin Maps using SSO.
 
@@ -296,7 +323,9 @@ def login_sso(server_url: str, oauth2_client_id: str, email: typing.Optional[str
     if not ok:
         raise SSOLoginError("SSO login failed, cannot create network request.")
     reply = QgsNetworkAccessManager.instance().get(request)
-    access_token = bytes(reply.request().rawHeader(b"Authorization"))  # includes "Bearer ...."
+    access_token = bytes(
+        reply.request().rawHeader(b"Authorization")
+    )  # includes "Bearer ...."
 
     # create mergin client using the token
     access_token_str = access_token.decode("utf-8")
@@ -313,7 +342,9 @@ def login_sso(server_url: str, oauth2_client_id: str, email: typing.Optional[str
         mc = None
 
     if mc:
-        set_mergin_auth_sso(url=server_url, auth_token=mc._auth_session["token"], sso_email=email)
+        set_mergin_auth_sso(
+            url=server_url, auth_token=mc._auth_session["token"], sso_email=email
+        )
 
 
 def json_response(url: str) -> dict:
@@ -392,7 +423,9 @@ def test_server_connection(
             QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {msg}")
             return False, msg
         try:
-            MerginClient(url, None, username, password, get_plugin_version(), proxy_config)
+            MerginClient(
+                url, None, username, password, get_plugin_version(), proxy_config
+            )
         except (LoginError, ClientError, AuthTokenExpiredError) as e:
             QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
             result = False, f"<font color=red> Connection failed, {str(e)} </font>"
@@ -515,7 +548,11 @@ def mergin_server_deprecated_version(url: str) -> bool:
 def url_reachable(url: str) -> bool:
     try:
         requests.get(url, timeout=3)
-    except (requests.RequestException, urllib3.exceptions.LocationParseError, UnicodeError):
+    except (
+        requests.RequestException,
+        urllib3.exceptions.LocationParseError,
+        UnicodeError,
+    ):
         return False
     return True
 

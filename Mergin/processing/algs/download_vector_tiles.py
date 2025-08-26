@@ -122,16 +122,28 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
         self.addParameter(QgsProcessingParameterExtent(self.EXTENT, "Extent"))
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.MAX_ZOOM, "Maximum zoom level to download", QgsProcessingParameterNumber.Integer, 10, False, 0
+                self.MAX_ZOOM,
+                "Maximum zoom level to download",
+                QgsProcessingParameterNumber.Integer,
+                10,
+                False,
+                0,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.TILE_LIMIT, "Tile limit", QgsProcessingParameterNumber.Integer, 100, False, 0
+                self.TILE_LIMIT,
+                "Tile limit",
+                QgsProcessingParameterNumber.Integer,
+                100,
+                False,
+                0,
             )
         )
         self.addParameter(
-            QgsProcessingParameterFileDestination(self.OUTPUT, "Output", "MBTiles files (*.mbtiles *.MBTILES)")
+            QgsProcessingParameterFileDestination(
+                self.OUTPUT, "Output", "MBTiles files (*.mbtiles *.MBTILES)"
+            )
         )
 
     def prepareAlgorithm(self, parameters, context, feedback):
@@ -150,7 +162,9 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
         self.source_min_zoom = layer.sourceMinZoom()
         self.layer_name = layer.name()
 
-        self.extent = self.parameterAsExtent(parameters, self.EXTENT, context, layer.crs())
+        self.extent = self.parameterAsExtent(
+            parameters, self.EXTENT, context, layer.crs()
+        )
 
         self.max_zoom = self.parameterAsInt(parameters, self.MAX_ZOOM, context)
         if self.max_zoom > layer.sourceMaxZoom():
@@ -196,7 +210,9 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
         writer.set_metadata_value("minzoom", self.source_min_zoom)
         writer.set_metadata_value("maxzoom", self.max_zoom)
         try:
-            writer.set_metadata_value("crs", self.tile_matrix_set.rootMatrix().crs().authid())
+            writer.set_metadata_value(
+                "crs", self.tile_matrix_set.rootMatrix().crs().authid()
+            )
             ct = QgsCoordinateTransform(
                 self.tile_matrix_set.rootMatrix().crs(),
                 QgsCoordinateReferenceSystem("EPSG:4326"),
@@ -204,9 +220,7 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
             )
             ct.setBallparkTransformsAreAppropriate(True)
             wgs_extent = ct.transformBoundingBox(self.extent)
-            bounds_str = (
-                f"{wgs_extent.xMinimum()},{wgs_extent.yMinimum()},{wgs_extent.xMaximum()},{wgs_extent.yMaximum()}"
-            )
+            bounds_str = f"{wgs_extent.xMinimum()},{wgs_extent.yMinimum()},{wgs_extent.xMaximum()},{wgs_extent.yMaximum()}"
             writer.set_metadata_value("bounds", bounds_str)
         except QgsCsException as e:
             pass
@@ -228,7 +242,9 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
                 tiles = self.tile_matrix_set.tilesInRange(tile_range, zoom)
             else:
                 for row in range(tile_range.startRow(), tile_range.endRow() + 1):
-                    for column in range(tile_range.startColumn(), tile_range.endColumn() + 1):
+                    for column in range(
+                        tile_range.startColumn(), tile_range.endColumn() + 1
+                    ):
                         if feedback.isCanceled():
                             break
                         tile = QgsTileXYZ(column, row, zoom)
@@ -249,12 +265,18 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
                     data = req.reply().content()
 
                     comp_obj = zlib.compressobj(
-                        zlib.Z_DEFAULT_COMPRESSION, zlib.DEFLATED, zlib.MAX_WBITS + 16, 8, zlib.Z_DEFAULT_STRATEGY
+                        zlib.Z_DEFAULT_COMPRESSION,
+                        zlib.DEFLATED,
+                        zlib.MAX_WBITS + 16,
+                        8,
+                        zlib.Z_DEFAULT_STRATEGY,
                     )
                     gzip_data = comp_obj.compress(data)
                     gzip_data += comp_obj.flush()
                     row_tms = math.pow(2, tile.zoomLevel()) - tile.row() - 1
-                    writer.set_tile_data(tile.zoomLevel(), tile.column(), row_tms, gzip_data)
+                    writer.set_tile_data(
+                        tile.zoomLevel(), tile.column(), row_tms, gzip_data
+                    )
 
                 step_feedback.setProgress(i * step)
 
@@ -280,7 +302,9 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
     def format_url_template(self, url, tile, tile_matrix):
         out_url = url.replace("{x}", f"{tile.column()}")
         if "{-y}" in out_url:
-            out_url = out_url.replace("{-y}", f"{tile_matrix.matrixHeight() - tile.row() - 1}")
+            out_url = out_url.replace(
+                "{-y}", f"{tile_matrix.matrixHeight() - tile.row() - 1}"
+            )
         else:
             out_url = out_url.replace("{y}", f"{tile.row()}")
         out_url = out_url.replace("{z}", f"{tile.zoomLevel()}")
