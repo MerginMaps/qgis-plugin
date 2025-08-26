@@ -58,11 +58,7 @@ class MerginProjectsManager(object):
         qgis_proj_filename = os.path.normpath(QgsProject.instance().fileName())
         if qgis_proj_filename in find_qgis_files(project_dir):
             check_result = unsaved_project_check()
-            return (
-                False
-                if check_result == UnsavedChangesStrategy.HasUnsavedChanges
-                else True
-            )
+            return False if check_result == UnsavedChangesStrategy.HasUnsavedChanges else True
         return True  # not a Mergin project
 
     def open_project(self, project_dir):
@@ -91,13 +87,9 @@ class MerginProjectsManager(object):
             msg = (
                 "Selected project does not contain any QGIS project file"
                 if len(qgis_files) == 0
-                else "Plugin can only load project with single QGIS project file but {} found.".format(
-                    len(qgis_files)
-                )
+                else "Plugin can only load project with single QGIS project file but {} found.".format(len(qgis_files))
             )
-            QMessageBox.warning(
-                None, "Load QGIS project", msg, QMessageBox.StandardButton.Close
-            )
+            QMessageBox.warning(None, "Load QGIS project", msg, QMessageBox.StandardButton.Close)
 
     def create_project(self, project_name, project_dir, is_public, namespace):
         """
@@ -184,9 +176,7 @@ class MerginProjectsManager(object):
             if isinstance(dlg.exception, LoginError):
                 login_error_message(dlg.exception)
             elif isinstance(dlg.exception, ClientError):
-                QMessageBox.critical(
-                    None, "Project sync", "Client error: " + str(dlg.exception)
-                )
+                QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
             else:
                 unhandled_exception_message(
                     dlg.exception_details(),
@@ -202,9 +192,7 @@ class MerginProjectsManager(object):
         settings = QSettings()
         server_url = self.mc.url.rstrip("/")
         settings.setValue(f"Mergin/localProjects/{full_project_name}/path", project_dir)
-        settings.setValue(
-            f"Mergin/localProjects/{full_project_name}/server", server_url
-        )
+        settings.setValue(f"Mergin/localProjects/{full_project_name}/server", server_url)
         if (
             project_dir == QgsProject.instance().absolutePath()
             or project_dir + "/" in QgsProject.instance().absolutePath()
@@ -232,17 +220,13 @@ class MerginProjectsManager(object):
             project_name = mp.project_full_name()
         except InvalidProject as e:
             msg = f"Failed to get project status:\n\n{str(e)}"
-            QMessageBox.critical(
-                None, "Project status", msg, QMessageBox.StandardButton.Close
-            )
+            QMessageBox.critical(None, "Project status", msg, QMessageBox.StandardButton.Close)
             return
 
         if not self.check_project_server(project_dir):
             return
         try:
-            pull_changes, push_changes, push_changes_summary = self.mc.project_status(
-                project_dir
-            )
+            pull_changes, push_changes, push_changes_summary = self.mc.project_status(project_dir)
             dlg = ProjectStatusDialog(
                 pull_changes,
                 push_changes,
@@ -263,9 +247,7 @@ class MerginProjectsManager(object):
 
         except (URLError, ClientError, InvalidProject) as e:
             msg = f"Failed to get status for project {project_name}:\n\n{str(e)}"
-            QMessageBox.critical(
-                None, "Project status", msg, QMessageBox.StandardButton.Close
-            )
+            QMessageBox.critical(None, "Project status", msg, QMessageBox.StandardButton.Close)
         except AuthTokenExpiredError:
             self.plugin.auth_token_expired()
         except LoginError as e:
@@ -288,9 +270,7 @@ class MerginProjectsManager(object):
             elif url.netloc.startswith("test.dev"):
                 server_urls.append("https://test.dev.merginmaps.com")
                 server_urls.append("https://test.dev.cloudmergin.com")
-            elif url.netloc.startswith("public.cloudmergin") or url.netloc.startswith(
-                "app.merginmaps"
-            ):
+            elif url.netloc.startswith("public.cloudmergin") or url.netloc.startswith("app.merginmaps"):
                 server_urls.append("https://app.merginmaps.com")
                 server_urls.append("https://public.cloudmergin.com")
             if proj_server.rstrip("/") in server_urls:
@@ -298,9 +278,7 @@ class MerginProjectsManager(object):
 
         if inform_user:
             info = f"Current project was created for another Mergin Maps server:\n{proj_server}\n\n"
-            info += (
-                "You need to reconfigure Mergin Maps plugin to synchronise the project."
-            )
+            info += "You need to reconfigure Mergin Maps plugin to synchronise the project."
             QMessageBox.critical(None, "Mergin Maps", info)
         return False
 
@@ -350,9 +328,7 @@ class MerginProjectsManager(object):
                 project_name = mp.project_full_name()
             except InvalidProject as e:
                 msg = f"Failed to sync project:\n\n{str(e)}"
-                QMessageBox.critical(
-                    None, "Project syncing", msg, QMessageBox.StandardButton.Close
-                )
+                QMessageBox.critical(None, "Project syncing", msg, QMessageBox.StandardButton.Close)
                 return
         if not self.check_project_server(project_dir):
             return
@@ -367,19 +343,13 @@ class MerginProjectsManager(object):
             return
 
         try:
-            pull_changes, push_changes, push_changes_summary = self.mc.project_status(
-                project_dir
-            )
+            pull_changes, push_changes, push_changes_summary = self.mc.project_status(project_dir)
         except InvalidProject as e:
             msg = f"Project is invalid:\n\n{str(e)}"
-            QMessageBox.critical(
-                None, "Project syncing", msg, QMessageBox.StandardButton.Close
-            )
+            QMessageBox.critical(None, "Project syncing", msg, QMessageBox.StandardButton.Close)
             return
 
-        if not sum(
-            len(v) for v in list(pull_changes.values()) + list(push_changes.values())
-        ):
+        if not sum(len(v) for v in list(pull_changes.values()) + list(push_changes.values())):
             QMessageBox.information(
                 None,
                 "Project sync",
@@ -398,9 +368,7 @@ class MerginProjectsManager(object):
             if isinstance(dlg.exception, LoginError):
                 login_error_message(dlg.exception)
             elif isinstance(dlg.exception, ClientError):
-                QMessageBox.critical(
-                    None, "Project sync", "Client error: " + str(dlg.exception)
-                )
+                QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
             elif isinstance(dlg.exception, AuthTokenExpiredError):
                 self.plugin.auth_token_expired()
             else:
@@ -428,9 +396,7 @@ class MerginProjectsManager(object):
             return
 
         # pull finished, start push
-        if any(push_changes.values()) and not self.mc.has_writing_permissions(
-            project_name
-        ):
+        if any(push_changes.values()) and not self.mc.has_writing_permissions(project_name):
             QMessageBox.information(
                 None,
                 "Project sync",
@@ -458,10 +424,7 @@ class MerginProjectsManager(object):
             if isinstance(dlg.exception, LoginError):
                 login_error_message(dlg.exception)
             elif isinstance(dlg.exception, ClientError):
-                if (
-                    dlg.exception.http_error == 400
-                    and "Another process" in dlg.exception.detail
-                ):
+                if dlg.exception.http_error == 400 and "Another process" in dlg.exception.detail:
                     # To note we check for a string since error in flask doesn't return server error code
                     msg = "Somebody else is syncing, please try again later"
                 elif dlg.exception.server_code == ErrorCode.StorageLimitHit.value:
@@ -481,12 +444,8 @@ class MerginProjectsManager(object):
 
         if dlg.is_complete:
             # TODO: report success only when we have actually done anything
-            msg = "Mergin Maps project {} synchronised successfully".format(
-                project_name
-            )
-            QMessageBox.information(
-                None, "Project sync", msg, QMessageBox.StandardButton.Close
-            )
+            msg = "Mergin Maps project {} synchronised successfully".format(project_name)
+            QMessageBox.information(None, "Project sync", msg, QMessageBox.StandardButton.Close)
             # clear canvas cache so any changes become immediately visible to users
             self.iface.mapCanvas().clearCache()
             self.iface.mapCanvas().refresh()
@@ -528,9 +487,7 @@ class MerginProjectsManager(object):
         QMessageBox.information(
             None,
             "Submit diagnostic logs",
-            "Diagnostic logs successfully submitted - thank you!\n\n{}".format(
-                log_file_name
-            ),
+            "Diagnostic logs successfully submitted - thank you!\n\n{}".format(log_file_name),
             QMessageBox.StandardButton.Close,
         )
 
@@ -604,14 +561,10 @@ class MerginProjectsManager(object):
             delay = 2500
         # we have to wait a bit to let the OS (Windows) release lock on the GPKG files
         # otherwise attempt to resolve unfinished pull will fail
-        QTimer.singleShot(
-            delay, lambda: self.resolve_unfinished_pull(project_dir, True)
-        )
+        QTimer.singleShot(delay, lambda: self.resolve_unfinished_pull(project_dir, True))
 
     def download_project(self, project):
-        project_name = posixpath.join(
-            project["namespace"], project["name"]
-        )  # we need posix path for server API calls
+        project_name = posixpath.join(project["namespace"], project["name"])  # we need posix path for server API calls
         settings = QSettings()
         last_parent_dir = settings.value("Mergin/lastUsedDownloadDir", str(Path.home()))
         parent_dir = QFileDialog.getExistingDirectory(
@@ -625,9 +578,7 @@ class MerginProjectsManager(object):
             QMessageBox.warning(
                 None,
                 "Download Project",
-                "The target directory already exists:\n"
-                + target_dir
-                + "\n\nPlease select a different directory.",
+                "The target directory already exists:\n" + target_dir + "\n\nPlease select a different directory.",
             )
             return
 
@@ -636,18 +587,12 @@ class MerginProjectsManager(object):
         dlg.exec()  # blocks until completion / failure / cancellation
         if dlg.exception:
             if isinstance(dlg.exception, (URLError, ValueError)):
-                QgsApplication.messageLog().logMessage(
-                    "Mergin Maps plugin: " + str(dlg.exception)
-                )
+                QgsApplication.messageLog().logMessage("Mergin Maps plugin: " + str(dlg.exception))
                 msg = (
                     "Failed to download your project {}.\n"
-                    "Please make sure your Mergin Maps settings are correct".format(
-                        project_name
-                    )
+                    "Please make sure your Mergin Maps settings are correct".format(project_name)
                 )
-                QMessageBox.critical(
-                    None, "Project download", msg, QMessageBox.StandardButton.Close
-                )
+                QMessageBox.critical(None, "Project download", msg, QMessageBox.StandardButton.Close)
             elif isinstance(dlg.exception, LoginError):
                 login_error_message(dlg.exception)
             else:
@@ -662,12 +607,8 @@ class MerginProjectsManager(object):
         if not dlg.is_complete:
             return  # either it has been cancelled or an error has been thrown
 
-        settings.setValue(
-            "Mergin/localProjects/{}/path".format(project_name), target_dir
-        )
-        msg = "Your project {} has been successfully downloaded. Do you want to open project file?".format(
-            project_name
-        )
+        settings.setValue("Mergin/localProjects/{}/path".format(project_name), target_dir)
+        msg = "Your project {} has been successfully downloaded. Do you want to open project file?".format(project_name)
         btn_reply = QMessageBox.question(
             None,
             "Project download",

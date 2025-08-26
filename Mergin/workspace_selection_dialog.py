@@ -18,9 +18,7 @@ from qgis.PyQt.QtGui import QPixmap, QFontMetrics, QFont
 
 from .utils import mm_logo_path
 
-ui_file = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "ui", "ui_select_workspace_dialog.ui"
-)
+ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_select_workspace_dialog.ui")
 
 
 class WorkspacesModel(QAbstractListModel):
@@ -39,9 +37,7 @@ class WorkspacesModel(QAbstractListModel):
             name = workspace["name"]
             desc = workspace["description"] or ""
             count = workspace["project_count"]
-            return "Workspace: {}\nDescription: {}\nProjects: {}".format(
-                name, desc, count
-            )
+            return "Workspace: {}\nDescription: {}\nProjects: {}".format(name, desc, count)
         return workspace["name"]
 
 
@@ -83,9 +79,7 @@ class WorkspaceItemDelegate(QAbstractItemDelegate):
         painter.drawText(nameRect, Qt.AlignmentFlag.AlignLeading, workspace["name"])
         painter.setFont(option.font)
         fm = QFontMetrics(QFont(option.font))
-        elided_description = fm.elidedText(
-            description, Qt.TextElideMode.ElideRight, infoRect.width()
-        )
+        elided_description = fm.elidedText(description, Qt.TextElideMode.ElideRight, infoRect.width())
         painter.drawText(infoRect, Qt.AlignmentFlag.AlignLeading, elided_description)
         painter.restore()
 
@@ -119,9 +113,7 @@ class WorkspaceSelectionDialog(QDialog):
 
         self.ui.select_workspace_btn.setEnabled(False)
         self.ui.select_workspace_btn.clicked.connect(self.on_select_workspace_clicked)
-        self.ui.manage_workspaces_label.linkActivated.connect(
-            self.on_manage_workspaces_clicked
-        )
+        self.ui.manage_workspaces_label.linkActivated.connect(self.on_manage_workspaces_clicked)
 
     def on_selection_changed(self, selected, deselected):
         try:

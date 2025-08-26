@@ -35,9 +35,7 @@ from .utils import (
 from .repair import fix_datum_shift_grids, fix_project_home_path
 
 
-ui_file = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "ui", "ui_status_dialog.ui"
-)
+ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_status_dialog.ui")
 
 
 class ProjectStatusDialog(QDialog):
@@ -75,9 +73,7 @@ class ProjectStatusDialog(QDialog):
             self.btn_sync.setIcon(QIcon(icon_path("refresh.svg")))
             # add sync button with AcceptRole. If dialog accepted we will start
             # sync, otherwise just close status dialog
-            self.ui.buttonBox.addButton(
-                self.btn_sync, QDialogButtonBox.ButtonRole.AcceptRole
-            )
+            self.ui.buttonBox.addButton(self.btn_sync, QDialogButtonBox.ButtonRole.AcceptRole)
 
             self.btn_view_changes.setIcon(QIcon(icon_path("file-diff.svg")))
             self.btn_view_changes.clicked.connect(self.show_changes)
@@ -97,10 +93,7 @@ class ProjectStatusDialog(QDialog):
             self.changes_summary = push_changes_summary
 
             has_files_to_replace = any(
-                [
-                    "diff" not in file and is_versioned_file(file["path"])
-                    for file in push_changes["updated"]
-                ]
+                ["diff" not in file and is_versioned_file(file["path"]) for file in push_changes["updated"]]
             )
             info_text = self._get_info_text(
                 has_files_to_replace,
@@ -109,9 +102,7 @@ class ProjectStatusDialog(QDialog):
             )
             for msg in info_text:
                 lbl = QLabel(msg)
-                lbl.setSizePolicy(
-                    QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
-                )
+                lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
                 lbl.setWordWrap(True)
                 self.ui.messageBar.pushWidget(lbl, Qgis.Warning)
 
@@ -120,18 +111,12 @@ class ProjectStatusDialog(QDialog):
             self.btn_reset_local_changes.setIcon(QIcon(icon_path("revert-changes.svg")))
             self.btn_reset_local_changes.clicked.connect(self.reset_local_changes)
 
-            if (
-                len(push_changes["added"]) > 0
-                or len(push_changes["removed"]) > 0
-                or len(push_changes["updated"]) > 0
-            ):
+            if len(push_changes["added"]) > 0 or len(push_changes["removed"]) > 0 or len(push_changes["updated"]) > 0:
                 self.btn_reset_local_changes.setEnabled(True)
             else:
                 self.btn_reset_local_changes.setEnabled(False)
 
-    def _get_info_text(
-        self, has_files_to_replace, has_write_permissions, has_unfinished_pull
-    ):
+    def _get_info_text(self, has_files_to_replace, has_write_permissions, has_unfinished_pull):
         msg = []
         if not has_write_permissions:
             msg.append(
@@ -153,9 +138,7 @@ class ProjectStatusDialog(QDialog):
         return msg
 
     def check_any_changes(self, pull_changes, push_changes):
-        if not sum(
-            len(v) for v in list(pull_changes.values()) + list(push_changes.values())
-        ):
+        if not sum(len(v) for v in list(pull_changes.values()) + list(push_changes.values())):
             root_item = QStandardItem("No changes")
             self.model.appendRow(root_item)
 
@@ -179,9 +162,7 @@ class ProjectStatusDialog(QDialog):
                 item = self._get_icon_item(category, path)
                 if is_versioned_file(path):
                     if path in changes_summary:
-                        for sub_item in self._versioned_file_summary_items(
-                            changes_summary[path]["geodiff_summary"]
-                        ):
+                        for sub_item in self._versioned_file_summary_items(changes_summary[path]["geodiff_summary"]):
                             item.appendRow(sub_item)
                     elif not is_server and category != "added":
                         item.appendRow(QStandardItem("Unable to detect changes"))
@@ -202,11 +183,7 @@ class ProjectStatusDialog(QDialog):
         return items
 
     def _table_summary_items(self, summary):
-        return [
-            QStandardItem("{}: {}".format(k, summary[k]))
-            for k in summary
-            if k != "table"
-        ]
+        return [QStandardItem("{}: {}".format(k, summary[k])) for k in summary if k != "table"]
 
     def _get_icon_item(self, key, text):
         path = icon_path(self.icons[key])
@@ -221,12 +198,8 @@ class ProjectStatusDialog(QDialog):
 
         # separate MultipleLayersWarning and SingleLayerWarning items
         groups = {
-            "single": [
-                item for item in results if isinstance(item, SingleLayerWarning)
-            ],
-            "multi": [
-                item for item in results if isinstance(item, MultipleLayersWarning)
-            ],
+            "single": [item for item in results if isinstance(item, SingleLayerWarning)],
+            "multi": [item for item in results if isinstance(item, MultipleLayersWarning)],
         }
 
         # first add MultipleLayersWarnings. They are displayed using warning
@@ -259,9 +232,7 @@ class ProjectStatusDialog(QDialog):
 
     def show_changes(self):
         if not self.changes_summary:
-            self.ui.messageBar.pushMessage(
-                "Mergin", "No changes found in the project layers.", Qgis.Info
-            )
+            self.ui.messageBar.pushMessage("Mergin", "No changes found in the project layers.", Qgis.Info)
             return
         check_result = unsaved_project_check()
         if check_result == UnsavedChangesStrategy.HasUnsavedChanges:
@@ -270,9 +241,7 @@ class ProjectStatusDialog(QDialog):
         if check_result == UnsavedChangesStrategy.HasUnsavedChangesButIgnore:
             dlg_diff_viewer.show_unsaved_changes_warning()
         self.close()
-        self.ui.messageBar.pushMessage(
-            "Mergin", "No changes found in the project layers.", Qgis.Info
-        )
+        self.ui.messageBar.pushMessage("Mergin", "No changes found in the project layers.", Qgis.Info)
         dlg_diff_viewer.show()
         dlg_diff_viewer.exec()
 
@@ -281,9 +250,7 @@ class ProjectStatusDialog(QDialog):
         if parsed_url.path == "fix_datum_shift_grids":
             msg = fix_datum_shift_grids(self.mp)
             if msg is not None:
-                self.ui.messageBar.pushMessage(
-                    "Mergin", f"Failed to fix issue: {msg}", Qgis.Warning
-                )
+                self.ui.messageBar.pushMessage("Mergin", f"Failed to fix issue: {msg}", Qgis.Warning)
                 return
         if parsed_url.path == "reset_file":
             query_parameters = parse_qs(parsed_url.query)
@@ -293,9 +260,7 @@ class ProjectStatusDialog(QDialog):
         self.validate_project()
 
     def validate_project(self):
-        validator = MerginProjectValidator(
-            self.mp, self.push_changes, self.project_permission
-        )
+        validator = MerginProjectValidator(self.mp, self.push_changes, self.project_permission)
         results = validator.run_checks()
         if not results:
             self.ui.lblWarnings.hide()

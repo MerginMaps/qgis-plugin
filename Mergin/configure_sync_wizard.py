@@ -18,18 +18,10 @@ from qgis.core import (
 from .utils_auth import get_stored_mergin_server_url, get_mergin_username_password
 
 base_dir = os.path.dirname(__file__)
-ui_direction_page, base_direction_page = uic.loadUiType(
-    os.path.join(base_dir, "ui", "ui_sync_direction_page.ui")
-)
-ui_gpkg_select_page, base_gpkg_select_page = uic.loadUiType(
-    os.path.join(base_dir, "ui", "ui_gpkg_selection_page.ui")
-)
-ui_db_select_page, base_db_select_page = uic.loadUiType(
-    os.path.join(base_dir, "ui", "ui_db_selection_page.ui")
-)
-ui_config_page, base_config_page = uic.loadUiType(
-    os.path.join(base_dir, "ui", "ui_config_file_page.ui")
-)
+ui_direction_page, base_direction_page = uic.loadUiType(os.path.join(base_dir, "ui", "ui_sync_direction_page.ui"))
+ui_gpkg_select_page, base_gpkg_select_page = uic.loadUiType(os.path.join(base_dir, "ui", "ui_gpkg_selection_page.ui"))
+ui_db_select_page, base_db_select_page = uic.loadUiType(os.path.join(base_dir, "ui", "ui_db_selection_page.ui"))
+ui_config_page, base_config_page = uic.loadUiType(os.path.join(base_dir, "ui", "ui_config_file_page.ui"))
 
 SYNC_DIRECTION_PAGE = 0
 GPKG_SELECT_PAGE = 1
@@ -78,22 +70,16 @@ class GpkgSelectionPage(ui_gpkg_select_page, base_gpkg_select_page):
     def initializePage(self):
         direction = self.field("init_from")
         if direction == "gpkg":
-            self.label.setText(
-                "Pick a GeoPackage file that contains data to be synchronised"
-            )
+            self.label.setText("Pick a GeoPackage file that contains data to be synchronised")
             self.file_edit_gpkg.setStorageMode(QgsFileWidget.GetFile)
         else:
-            self.label.setText(
-                "Pick a GeoPackage file that will contain synchronised data"
-            )
+            self.label.setText("Pick a GeoPackage file that will contain synchronised data")
             self.file_edit_gpkg.setStorageMode(QgsFileWidget.SaveFile)
 
         self.file_edit_gpkg.setDialogTitle(self.tr("Select file"))
         settings = QSettings()
         self.file_edit_gpkg.setDefaultRoot(
-            settings.value(
-                "Mergin/lastUsedDirectory", QgsProject.instance().homePath(), str
-            )
+            settings.value("Mergin/lastUsedDirectory", QgsProject.instance().homePath(), str)
         )
         self.file_edit_gpkg.setFilter("GeoPackage files (*.gpkg *.GPKG)")
         self.file_edit_gpkg.fileChanged.connect(self.ledit_gpkg_file.setText)

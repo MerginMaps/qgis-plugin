@@ -82,17 +82,9 @@ def get_row_from_db(db_conn, schema_table, entry_changes):
     where_bits = []
     for i, col in enumerate(schema_table.columns):
         if col.pkey:
-            where_bits.append(
-                '"{}" = {}'.format(
-                    col.name, old_value_for_column_by_index(entry_changes, i)
-                )
-            )
+            where_bits.append('"{}" = {}'.format(col.name, old_value_for_column_by_index(entry_changes, i)))
 
-    c.execute(
-        'SELECT * FROM "{}" WHERE {}'.format(
-            schema_table.name, " AND ".join(where_bits)
-        )
-    )
+    c.execute('SELECT * FROM "{}" WHERE {}'.format(schema_table.name, " AND ".join(where_bits)))
     return c.fetchone()
 
 
@@ -201,9 +193,7 @@ def create_field_list(schema_table):
         elif column.datatype == "geometry":
             continue
         else:
-            raise ValueError(
-                f"Unknow column type '{column.datatype}' for column '{column.name}'"
-            )
+            raise ValueError(f"Unknow column type '{column.datatype}' for column '{column.name}'")
         columns_to_fields[i] = fields.count()
         f = QgsField(column.name, t)
         fields.append(f)
@@ -218,9 +208,7 @@ def create_field_list(schema_table):
     return fields, columns_to_fields
 
 
-def diff_table_to_features(
-    diff_table, schema_table, fields, cols_to_flds, db_conn=None
-):
+def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_conn=None):
     """
     Converts a diff into list of QgsFeatures.
 
@@ -269,9 +257,7 @@ def diff_table_to_features(
                         if entry_change["old"] == None:
                             # Empty geometry
                             continue
-                        wkb_with_gpkg_hdr = base64.decodebytes(
-                            entry_change["old"].encode("ascii")
-                        )
+                        wkb_with_gpkg_hdr = base64.decodebytes(entry_change["old"].encode("ascii"))
                         wkb = parse_gpkg_geom_encoding(wkb_with_gpkg_hdr)
                         g = QgsGeometry()
                         g.fromWkb(wkb)
@@ -362,9 +348,7 @@ def make_local_changes_layer(mp, layer):
     db_conn = None  # no ref. db
     db_conn = sqlite3.connect(base_file)
 
-    features = diff_table_to_features(
-        diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn
-    )
+    features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn)
 
     # create diff layer
     vl = QgsVectorLayer(
@@ -416,9 +400,7 @@ def make_version_changes_layers(project_path, version):
             db_conn = None  # no ref. db
             db_conn = sqlite3.connect(gpkg_file)
 
-            features = diff_table_to_features(
-                diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn
-            )
+            features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn)
 
             # create diff layer
             if geom_type is None:
@@ -511,19 +493,13 @@ def style_diff_layer(layer, schema_table):
         }
         point_symbol_insert = dict(point_symbol_base)
         point_symbol_insert["color"] = QgsSymbolLayerUtils.encodeColor(color_green)
-        point_symbol_insert["outline_color"] = QgsSymbolLayerUtils.encodeColor(
-            color_green.darker(darker_factor)
-        )
+        point_symbol_insert["outline_color"] = QgsSymbolLayerUtils.encodeColor(color_green.darker(darker_factor))
         point_symbol_update = dict(point_symbol_base)
         point_symbol_update["color"] = QgsSymbolLayerUtils.encodeColor(color_yellow)
-        point_symbol_update["outline_color"] = QgsSymbolLayerUtils.encodeColor(
-            color_yellow.darker(darker_factor)
-        )
+        point_symbol_update["outline_color"] = QgsSymbolLayerUtils.encodeColor(color_yellow.darker(darker_factor))
         point_symbol_delete = dict(point_symbol_base)
         point_symbol_delete["color"] = QgsSymbolLayerUtils.encodeColor(color_red)
-        point_symbol_delete["outline_color"] = QgsSymbolLayerUtils.encodeColor(
-            color_red.darker(darker_factor)
-        )
+        point_symbol_delete["outline_color"] = QgsSymbolLayerUtils.encodeColor(color_red.darker(darker_factor))
 
         root_rule = QgsRuleBasedRenderer.Rule(None)
         root_rule.appendChild(
@@ -610,19 +586,13 @@ def style_diff_layer(layer, schema_table):
         }
         fill_symbol_insert = dict(fill_symbol_base)
         fill_symbol_insert["color"] = QgsSymbolLayerUtils.encodeColor(color_green)
-        fill_symbol_insert["outline_color"] = QgsSymbolLayerUtils.encodeColor(
-            color_green.darker(darker_factor)
-        )
+        fill_symbol_insert["outline_color"] = QgsSymbolLayerUtils.encodeColor(color_green.darker(darker_factor))
         fill_symbol_update = dict(fill_symbol_base)
         fill_symbol_update["color"] = QgsSymbolLayerUtils.encodeColor(color_yellow)
-        fill_symbol_update["outline_color"] = QgsSymbolLayerUtils.encodeColor(
-            color_yellow.darker(darker_factor)
-        )
+        fill_symbol_update["outline_color"] = QgsSymbolLayerUtils.encodeColor(color_yellow.darker(darker_factor))
         fill_symbol_delete = dict(fill_symbol_base)
         fill_symbol_delete["color"] = QgsSymbolLayerUtils.encodeColor(color_red)
-        fill_symbol_delete["outline_color"] = QgsSymbolLayerUtils.encodeColor(
-            color_red.darker(darker_factor)
-        )
+        fill_symbol_delete["outline_color"] = QgsSymbolLayerUtils.encodeColor(color_red.darker(darker_factor))
 
         root_rule = QgsRuleBasedRenderer.Rule(None)
         root_rule.appendChild(

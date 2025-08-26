@@ -42,9 +42,7 @@ from .utils import (
 from .utils_auth import AuthTokenExpiredError
 from .mergin.merginproject import MerginProject
 
-MERGIN_CLIENT_LOG = os.path.join(
-    QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt"
-)
+MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
 os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
 
 
@@ -87,20 +85,14 @@ class MerginRemoteProjectItem(QgsDataItem):
     def clone_remote_project(self):
         user_info = self.mc.user_info()
 
-        dlg = CloneProjectDialog(
-            user_info=user_info, default_workspace=self.project["namespace"]
-        )
+        dlg = CloneProjectDialog(user_info=user_info, default_workspace=self.project["namespace"])
         if not dlg.exec():
             return  # cancelled
         try:
-            self.mc.clone_project(
-                self.project_name, dlg.project_name, dlg.project_namespace
-            )
+            self.mc.clone_project(self.project_name, dlg.project_name, dlg.project_namespace)
         except (URLError, ClientError) as e:
             msg = "Failed to clone project {}:\n\n{}".format(self.project_name, str(e))
-            QMessageBox.critical(
-                None, "Clone project", msg, QMessageBox.StandardButton.Close
-            )
+            QMessageBox.critical(None, "Clone project", msg, QMessageBox.StandardButton.Close)
             return
         except AuthTokenExpiredError:
             self.plugin.auth_token_expired()
@@ -109,9 +101,7 @@ class MerginRemoteProjectItem(QgsDataItem):
             login_error_message(e)
             return
         msg = "Mergin Maps project cloned successfully."
-        QMessageBox.information(
-            None, "Clone project", msg, QMessageBox.StandardButton.Close
-        )
+        QMessageBox.information(None, "Clone project", msg, QMessageBox.StandardButton.Close)
         self.parent().reload()
         # we also need to reload My projects group as the cloned project could appear there
         group_items = self.project_manager.get_mergin_browser_groups()
@@ -126,15 +116,11 @@ class MerginRemoteProjectItem(QgsDataItem):
         try:
             self.mc.delete_project(self.project_name)
             msg = "Mergin Maps project removed successfully."
-            QMessageBox.information(
-                None, "Remove project", msg, QMessageBox.StandardButton.Close
-            )
+            QMessageBox.information(None, "Remove project", msg, QMessageBox.StandardButton.Close)
             self.parent().reload()
         except (URLError, ClientError) as e:
             msg = "Failed to remove project {}:\n\n{}".format(self.project_name, str(e))
-            QMessageBox.critical(
-                None, "Remove project", msg, QMessageBox.StandardButton.Close
-            )
+            QMessageBox.critical(None, "Remove project", msg, QMessageBox.StandardButton.Close)
         except AuthTokenExpiredError:
             self.plugin.auth_token_expired()
             return
@@ -142,17 +128,13 @@ class MerginRemoteProjectItem(QgsDataItem):
             login_error_message(e)
 
     def actions(self, parent):
-        action_download = QAction(
-            QIcon(icon_path("cloud-download.svg")), "Download", parent
-        )
+        action_download = QAction(QIcon(icon_path("cloud-download.svg")), "Download", parent)
         action_download.triggered.connect(self.download)
 
         action_clone_remote = QAction(QIcon(icon_path("copy.svg")), "Clone", parent)
         action_clone_remote.triggered.connect(self.clone_remote_project)
 
-        action_remove_remote = QAction(
-            QIcon(icon_path("trash.svg")), "Remove from server", parent
-        )
+        action_remove_remote = QAction(QIcon(icon_path("trash.svg")), "Remove from server", parent)
         action_remove_remote.triggered.connect(self.remove_remote_project)
 
         actions = [action_download, action_clone_remote]
@@ -166,17 +148,13 @@ class MerginLocalProjectItem(QgsDirectoryItem):
 
     def __init__(self, parent, project, project_manager, plugin):
         self.plugin = plugin
-        self.project_name = posixpath.join(
-            project["namespace"], project["name"]
-        )  # posix path for server API calls
+        self.project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
         self.path = mergin_project_local_path(self.project_name)
         display_name = project["name"]
         group_items = project_manager.get_mergin_browser_groups()
         if group_items.get("Shared with me") == parent:
             display_name = self.project_name
-        QgsDirectoryItem.__init__(
-            self, parent, display_name, self.path, "/Mergin/" + self.project_name
-        )
+        QgsDirectoryItem.__init__(self, parent, display_name, self.path, "/Mergin/" + self.project_name)
         self.setSortKey(f"0 {self.name()}")
         self.project = project
         self.project_manager = project_manager
@@ -253,9 +231,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
                     f"Failed to delete your project {self.project_name} because it is open.\n"
                     "You might need to close project or QGIS to remove its files."
                 )
-                QMessageBox.critical(
-                    None, "Project delete", msg, QMessageBox.StandardButton.Close
-                )
+                QMessageBox.critical(None, "Project delete", msg, QMessageBox.StandardButton.Close)
                 return
 
         settings = QSettings()
@@ -270,26 +246,18 @@ class MerginLocalProjectItem(QgsDirectoryItem):
     def clone_remote_project(self):
         user_info = self.mc.user_info()
 
-        dlg = CloneProjectDialog(
-            user_info=user_info, default_workspace=self.project["namespace"]
-        )
+        dlg = CloneProjectDialog(user_info=user_info, default_workspace=self.project["namespace"])
 
         if not dlg.exec():
             return  # cancelled
         try:
-            self.mc.clone_project(
-                self.project_name, dlg.project_name, dlg.project_namespace
-            )
+            self.mc.clone_project(self.project_name, dlg.project_name, dlg.project_namespace)
             msg = "Mergin Maps project cloned successfully."
-            QMessageBox.information(
-                None, "Clone project", msg, QMessageBox.StandardButton.Close
-            )
+            QMessageBox.information(None, "Clone project", msg, QMessageBox.StandardButton.Close)
             self.parent().reload()
         except (URLError, ClientError) as e:
             msg = "Failed to clone project {}:\n\n{}".format(self.project_name, str(e))
-            QMessageBox.critical(
-                None, "Clone project", msg, QMessageBox.StandardButton.Close
-            )
+            QMessageBox.critical(None, "Clone project", msg, QMessageBox.StandardButton.Close)
         except AuthTokenExpiredError:
             self.plugin.auth_token_expired()
             return
@@ -297,25 +265,19 @@ class MerginLocalProjectItem(QgsDirectoryItem):
             login_error_message(e)
 
     def actions(self, parent):
-        action_remove_local = QAction(
-            QIcon(icon_path("trash.svg")), "Remove locally", parent
-        )
+        action_remove_local = QAction(QIcon(icon_path("trash.svg")), "Remove locally", parent)
         action_remove_local.triggered.connect(self.remove_local_project)
 
         action_open_project = QAction("Open QGIS project", parent)
         action_open_project.triggered.connect(self.open_project)
 
-        action_sync_project = QAction(
-            QIcon(icon_path("refresh.svg")), "Synchronise", parent
-        )
+        action_sync_project = QAction(QIcon(icon_path("refresh.svg")), "Synchronise", parent)
         action_sync_project.triggered.connect(self.sync_project)
 
         action_clone_remote = QAction(QIcon(icon_path("copy.svg")), "Clone", parent)
         action_clone_remote.triggered.connect(self.clone_remote_project)
 
-        action_diagnostic_log = QAction(
-            QIcon(icon_path("first-aid-kit.svg")), "Diagnostic log", parent
-        )
+        action_diagnostic_log = QAction(QIcon(icon_path("first-aid-kit.svg")), "Diagnostic log", parent)
         action_diagnostic_log.triggered.connect(self.submit_logs)
 
         actions = [
@@ -333,9 +295,7 @@ class FetchMoreItem(QgsDataItem):
 
     def __init__(self, parent):
         self.parent = parent
-        QgsDataItem.__init__(
-            self, QgsDataItem.Collection, parent, "Double-click for more...", ""
-        )
+        QgsDataItem.__init__(self, QgsDataItem.Collection, parent, "Double-click for more...", "")
         self.setIcon(QIcon(icon_path("dots.svg")))
         self.setSortKey("2")  # the item should appear at the bottom of the list
 
@@ -366,9 +326,7 @@ class CreateNewProjectItem(QgsDataItem):
 
     def __init__(self, parent):
         self.parent = parent
-        QgsDataItem.__init__(
-            self, QgsDataItem.Collection, parent, "Create new project...", ""
-        )
+        QgsDataItem.__init__(self, QgsDataItem.Collection, parent, "Create new project...", "")
         self.setIcon(QIcon(icon_path("square-plus.svg")))
 
     def handleDoubleClick(self):
@@ -420,10 +378,7 @@ class MerginRootItem(QgsDataCollectionItem):
     def updateName(self):
         name = self.base_name
         try:
-            if (
-                self.mc.server_type() != ServerType.OLD
-                and self.plugin.current_workspace.get("name", None)
-            ):
+            if self.mc.server_type() != ServerType.OLD and self.plugin.current_workspace.get("name", None):
                 name = f"{self.base_name} [{self.plugin.current_workspace['name']}]"
         except AttributeError:
             # self.mc might not be set yet
@@ -453,19 +408,13 @@ class MerginRootItem(QgsDataCollectionItem):
                 return error
         items = []
         for project in self.projects:
-            project_name = posixpath.join(
-                project["namespace"], project["name"]
-            )  # posix path for server API calls
+            project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
             local_proj_path = mergin_project_local_path(project_name)
             if local_proj_path is None or not os.path.exists(local_proj_path):
-                item = MerginRemoteProjectItem(
-                    self, project, self.project_manager, self.plugin
-                )
+                item = MerginRemoteProjectItem(self, project, self.project_manager, self.plugin)
                 item.setState(QgsDataItem.Populated)  # make it non-expandable
             else:
-                item = MerginLocalProjectItem(
-                    self, project, self.project_manager, self.plugin
-                )
+                item = MerginLocalProjectItem(self, project, self.project_manager, self.plugin)
             sip.transferto(item, self)
             items.append(item)
         self.set_fetch_more_item()
@@ -480,17 +429,13 @@ class MerginRootItem(QgsDataCollectionItem):
 
     def createChildrenGroups(self):
         items = []
-        my_projects = MerginGroupItem(
-            self, "My projects", "created", "user.svg", 1, self.plugin
-        )
+        my_projects = MerginGroupItem(self, "My projects", "created", "user.svg", 1, self.plugin)
         my_projects.setState(QgsDataItem.Populated)
         my_projects.refresh()
         sip.transferto(my_projects, self)
         items.append(my_projects)
 
-        shared_projects = MerginGroupItem(
-            self, "Shared with me", "shared", "users.svg", 2, self.plugin
-        )
+        shared_projects = MerginGroupItem(self, "Shared with me", "shared", "users.svg", 2, self.plugin)
         shared_projects.setState(QgsDataItem.Populated)
         shared_projects.refresh()
         sip.transferto(shared_projects, self)
@@ -508,10 +453,7 @@ class MerginRootItem(QgsDataCollectionItem):
             )
             sip.transferto(error_item, self)
             return [error_item]
-        if (
-            self.mc.server_type() != ServerType.OLD
-            and not self.plugin.current_workspace
-        ):
+        if self.mc.server_type() != ServerType.OLD and not self.plugin.current_workspace:
             error_item = QgsErrorItem(self, "No workspace available", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
@@ -531,19 +473,13 @@ class MerginRootItem(QgsDataCollectionItem):
                     order_params="name_asc",
                 )
             self.projects += resp["projects"]
-            self.total_projects_count = (
-                int(resp["count"]) if is_number(resp["count"]) else 0
-            )
+            self.total_projects_count = int(resp["count"]) if is_number(resp["count"]) else 0
         except URLError:
-            error_item = QgsErrorItem(
-                self, "Failed to get projects from server", "/Mergin/error"
-            )
+            error_item = QgsErrorItem(self, "Failed to get projects from server", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
         except Exception as err:
-            error_item = QgsErrorItem(
-                self, "Error: {}".format(str(err)), "/Mergin/error"
-            )
+            error_item = QgsErrorItem(self, "Error: {}".format(str(err)), "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
         return None
@@ -568,9 +504,7 @@ class MerginRootItem(QgsDataCollectionItem):
     def fetch_more(self):
         """Fetch another page of projects and add them to the group item."""
         if self.fetch_more_item is None:
-            QMessageBox.information(
-                None, "Fetch Mergin Maps Projects", "All projects already listed."
-            )
+            QMessageBox.information(None, "Fetch Mergin Maps Projects", "All projects already listed.")
             return
         page_to_get = floor(self.rowCount() / PROJS_PER_PAGE) + 1
         dummy = self.fetch_projects(page=page_to_get)
@@ -591,30 +525,22 @@ class MerginRootItem(QgsDataCollectionItem):
         self.plugin.configure()
 
     def actions(self, parent):
-        action_configure = QAction(
-            QIcon(icon_path("settings.svg")), "Configure", parent
-        )
+        action_configure = QAction(QIcon(icon_path("settings.svg")), "Configure", parent)
         action_configure.triggered.connect(self.plugin.configure)
 
         action_refresh = QAction(QIcon(icon_path("repeat.svg")), "Refresh", parent)
         action_refresh.triggered.connect(self.reload)
 
-        action_create = QAction(
-            QIcon(icon_path("square-plus.svg")), "Create new project", parent
-        )
+        action_create = QAction(QIcon(icon_path("square-plus.svg")), "Create new project", parent)
         action_create.triggered.connect(self.new_project)
 
         action_find = QAction(QIcon(icon_path("search.svg")), "Find project", parent)
         action_find.triggered.connect(self.plugin.find_project)
 
-        action_switch = QAction(
-            QIcon(icon_path("replace.svg")), "Switch workspace", parent
-        )
+        action_switch = QAction(QIcon(icon_path("replace.svg")), "Switch workspace", parent)
         action_switch.triggered.connect(self.plugin.switch_workspace)
 
-        action_explore = QAction(
-            QIcon(icon_path("explore.svg")), "Explore public projects", parent
-        )
+        action_explore = QAction(QIcon(icon_path("explore.svg")), "Explore public projects", parent)
         action_explore.triggered.connect(self.plugin.explore_public_projects)
 
         actions = [action_configure]
@@ -654,15 +580,11 @@ class MerginGroupItem(MerginRootItem):
         action_refresh.triggered.connect(self.reload)
         actions = [action_refresh]
         if self.fetch_more_item is not None:
-            action_fetch_more = QAction(
-                QIcon(icon_path("dots.svg")), "Fetch more", parent
-            )
+            action_fetch_more = QAction(QIcon(icon_path("dots.svg")), "Fetch more", parent)
             action_fetch_more.triggered.connect(self.fetch_more)
             actions.append(action_fetch_more)
         if self.name().startswith("My projects"):
-            action_create = QAction(
-                QIcon(icon_path("square-plus.svg")), "Create new project", parent
-            )
+            action_create = QAction(QIcon(icon_path("square-plus.svg")), "Create new project", parent)
             action_create.triggered.connect(self.new_project)
             actions.append(action_create)
         return actions
