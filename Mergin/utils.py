@@ -65,6 +65,7 @@ from qgis.core import (
     QgsMapLayer,
     QgsProperty,
     QgsSymbolLayer,
+    QgsMessageLog,
 )
 
 from .mergin.utils import int_version, bytes_to_human_size
@@ -566,6 +567,9 @@ def get_unique_filename(filename):
 def datasource_filepath(layer):
     """Check if layer datasource is file-based and return the path, or None otherwise."""
     dp = layer.dataProvider()
+
+    QgsMessageLog.logMessage(f"Layer dp {dp.name()}", tag="MM Packaging")
+
     if dp.name() not in QGIS_FILE_BASED_PROVIDERS:
         return None
     if isinstance(dp, QgsMeshDataProvider):
@@ -577,6 +581,9 @@ def datasource_filepath(layer):
         else:
             ds_uri = dp.dataSourceUri()
     elif isinstance(dp, QgsVectorDataProvider):
+
+        QgsMessageLog.logMessage(f"Layer type {dp.storageType()} - uri: `{dp.dataSourceUri()}`", tag="MM Packaging")
+
         if dp.storageType() in ("GPKG", "GPX", "GeoJSON"):
             ds_uri = dp.dataSourceUri().split("|")[0]
         elif dp.storageType() == "Delimited text file":
@@ -636,7 +643,17 @@ def package_layer(layer, project_dir):
         raise PackagingError(f"{layer.name()} is not a valid QGIS layer")
 
     dp = layer.dataProvider()
+    QgsMessageLog.logMessage("-" * 50, tag="MM Packaging")
+    QgsMessageLog.logMessage(f"Packaging layer - {layer.name()}", tag="MM Packaging")
+
     src_filepath = datasource_filepath(layer)
+
+    if src_filepath:
+        QgsMessageLog.logMessage(
+            f"Project dir : {project_dir}, src file path: {os.path.dirname(src_filepath)}, are dirs the same {same_dir(os.path.dirname(src_filepath), project_dir)}",
+            tag="MM Packaging",
+        )
+
     if src_filepath and same_dir(os.path.dirname(src_filepath), project_dir):
         # layer already stored in the target project dir
         if layer.type() in (QgsMapLayerType.RasterLayer, QgsMapLayerType.MeshLayer, QgsMapLayerType.VectorTileLayer):
@@ -660,6 +677,8 @@ def package_layer(layer, project_dir):
     else:
         # everything else (meshes)
         raise PackagingError("Layer type not supported")
+
+    QgsMessageLog.logMessage("-" * 50, tag="MM Packaging")
 
 
 def save_raster_layer(raster_layer, project_dir):

@@ -17,7 +17,7 @@ from qgis.PyQt.QtWidgets import (
     QWizard,
 )
 
-from qgis.core import QgsProject, QgsLayerTreeNode, QgsLayerTreeModel, NULL
+from qgis.core import QgsProject, QgsLayerTreeNode, QgsLayerTreeModel, NULL, QgsMessageLog
 from qgis.utils import iface, OverrideCursor
 
 from .utils import (
@@ -470,6 +470,8 @@ class NewMerginProjectWizard(QWizard):
         failed_packaging = []
 
         with OverrideCursor(Qt.CursorShape.WaitCursor):
+            QgsMessageLog.logMessage("*" * 50, tag="MM Packaging")
+
             if not self.init_page.cur_proj_no_pack_btn.isChecked():
                 self.project_dir = os.path.join(self.project_dir, self.project_name)
                 if not os.path.exists(self.project_dir):
@@ -532,6 +534,8 @@ class NewMerginProjectWizard(QWizard):
                 package_datum_grids(os.path.join(self.project_dir, "proj"))
 
                 reload_project = True
+
+            QgsMessageLog.logMessage("*" * 50, tag="MM Packaging")
 
         ok = self.project_manager.create_project(
             self.project_name, self.project_dir, self.is_public, self.project_namespace
