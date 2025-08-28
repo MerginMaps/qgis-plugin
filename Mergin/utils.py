@@ -884,8 +884,11 @@ def pretty_summary(summary):
     return msg
 
 
-def get_local_mergin_projects_info():
-    """Get a list of local Mergin Maps projects info from QSettings."""
+def get_local_mergin_projects_info(workspace=None):
+    """
+    Get a list of local Mergin Maps projects info from QSettings.
+    if workspace is specified only the one
+    """
     local_projects_info = []
     settings = QSettings()
     config_server = settings.value("Mergin/server", None)
@@ -897,6 +900,9 @@ def get_local_mergin_projects_info():
         # - needs project dir to load metadata
         key_parts = key.split("/")
         if len(key_parts) > 2 and key_parts[2] == "path":
+            if workspace != None and key_parts[0] != workspace:
+                continue
+
             local_path = settings.value(key, None)
             # double check if the path exists - it might get deleted manually
             if local_path is None or not os.path.exists(local_path):
