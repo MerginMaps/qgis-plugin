@@ -956,6 +956,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.project_manager = manager
         self.error = err
         self.projects = []
+        self.local_projects = []
         self.updateName()
         self.depopulate()
 
@@ -993,18 +994,22 @@ class MerginRootItem(QgsDataCollectionItem):
             ]
         items = []
 
+        # build a set of (namespace, name) tuples for quick lookup
+        local_keys = {(p["namespace"], p["name"]) for p in self.local_projects}
+        # projects not present locally
+        remote_only = [
+            p for p in self.projects
+            if (p["namespace"], p["name"]) not in local_keys
+        ]
+
         for project in self.local_projects:
             item = MerginLocalProjectItem(self, project, self.project_manager, self.plugin)
             sip.transferto(item, self)
             items.append(item)
-        for project in self.projects:
-            project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
-            local_proj_path = mergin_project_local_path(project_name)
-            if local_proj_path is None or not os.path.exists(local_proj_path):
-                item = MerginRemoteProjectItem(self, project, self.project_manager, self.plugin)
-                item.setState(QgsDataItem.Populated)  # make it non-expandable
-            else:
-                item = MerginLocalProjectItem(self, project, self.project_manager, self.plugin)
+
+        for project in remote_only:
+            item = MerginRemoteProjectItem(self, project, self.project_manager, self.plugin)
+            item.setState(QgsDataItem.Populated)  # make it non-expandable
             sip.transferto(item, self)
             items.append(item)
         self.set_fetch_more_item()

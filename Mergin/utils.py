@@ -900,7 +900,6 @@ def get_local_mergin_projects_info(workspace=None):
         # - needs project dir to load metadata
         key_parts = key.split("/")
         if len(key_parts) > 2 and key_parts[2] == "path":
-            # print("debug", key_parts[0], workspace)
             if workspace != None and key_parts[0] != workspace:
                 continue
 
