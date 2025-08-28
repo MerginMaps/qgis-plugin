@@ -997,10 +997,7 @@ class MerginRootItem(QgsDataCollectionItem):
         # build a set of (namespace, name) tuples for quick lookup
         local_keys = {(p["namespace"], p["name"]) for p in self.local_projects}
         # projects not present locally
-        remote_only = [
-            p for p in self.projects
-            if (p["namespace"], p["name"]) not in local_keys
-        ]
+        remote_only = [p for p in self.projects if (p["namespace"], p["name"]) not in local_keys]
 
         for project in self.local_projects:
             item = MerginLocalProjectItem(self, project, self.project_manager, self.plugin)
