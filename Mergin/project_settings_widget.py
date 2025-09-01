@@ -32,9 +32,7 @@ from .utils import (
     remove_prefix,
 )
 
-ui_file = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui"
-)
+ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
 ProjectConfigUiWidget, _ = uic.loadUiType(ui_file)
 
 
@@ -74,9 +72,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         idx = self.cmb_snapping_mode.findData(mode) if ok else 0
         self.cmb_snapping_mode.setCurrentIndex(idx if idx > 0 else 0)
 
-        enabled, ok = QgsProject.instance().readBoolEntry(
-            "Mergin", "PositionTracking/Enabled"
-        )
+        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "PositionTracking/Enabled")
         if ok:
             self.chk_tracking_enabled.setChecked(enabled)
         else:
@@ -87,20 +83,14 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.cmb_tracking_precision.addItem("Normal", 1)
         self.cmb_tracking_precision.addItem("Low", 2)
 
-        mode, ok = QgsProject.instance().readNumEntry(
-            "Mergin", "PositionTracking/UpdateFrequency"
-        )
+        mode, ok = QgsProject.instance().readNumEntry("Mergin", "PositionTracking/UpdateFrequency")
         idx = self.cmb_tracking_precision.findData(mode) if ok else 1
         self.cmb_tracking_precision.setCurrentIndex(idx)
 
-        enabled, _ = QgsProject.instance().readBoolEntry(
-            "Mergin", "PhotoSketching/Enabled", False
-        )
+        enabled, _ = QgsProject.instance().readBoolEntry("Mergin", "PhotoSketching/Enabled", False)
         self.chk_photo_sketching_enabled.setChecked(enabled)
 
-        enabled, ok = QgsProject.instance().readBoolEntry(
-            "Mergin", "MapSketching/Enabled"
-        )
+        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "MapSketching/Enabled")
 
         if ok:
             self.chk_map_sketches_enabled.setChecked(enabled)
@@ -110,9 +100,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.colors_change_state()
         self.chk_map_sketches_enabled.stateChanged.connect(self.colors_change_state)
 
-        colors, ok = QgsProject.instance().readListEntry(
-            "Mergin", "MapSketching/Colors"
-        )
+        colors, ok = QgsProject.instance().readListEntry("Mergin", "MapSketching/Colors")
         if ok:
             for i in range(self.mColorsHorizontalLayout.count()):
                 item = self.mColorsHorizontalLayout.itemAt(i).widget()
@@ -125,18 +113,14 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.cmb_sort_method.addItem("QGIS layer order", 0)
         self.cmb_sort_method.addItem("Alphabetical", 1)
 
-        mode, ok = QgsProject.instance().readNumEntry(
-            "Mergin", "SortLayersMethod/Method"
-        )
+        mode, ok = QgsProject.instance().readNumEntry("Mergin", "SortLayersMethod/Method")
         idx = self.cmb_sort_method.findData(mode) if ok else 1
         self.cmb_sort_method.setCurrentIndex(idx)
 
         self.local_project_dir = mergin_project_local_path()
 
         if self.local_project_dir:
-            self.config_file = os.path.join(
-                self.local_project_dir, "mergin-config.json"
-            )
+            self.config_file = os.path.join(self.local_project_dir, "mergin-config.json")
             self.load_config_file()
             self.btn_get_sync_dir.clicked.connect(self.get_sync_dir)
         else:
@@ -144,15 +128,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
         self.attachments_model = AttachmentFieldsModel()
         self.attachment_fields.setModel(self.attachments_model)
-        self.attachment_fields.selectionModel().currentChanged.connect(
-            self.update_expression_edit
-        )
+        self.attachment_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
         self.edit_photo_expression.expressionChanged.connect(self.expression_changed)
 
         if is_experimental_plugin_enabled():
-            self.groupBox_photo_sketching.setTitle(
-                self.groupBox_photo_sketching.title() + " (Experimental)"
-            )
+            self.groupBox_photo_sketching.setTitle(self.groupBox_photo_sketching.title() + " (Experimental)")
         else:
             # Hide by default
             self.groupBox_photo_sketching.setVisible(False)
@@ -206,9 +186,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 self.edit_photo_expression.expression(),
                 AttachmentFieldsModel.EXPRESSION,
             )
-            layer = QgsProject.instance().mapLayer(
-                item.data(AttachmentFieldsModel.LAYER_ID)
-            )
+            layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
             field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
 
         self.update_preview(expression, layer, field_name)
@@ -217,9 +195,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         item = self.attachments_model.item(current.row(), 1)
         exp = item.data(AttachmentFieldsModel.EXPRESSION)
         field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
-        layer = QgsProject.instance().mapLayer(
-            item.data(AttachmentFieldsModel.LAYER_ID)
-        )
+        layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
         if layer and layer.isValid():
             self.edit_photo_expression.setLayer(layer)
 
@@ -243,9 +219,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         else:
             context = QgsExpressionContext()
             context.appendScope(QgsExpressionContextUtils.globalScope())
-            context.appendScope(
-                QgsExpressionContextUtils.projectScope(QgsProject.instance())
-            )
+            context.appendScope(QgsExpressionContextUtils.projectScope(QgsProject.instance()))
 
         exp = QgsExpression(expression)
         exp.prepare(context)
@@ -266,9 +240,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             target_dir,
         )
         if prefix:
-            self.label_preview.setText(
-                f"<i>{remove_prefix(prefix, QgsProject.instance().homePath())}/{val}.jpg</i>"
-            )
+            self.label_preview.setText(f"<i>{remove_prefix(prefix, QgsProject.instance().homePath())}/{val}.jpg</i>")
         else:
             self.label_preview.setText(f"<i>{val}.jpg</i>")
 
@@ -294,13 +266,8 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             return
 
         # check if tracking layer already exists
-        tracking_layer_id, ok = QgsProject.instance().readEntry(
-            "Mergin", "PositionTracking/TrackingLayer"
-        )
-        if (
-            tracking_layer_id != ""
-            and tracking_layer_id in QgsProject.instance().mapLayers()
-        ):
+        tracking_layer_id, ok = QgsProject.instance().readEntry("Mergin", "PositionTracking/TrackingLayer")
+        if tracking_layer_id != "" and tracking_layer_id in QgsProject.instance().mapLayers():
             # tracking layer already exists in the project, make sure it has correct flags
             layer = QgsProject.instance().mapLayers()[tracking_layer_id]
             if layer is not None and layer.isValid():
@@ -316,24 +283,15 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             return
 
         # check if map sketches layer already exists
-        map_sketches_layer_id, ok = QgsProject.instance().readEntry(
-            "Mergin", "MapSketching/Layer"
-        )
+        map_sketches_layer_id, ok = QgsProject.instance().readEntry("Mergin", "MapSketching/Layer")
 
-        if (
-            map_sketches_layer_id != ""
-            and map_sketches_layer_id in QgsProject.instance().mapLayers()
-        ):
+        if map_sketches_layer_id != "" and map_sketches_layer_id in QgsProject.instance().mapLayers():
             # map sketches layer already exists in the project, make sure it has correct flags
             layer = QgsProject.instance().mapLayers()[map_sketches_layer_id]
             if layer is not None and layer.isValid():
                 layer.setReadOnly(False)
                 layer.setFlags(
-                    QgsMapLayer.LayerFlag(
-                        QgsMapLayer.Identifiable
-                        + QgsMapLayer.Searchable
-                        + QgsMapLayer.Removable
-                    )
+                    QgsMapLayer.LayerFlag(QgsMapLayer.Identifiable + QgsMapLayer.Searchable + QgsMapLayer.Removable)
                 )
 
         else:
@@ -342,15 +300,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             create_map_sketches_layer(QgsProject.instance().absolutePath())
 
     def apply(self):
-        QgsProject.instance().writeEntry(
-            "Mergin", "PhotoQuality", self.cmb_photo_quality.currentData()
-        )
-        QgsProject.instance().writeEntry(
-            "Mergin", "Snapping", self.cmb_snapping_mode.currentData()
-        )
-        QgsProject.instance().writeEntry(
-            "Mergin", "PositionTracking/Enabled", self.chk_tracking_enabled.isChecked()
-        )
+        QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
+        QgsProject.instance().writeEntry("Mergin", "Snapping", self.cmb_snapping_mode.currentData())
+        QgsProject.instance().writeEntry("Mergin", "PositionTracking/Enabled", self.chk_tracking_enabled.isChecked())
         QgsProject.instance().writeEntry(
             "Mergin",
             "PositionTracking/UpdateFrequency",
@@ -363,9 +315,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             self.chk_photo_sketching_enabled.isChecked(),
         )
 
-        QgsProject.instance().writeEntry(
-            "Mergin", "MapSketching/Enabled", self.chk_map_sketches_enabled.isChecked()
-        )
+        QgsProject.instance().writeEntry("Mergin", "MapSketching/Enabled", self.chk_map_sketches_enabled.isChecked())
 
         colors: typing.List[str] = []
         for i in range(self.mColorsHorizontalLayout.count()):
@@ -383,13 +333,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 layer_id = item.data(AttachmentFieldsModel.LAYER_ID)
                 field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
                 expression = item.data(AttachmentFieldsModel.EXPRESSION)
-                QgsProject.instance().writeEntry(
-                    "Mergin", f"PhotoNaming/{layer_id}/{field_name}", expression
-                )
+                QgsProject.instance().writeEntry("Mergin", f"PhotoNaming/{layer_id}/{field_name}", expression)
 
-        QgsProject.instance().writeEntry(
-            "Mergin", "SortLayersMethod/Method", self.cmb_sort_method.currentData()
-        )
+        QgsProject.instance().writeEntry("Mergin", "SortLayersMethod/Method", self.cmb_sort_method.currentData())
         self.save_config_file()
         self.setup_tracking()
         self.setup_map_sketches()

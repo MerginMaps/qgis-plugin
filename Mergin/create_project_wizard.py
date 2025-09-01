@@ -32,15 +32,9 @@ from .utils import (
 )
 
 base_dir = os.path.dirname(__file__)
-ui_init_page, base_init_page = uic.loadUiType(
-    os.path.join(base_dir, "ui", "ui_new_proj_init_page.ui")
-)
-ui_proj_settings, base_proj_settings = uic.loadUiType(
-    os.path.join(base_dir, "ui", "ui_project_settings_page.ui")
-)
-ui_pack_page, base_pack_page = uic.loadUiType(
-    os.path.join(base_dir, "ui", "ui_packaging_page.ui")
-)
+ui_init_page, base_init_page = uic.loadUiType(os.path.join(base_dir, "ui", "ui_new_proj_init_page.ui"))
+ui_proj_settings, base_proj_settings = uic.loadUiType(os.path.join(base_dir, "ui", "ui_project_settings_page.ui"))
+ui_pack_page, base_pack_page = uic.loadUiType(os.path.join(base_dir, "ui", "ui_packaging_page.ui"))
 
 INIT_PAGE = 0
 PACK_PAGE = 1
@@ -67,11 +61,7 @@ class InitPage(ui_init_page, base_init_page):
             btn.clicked.connect(self.selection_changed)
         for btn in (self.cur_proj_no_pack_btn, self.cur_proj_pack_btn):
             btn.setEnabled(bool(cur_proj_saved))
-            tip = (
-                f"QGIS project:\n{cur_proj_saved}"
-                if cur_proj_saved
-                else "Current QGIS project not saved!"
-            )
+            tip = f"QGIS project:\n{cur_proj_saved}" if cur_proj_saved else "Current QGIS project not saved!"
             btn.setToolTip(tip)
         if cur_proj_saved:
             mergin_dir = check_mergin_subdirs(QgsProject.instance().absolutePath())
@@ -127,9 +117,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
             )
             self.for_current_proj = True
         else:
-            self.setup_browsing(
-                question="Create Mergin Maps project in:", field="project_dir*"
-            )
+            self.setup_browsing(question="Create Mergin Maps project in:", field="project_dir*")
             self.for_current_proj = False
 
     def populate_namespace_cbo(self):
@@ -162,9 +150,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         last_dir = settings.value("Mergin/lastUsedDownloadDir", str(Path.home()))
         user_path = self.path_ledit.text()
         last_dir = user_path if user_path else last_dir
-        self.dir_path = QFileDialog.getExistingDirectory(
-            None, "Choose project parent directory", last_dir
-        )
+        self.dir_path = QFileDialog.getExistingDirectory(None, "Choose project parent directory", last_dir)
         if self.dir_path:
             self.path_ledit.setText(self.dir_path)
             settings = QSettings()
@@ -182,9 +168,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         """Check if entered path is not already a Mergin Maps project dir and has at most a single QGIS project file."""
         # TODO: check if the project exists on the server
         if not self.project_workspace_cbo.currentData(Qt.ItemDataRole.UserRole):
-            self.create_warning(
-                "You do not have permissions to create a project in this workspace!"
-            )
+            self.create_warning("You do not have permissions to create a project in this workspace!")
             return
         proj_name = self.project_name_ledit.text().strip()
         if not proj_name:
@@ -241,9 +225,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
     def no_warning(self, info=None):
         """Make the path editor background white and set the info, if specified."""
         self.set_info(info)
-        self.path_ok_ledit.setText(
-            ""
-        )  # We need to first clear the widget to get the change
+        self.path_ok_ledit.setText("")  # We need to first clear the widget to get the change
         self.path_ok_ledit.setText(self.path_ledit.text())
 
 
@@ -269,11 +251,7 @@ class LayerTreeProxyModel(QSortFilterProxyModel):
                 check_col = self.KEEP_COL
             else:
                 lid = tree_layer.layer().id()
-                check_col = (
-                    self.PACK_COL
-                    if (lid in self.packable and tree_layer.layer().isValid())
-                    else self.KEEP_COL
-                )
+                check_col = self.PACK_COL if (lid in self.packable and tree_layer.layer().isValid()) else self.KEEP_COL
             self.layers_state[lid] = check_col
 
     def columnCount(self, parent):
@@ -300,9 +278,7 @@ class LayerTreeProxyModel(QSortFilterProxyModel):
         return idx
 
     def toggle_item(self, idx):
-        is_checked = (
-            self.data(idx, Qt.ItemDataRole.CheckStateRole) == Qt.CheckState.Checked
-        )
+        is_checked = self.data(idx, Qt.ItemDataRole.CheckStateRole) == Qt.CheckState.Checked
         self.setData(
             idx,
             Qt.CheckState.Unchecked if is_checked else Qt.CheckState.Checked,
@@ -321,9 +297,7 @@ class LayerTreeProxyModel(QSortFilterProxyModel):
         return node.layer()
 
     def parent(self, child):
-        return QSortFilterProxyModel.parent(
-            self, self.createIndex(child.row(), self.LAYER_COL, child.internalId())
-        )
+        return QSortFilterProxyModel.parent(self, self.createIndex(child.row(), self.LAYER_COL, child.internalId()))
 
     def sibling(self, row, column, idx):
         parent = idx.parent()
@@ -362,9 +336,7 @@ class LayerTreeProxyModel(QSortFilterProxyModel):
         return False
 
     def filterAcceptsRow(self, source_row, source_parent):
-        node = self.layer_tree_model.index2node(
-            self.layer_tree_model.index(source_row, self.LAYER_COL, source_parent)
-        )
+        node = self.layer_tree_model.index2node(self.layer_tree_model.index(source_row, self.LAYER_COL, source_parent))
         return bool(self.node_shown(node))
 
     def node_shown(self, node):
@@ -391,11 +363,7 @@ class LayerTreeProxyModel(QSortFilterProxyModel):
         if not layer:
             return Qt.ItemFlag.NoItemFlags
         else:
-            enabled_flags = (
-                Qt.ItemFlag.ItemIsEnabled
-                | Qt.ItemFlag.ItemIsEditable
-                | Qt.ItemFlag.ItemIsUserCheckable
-            )
+            enabled_flags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable | Qt.ItemFlag.ItemIsUserCheckable
             if idx.column() == self.LAYER_COL:
                 return Qt.ItemFlag.ItemIsEnabled
             elif idx.column() == self.PACK_COL:
@@ -453,9 +421,7 @@ class NewMerginProjectWizard(QWizard):
         self.settings = QSettings()
         self.setWindowTitle("Create new Mergin Maps project")
         self.setWizardStyle(QWizard.WizardStyle.ClassicStyle)
-        self.setDefaultProperty(
-            "QComboBox", "currentText", QComboBox.currentTextChanged
-        )
+        self.setDefaultProperty("QComboBox", "currentText", QComboBox.currentTextChanged)
         self.project_manager = project_manager
         self.username = user_info["username"]
         self.user_organisations = user_info.get("organisations", [])
@@ -508,17 +474,13 @@ class NewMerginProjectWizard(QWizard):
                         msg = f"Couldn't create project directory:\n{self.project_dir}\n\n{repr(e)}"
                         QMessageBox.critical(None, "Create New Project", msg)
                         return
-                self.project_file = os.path.join(
-                    self.project_dir, self.project_name + ".qgz"
-                )
+                self.project_file = os.path.join(self.project_dir, self.project_name + ".qgz")
 
             self.save_geometry()
             super().accept()
 
             if self.init_page.basic_proj_btn.isChecked():
-                self.project_file = create_basic_qgis_project(
-                    project_path=self.project_file
-                )
+                self.project_file = create_basic_qgis_project(project_path=self.project_file)
                 reload_project = True
 
             elif self.init_page.cur_proj_pack_btn.isChecked():
@@ -548,9 +510,7 @@ class NewMerginProjectWizard(QWizard):
 
                 new_proj.removeMapLayers(layers_to_remove)
 
-                new_proj.writeEntry(
-                    "Mergin", "SortLayersMethod/Method", 0
-                )  # 0 - Preserve QGIS layer order
+                new_proj.writeEntry("Mergin", "SortLayersMethod/Method", 0)  # 0 - Preserve QGIS layer order
                 new_proj.write()
                 reload_project = True
 
@@ -560,9 +520,7 @@ class NewMerginProjectWizard(QWizard):
             elif self.init_page.cur_proj_no_pack_btn.isChecked():
                 cur_proj = QgsProject.instance()
 
-                cur_proj.writeEntry(
-                    "Mergin", "SortLayersMethod/Method", 0
-                )  # 0 - Preserve QGIS layer order
+                cur_proj.writeEntry("Mergin", "SortLayersMethod/Method", 0)  # 0 - Preserve QGIS layer order
                 cur_proj.write()
 
                 # copy datum shift grids
@@ -575,10 +533,7 @@ class NewMerginProjectWizard(QWizard):
         )
         if not ok:
             # Cleanup the local project if failed
-            if (
-                self.init_page.cur_proj_pack_btn.isChecked()
-                or self.init_page.basic_proj_btn.isChecked()
-            ):
+            if self.init_page.cur_proj_pack_btn.isChecked() or self.init_page.basic_proj_btn.isChecked():
                 shutil.rmtree(self.project_dir)
 
         if reload_project and ok:

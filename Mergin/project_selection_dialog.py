@@ -38,9 +38,7 @@ from .utils import (
     ClientError,
 )
 
-ui_file = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "ui", "ui_select_project_dialog.ui"
-)
+ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_select_project_dialog.ui")
 
 
 class SyncStatus(Enum):
@@ -97,18 +95,14 @@ class ProjectsModel(QStandardItemModel):
             item.setData(project["name"], ProjectsModel.NAME)
             item.setData(project["namespace"], ProjectsModel.NAMESPACE)
             item.setData(status_string, ProjectsModel.STATUS)
-            item.setData(
-                ProjectsModel.localProjectPath(project), ProjectsModel.LOCAL_DIRECTORY
-            )
+            item.setData(ProjectsModel.localProjectPath(project), ProjectsModel.LOCAL_DIRECTORY)
             item.setData(icon, ProjectsModel.ICON)
             items.append(item)
         return items
 
     @staticmethod
     def localProjectPath(project):
-        project_name = posixpath.join(
-            project["namespace"], project["name"]
-        )  # posix path for server API calls
+        project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
         return mergin_project_local_path(project_name)
 
     @staticmethod
@@ -120,11 +114,7 @@ class ProjectsModel(QStandardItemModel):
         try:
             mp = MerginProject(local_proj_path)
             local_changes = mp.get_push_changes()
-            if (
-                local_changes["added"]
-                or local_changes["removed"]
-                or local_changes["updated"]
-            ):
+            if local_changes["added"] or local_changes["removed"] or local_changes["updated"]:
                 return SyncStatus.LOCAL_CHANGES
             elif compare_versions(project["version"], mp.version()) > 0:
                 return SyncStatus.REMOTE_CHANGES
@@ -272,9 +262,7 @@ class ProjectSelectionDialog(QDialog):
         selectionModel = self.ui.project_list.selectionModel()
         selectionModel.selectionChanged.connect(self.on_selection_changed)
         self.ui.project_list.doubleClicked.connect(self.on_double_click)
-        self.ui.project_list.verticalScrollBar().valueChanged.connect(
-            self.on_scrollbar_changed
-        )
+        self.ui.project_list.verticalScrollBar().valueChanged.connect(self.on_scrollbar_changed)
 
         self.ui.line_edit.setShowSearchIcon(True)
         self.ui.line_edit.textChanged.connect(self.on_text_changed)
@@ -284,9 +272,7 @@ class ProjectSelectionDialog(QDialog):
         self.ui.open_project_btn.clicked.connect(self.on_open_project_clicked)
 
         self.ui.new_project_btn.clicked.connect(self.on_new_project_clicked)
-        self.ui.switch_workspace_label.linkActivated.connect(
-            self.on_switch_workspace_clicked
-        )
+        self.ui.switch_workspace_label.linkActivated.connect(self.on_switch_workspace_clicked)
 
         self.text_change_timer.start()
 

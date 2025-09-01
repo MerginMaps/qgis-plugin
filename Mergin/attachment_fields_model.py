@@ -39,9 +39,7 @@ class AttachmentFieldsModel(QStandardItemModel):
                 item_layer = QStandardItem(f"{layer.name()}")
                 renderer = layer.renderer()
                 if renderer and renderer.type() == "singleSymbol":
-                    icon = QgsSymbolLayerUtils.symbolPreviewIcon(
-                        renderer.symbol(), QSize(16, 16)
-                    )
+                    icon = QgsSymbolLayerUtils.symbolPreviewIcon(renderer.symbol(), QSize(16, 16))
                     item_layer.setIcon(icon)
                 elif has_icon_utils:
                     item_layer.setIcon(QgsIconUtils.iconForLayer(layer))
@@ -49,8 +47,6 @@ class AttachmentFieldsModel(QStandardItemModel):
                 item_field = QStandardItem(f"{field.name()}")
                 item_field.setData(layer_id, AttachmentFieldsModel.LAYER_ID)
                 item_field.setData(field.name(), AttachmentFieldsModel.FIELD_NAME)
-                exp, ok = QgsProject.instance().readEntry(
-                    "Mergin", f"PhotoNaming/{layer_id}/{field.name()}"
-                )
+                exp, ok = QgsProject.instance().readEntry("Mergin", f"PhotoNaming/{layer_id}/{field.name()}")
                 item_field.setData(exp, AttachmentFieldsModel.EXPRESSION)
                 parent_item.appendRow([item_layer, item_field])

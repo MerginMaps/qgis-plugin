@@ -29,9 +29,7 @@ from .mergin.merginproject import MerginProject
 from .diff import make_local_changes_layer
 from .utils import icon_path, icon_for_layer
 
-ui_file = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "ui", "ui_diff_viewer_dialog.ui"
-)
+ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_diff_viewer_dialog.ui")
 
 
 class DiffViewerDialog(QDialog):
@@ -92,9 +90,7 @@ class DiffViewerDialog(QDialog):
                 "Add current changes layer to project",
             )
             add_current_action.triggered.connect(self.add_current_to_project)
-            add_all_action = menu.addAction(
-                QIcon(icon_path("folder-plus.svg")), "Add all changes layers to project"
-            )
+            add_all_action = menu.addAction(QIcon(icon_path("folder-plus.svg")), "Add all changes layers to project")
             add_all_action.triggered.connect(self.add_all_to_project)
             btn_add_changes.setMenu(menu)
 
@@ -135,9 +131,7 @@ class DiffViewerDialog(QDialog):
                 continue
 
             if layer.dataProvider().storageType() != "GPKG":
-                QgsMessageLog.logMessage(
-                    f"Layer {layer.name()} is not supported.", "Mergin"
-                )
+                QgsMessageLog.logMessage(f"Layer {layer.name()} is not supported.", "Mergin")
                 continue
 
             vl, msg = make_local_changes_layer(mp, layer)
@@ -146,9 +140,7 @@ class DiffViewerDialog(QDialog):
                 continue
 
             self.diff_layers.append(vl)
-            self.tab_bar.addTab(
-                icon_for_layer(vl), f"{layer.name()} ({vl.featureCount()})"
-            )
+            self.tab_bar.addTab(icon_for_layer(vl), f"{layer.name()} ({vl.featureCount()})")
         self.tab_bar.setCurrentIndex(0)
 
     def toggle_background_layers(self, checked):
@@ -191,13 +183,9 @@ class DiffViewerDialog(QDialog):
         self.layer_cache.setCacheGeometry(False)
 
         self.table_model = QgsAttributeTableModel(self.layer_cache)
-        self.table_model.setRequest(
-            QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry).setLimit(100)
-        )
+        self.table_model.setRequest(QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry).setLimit(100))
 
-        self.filter_model = QgsAttributeTableFilterModel(
-            self.map_canvas, self.table_model
-        )
+        self.filter_model = QgsAttributeTableFilterModel(self.map_canvas, self.table_model)
 
         self.layer_cache.setParent(self.table_model)
 

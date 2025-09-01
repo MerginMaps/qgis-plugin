@@ -142,9 +142,7 @@ class test_validations(unittest.TestCase):
     def test_embedded_svg(self):
         layer = QgsVectorLayer("Point", "test", "memory")
         symbol = QgsMarkerSymbol()
-        symbol_layer = QgsSvgMarkerSymbolLayer(
-            os.path.join(test_data_path, "transport_aerodrome.svg")
-        )
+        symbol_layer = QgsSvgMarkerSymbolLayer(os.path.join(test_data_path, "transport_aerodrome.svg"))
         symbol.changeSymbolLayer(0, symbol_layer)
         layer.renderer().setSymbol(symbol)
 
@@ -177,15 +175,11 @@ class test_validations(unittest.TestCase):
 
     def test_local_mbtiles(self):
         raster_tiles_path = os.path.join(test_data_path, "raster-tiles.mbtiles")
-        rt_layer = QgsRasterLayer(
-            f"url=file://{raster_tiles_path}&type=mbtiles", "test_raster", "wms"
-        )
+        rt_layer = QgsRasterLayer(f"url=file://{raster_tiles_path}&type=mbtiles", "test_raster", "wms")
         self.assertTrue(rt_layer.isValid())
 
         vector_tiles_path = os.path.join(test_data_path, "vector-tiles.mbtiles")
-        vt_layer = QgsVectorTileLayer(
-            f"url={vector_tiles_path}&type=mbtiles", "test_vector"
-        )
+        vt_layer = QgsVectorTileLayer(f"url={vector_tiles_path}&type=mbtiles", "test_vector")
         self.assertTrue(vt_layer.isValid())
 
         validator = MerginProjectValidator()
@@ -201,9 +195,7 @@ class test_validations(unittest.TestCase):
         ds_uri.setParam("zmin", "0")
         ds_uri.setParam("zmax", "14")
         ds_uri.setParam("styleUrl", f"{TILES_URL}/styles/default.json")
-        vt_layer_online = QgsVectorTileLayer(
-            bytes(ds_uri.encodedUri()).decode(), "test_vector_online"
-        )
+        vt_layer_online = QgsVectorTileLayer(bytes(ds_uri.encodedUri()).decode(), "test_vector_online")
         self.assertTrue(vt_layer_online.isValid())
 
         validator.layers["test_vector_online"] = vt_layer_online

@@ -180,10 +180,7 @@ class MerginProjectValidator(object):
                 caps = dp.capabilities()
                 can_edit = (
                     True
-                    if (
-                        caps & QgsVectorDataProvider.AddFeatures
-                        or caps & QgsVectorDataProvider.ChangeAttributeValues
-                    )
+                    if (caps & QgsVectorDataProvider.AddFeatures or caps & QgsVectorDataProvider.ChangeAttributeValues)
                     else False
                 )
                 if can_edit:
@@ -249,42 +246,26 @@ class MerginProjectValidator(object):
                     cfg = ws.config()
                     # check for relative paths
                     if "RelativeStorage" in cfg and cfg["RelativeStorage"] == 0:
-                        self.issues.append(
-                            SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH)
-                        )
+                        self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH))
                     if "DefaultRoot" in cfg:
                         # default root should not be set to the local path
                         if os.path.isabs(cfg["DefaultRoot"]):
-                            self.issues.append(
-                                SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH)
-                            )
+                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH))
 
                         # expression-based path should be set with the data-defined overrride
                         expr = QgsExpression(cfg["DefaultRoot"])
                         if expr.isValid():
-                            self.issues.append(
-                                SingleLayerWarning(
-                                    lid, Warning.ATTACHMENT_EXPRESSION_PATH
-                                )
-                            )
+                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_EXPRESSION_PATH))
 
                         # using hyperlinks for document path is not allowed when
                         if "UseLink" in cfg:
-                            self.issues.append(
-                                SingleLayerWarning(lid, Warning.ATTACHMENT_HYPERLINK)
-                            )
+                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_HYPERLINK))
 
                     # check that expression uses Mergin variables
                     try:
-                        formula = cfg["PropertyCollection"]["properties"][
-                            "propertyRootPath"
-                        ]["expression"]
+                        formula = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["expression"]
                         if not PROJECT_VARS.search(formula):
-                            self.issues.append(
-                                SingleLayerWarning(
-                                    lid, Warning.ATTACHMENT_WRONG_EXPRESSION
-                                )
-                            )
+                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION))
                     except (KeyError, TypeError):
                         continue
 
@@ -296,9 +277,7 @@ class MerginProjectValidator(object):
             if dp.storageType() == "GPKG":
                 has_change, msg = has_schema_change(self.mp, layer)
                 if has_change:
-                    self.issues.append(
-                        SingleLayerWarning(lid, Warning.DATABASE_SCHEMA_CHANGE)
-                    )
+                    self.issues.append(SingleLayerWarning(lid, Warning.DATABASE_SCHEMA_CHANGE))
 
     def check_project_relations(self):
         """Check if project relations configured correctly"""
@@ -330,20 +309,12 @@ class MerginProjectValidator(object):
                 if ws and ws.type() == "ValueRelation":
                     cfg = ws.config()
                     if "Layer" not in cfg or "Key" not in cfg:
-                        self.issues.append(
-                            SingleLayerWarning(
-                                lid, Warning.BROKEN_VALUE_RELATION_CONFIG
-                            )
-                        )
+                        self.issues.append(SingleLayerWarning(lid, Warning.BROKEN_VALUE_RELATION_CONFIG))
                         continue
 
-                    child_layer = next(
-                        (v for k, v in self.layers.items() if k == cfg["Layer"]), None
-                    )
+                    child_layer = next((v for k, v in self.layers.items() if k == cfg["Layer"]), None)
                     if child_layer is None:
-                        self.issues.append(
-                            SingleLayerWarning(lid, Warning.VALUE_RELATION_LAYER_MISSED)
-                        )
+                        self.issues.append(SingleLayerWarning(lid, Warning.VALUE_RELATION_LAYER_MISSED))
                         continue
 
                     # check that "key" field does not have duplicated values
@@ -357,18 +328,14 @@ class MerginProjectValidator(object):
         feature_count = layer.dataProvider().featureCount()
         for f in fields:
             if len(layer.uniqueValues(f)) != feature_count:
-                self.issues.append(
-                    SingleLayerWarning(layer.id(), Warning.KEY_FIELD_NOT_UNIQUE)
-                )
+                self.issues.append(SingleLayerWarning(layer.id(), Warning.KEY_FIELD_NOT_UNIQUE))
 
     def _check_primary_keys(self, layer, fields):
         layer_fields = layer.fields()
         keys = get_primary_keys(layer)
         for i in fields:
             if layer_fields[i].name() in keys:
-                self.issues.append(
-                    SingleLayerWarning(layer.id(), Warning.FIELD_IS_PRIMARY_KEY)
-                )
+                self.issues.append(SingleLayerWarning(layer.id(), Warning.FIELD_IS_PRIMARY_KEY))
 
     def check_field_names(self):
         for lid, layer in self.layers.items():
@@ -379,9 +346,7 @@ class MerginProjectValidator(object):
                 fields = layer.fields()
                 for f in fields:
                     if INVALID_CHARS.search(f.name()):
-                        self.issues.append(
-                            SingleLayerWarning(lid, Warning.INCORRECT_FIELD_NAME)
-                        )
+                        self.issues.append(SingleLayerWarning(lid, Warning.INCORRECT_FIELD_NAME))
 
     def check_snapping(self):
         mode, ok = QgsProject.instance().readNumEntry("Mergin", "Snapping")
@@ -389,14 +354,10 @@ class MerginProjectValidator(object):
             enabled = QgsProject.instance().snappingConfig().enabled()
             if not enabled and mode == 2:
                 # snapping in the mobile app using QGIS setting is enbaled but QGIS snapping is not activated
-                self.issues.append(
-                    MultipleLayersWarning(Warning.QGIS_SNAPPING_NOT_ENABLED)
-                )
+                self.issues.append(MultipleLayersWarning(Warning.QGIS_SNAPPING_NOT_ENABLED))
             if enabled and mode == 0:
                 # snapping in the mobile app using QGIS setting is disabled but project has snapping activated
-                self.issues.append(
-                    MultipleLayersWarning(Warning.MERGIN_SNAPPING_NOT_ENABLED)
-                )
+                self.issues.append(MultipleLayersWarning(Warning.MERGIN_SNAPPING_NOT_ENABLED))
 
     def check_datum_shift_grids(self):
         w = MultipleLayersWarning(Warning.MISSING_DATUM_SHIFT_GRID)
@@ -458,9 +419,7 @@ class MerginProjectValidator(object):
                     break
 
                 if not_embedded:
-                    self.issues.append(
-                        SingleLayerWarning(lid, Warning.SVG_NOT_EMBEDDED)
-                    )
+                    self.issues.append(SingleLayerWarning(lid, Warning.SVG_NOT_EMBEDDED))
                     break
 
     def check_editor_perms(self):
@@ -472,14 +431,10 @@ class MerginProjectValidator(object):
                 path = file["path"]
                 if path.lower().endswith((".qgs", ".qgz")):
                     url = f"reset_file?layer={path}"
-                    self.issues.append(
-                        MultipleLayersWarning(Warning.EDITOR_PROJECT_FILE_CHANGE, url)
-                    )
+                    self.issues.append(MultipleLayersWarning(Warning.EDITOR_PROJECT_FILE_CHANGE, url))
                 elif path.lower().endswith("mergin-config.json"):
                     url = f"reset_file?layer={path}"
-                    self.issues.append(
-                        MultipleLayersWarning(Warning.EDITOR_JSON_CONFIG_CHANGE, url)
-                    )
+                    self.issues.append(MultipleLayersWarning(Warning.EDITOR_JSON_CONFIG_CHANGE, url))
         # editor cannot do non diff-based change (e.g. schema change)
         for file in self.changes["updated"]:
             path = file["path"]
@@ -487,11 +442,7 @@ class MerginProjectValidator(object):
                 layer = get_layer_by_path(path)
                 if layer:
                     url = f"reset_file?layer={path}"
-                    self.issues.append(
-                        SingleLayerWarning(
-                            layer.id(), Warning.EDITOR_NON_DIFFABLE_CHANGE, url
-                        )
-                    )
+                    self.issues.append(SingleLayerWarning(layer.id(), Warning.EDITOR_NON_DIFFABLE_CHANGE, url))
         # editor cannot delete a versioned file (e.g. '*.gpkg')
         for file in self.changes["removed"]:
             path = file["path"]
@@ -499,11 +450,7 @@ class MerginProjectValidator(object):
                 layer = get_layer_by_path(path)
                 if layer:
                     url = f"reset_file?layer={path}"
-                    self.issues.append(
-                        SingleLayerWarning(
-                            layer.id(), Warning.EDITOR_DIFFBASED_FILE_REMOVED, url
-                        )
-                    )
+                    self.issues.append(SingleLayerWarning(layer.id(), Warning.EDITOR_DIFFBASED_FILE_REMOVED, url))
 
 
 def warning_display_string(warning_id, url=None):
