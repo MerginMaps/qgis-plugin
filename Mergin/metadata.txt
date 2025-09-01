@@ -2,7 +2,7 @@
 [general]
 name=Mergin
 qgisMinimumVersion=3.22
-qgisMaximumVersion=3.99
+qgisMaximumVersion=4.99
 description=Handle Mergin Maps projects
 version=2025.3.3
 author=Lutra Consulting
