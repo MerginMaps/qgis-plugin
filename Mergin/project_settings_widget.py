@@ -28,7 +28,6 @@ from .utils import (
     create_tracking_layer,
     create_map_sketches_layer,
     set_tracking_layer_flags,
-    is_experimental_plugin_enabled,
     remove_prefix,
 )
 
@@ -130,12 +129,6 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.attachment_fields.setModel(self.attachments_model)
         self.attachment_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
         self.edit_photo_expression.expressionChanged.connect(self.expression_changed)
-
-        if is_experimental_plugin_enabled():
-            self.groupBox_photo_sketching.setTitle(self.groupBox_photo_sketching.title() + " (Experimental)")
-        else:
-            # Hide by default
-            self.groupBox_photo_sketching.setVisible(False)
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
