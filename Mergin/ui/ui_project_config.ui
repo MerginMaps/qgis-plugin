@@ -44,7 +44,7 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
+        <y>-581</y>
         <width>625</width>
         <height>1137</height>
        </rect>
@@ -275,7 +275,7 @@
           <item row="1" column="0" colspan="5">
            <widget class="QLabel" name="label_10">
             <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Tracking allows you to record position when working with this project. Tracks are stored in additional GeoPackage created automatically.&lt;/p&gt;&lt;p&gt;&lt;a href='https://merginmaps.com/docs/field/tracking'&gt;&lt;span style='text-decoration: underline; color:#0000ff;'&gt;Learn more here&lt;/span&gt;&lt;/a&gt; about tracking and how to start tracking in the mobile app.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Tracking allows you to record position when working with this project. Tracks are stored in additional GeoPackage created automatically.&lt;/p&gt;&lt;p&gt;&lt;a href='https://merginmaps.com/docs/field/tracking'&gt;&lt;span style='text-decoration: underline; color:#1d99f3;'&gt;Learn more here&lt;/span&gt;&lt;/a&gt; about tracking and how to start tracking in the mobile app.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
@@ -333,7 +333,7 @@
           <item row="0" column="0" colspan="2">
            <widget class="QLabel" name="label_11">
             <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Map sketching lets mobile app users draw quick, informal sketches directly on the map. Sketches are saved in a separate GeoPackage that’s created automatically. &lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://merginmaps.com/docs/field/map-sketching&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Learn more here&lt;/span&gt;&lt;/a&gt; about how map sketching works and how to use it in the mobile app.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Map sketching lets mobile app users draw quick, informal sketches directly on the map. Sketches are saved in a separate GeoPackage that’s created automatically. &lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://merginmaps.com/docs/field/map-sketching&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#1d99f3;&quot;&gt;Learn more here&lt;/span&gt;&lt;/a&gt; about how map sketching works and how to use it in the mobile app.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
