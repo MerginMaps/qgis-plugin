@@ -8,7 +8,13 @@ import posixpath
 
 from qgis.core import QgsProject, Qgis, QgsApplication
 from qgis.utils import iface, OverrideCursor
-from qgis.PyQt.QtWidgets import QMessageBox, QDialog, QApplication, QPushButton, QFileDialog
+from qgis.PyQt.QtWidgets import (
+    QMessageBox,
+    QDialog,
+    QApplication,
+    QPushButton,
+    QFileDialog,
+)
 from qgis.PyQt.QtCore import QSettings, Qt, QTimer
 from urllib.error import URLError
 
@@ -112,12 +118,20 @@ class MerginProjectsManager(object):
                 elif e.server_code == ErrorCode.StorageLimitHit.value:
                     msg = f"{e.detail}\nCurrent limit: {bytes_to_human_size(e.server_response['storage_limit'])}"
 
-                QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + msg)
+                QMessageBox.critical(
+                    None,
+                    "Create Project",
+                    "Failed to create Mergin Maps project.\n" + msg,
+                )
                 return False
             except AuthTokenExpiredError:
                 self.plugin.auth_token_expired()
             except Exception as e:
-                QMessageBox.critical(None, "Create Project", "Failed to create Mergin Maps project.\n" + str(e))
+                QMessageBox.critical(
+                    None,
+                    "Create Project",
+                    "Failed to create Mergin Maps project.\n" + str(e),
+                )
                 return False
 
             if not project_dir:
@@ -135,13 +149,21 @@ class MerginProjectsManager(object):
                 project_info = self.mc.project_info(full_project_name)
                 MerginProject.write_metadata(project_dir, project_info)
             except Exception as e:
-                QMessageBox.critical(None, "Create Project", "Failed to initialize Mergin Maps project.\n" + str(e))
+                QMessageBox.critical(
+                    None,
+                    "Create Project",
+                    "Failed to initialize Mergin Maps project.\n" + str(e),
+                )
                 return False
 
         # let's do initial upload of the project data
         mp = MerginProject(project_dir)
         if not mp.inspect_files():
-            QMessageBox.warning(None, "Create Project", "The project directory is empty - nothing to upload.")
+            QMessageBox.warning(
+                None,
+                "Create Project",
+                "The project directory is empty - nothing to upload.",
+            )
             return True
 
         dlg = SyncDialog()
@@ -277,11 +299,21 @@ class MerginProjectsManager(object):
                 msg = f"File {files_to_reset} was successfully reset"
             else:
                 msg = "Project local changes were successfully reset"
-            QMessageBox.information(None, "Project reset local changes", msg, QMessageBox.StandardButton.Close)
+            QMessageBox.information(
+                None,
+                "Project reset local changes",
+                msg,
+                QMessageBox.StandardButton.Close,
+            )
 
         except Exception as e:
             msg = f"Failed to reset local changes:\n\n{str(e)}"
-            QMessageBox.critical(None, "Project reset local changes", msg, QMessageBox.StandardButton.Close)
+            QMessageBox.critical(
+                None,
+                "Project reset local changes",
+                msg,
+                QMessageBox.StandardButton.Close,
+            )
 
         self.open_project(os.path.dirname(current_project_filename))
 
@@ -319,7 +351,10 @@ class MerginProjectsManager(object):
 
         if not sum(len(v) for v in list(pull_changes.values()) + list(push_changes.values())):
             QMessageBox.information(
-                None, "Project sync", "Project is already up-to-date", QMessageBox.StandardButton.Close
+                None,
+                "Project sync",
+                "Project is already up-to-date",
+                QMessageBox.StandardButton.Close,
             )
             return
 
@@ -363,7 +398,10 @@ class MerginProjectsManager(object):
         # pull finished, start push
         if any(push_changes.values()) and not self.mc.has_writing_permissions(project_name):
             QMessageBox.information(
-                None, "Project sync", "You have no writing rights to this project", QMessageBox.StandardButton.Close
+                None,
+                "Project sync",
+                "You have no writing rights to this project",
+                QMessageBox.StandardButton.Close,
             )
             return
 
@@ -428,7 +466,10 @@ class MerginProjectsManager(object):
         )
 
         btn_reply = QMessageBox.question(
-            None, "Submit diagnostic logs", msg, QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel
+            None,
+            "Submit diagnostic logs",
+            msg,
+            QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel,
         )
         if btn_reply != QMessageBox.StandardButton.Ok:
             return
@@ -438,7 +479,9 @@ class MerginProjectsManager(object):
 
         if error:
             QMessageBox.warning(
-                None, "Submit diagnostic logs", "Sending of diagnostic logs failed!\n\n{}".format(error)
+                None,
+                "Submit diagnostic logs",
+                "Sending of diagnostic logs failed!\n\n{}".format(error),
             )
             return
         QMessageBox.information(

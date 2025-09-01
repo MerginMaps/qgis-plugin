@@ -185,11 +185,25 @@ def create_mergin_client() -> MerginClient:
         auth_token = get_mergin_auth_token(cfg)
         if auth_token:
             if login_type == LoginType.SSO:
-                mc = MerginClient(url, auth_token, None, None, get_plugin_version(), get_qgis_proxy_config(url))
+                mc = MerginClient(
+                    url,
+                    auth_token,
+                    None,
+                    None,
+                    get_plugin_version(),
+                    get_qgis_proxy_config(url),
+                )
                 return mc
             else:
                 username, password = get_mergin_username_password()
-                mc = MerginClient(url, auth_token, username, password, get_plugin_version(), get_qgis_proxy_config(url))
+                mc = MerginClient(
+                    url,
+                    auth_token,
+                    username,
+                    password,
+                    get_plugin_version(),
+                    get_qgis_proxy_config(url),
+                )
                 mc.validate_auth()
                 return mc
         else:
@@ -197,7 +211,14 @@ def create_mergin_client() -> MerginClient:
                 username = cfg.config("username", None)
                 password = cfg.config("password", None)
                 if username and password:
-                    mc = MerginClient(url, None, username, password, get_plugin_version(), get_qgis_proxy_config(url))
+                    mc = MerginClient(
+                        url,
+                        None,
+                        username,
+                        password,
+                        get_plugin_version(),
+                        get_qgis_proxy_config(url),
+                    )
                     mc.validate_auth()
                     return mc
                 else:
@@ -515,7 +536,11 @@ def mergin_server_deprecated_version(url: str) -> bool:
 def url_reachable(url: str) -> bool:
     try:
         requests.get(url, timeout=3)
-    except (requests.RequestException, urllib3.exceptions.LocationParseError, UnicodeError):
+    except (
+        requests.RequestException,
+        urllib3.exceptions.LocationParseError,
+        UnicodeError,
+    ):
         return False
     return True
 

@@ -20,7 +20,10 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .workspace_selection_dialog import WorkspaceSelectionDialog
-from .project_selection_dialog import ProjectSelectionDialog, PublicProjectSelectionDialog
+from .project_selection_dialog import (
+    ProjectSelectionDialog,
+    PublicProjectSelectionDialog,
+)
 from .create_project_wizard import NewMerginProjectWizard
 from .diff_dialog import DiffViewerDialog
 from .project_settings_widget import MerginProjectConfigFactory
@@ -264,7 +267,8 @@ class MerginPlugin:
 
     def open_configured_url(self, path=None):
         """Opens configured Mergin Maps server url in default browser
-        Use optional parameter path to go directly to a specific page, eg. /workspaces"""
+        Use optional parameter path to go directly to a specific page, eg. /workspaces
+        """
         if self.mc is None:
             url = QUrl("https://merginmaps.com")
         else:
@@ -308,7 +312,12 @@ class MerginPlugin:
             try:
                 self.mc = create_mergin_client()
                 set_qgsexpressionscontext(dlg.server_url(), mc=self.mc)
-            except (MissingAuthConfigError, AuthTokenExpiredError, ClientError, ValueError) as e:
+            except (
+                MissingAuthConfigError,
+                AuthTokenExpiredError,
+                ClientError,
+                ValueError,
+            ) as e:
                 QMessageBox.critical(None, "Login failed", f"Could not login: {str(e)}")
                 set_qgsexpressionscontext(dlg.server_url(), mc=None)
                 return
@@ -320,12 +329,18 @@ class MerginPlugin:
         """Open db-sync setup wizard."""
         project_path = QgsProject.instance().homePath()
         if not project_path:
-            iface.messageBar().pushMessage("Mergin", "Project is not saved, please save project first", Qgis.Warning)
+            iface.messageBar().pushMessage(
+                "Mergin",
+                "Project is not saved, please save project first",
+                Qgis.Warning,
+            )
             return
 
         if not check_mergin_subdirs(project_path):
             iface.messageBar().pushMessage(
-                "Mergin", "Current project is not a Mergin project. Please open a Mergin project first.", Qgis.Warning
+                "Mergin",
+                "Current project is not a Mergin project. Please open a Mergin project first.",
+                Qgis.Warning,
             )
             return
 
@@ -334,7 +349,9 @@ class MerginPlugin:
             project_name = mp.project_full_name()
         except InvalidProject as e:
             iface.messageBar().pushMessage(
-                "Mergin", "Current project is not a Mergin project. Please open a Mergin project first.", Qgis.Warning
+                "Mergin",
+                "Current project is not a Mergin project. Please open a Mergin project first.",
+                Qgis.Warning,
             )
             return
 
@@ -353,7 +370,10 @@ class MerginPlugin:
             "A minimum of one workspace is required to use Mergin Maps."
         )
         msg_box = QMessageBox(
-            QMessageBox.Icon.Critical, "You do not have any workspace", msg, QMessageBox.StandardButton.Close
+            QMessageBox.Icon.Critical,
+            "You do not have any workspace",
+            msg,
+            QMessageBox.StandardButton.Close,
         )
         create_button = msg_box.addButton("Create workspace", msg_box.ActionRole)
         create_button.clicked.disconnect()
@@ -523,7 +543,11 @@ class MerginPlugin:
     def add_context_menu_actions(self, layers):
         provider_names = "vectortile"
         if Qgis.versionInt() >= 33200:
-            provider_names = ("xyzvectortiles", "arcgisvectortileservice", "vtpkvectortiles")
+            provider_names = (
+                "xyzvectortiles",
+                "arcgisvectortileservice",
+                "vtpkvectortiles",
+            )
         for l in layers:
             if l.dataProvider().name() in provider_names:
                 self.iface.addCustomActionForLayer(self.action_export_mbtiles, l)
@@ -563,7 +587,9 @@ class MerginPlugin:
         project_path = QgsProject.instance().homePath()
         if not project_path:
             iface.messageBar().pushMessage(
-                "Mergin", "Project is not saved, can not compute local changes", Qgis.Warning
+                "Mergin",
+                "Project is not saved, can not compute local changes",
+                Qgis.Warning,
             )
             return
 

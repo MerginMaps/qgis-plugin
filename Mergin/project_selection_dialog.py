@@ -18,7 +18,14 @@ from qgis.PyQt.QtCore import (
     QThread,
 )
 from qgis.PyQt import uic
-from qgis.PyQt.QtGui import QPixmap, QFont, QFontMetrics, QIcon, QStandardItem, QStandardItemModel
+from qgis.PyQt.QtGui import (
+    QPixmap,
+    QFont,
+    QFontMetrics,
+    QIcon,
+    QStandardItem,
+    QStandardItemModel,
+)
 
 from .mergin.client import MerginProject, ServerType
 from .mergin.common import InvalidProject
@@ -161,7 +168,11 @@ class ProjectItemDelegate(QAbstractItemDelegate):
         painter.drawText(nameRect, Qt.AlignmentFlag.AlignLeading, elided_text)
         painter.setFont(option.font)
         fm = QFontMetrics(QFont(option.font))
-        elided_status = fm.elidedText(index.data(ProjectsModel.STATUS), Qt.TextElideMode.ElideRight, infoRect.width())
+        elided_status = fm.elidedText(
+            index.data(ProjectsModel.STATUS),
+            Qt.TextElideMode.ElideRight,
+            infoRect.width(),
+        )
         painter.drawText(infoRect, Qt.AlignmentFlag.AlignLeading, elided_status)
         icon = index.data(ProjectsModel.ICON)
         if icon:
@@ -285,7 +296,12 @@ class ProjectSelectionDialog(QDialog):
                 self.ui.line_edit.setShowSpinner(False)
 
         self.current_search_term = self.ui.line_edit.text()
-        self.fetcher = ResultFetcher(self.mc, self.current_workspace_name, self.request_page, self.current_search_term)
+        self.fetcher = ResultFetcher(
+            self.mc,
+            self.current_workspace_name,
+            self.request_page,
+            self.current_search_term,
+        )
         self.fetcher.finished.connect(self.handle_server_response)
         self.ui.line_edit.setShowSpinner(True)
         self.fetcher.start()

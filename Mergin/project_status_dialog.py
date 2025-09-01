@@ -20,8 +20,18 @@ from qgis.gui import QgsGui
 from qgis.core import Qgis, QgsApplication, QgsProject
 from qgis.utils import OverrideCursor
 from .diff_dialog import DiffViewerDialog
-from .validation import MultipleLayersWarning, warning_display_string, MerginProjectValidator, SingleLayerWarning
-from .utils import is_versioned_file, icon_path, unsaved_project_check, UnsavedChangesStrategy
+from .validation import (
+    MultipleLayersWarning,
+    warning_display_string,
+    MerginProjectValidator,
+    SingleLayerWarning,
+)
+from .utils import (
+    is_versioned_file,
+    icon_path,
+    unsaved_project_check,
+    UnsavedChangesStrategy,
+)
 from .repair import fix_datum_shift_grids, fix_project_home_path
 
 
@@ -85,7 +95,11 @@ class ProjectStatusDialog(QDialog):
             has_files_to_replace = any(
                 ["diff" not in file and is_versioned_file(file["path"]) for file in push_changes["updated"]]
             )
-            info_text = self._get_info_text(has_files_to_replace, has_write_permissions, self.mp.has_unfinished_pull())
+            info_text = self._get_info_text(
+                has_files_to_replace,
+                has_write_permissions,
+                self.mp.has_unfinished_pull(),
+            )
             for msg in info_text:
                 lbl = QLabel(msg)
                 lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)

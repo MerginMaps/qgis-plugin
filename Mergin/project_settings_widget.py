@@ -139,7 +139,10 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
-            None, "Select directory", self.local_project_dir, QFileDialog.Option.ShowDirsOnly
+            None,
+            "Select directory",
+            self.local_project_dir,
+            QFileDialog.Option.ShowDirsOnly,
         )
         if self.local_project_dir not in abs_path:
             return
@@ -179,7 +182,10 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         field_name = None
         if index.isValid():
             item = self.attachments_model.item(index.row(), 1)
-            item.setData(self.edit_photo_expression.expression(), AttachmentFieldsModel.EXPRESSION)
+            item.setData(
+                self.edit_photo_expression.expression(),
+                AttachmentFieldsModel.EXPRESSION,
+            )
             layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
             field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
 
@@ -229,7 +235,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         config = layer.fields().field(field_name).editorWidgetSetup().config()
         target_dir = resolve_target_dir(layer, config)
         prefix = prefix_for_relative_path(
-            config.get("RelativeStorage", 0), QgsProject.instance().homePath(), target_dir
+            config.get("RelativeStorage", 0),
+            QgsProject.instance().homePath(),
+            target_dir,
         )
         if prefix:
             self.label_preview.setText(f"<i>{remove_prefix(prefix, QgsProject.instance().homePath())}/{val}.jpg</i>")
@@ -296,11 +304,15 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         QgsProject.instance().writeEntry("Mergin", "Snapping", self.cmb_snapping_mode.currentData())
         QgsProject.instance().writeEntry("Mergin", "PositionTracking/Enabled", self.chk_tracking_enabled.isChecked())
         QgsProject.instance().writeEntry(
-            "Mergin", "PositionTracking/UpdateFrequency", self.cmb_tracking_precision.currentData()
+            "Mergin",
+            "PositionTracking/UpdateFrequency",
+            self.cmb_tracking_precision.currentData(),
         )
 
         QgsProject.instance().writeEntry(
-            "Mergin", "PhotoSketching/Enabled", self.chk_photo_sketching_enabled.isChecked()
+            "Mergin",
+            "PhotoSketching/Enabled",
+            self.chk_photo_sketching_enabled.isChecked(),
         )
 
         QgsProject.instance().writeEntry("Mergin", "MapSketching/Enabled", self.chk_map_sketches_enabled.isChecked())

@@ -3,7 +3,14 @@
 
 import os
 
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QApplication, QMessageBox, QComboBox
+from qgis.PyQt.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QApplication,
+    QMessageBox,
+    QComboBox,
+)
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt import uic
 

@@ -58,7 +58,11 @@ class test_validations(unittest.TestCase):
             "FileWidget": True,
             "FileWidgetButton": True,
             "FileWidgetFilter": "",
-            "PropertyCollection": {"name": None, "properties": {}, "type": "collection"},
+            "PropertyCollection": {
+                "name": None,
+                "properties": {},
+                "type": "collection",
+            },
             "RelativeStorage": 0,
             "StorageAuthConfigId": None,
             "StorageMode": 0,
@@ -116,7 +120,13 @@ class test_validations(unittest.TestCase):
         del config["UseLink"]
         config["PropertyCollection"] = {
             "name": "0",
-            "properties": {"propertyRootPath": {"active": True, "expression": "'/Photos'", "type": 3}},
+            "properties": {
+                "propertyRootPath": {
+                    "active": True,
+                    "expression": "'/Photos'",
+                    "type": 3,
+                }
+            },
             "type": "collection",
         }
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)

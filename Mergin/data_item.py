@@ -1,4 +1,5 @@
 from math import floor
+
 try:
     import sip
 except ImportError:
@@ -58,7 +59,13 @@ class MerginRemoteProjectItem(QgsDataItem):
         group_items = project_manager.get_mergin_browser_groups()
         if group_items.get("Shared with me") == parent:
             display_name = self.project_name
-        QgsDataItem.__init__(self, QgsDataItem.Collection, parent, display_name, "/Mergin/" + self.project_name)
+        QgsDataItem.__init__(
+            self,
+            QgsDataItem.Collection,
+            parent,
+            display_name,
+            "/Mergin/" + self.project_name,
+        )
         self.path = None
         self.setSortKey(f"1 {self.name()}")
         self.setIcon(QIcon(icon_path("cloud.svg")))
@@ -338,7 +345,7 @@ class MerginRootItem(QgsDataCollectionItem):
         name="Mergin Maps",
         flag=None,
         order=None,
-        plugin = None,
+        plugin=None,
     ):
         providerKey = "Mergin Maps"
         if name != providerKey:
@@ -439,7 +446,11 @@ class MerginRootItem(QgsDataCollectionItem):
     def fetch_projects(self, page=1, per_page=PROJS_PER_PAGE):
         """Get paginated projects list from Mergin Maps service. If anything goes wrong, return an error item."""
         if self.project_manager is None:
-            error_item = QgsErrorItem(self, "Failed to log in. Please check the configuration", "/Mergin/error")
+            error_item = QgsErrorItem(
+                self,
+                "Failed to log in. Please check the configuration",
+                "/Mergin/error",
+            )
             sip.transferto(error_item, self)
             return [error_item]
         if self.mc.server_type() != ServerType.OLD and not self.plugin.current_workspace:

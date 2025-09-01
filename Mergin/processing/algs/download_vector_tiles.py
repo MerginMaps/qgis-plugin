@@ -122,12 +122,22 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
         self.addParameter(QgsProcessingParameterExtent(self.EXTENT, "Extent"))
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.MAX_ZOOM, "Maximum zoom level to download", QgsProcessingParameterNumber.Integer, 10, False, 0
+                self.MAX_ZOOM,
+                "Maximum zoom level to download",
+                QgsProcessingParameterNumber.Integer,
+                10,
+                False,
+                0,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.TILE_LIMIT, "Tile limit", QgsProcessingParameterNumber.Integer, 100, False, 0
+                self.TILE_LIMIT,
+                "Tile limit",
+                QgsProcessingParameterNumber.Integer,
+                100,
+                False,
+                0,
             )
         )
         self.addParameter(
@@ -249,7 +259,11 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
                     data = req.reply().content()
 
                     comp_obj = zlib.compressobj(
-                        zlib.Z_DEFAULT_COMPRESSION, zlib.DEFLATED, zlib.MAX_WBITS + 16, 8, zlib.Z_DEFAULT_STRATEGY
+                        zlib.Z_DEFAULT_COMPRESSION,
+                        zlib.DEFLATED,
+                        zlib.MAX_WBITS + 16,
+                        8,
+                        zlib.Z_DEFAULT_STRATEGY,
                     )
                     gzip_data = comp_obj.compress(data)
                     gzip_data += comp_obj.flush()

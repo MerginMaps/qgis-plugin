@@ -108,7 +108,11 @@ class ConfigurationDialog(QDialog):
         set_mergin_settings(url=url, login_type=self.login_type())
 
         if self.login_type() == LoginType.PASSWORD:
-            set_mergin_auth_password(url=url, username=self.ui.username.text(), password=self.ui.password.text())
+            set_mergin_auth_password(
+                url=url,
+                username=self.ui.username.text(),
+                password=self.ui.password.text(),
+            )
         else:
             settings = QSettings()
             settings.setValue("Mergin/sso_email", self.ui.sso_email.text())

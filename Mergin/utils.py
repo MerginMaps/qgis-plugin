@@ -126,7 +126,16 @@ except ImportError:
 MERGIN_URL = "https://app.merginmaps.com"
 MERGIN_LOGS_URL = "https://g4pfq226j0.execute-api.eu-west-1.amazonaws.com/mergin_client_log_submit"
 
-QGIS_NET_PROVIDERS = ("WFS", "arcgisfeatureserver", "arcgismapserver", "geonode", "ows", "wcs", "wms", "vectortile")
+QGIS_NET_PROVIDERS = (
+    "WFS",
+    "arcgisfeatureserver",
+    "arcgismapserver",
+    "geonode",
+    "ows",
+    "wcs",
+    "wms",
+    "vectortile",
+)
 QGIS_DB_PROVIDERS = ("postgres", "mssql", "oracle", "hana", "postgresraster", "DB2")
 QGIS_MESH_PROVIDERS = ("mdal", "mesh_memory")
 QGIS_FILE_BASED_PROVIDERS = (
@@ -312,7 +321,12 @@ def send_logs(mc: MerginClient, logfile: str):
     global_log_file = os.environ.get("MERGIN_CLIENT_LOG", None)
 
     try:
-        resp = mc.send_logs(logfile, global_log_file, application="plugin-{}-{}".format(system, version), meta=meta)
+        resp = mc.send_logs(
+            logfile,
+            global_log_file,
+            application="plugin-{}-{}".format(system, version),
+            meta=meta,
+        )
         if resp.msg != "OK":
             return None, str(resp.reason)
         return logfile, None
@@ -390,7 +404,9 @@ def unsaved_project_check():
                         write_ok = QgsProject.instance().write()
                         if not write_ok:
                             QMessageBox.warning(
-                                None, "Error Saving Project", "QGIS project was not saved properly. Cancelling..."
+                                None,
+                                "Error Saving Project",
+                                "QGIS project was not saved properly. Cancelling...",
                             )
                             return UnsavedChangesStrategy.HasUnsavedChanges
                     else:
@@ -419,7 +435,10 @@ def save_vector_layer_as_gpkg(layer, target_dir, update_datasource=False):
         writer_opts.fieldValueConverter = converter
     res, err = QgsVectorFileWriter.writeAsVectorFormatV2(layer, layer_filename, transform_context, writer_opts)
     if res != QgsVectorFileWriter.NoError:
-        return layer_filename, f"Couldn't properly save layer: {layer_filename}. \n{err}"
+        return (
+            layer_filename,
+            f"Couldn't properly save layer: {layer_filename}. \n{err}",
+        )
     if update_datasource:
         provider_opts = QgsDataProvider.ProviderOptions()
         provider_opts.fileEncoding = "UTF-8"
@@ -468,7 +487,11 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     mem_layer.updateFields()
     vector_fname, err = save_vector_layer_as_gpkg(mem_layer, os.path.dirname(project_path))
     if err:
-        QMessageBox.warning(None, "Error Creating New Project", f"Couldn't save vector layer to:\n{vector_fname}")
+        QMessageBox.warning(
+            None,
+            "Error Creating New Project",
+            f"Couldn't save vector layer to:\n{vector_fname}",
+        )
     vector_layer = QgsVectorLayer(vector_fname, "Survey", "ogr")
     symbol = QgsMarkerSymbol.createSimple(
         {
@@ -511,7 +534,11 @@ def create_basic_qgis_project(project_path=None, project_name=None):
 
     write_success = new_project.write()
     if not write_success:
-        QMessageBox.warning(None, "Error Creating New Project", f"Couldn't create new project:\n{project_path}")
+        QMessageBox.warning(
+            None,
+            "Error Creating New Project",
+            f"Couldn't create new project:\n{project_path}",
+        )
         return None
     return project_path
 
@@ -639,7 +666,11 @@ def package_layer(layer, project_dir):
     src_filepath = datasource_filepath(layer)
     if src_filepath and same_dir(os.path.dirname(src_filepath), project_dir):
         # layer already stored in the target project dir
-        if layer.type() in (QgsMapLayerType.RasterLayer, QgsMapLayerType.MeshLayer, QgsMapLayerType.VectorTileLayer):
+        if layer.type() in (
+            QgsMapLayerType.RasterLayer,
+            QgsMapLayerType.MeshLayer,
+            QgsMapLayerType.VectorTileLayer,
+        ):
             return True
         if layer.type() == QgsMapLayerType.VectorLayer:
             # if it is a GPKG we do not need to rewrite it
@@ -719,9 +750,19 @@ def update_datasource(layer, new_path):
     options = QgsDataProvider.ProviderOptions()
     options.layerName = layer.name()
     if layer.dataProvider().name() in ("vectortile", "mbtilesvectortiles"):
-        layer.setDataSource(f"url={new_path}&type=mbtiles", layer.name(), layer.dataProvider().name(), options)
+        layer.setDataSource(
+            f"url={new_path}&type=mbtiles",
+            layer.name(),
+            layer.dataProvider().name(),
+            options,
+        )
     elif layer.dataProvider().name() == "wms":
-        layer.setDataSource(f"url=file://{new_path}&type=mbtiles", layer.name(), layer.dataProvider().name(), options)
+        layer.setDataSource(
+            f"url=file://{new_path}&type=mbtiles",
+            layer.name(),
+            layer.dataProvider().name(),
+            options,
+        )
     else:
         layer.setDataSource(new_path, layer.name(), layer.dataProvider().name(), options)
 
@@ -961,7 +1002,13 @@ def mergin_project_local_path(project_name=None):
 
 def icon_path(icon_filename):
     icon_set = "white" if is_dark_theme() else "default"
-    ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, "tabler_icons", icon_filename)
+    ipath = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "images",
+        icon_set,
+        "tabler_icons",
+        icon_filename,
+    )
     return ipath
 
 
@@ -1112,8 +1159,9 @@ def same_schema(schema_a, schema_b):
         for column_a in table_a["columns"]:
             column_b = next(item for item in table_b["columns"] if item["name"] == column_a["name"])
             if column_a != column_b:
-                return False, "Definition of '{}' field in '{}' table is not the same".format(
-                    column_a["name"], table_a["table"]
+                return (
+                    False,
+                    "Definition of '{}' field in '{}' table is not the same".format(column_a["name"], table_a["table"]),
                 )
 
     return True, "No schema changes"

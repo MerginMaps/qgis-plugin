@@ -110,7 +110,11 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
 
     def initializePage(self):
         if self.parent.init_page.cur_proj_no_pack_btn.isChecked():
-            self.setup_browsing(current_proj=True, question="Mergin Maps project folder:", field="project_dir*")
+            self.setup_browsing(
+                current_proj=True,
+                question="Mergin Maps project folder:",
+                field="project_dir*",
+            )
             self.for_current_proj = True
         else:
             self.setup_browsing(question="Create Mergin Maps project in:", field="project_dir*")
@@ -276,7 +280,9 @@ class LayerTreeProxyModel(QSortFilterProxyModel):
     def toggle_item(self, idx):
         is_checked = self.data(idx, Qt.ItemDataRole.CheckStateRole) == Qt.CheckState.Checked
         self.setData(
-            idx, Qt.CheckState.Unchecked if is_checked else Qt.CheckState.Checked, Qt.ItemDataRole.CheckStateRole
+            idx,
+            Qt.CheckState.Unchecked if is_checked else Qt.CheckState.Checked,
+            Qt.ItemDataRole.CheckStateRole,
         )
 
     def map_layer(self, idx):

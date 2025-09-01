@@ -106,7 +106,13 @@ def parse_db_schema(db_file):
     for tbl in schema_json:
         columns = []
         for col in tbl["columns"]:
-            columns.append(ColumnSchema(col["name"], col["type"], "primary_key" in col and col["primary_key"]))
+            columns.append(
+                ColumnSchema(
+                    col["name"],
+                    col["type"],
+                    "primary_key" in col and col["primary_key"],
+                )
+            )
 
         tables[tbl["table"]] = TableSchema(tbl["table"], columns)
     return tables
@@ -118,7 +124,13 @@ def db_schema_from_json(schema_json):
     for tbl in schema_json:
         columns = []
         for col in tbl["columns"]:
-            columns.append(ColumnSchema(col["name"], col["type"], "primary_key" in col and col["primary_key"]))
+            columns.append(
+                ColumnSchema(
+                    col["name"],
+                    col["type"],
+                    "primary_key" in col and col["primary_key"],
+                )
+            )
 
         tables[tbl["table"]] = TableSchema(tbl["table"], columns)
     return tables
@@ -319,7 +331,10 @@ def make_local_changes_layer(mp, layer):
     diff_path = get_local_changes(geodiff, layer_path, mp)
 
     if diff_path is None:
-        return None, f"Failed to retrieve changes, as there is no base file for layer '{layer.name()}'"
+        return (
+            None,
+            f"Failed to retrieve changes, as there is no base file for layer '{layer.name()}'",
+        )
 
     db_schema = parse_db_schema(layer_path)
     diff = parse_diff(geodiff, diff_path)
@@ -489,17 +504,29 @@ def style_diff_layer(layer, schema_table):
         root_rule = QgsRuleBasedRenderer.Rule(None)
         root_rule.appendChild(
             QgsRuleBasedRenderer.Rule(
-                QgsMarkerSymbol.createSimple(point_symbol_insert), 0, 0, "_op = 'insert'", "Insert"
+                QgsMarkerSymbol.createSimple(point_symbol_insert),
+                0,
+                0,
+                "_op = 'insert'",
+                "Insert",
             )
         )
         root_rule.appendChild(
             QgsRuleBasedRenderer.Rule(
-                QgsMarkerSymbol.createSimple(point_symbol_update), 0, 0, "_op = 'update'", "Update"
+                QgsMarkerSymbol.createSimple(point_symbol_update),
+                0,
+                0,
+                "_op = 'update'",
+                "Update",
             )
         )
         root_rule.appendChild(
             QgsRuleBasedRenderer.Rule(
-                QgsMarkerSymbol.createSimple(point_symbol_delete), 0, 0, "_op = 'delete'", "Delete"
+                QgsMarkerSymbol.createSimple(point_symbol_delete),
+                0,
+                0,
+                "_op = 'delete'",
+                "Delete",
             )
         )
         r = QgsRuleBasedRenderer(root_rule)
@@ -521,13 +548,31 @@ def style_diff_layer(layer, schema_table):
 
         root_rule = QgsRuleBasedRenderer.Rule(None)
         root_rule.appendChild(
-            QgsRuleBasedRenderer.Rule(QgsLineSymbol.createSimple(line_symbol_insert), 0, 0, "_op = 'insert'", "Insert")
+            QgsRuleBasedRenderer.Rule(
+                QgsLineSymbol.createSimple(line_symbol_insert),
+                0,
+                0,
+                "_op = 'insert'",
+                "Insert",
+            )
         )
         root_rule.appendChild(
-            QgsRuleBasedRenderer.Rule(QgsLineSymbol.createSimple(line_symbol_update), 0, 0, "_op = 'update'", "Update")
+            QgsRuleBasedRenderer.Rule(
+                QgsLineSymbol.createSimple(line_symbol_update),
+                0,
+                0,
+                "_op = 'update'",
+                "Update",
+            )
         )
         root_rule.appendChild(
-            QgsRuleBasedRenderer.Rule(QgsLineSymbol.createSimple(line_symbol_delete), 0, 0, "_op = 'delete'", "Delete")
+            QgsRuleBasedRenderer.Rule(
+                QgsLineSymbol.createSimple(line_symbol_delete),
+                0,
+                0,
+                "_op = 'delete'",
+                "Delete",
+            )
         )
         r = QgsRuleBasedRenderer(root_rule)
         layer.setRenderer(r)
@@ -551,13 +596,31 @@ def style_diff_layer(layer, schema_table):
 
         root_rule = QgsRuleBasedRenderer.Rule(None)
         root_rule.appendChild(
-            QgsRuleBasedRenderer.Rule(QgsFillSymbol.createSimple(fill_symbol_insert), 0, 0, "_op = 'insert'", "Insert")
+            QgsRuleBasedRenderer.Rule(
+                QgsFillSymbol.createSimple(fill_symbol_insert),
+                0,
+                0,
+                "_op = 'insert'",
+                "Insert",
+            )
         )
         root_rule.appendChild(
-            QgsRuleBasedRenderer.Rule(QgsFillSymbol.createSimple(fill_symbol_update), 0, 0, "_op = 'update'", "Update")
+            QgsRuleBasedRenderer.Rule(
+                QgsFillSymbol.createSimple(fill_symbol_update),
+                0,
+                0,
+                "_op = 'update'",
+                "Update",
+            )
         )
         root_rule.appendChild(
-            QgsRuleBasedRenderer.Rule(QgsFillSymbol.createSimple(fill_symbol_delete), 0, 0, "_op = 'delete'", "Delete")
+            QgsRuleBasedRenderer.Rule(
+                QgsFillSymbol.createSimple(fill_symbol_delete),
+                0,
+                0,
+                "_op = 'delete'",
+                "Delete",
+            )
         )
         r = QgsRuleBasedRenderer(root_rule)
         layer.setRenderer(r)
