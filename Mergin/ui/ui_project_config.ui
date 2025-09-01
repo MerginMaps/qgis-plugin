@@ -44,9 +44,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-888</y>
-        <width>628</width>
-        <height>1444</height>
+        <y>0</y>
+        <width>625</width>
+        <height>1137</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -59,7 +59,7 @@
           <item row="0" column="0" colspan="4">
            <widget class="QLabel" name="label">
             <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is configuration for selective sync for Mergin Maps mobile in Mergin Maps project. With selective sync enabled the mobile app will not download photos from other surveyors to make synchronisation faster. Check out more in the &lt;a href=&quot;https://merginmaps.com/docs/manage/selective_sync/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;documentation&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is configuration for selective sync for Mergin Maps mobile in Mergin Maps project. With selective sync enabled the mobile app will not download photos from other surveyors to make synchronisation faster. Check out more in the &lt;a href=&quot;https://merginmaps.com/docs/manage/selective_sync/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#1d99f3;&quot;&gt;documentation&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
@@ -166,7 +166,7 @@
           <item row="0" column="0" colspan="2">
            <widget class="QLabel" name="label_4">
             <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;By allowing snapping here, the mobile app will use snapping for this project. Learn more in the &lt;a href=&quot;https://merginmaps.com/docs/gis/snapping/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;documentation&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;By allowing snapping here, the mobile app will use snapping for this project. Learn more in the &lt;a href=&quot;https://merginmaps.com/docs/gis/snapping/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#1d99f3;&quot;&gt;documentation&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
