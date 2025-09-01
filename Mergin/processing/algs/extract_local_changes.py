@@ -74,20 +74,32 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFile(self.PROJECT_DIR, "Project directory", QgsProcessingParameterFile.Folder)
+            QgsProcessingParameterFile(
+                self.PROJECT_DIR, "Project directory", QgsProcessingParameterFile.Folder
+            )
         )
         self.addParameter(QgsProcessingParameterVectorLayer(self.LAYER, "Input layer"))
-        self.addParameter(QgsProcessingParameterFeatureSink(self.OUTPUT, "Local changes layer"))
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(self.OUTPUT, "Local changes layer")
+        )
 
     def processAlgorithm(self, parameters, context, feedback):
         project_dir = self.parameterAsString(parameters, self.PROJECT_DIR, context)
         layer = self.parameterAsVectorLayer(parameters, self.LAYER, context)
 
         if not check_mergin_subdirs(project_dir):
-            raise QgsProcessingException("Selected directory does not contain a valid Mergin project.")
+            raise QgsProcessingException(
+                "Selected directory does not contain a valid Mergin project."
+            )
 
-        if not os.path.normpath(layer.source()).lower().startswith(os.path.normpath(project_dir).lower()):
-            raise QgsProcessingException("Selected layer does not belong to the selected Mergin project.")
+        if (
+            not os.path.normpath(layer.source())
+            .lower()
+            .startswith(os.path.normpath(project_dir).lower())
+        ):
+            raise QgsProcessingException(
+                "Selected layer does not belong to the selected Mergin project."
+            )
 
         if layer.dataProvider().storageType() != "GPKG":
             raise QgsProcessingException("Selected layer not supported.")
@@ -119,7 +131,9 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
         if diff and table_name in diff.keys():
             db_conn = None  # no ref. db
             db_conn = sqlite3.connect(layer_path)
-            features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, fields_mapping, db_conn)
+            features = diff_table_to_features(
+                diff[table_name], db_schema[table_name], fields, fields_mapping, db_conn
+            )
             feedback.setProgress(20)
 
             current = 20

@@ -6,7 +6,9 @@ import os
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox
 
-ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_remove_project_dialog.ui")
+ui_file = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "ui", "ui_remove_project_dialog.ui"
+)
 
 
 class RemoveProjectDialog(QDialog):
@@ -25,4 +27,6 @@ class RemoveProjectDialog(QDialog):
         self.edit_project_name.textChanged.connect(self.project_name_changed)
 
     def project_name_changed(self, text):
-        self.buttonBox.button(QDialogButtonBox.StandardButton.Yes).setEnabled(self.project_name == text)
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Yes).setEnabled(
+            self.project_name == text
+        )

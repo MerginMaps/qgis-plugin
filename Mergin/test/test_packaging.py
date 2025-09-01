@@ -38,7 +38,9 @@ class test_packaging(unittest.TestCase):
 
     def test_mbtiles_packaging(self):
         raster_tiles_path = os.path.join(test_data_path, "raster-tiles.mbtiles")
-        layer = QgsRasterLayer(f"url=file://{raster_tiles_path}&type=mbtiles", "test", "wms")
+        layer = QgsRasterLayer(
+            f"url=file://{raster_tiles_path}&type=mbtiles", "test", "wms"
+        )
         self.assertTrue(layer.isValid())
         with tempfile.TemporaryDirectory() as tmp_dir:
             package_layer(layer, tmp_dir)

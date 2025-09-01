@@ -28,13 +28,24 @@ from ...mergin.merginproject import MerginProject
 from ...mergin.utils import get_versions_with_file_changes
 from ...mergin.deps import pygeodiff
 
-from ...diff import parse_db_schema, parse_diff, get_table_name, create_field_list, diff_table_to_features
+from ...diff import (
+    parse_db_schema,
+    parse_diff,
+    get_table_name,
+    create_field_list,
+    diff_table_to_features,
+)
 
 from ...utils import (
     mm_symbol_path,
     check_mergin_subdirs,
 )
-from ...utils_auth import create_mergin_client, MissingAuthConfigError, AuthTokenExpiredError, ClientError
+from ...utils_auth import (
+    create_mergin_client,
+    MissingAuthConfigError,
+    AuthTokenExpiredError,
+    ClientError,
+)
 
 
 class CreateDiff(QgsProcessingAlgorithm):
@@ -75,17 +86,29 @@ class CreateDiff(QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFile(self.PROJECT_DIR, "Project directory", QgsProcessingParameterFile.Folder)
+            QgsProcessingParameterFile(
+                self.PROJECT_DIR, "Project directory", QgsProcessingParameterFile.Folder
+            )
         )
         self.addParameter(QgsProcessingParameterVectorLayer(self.LAYER, "Input layer"))
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.START_VERSION, "Start version", QgsProcessingParameterNumber.Integer, 1, False, 1
+                self.START_VERSION,
+                "Start version",
+                QgsProcessingParameterNumber.Integer,
+                1,
+                False,
+                1,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.END_VERSION, "End version", QgsProcessingParameterNumber.Integer, None, True, 1
+                self.END_VERSION,
+                "End version",
+                QgsProcessingParameterNumber.Integer,
+                None,
+                True,
+                1,
             )
         )
         self.addParameter(QgsProcessingParameterFeatureSink(self.OUTPUT, "Diff layer"))
@@ -95,10 +118,18 @@ class CreateDiff(QgsProcessingAlgorithm):
         layer = self.parameterAsVectorLayer(parameters, self.LAYER, context)
 
         if not check_mergin_subdirs(project_dir):
-            raise QgsProcessingException("Selected directory does not contain a valid Mergin project.")
+            raise QgsProcessingException(
+                "Selected directory does not contain a valid Mergin project."
+            )
 
-        if not os.path.normpath(layer.source()).lower().startswith(os.path.normpath(project_dir).lower()):
-            raise QgsProcessingException("Selected layer does not belong to the selected Mergin project.")
+        if (
+            not os.path.normpath(layer.source())
+            .lower()
+            .startswith(os.path.normpath(project_dir).lower())
+        ):
+            raise QgsProcessingException(
+                "Selected layer does not belong to the selected Mergin project."
+            )
 
         if layer.dataProvider().storageType() != "GPKG":
             raise QgsProcessingException("Selected layer not supported.")
@@ -132,7 +163,13 @@ class CreateDiff(QgsProcessingAlgorithm):
 
         diff_file = QgsProcessingUtils.generateTempFilename(file_name + ".diff")
         try:
-            mc.get_file_diff(project_dir, file_name, diff_file, f"v{start}", f"v{end}" if end else None)
+            mc.get_file_diff(
+                project_dir,
+                file_name,
+                diff_file,
+                f"v{start}",
+                f"v{end}" if end else None,
+            )
         except KeyError:
             # see https://github.com/MerginMaps/python-api-client/issues/196
             raise QgsProcessingException(
@@ -159,7 +196,9 @@ class CreateDiff(QgsProcessingAlgorithm):
         if diff and table_name in diff.keys():
             db_conn = None  # no ref. db
             db_conn = sqlite3.connect(layer_path)
-            features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, fields_mapping, db_conn)
+            features = diff_table_to_features(
+                diff[table_name], db_schema[table_name], fields, fields_mapping, db_conn
+            )
             feedback.setProgress(40)
 
             current = 40

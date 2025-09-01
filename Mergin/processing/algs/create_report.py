@@ -13,7 +13,12 @@ from qgis.core import (
 )
 
 from ...utils import mm_symbol_path, create_report, InvalidProject
-from ...utils_auth import create_mergin_client, MissingAuthConfigError, AuthTokenExpiredError, ClientError
+from ...utils_auth import (
+    create_mergin_client,
+    MissingAuthConfigError,
+    AuthTokenExpiredError,
+    ClientError,
+)
 
 
 class CreateReport(QgsProcessingAlgorithm):
@@ -51,19 +56,35 @@ class CreateReport(QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFile(self.PROJECT_DIR, "Project directory", QgsProcessingParameterFile.Folder)
-        )
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.START_VERSION, "Start version", QgsProcessingParameterNumber.Integer, 1, False, 1
+            QgsProcessingParameterFile(
+                self.PROJECT_DIR, "Project directory", QgsProcessingParameterFile.Folder
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.END_VERSION, "End version", QgsProcessingParameterNumber.Integer, None, True, 1
+                self.START_VERSION,
+                "Start version",
+                QgsProcessingParameterNumber.Integer,
+                1,
+                False,
+                1,
             )
         )
-        self.addParameter(QgsProcessingParameterFileDestination(self.REPORT, "Report", "CSV files (*.csv *.CSV)"))
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.END_VERSION,
+                "End version",
+                QgsProcessingParameterNumber.Integer,
+                None,
+                True,
+                1,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterFileDestination(
+                self.REPORT, "Report", "CSV files (*.csv *.CSV)"
+            )
+        )
 
     def processAlgorithm(self, parameters, context, feedback):
         project_dir = self.parameterAsString(parameters, self.PROJECT_DIR, context)
@@ -86,7 +107,9 @@ class CreateReport(QgsProcessingAlgorithm):
 
         warnings = None
         try:
-            warnings = create_report(mc, project_dir, f"v{start}", f"v{end}" if end else "", output_file)
+            warnings = create_report(
+                mc, project_dir, f"v{start}", f"v{end}" if end else "", output_file
+            )
         except InvalidProject as e:
             raise QgsProcessingException("Invalid Mergin Maps project: " + str(e))
         except ClientError as e:
@@ -96,6 +119,8 @@ class CreateReport(QgsProcessingAlgorithm):
             for w in warnings:
                 feedback.pushWarning(w)
 
-        context.addLayerToLoadOnCompletion(output_file, QgsProcessingContext.LayerDetails("Report", context.project()))
+        context.addLayerToLoadOnCompletion(
+            output_file, QgsProcessingContext.LayerDetails("Report", context.project())
+        )
 
         return {self.REPORT: output_file}

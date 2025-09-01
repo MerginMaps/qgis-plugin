@@ -3,13 +3,22 @@
 
 import os
 
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QApplication, QMessageBox, QComboBox
+from qgis.PyQt.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QApplication,
+    QMessageBox,
+    QComboBox,
+)
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt import uic
 
 from .utils import is_valid_name
 
-ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_clone_project.ui")
+ui_file = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "ui", "ui_clone_project.ui"
+)
 
 
 class CloneProjectDialog(QDialog):
@@ -44,7 +53,9 @@ class CloneProjectDialog(QDialog):
         self.invalid = False
 
     def validate_input(self):
-        is_writable = bool(self.ui.projectNamespace.currentData(Qt.ItemDataRole.UserRole))
+        is_writable = bool(
+            self.ui.projectNamespace.currentData(Qt.ItemDataRole.UserRole)
+        )
         if not is_writable:
             msg = "You do not have permissions to create a project in this workspace!"
             self.ui.edit_project_name.setEnabled(False)
@@ -63,7 +74,9 @@ class CloneProjectDialog(QDialog):
         has_error = bool(msg)
         self.ui.warningMessageLabel.setVisible(has_error)
         self.ui.warningMessageLabel.setText(msg)
-        self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(not has_error)
+        self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(
+            not has_error
+        )
 
     def accept_dialog(self):
         self.project_name = self.ui.edit_project_name.text()

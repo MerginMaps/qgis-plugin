@@ -20,7 +20,10 @@ from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
 from .workspace_selection_dialog import WorkspaceSelectionDialog
-from .project_selection_dialog import ProjectSelectionDialog, PublicProjectSelectionDialog
+from .project_selection_dialog import (
+    ProjectSelectionDialog,
+    PublicProjectSelectionDialog,
+)
 from .create_project_wizard import NewMerginProjectWizard
 from .diff_dialog import DiffViewerDialog
 from .project_settings_widget import MerginProjectConfigFactory
@@ -54,7 +57,9 @@ from .mergin.merginproject import MerginProject
 from .processing.provider import MerginProvider
 import processing
 
-MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
+MERGIN_CLIENT_LOG = os.path.join(
+    QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt"
+)
 os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
 
 
@@ -83,14 +88,30 @@ class MerginPlugin:
             self.iface.newProjectCreated.connect(self.on_qgis_project_changed)
 
         settings = QSettings()
-        QgsExpressionContextUtils.setGlobalVariable("mergin_username", settings.value("Mergin/username", ""))
-        QgsExpressionContextUtils.setGlobalVariable("mm_username", settings.value("Mergin/username", ""))
-        QgsExpressionContextUtils.setGlobalVariable("mergin_url", settings.value("Mergin/server", ""))
-        QgsExpressionContextUtils.setGlobalVariable("mm_url", settings.value("Mergin/server", ""))
-        QgsExpressionContextUtils.setGlobalVariable("mergin_full_name", settings.value("Mergin/full_name", ""))
-        QgsExpressionContextUtils.setGlobalVariable("mm_full_name", settings.value("Mergin/full_name", ""))
-        QgsExpressionContextUtils.setGlobalVariable("mergin_user_email", settings.value("Mergin/user_email", ""))
-        QgsExpressionContextUtils.setGlobalVariable("mm_user_email", settings.value("Mergin/user_email", ""))
+        QgsExpressionContextUtils.setGlobalVariable(
+            "mergin_username", settings.value("Mergin/username", "")
+        )
+        QgsExpressionContextUtils.setGlobalVariable(
+            "mm_username", settings.value("Mergin/username", "")
+        )
+        QgsExpressionContextUtils.setGlobalVariable(
+            "mergin_url", settings.value("Mergin/server", "")
+        )
+        QgsExpressionContextUtils.setGlobalVariable(
+            "mm_url", settings.value("Mergin/server", "")
+        )
+        QgsExpressionContextUtils.setGlobalVariable(
+            "mergin_full_name", settings.value("Mergin/full_name", "")
+        )
+        QgsExpressionContextUtils.setGlobalVariable(
+            "mm_full_name", settings.value("Mergin/full_name", "")
+        )
+        QgsExpressionContextUtils.setGlobalVariable(
+            "mergin_user_email", settings.value("Mergin/user_email", "")
+        )
+        QgsExpressionContextUtils.setGlobalVariable(
+            "mm_user_email", settings.value("Mergin/user_email", "")
+        )
 
     def initProcessing(self):
         QgsApplication.processingRegistry().addProvider(self.provider)
@@ -159,7 +180,9 @@ class MerginPlugin:
             self.enable_toolbar_actions()
 
         self.data_item_provider = DataItemProvider(self)
-        QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
+        QgsApplication.instance().dataItemProviderRegistry().addProvider(
+            self.data_item_provider
+        )
         # related to https://github.com/MerginMaps/qgis-mergin-plugin/issues/3
         # if self.iface.browserModel().initialized():
         #     self.iface.browserModel().reload()
@@ -175,18 +198,28 @@ class MerginPlugin:
         if self.iface is not None:
             # register custom mergin widget in project properties
             self.mergin_project_config_factory = MerginProjectConfigFactory()
-            self.iface.registerProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
+            self.iface.registerProjectPropertiesWidgetFactory(
+                self.mergin_project_config_factory
+            )
 
             # add layer context menu action for checking local changes
-            self.action_show_changes = QAction("Show Local Changes", self.iface.mainWindow())
+            self.action_show_changes = QAction(
+                "Show Local Changes", self.iface.mainWindow()
+            )
             self.action_show_changes.setIcon(QIcon(icon_path("file-diff.svg")))
-            self.iface.addCustomActionForLayerType(self.action_show_changes, "", QgsMapLayer.VectorLayer, True)
+            self.iface.addCustomActionForLayerType(
+                self.action_show_changes, "", QgsMapLayer.VectorLayer, True
+            )
             self.action_show_changes.triggered.connect(self.view_local_changes)
 
             # add layer context menu action for downloading vector tiles
-            self.action_export_mbtiles = QAction("Make available offline…", self.iface.mainWindow())
+            self.action_export_mbtiles = QAction(
+                "Make available offline…", self.iface.mainWindow()
+            )
             self.action_export_mbtiles.setIcon(QIcon(icon_path("file-export.svg")))
-            self.iface.addCustomActionForLayerType(self.action_export_mbtiles, "", QgsMapLayer.VectorTileLayer, False)
+            self.iface.addCustomActionForLayerType(
+                self.action_export_mbtiles, "", QgsMapLayer.VectorTileLayer, False
+            )
             self.action_export_mbtiles.triggered.connect(self.export_vector_tiles)
 
         QgsProject.instance().layersAdded.connect(self.add_context_menu_actions)
@@ -248,7 +281,9 @@ class MerginPlugin:
             self.mc = None
             self.manager = None
         if self.has_browser_item():
-            self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager, err=error)
+            self.data_item_provider.root_item.update_client_and_manager(
+                mc=self.mc, manager=self.manager, err=error
+            )
 
     def has_browser_item(self):
         """Check if the Mergin Maps provider Browser item exists and has the root item defined."""
@@ -264,7 +299,8 @@ class MerginPlugin:
 
     def open_configured_url(self, path=None):
         """Opens configured Mergin Maps server url in default browser
-        Use optional parameter path to go directly to a specific page, eg. /workspaces"""
+        Use optional parameter path to go directly to a specific page, eg. /workspaces
+        """
         if self.mc is None:
             url = QUrl("https://merginmaps.com")
         else:
@@ -293,7 +329,11 @@ class MerginPlugin:
 
     def show_browser_panel(self):
         """Check if QGIS Browser panel is open. If not, ask and eventually make it visible to users."""
-        browser = [w for w in self.iface.mainWindow().findChildren(QDockWidget) if w.objectName() == "Browser"][0]
+        browser = [
+            w
+            for w in self.iface.mainWindow().findChildren(QDockWidget)
+            if w.objectName() == "Browser"
+        ][0]
         q = "QGIS Browser panel is currently off. The panel is used for Mergin Maps projects management.\n"
         q += "Would you like to open it and see your Mergin projects?"
         if not browser.isVisible():
@@ -308,7 +348,12 @@ class MerginPlugin:
             try:
                 self.mc = create_mergin_client()
                 set_qgsexpressionscontext(dlg.server_url(), mc=self.mc)
-            except (MissingAuthConfigError, AuthTokenExpiredError, ClientError, ValueError) as e:
+            except (
+                MissingAuthConfigError,
+                AuthTokenExpiredError,
+                ClientError,
+                ValueError,
+            ) as e:
                 QMessageBox.critical(None, "Login failed", f"Could not login: {str(e)}")
                 set_qgsexpressionscontext(dlg.server_url(), mc=None)
                 return
@@ -320,12 +365,18 @@ class MerginPlugin:
         """Open db-sync setup wizard."""
         project_path = QgsProject.instance().homePath()
         if not project_path:
-            iface.messageBar().pushMessage("Mergin", "Project is not saved, please save project first", Qgis.Warning)
+            iface.messageBar().pushMessage(
+                "Mergin",
+                "Project is not saved, please save project first",
+                Qgis.Warning,
+            )
             return
 
         if not check_mergin_subdirs(project_path):
             iface.messageBar().pushMessage(
-                "Mergin", "Current project is not a Mergin project. Please open a Mergin project first.", Qgis.Warning
+                "Mergin",
+                "Current project is not a Mergin project. Please open a Mergin project first.",
+                Qgis.Warning,
             )
             return
 
@@ -334,7 +385,9 @@ class MerginPlugin:
             project_name = mp.project_full_name()
         except InvalidProject as e:
             iface.messageBar().pushMessage(
-                "Mergin", "Current project is not a Mergin project. Please open a Mergin project first.", Qgis.Warning
+                "Mergin",
+                "Current project is not a Mergin project. Please open a Mergin project first.",
+                Qgis.Warning,
             )
             return
 
@@ -353,7 +406,10 @@ class MerginPlugin:
             "A minimum of one workspace is required to use Mergin Maps."
         )
         msg_box = QMessageBox(
-            QMessageBox.Icon.Critical, "You do not have any workspace", msg, QMessageBox.StandardButton.Close
+            QMessageBox.Icon.Critical,
+            "You do not have any workspace",
+            msg,
+            QMessageBox.StandardButton.Close,
         )
         create_button = msg_box.addButton("Create workspace", msg_box.ActionRole)
         create_button.clicked.disconnect()
@@ -371,7 +427,9 @@ class MerginPlugin:
         workspace_id = self.current_workspace.get("id", None)
         settings.setValue("Mergin/lastUsedWorkspaceId", workspace_id)
         if self.has_browser_item():
-            self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager)
+            self.data_item_provider.root_item.update_client_and_manager(
+                mc=self.mc, manager=self.manager
+            )
 
         if self.mc.server_type() == ServerType.SAAS and workspace_id:
             # check action required flag
@@ -436,7 +494,9 @@ class MerginPlugin:
         if check_result == UnsavedChangesStrategy.HasUnsavedChanges:
             return
         if not self.manager:
-            QMessageBox.warning(None, "Create Mergin Maps Project", "Plugin not configured!")
+            QMessageBox.warning(
+                None, "Create Mergin Maps Project", "Plugin not configured!"
+            )
             return
 
         user_info = self.mc.user_info()
@@ -450,7 +510,9 @@ class MerginPlugin:
         if self.mc.server_type() == ServerType.OLD:
             default_workspace = user_info["username"]
 
-        wizard = NewMerginProjectWizard(self.manager, user_info=user_info, default_workspace=default_workspace)
+        wizard = NewMerginProjectWizard(
+            self.manager, user_info=user_info, default_workspace=default_workspace
+        )
         if not wizard.exec():
             return  # cancelled
         if self.has_browser_item():
@@ -523,7 +585,11 @@ class MerginPlugin:
     def add_context_menu_actions(self, layers):
         provider_names = "vectortile"
         if Qgis.versionInt() >= 33200:
-            provider_names = ("xyzvectortiles", "arcgisvectortileservice", "vtpkvectortiles")
+            provider_names = (
+                "xyzvectortiles",
+                "arcgisvectortileservice",
+                "vtpkvectortiles",
+            )
         for l in layers:
             if l.dataProvider().name() in provider_names:
                 self.iface.addCustomActionForLayer(self.action_export_mbtiles, l)
@@ -541,7 +607,9 @@ class MerginPlugin:
 
             self.iface.removeCustomActionForLayerType(self.action_show_changes)
 
-            self.iface.unregisterProjectPropertiesWidgetFactory(self.mergin_project_config_factory)
+            self.iface.unregisterProjectPropertiesWidgetFactory(
+                self.mergin_project_config_factory
+            )
 
         remove_project_variables()
         QgsExpressionContextUtils.removeGlobalVariable("mergin_username")
@@ -552,7 +620,9 @@ class MerginPlugin:
         QgsExpressionContextUtils.removeGlobalVariable("mm_full_name")
         QgsExpressionContextUtils.removeGlobalVariable("mergin_user_email")
         QgsExpressionContextUtils.removeGlobalVariable("mm_user_email")
-        QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.data_item_provider)
+        QgsApplication.instance().dataItemProviderRegistry().removeProvider(
+            self.data_item_provider
+        )
         self.data_item_provider = None
         # this is crashing qgis on exit
         # self.iface.browserModel().reload()
@@ -563,12 +633,16 @@ class MerginPlugin:
         project_path = QgsProject.instance().homePath()
         if not project_path:
             iface.messageBar().pushMessage(
-                "Mergin", "Project is not saved, can not compute local changes", Qgis.Warning
+                "Mergin",
+                "Project is not saved, can not compute local changes",
+                Qgis.Warning,
             )
             return
 
         if not check_mergin_subdirs(project_path):
-            iface.messageBar().pushMessage("Mergin", "Current project is not a Mergin project.", Qgis.Warning)
+            iface.messageBar().pushMessage(
+                "Mergin", "Current project is not a Mergin project.", Qgis.Warning
+            )
             return
 
         check_result = unsaved_project_check()
@@ -579,7 +653,9 @@ class MerginPlugin:
         push_changes = mp.get_push_changes()
         push_changes_summary = mp.get_list_of_push_changes(push_changes)
         if not push_changes_summary:
-            iface.messageBar().pushMessage("Mergin", "No changes found in the project layers.", Qgis.Info)
+            iface.messageBar().pushMessage(
+                "Mergin", "No changes found in the project layers.", Qgis.Info
+            )
             return
 
         selected_layers = self.iface.layerTreeView().selectedLayersRecursive()

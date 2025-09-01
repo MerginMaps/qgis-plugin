@@ -26,7 +26,9 @@ from .utils import (
     mm_logo_path,
 )
 
-ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_sync_dialog.ui")
+ui_file = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "ui", "ui_sync_dialog.ui"
+)
 
 
 class SyncDialog(QDialog):
@@ -80,7 +82,10 @@ class SyncDialog(QDialog):
         # job of type DownloadJob may have a reference to a log file if it failed - keep it in such case
         # (we remove the download directory on failed download jobs, but the log is copied to a temporary
         # file and thus it is preserved)
-        if hasattr(self.job, "failure_log_file") and self.job.failure_log_file is not None:
+        if (
+            hasattr(self.job, "failure_log_file")
+            and self.job.failure_log_file is not None
+        ):
             self.log_file = self.job.failure_log_file
         self.operation = None
         self.mergin_client = None
@@ -96,7 +101,11 @@ class SyncDialog(QDialog):
 
     def exception_details(self):
         """If an exception was set, this returns a formatted string with a traceback"""
-        return "\n".join(traceback.format_exception(self.exception_type, self.exception, self.exception_tb))
+        return "\n".join(
+            traceback.format_exception(
+                self.exception_type, self.exception, self.exception_tb
+            )
+        )
 
     def download_start(self, mergin_client, target_dir, project_name):
         self.operation = self.DOWNLOAD
@@ -113,7 +122,9 @@ class SyncDialog(QDialog):
     def download_start_internal(self):
         with OverrideCursor(Qt.CursorShape.WaitCursor):
             try:
-                self.job = download_project_async(self.mergin_client, self.project_name, self.target_dir)
+                self.job = download_project_async(
+                    self.mergin_client, self.project_name, self.target_dir
+                )
             except Exception as e:
                 self.reset_operation(success=False, close=True, exception=e)
                 return
@@ -159,7 +170,9 @@ class SyncDialog(QDialog):
             self.timer.stop()
             self.reset_operation(success=False, close=True)
         else:
-            self.cancel_sync_operation("Cancelling download...", download_project_cancel)
+            self.cancel_sync_operation(
+                "Cancelling download...", download_project_cancel
+            )
 
     def push_start(self, mergin_client, target_dir, project_name):
         self.operation = self.PUSH
