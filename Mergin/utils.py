@@ -7,6 +7,7 @@ from enum import Enum
 from urllib.error import URLError, HTTPError
 import configparser
 import os
+import webbrowser
 from osgeo import gdal
 import pathlib
 import platform
@@ -18,7 +19,7 @@ import glob
 import re
 
 from qgis.PyQt.QtCore import QSettings, QVariant
-from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
+from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog, QCheckBox
 from qgis.PyQt.QtGui import QPalette, QColor, QIcon
 from qgis.PyQt.QtXml import QDomDocument
 from qgis.core import (
@@ -861,30 +862,48 @@ def login_error_message(e):
     QMessageBox.critical(None, "Login failed", msg, QMessageBox.StandardButton.Close)
 
 
-def unhandled_exception_message(error_details, dialog_title, error_text, log_file=None, username=None):
-    msg = (
-        error_text + "<p>This should not happen, "
-        '<a href="https://github.com/MerginMaps/qgis-mergin-plugin/issues">'
-        "please report the problem</a>."
-    )
+def unhandled_exception_message(error_details, dialog_title, error_text, mm_client, log_file=None):
     box = QMessageBox()
     box.setIcon(QMessageBox.Icon.Critical)
     box.setWindowTitle(dialog_title)
-    box.setText(msg)
-    if log_file is None:
-        box.setDetailedText(error_details)
-    else:
-        error_details = (
-            "An error occured during project synchronisation. The log was saved to "
-            f"{log_file}. Click 'Send logs' to send a diagnostic log to the developers "
-            "to help them determine the exact cause of the problem.\n\n"
-            "The log does not contain any of your data, only file names. "
-            "It would be useful if you also send a mail to support@merginmaps.com "
-            "and briefly describe the problem to add more context to the diagnostic log."
+    box.setText(error_text)
+    box.setInformativeText(
+        "An unexpected error occurred. "
+        "You can help us fix it by reporting the problem. "
+        "Click the button below to create a report we can review."
+    )
+
+    if log_file:
+        check = QCheckBox("Include diagnostic log (what is this?)")
+        check.setChecked(True)
+        check.setToolTip(
+            "The diagnostic log contains only file names and activity steps that "
+            "help us understand what went wrong. It does not include your data."
         )
-        box.setDetailedText(error_details)
-        btn = box.addButton("Send logs", QMessageBox.ButtonRole.ActionRole)
-        btn.clicked.connect(lambda: send_logs(username, log_file))
+
+        box.setCheckBox(check)
+
+        error_details = f"The diagnostic log is saved here: {log_file}.\n\n" f"Error details:\n{error_details}"
+
+    box.setDetailedText(error_details)
+    username = mm_client.username() if mm_client else "Unknown"
+
+    email_subject = "Problem with sync from QGIS"
+    email_body = (
+        "Hi,\n"
+        "I encountered an issue during synchronisation. (Please add more details here).\n\n"
+        f"Problem: {error_text}\n"
+        f"Username: {username}\n"
+        f"{error_details}"
+    )
+
+    btn = box.addButton("Report problem", QMessageBox.ButtonRole.HelpRole)
+    btn.clicked.connect(
+        lambda: (
+            send_logs(mm_client, log_file) if box.checkBox() and box.checkBox().isChecked() else None,
+            webbrowser.open(f"mailto:support@merginmaps.com?subject={email_subject}&body={email_body}"),
+        )
+    )
     box.exec()
 
 

@@ -181,7 +181,8 @@ class MerginProjectsManager(object):
                 unhandled_exception_message(
                     dlg.exception_details(),
                     "Project sync",
-                    f"Failed to sync project {project_name} due to an unhandled exception.",
+                    f"Something went wrong while synchronising your project {project_name}.",
+                    self.mc,
                 )
             return True
 
@@ -375,7 +376,8 @@ class MerginProjectsManager(object):
                 unhandled_exception_message(
                     dlg.exception_details(),
                     "Project sync",
-                    f"Failed to sync project {project_name} due to an unhandled exception.",
+                    f"Something went wrong while synchronising your project {project_name}.",
+                    self.mc,
                 )
             return
 
@@ -438,7 +440,8 @@ class MerginProjectsManager(object):
                 unhandled_exception_message(
                     dlg.exception_details(),
                     "Project sync",
-                    f"Failed to sync project {project_name} due to an unhandled exception.",
+                    f"Something went wrong while synchronising your project {project_name}.",
+                    self.mc,
                 )
             return
 
@@ -580,9 +583,9 @@ class MerginProjectsManager(object):
                 unhandled_exception_message(
                     dlg.exception_details(),
                     "Project download",
-                    f"Failed to download project {project_name} due to an unhandled exception.",
+                    f"Something went wrong while downloading your project {project_name}.",
+                    self.mc,
                     dlg.log_file,
-                    self.mc.username(),
                 )
             return
         if not dlg.is_complete:
