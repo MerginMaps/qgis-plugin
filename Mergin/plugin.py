@@ -2,7 +2,10 @@
 
 # GPLv3 license
 # Copyright Lutra Consulting Limited
-
+try:
+    import sip
+except ImportError:
+    from PyQt6 import sip
 import os
 from functools import partial
 from qgis.PyQt.QtCore import QUrl, QSettings, Qt
@@ -24,13 +27,13 @@ from .project_selection_dialog import (
     ProjectSelectionDialog,
     PublicProjectSelectionDialog,
 )
+from .data_item import DataItemProvider
 from .create_project_wizard import NewMerginProjectWizard
 from .diff_dialog import DiffViewerDialog
 from .project_settings_widget import MerginProjectConfigFactory
 from .projects_manager import MerginProjectsManager
 from .configure_sync_wizard import DbSyncConfigWizard
 from .version_viewer_dialog import VersionViewerDialog
-from .data_item import DataItemProvider
 from .utils import (
     ServerType,
     ClientError,
@@ -53,6 +56,7 @@ from .utils_auth import (
     set_qgsexpressionscontext,
     get_authcfg,
 )
+
 from .mergin.merginproject import MerginProject
 from .processing.provider import MerginProvider
 import processing
@@ -422,13 +426,9 @@ class MerginPlugin:
         user_info = self.mc.user_info()
         workspaces = user_info.get("workspaces", None)
         if not workspaces:
-            if workspaces is None:
-                # server is old, does not support workspaces
-                self.current_workspace = dict()
-            else:
-                # User has no workspaces
-                self.show_no_workspaces_dialog()
-                self.current_workspace = dict()
+            # User has no workspaces
+            self.show_no_workspaces_dialog()
+            self.current_workspace = dict()
             return
 
         if len(workspaces) == 1:
@@ -467,8 +467,6 @@ class MerginPlugin:
             return
 
         default_workspace = self.current_workspace.get("name", None)
-        if self.mc.server_type() == ServerType.OLD:
-            default_workspace = user_info["username"]
 
         wizard = NewMerginProjectWizard(self.manager, user_info=user_info, default_workspace=default_workspace)
         if not wizard.exec():
