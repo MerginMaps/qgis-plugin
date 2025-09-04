@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 from math import floor
 
 try:
@@ -38,12 +43,10 @@ from .utils import (
     mergin_project_local_path,
     PROJS_PER_PAGE,
     same_dir,
+    get_local_mergin_projects_info,
 )
 from .utils_auth import AuthTokenExpiredError
 from .mergin.merginproject import MerginProject
-
-MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
-os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
 
 
 class MerginRemoteProjectItem(QgsDataItem):
@@ -56,16 +59,7 @@ class MerginRemoteProjectItem(QgsDataItem):
             project["namespace"], project["name"]
         )  # we need posix path for server API calls
         display_name = project["name"]
-        group_items = project_manager.get_mergin_browser_groups()
-        if group_items.get("Shared with me") == parent:
-            display_name = self.project_name
-        QgsDataItem.__init__(
-            self,
-            QgsDataItem.Collection,
-            parent,
-            display_name,
-            "/Mergin/" + self.project_name,
-        )
+        QgsDataItem.__init__(self, QgsDataItem.Collection, parent, display_name, "/Mergin/" + self.project_name)
         self.path = None
         self.setSortKey(f"1 {self.name()}")
         self.setIcon(QIcon(icon_path("cloud.svg")))
@@ -103,10 +97,6 @@ class MerginRemoteProjectItem(QgsDataItem):
         msg = "Mergin Maps project cloned successfully."
         QMessageBox.information(None, "Clone project", msg, QMessageBox.StandardButton.Close)
         self.parent().reload()
-        # we also need to reload My projects group as the cloned project could appear there
-        group_items = self.project_manager.get_mergin_browser_groups()
-        if "My projects" in group_items:
-            group_items["My projects"].reload()
 
     def remove_remote_project(self):
         dlg = RemoveProjectDialog(self.project["namespace"], self.project["name"])
@@ -151,9 +141,6 @@ class MerginLocalProjectItem(QgsDirectoryItem):
         self.project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
         self.path = mergin_project_local_path(self.project_name)
         display_name = project["name"]
-        group_items = project_manager.get_mergin_browser_groups()
-        if group_items.get("Shared with me") == parent:
-            display_name = self.project_name
         QgsDirectoryItem.__init__(self, parent, display_name, self.path, "/Mergin/" + self.project_name)
         self.setSortKey(f"0 {self.name()}")
         self.project = project
@@ -224,7 +211,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
                 # as releasing lock on previously open files takes some time
                 # we have to wait a bit before removing them, otherwise rmtree
                 # will fail and removal of the local rpoject will fail as well
-                QTimer.singleShot(250, lambda: shutil.rmtree(self.path))
+                QTimer.singleShot(500, lambda: shutil.rmtree(self.path))
             except PermissionError as e:
                 QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
                 msg = (
@@ -359,6 +346,7 @@ class MerginRootItem(QgsDataCollectionItem):
         self.error = ""
         self.wizard = None
         self.projects = []
+        self.local_projects = []
         self.total_projects_count = None
         self.fetch_more_item = None
         self.create_new_project_item = None
@@ -372,16 +360,16 @@ class MerginRootItem(QgsDataCollectionItem):
         self.project_manager = manager
         self.error = err
         self.projects = []
+        self.local_projects = []
         self.updateName()
         self.depopulate()
 
     def updateName(self):
         name = self.base_name
         try:
-            if self.mc.server_type() != ServerType.OLD and self.plugin.current_workspace.get("name", None):
-                name = f"{self.base_name} [{self.plugin.current_workspace['name']}]"
-        except AttributeError:
-            # self.mc might not be set yet
+            name = f"{self.base_name} [{self.plugin.current_workspace['name']}]"
+        except KeyError:
+            # self.mc might not be set yet or there is no workspace
             pass
         self.setName(name)
 
@@ -396,9 +384,6 @@ class MerginRootItem(QgsDataCollectionItem):
             sip.transferto(error_item, self)
             return [error_item]
 
-        if self.mc.server_type() == ServerType.OLD:
-            return self.createChildrenGroups()
-
         return self.createChildrenProjects()
 
     def createChildrenProjects(self):
@@ -406,74 +391,67 @@ class MerginRootItem(QgsDataCollectionItem):
             error = self.fetch_projects()
             if error is not None:
                 return error
+        if not self.local_projects:
+            self.local_projects = [
+                {"namespace": i[1], "name": i[2]}
+                for i in get_local_mergin_projects_info(self.plugin.current_workspace["name"])
+            ]
         items = []
-        for project in self.projects:
-            project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
-            local_proj_path = mergin_project_local_path(project_name)
-            if local_proj_path is None or not os.path.exists(local_proj_path):
-                item = MerginRemoteProjectItem(self, project, self.project_manager, self.plugin)
-                item.setState(QgsDataItem.Populated)  # make it non-expandable
-            else:
-                item = MerginLocalProjectItem(self, project, self.project_manager, self.plugin)
+
+        # build a set of (namespace, name) tuples for quick lookup
+        local_keys = {(p["namespace"], p["name"]) for p in self.local_projects}
+        # projects not present locally
+        remote_only = [p for p in self.projects if (p["namespace"], p["name"]) not in local_keys]
+
+        for project in self.local_projects:
+            item = MerginLocalProjectItem(self, project, self.project_manager, self.plugin)
+            sip.transferto(item, self)
+            items.append(item)
+
+        for project in remote_only:
+            item = MerginRemoteProjectItem(self, project, self.project_manager, self.plugin)
+            item.setState(QgsDataItem.Populated)  # make it non-expandable
             sip.transferto(item, self)
             items.append(item)
         self.set_fetch_more_item()
         if self.fetch_more_item is not None:
             items.append(self.fetch_more_item)
-        if not items and self.mc.server_type() != ServerType.OLD:
+        if not items:
             self.create_new_project_item = CreateNewProjectItem(self)
             self.create_new_project_item.setState(QgsDataItem.Populated)
             sip.transferto(self.create_new_project_item, self)
             items.append(self.create_new_project_item)
         return items
 
-    def createChildrenGroups(self):
-        items = []
-        my_projects = MerginGroupItem(self, "My projects", "created", "user.svg", 1, self.plugin)
-        my_projects.setState(QgsDataItem.Populated)
-        my_projects.refresh()
-        sip.transferto(my_projects, self)
-        items.append(my_projects)
-
-        shared_projects = MerginGroupItem(self, "Shared with me", "shared", "users.svg", 2, self.plugin)
-        shared_projects.setState(QgsDataItem.Populated)
-        shared_projects.refresh()
-        sip.transferto(shared_projects, self)
-        items.append(shared_projects)
-
-        return items
-
     def fetch_projects(self, page=1, per_page=PROJS_PER_PAGE):
         """Get paginated projects list from Mergin Maps service. If anything goes wrong, return an error item."""
         if self.project_manager is None:
-            error_item = QgsErrorItem(
-                self,
-                "Failed to log in. Please check the configuration",
-                "/Mergin/error",
-            )
+            error_item = QgsErrorItem(self, "Failed to log in. Please check the configuration", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
-        if self.mc.server_type() != ServerType.OLD and not self.plugin.current_workspace:
+        if not self.plugin.current_workspace:
             error_item = QgsErrorItem(self, "No workspace available", "/Mergin/error")
             sip.transferto(error_item, self)
             return [error_item]
         try:
-            if self.mc.server_type() == ServerType.OLD:
-                resp = self.project_manager.mc.paginated_projects_list(
-                    flag=self.filter,
-                    page=page,
-                    per_page=per_page,
-                    order_params="namespace_asc,name_asc",
-                )
-            else:
-                resp = self.project_manager.mc.paginated_projects_list(
-                    only_namespace=self.plugin.current_workspace.get("name", None),
-                    page=page,
-                    per_page=per_page,
-                    order_params="name_asc",
-                )
+            resp = self.project_manager.mc.paginated_projects_list(
+                only_namespace=self.plugin.current_workspace.get("name", None),
+                page=page,
+                per_page=per_page,
+                order_params="name_asc",
+            )
             self.projects += resp["projects"]
             self.total_projects_count = int(resp["count"]) if is_number(resp["count"]) else 0
+
+            # Sometimes we fetched a local, recursivly fetch until we fetched enougth at the same time
+            set_fetched_projects = set([i["name"] for i in resp["projects"]])
+            set_local_projects = set([i["name"] for i in self.local_projects])
+
+            new_projs_per_page_left = per_page - len(set_fetched_projects - set_local_projects)
+            if new_projs_per_page_left != 0 and len(self.projects) < self.total_projects_count:
+                new_page_to_get = floor(len(self.projects) / new_projs_per_page_left) + 1
+                self.fetch_projects(new_page_to_get, per_page=new_projs_per_page_left)
+
         except URLError:
             error_item = QgsErrorItem(self, "Failed to get projects from server", "/Mergin/error")
             sip.transferto(error_item, self)
@@ -497,16 +475,13 @@ class MerginRootItem(QgsDataCollectionItem):
             self.fetch_more_item = FetchMoreItem(self)
             self.fetch_more_item.setState(QgsDataItem.Populated)
             sip.transferto(self.fetch_more_item, self)
-        if isinstance(self, MerginGroupItem):
-            group_name = f"{self.base_name} ({self.total_projects_count})"
-            self.setName(group_name)
 
     def fetch_more(self):
         """Fetch another page of projects and add them to the group item."""
         if self.fetch_more_item is None:
             QMessageBox.information(None, "Fetch Mergin Maps Projects", "All projects already listed.")
             return
-        page_to_get = floor(self.rowCount() / PROJS_PER_PAGE) + 1
+        page_to_get = floor(len(self.projects) / PROJS_PER_PAGE) + 1
         dummy = self.fetch_projects(page=page_to_get)
         self.refresh()
 
@@ -515,6 +490,10 @@ class MerginRootItem(QgsDataCollectionItem):
             self.plugin.choose_active_workspace()
 
         self.projects = []
+        self.local_projects = [
+            {"namespace": i[1], "name": i[2]}
+            for i in get_local_mergin_projects_info(self.plugin.current_workspace["name"])
+        ]
         self.refresh()
 
     def new_project(self):
@@ -546,10 +525,7 @@ class MerginRootItem(QgsDataCollectionItem):
         actions = [action_configure]
         if self.mc:
             server_type = self.mc.server_type()
-            if server_type == ServerType.OLD:
-                actions.append(action_create)
-                actions.append(action_explore)
-            elif server_type == ServerType.CE:
+            if server_type == ServerType.CE:
                 actions.append(action_refresh)
                 actions.append(action_create)
                 actions.append(action_find)
@@ -560,33 +536,6 @@ class MerginRootItem(QgsDataCollectionItem):
                 actions.append(action_find)
                 actions.append(action_switch)
                 actions.append(action_explore)
-        return actions
-
-
-class MerginGroupItem(MerginRootItem):
-    """Mergin group data item. Contains filtered list of Mergin Maps projects."""
-
-    def __init__(self, parent, grp_name, grp_filter, icon, order, plugin):
-        MerginRootItem.__init__(self, parent, grp_name, grp_filter, icon, order, plugin)
-
-    def isMerginGroupItem(self):
-        return True
-
-    def createChildren(self):
-        return self.createChildrenProjects()
-
-    def actions(self, parent):
-        action_refresh = QAction(QIcon(icon_path("repeat.svg")), "Reload", parent)
-        action_refresh.triggered.connect(self.reload)
-        actions = [action_refresh]
-        if self.fetch_more_item is not None:
-            action_fetch_more = QAction(QIcon(icon_path("dots.svg")), "Fetch more", parent)
-            action_fetch_more.triggered.connect(self.fetch_more)
-            actions.append(action_fetch_more)
-        if self.name().startswith("My projects"):
-            action_create = QAction(QIcon(icon_path("square-plus.svg")), "Create new project", parent)
-            action_create.triggered.connect(self.new_project)
-            actions.append(action_create)
         return actions
 
 
