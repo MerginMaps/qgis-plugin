@@ -469,7 +469,7 @@
        <item>
         <widget class="QGroupBox" name="groupBox_photo_sketching">
          <property name="title">
-          <string>Photo sketching</string>
+          <string>Photo sketching [Preview]</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
           <item row="1" column="0">
@@ -485,7 +485,10 @@
           <item row="0" column="0">
            <widget class="QLabel" name="label_13">
             <property name="text">
-             <string>Photo sketching lets mobile app users modify captured photos by adding freehand annotations</string>
+             <string>Photo sketching lets mobile app users draw freehand annotations directly on captured photos. This feature is in Preview: it works, but may still have some issues.</string>
+            </property>
+            <property name="wordWrap">
+              <bool>true</bool>
             </property>
            </widget>
           </item>
