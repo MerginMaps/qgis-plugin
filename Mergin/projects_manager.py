@@ -243,6 +243,12 @@ class MerginProjectsManager(object):
 
             if return_value == QDialog.DialogCode.Accepted:
                 self.sync_project(project_dir)
+            elif return_value == QDialog.DialogCode.Rejected:
+                for change in push_changes["updated"]:
+                    if "diff" in change.keys():
+                        diff_file = mp.fpath_meta(change["diff"]["path"])
+                        if os.path.exists(diff_file):
+                            os.remove(diff_file)
             elif return_value == ProjectStatusDialog.RESET_CHANGES:
                 self.reset_local_changes(project_dir, dlg.file_to_reset)
 
