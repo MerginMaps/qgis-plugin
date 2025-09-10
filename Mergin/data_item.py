@@ -159,8 +159,9 @@ class MerginLocalProjectItem(QgsDirectoryItem):
             return
         self.project_manager.project_status(self.path)
 
-    def _close_file_handlers_under(self):
-        """Close any logging.FileHandler that writes inside `path` (project dir).
+    def _release_project_log_file_locks(self):
+        """
+        Close any logging.FileHandler that writes inside `path` (project dir).
         This releases Windows file locks (e.g. .mergin/client-log.txt) before rmtree.
         """
         path = os.path.abspath(self.path)
@@ -186,13 +187,13 @@ class MerginLocalProjectItem(QgsDirectoryItem):
         except (OSError, ValueError, RuntimeError):
             pass
 
-    def _delete_handlers(self):
-        """Delete project directory (no rename, no retries)."""
+    def _delete_project_dir(self):
+        """Delete project directory"""
         try:
             shutil.rmtree(self.path)
         except PermissionError as e:
             # Optional: user-facing message when files are still locked
-            QMessageBox.critical(
+            QMessageBox.warning(
                 None, "Project delete", f"Some files are still in use.\n\n{e}\n\nClose the project/QGIS and try again."
             )
 
@@ -240,11 +241,11 @@ class MerginLocalProjectItem(QgsDirectoryItem):
                     registry.setLibraryDirectory(registry.libraryDirectory())
 
                 # Close all file handlers under this project so Windows releases .mergin/client-log.txt before rmtree
-                self._close_file_handlers_under()
+                self._release_project_log_file_locks()
 
                 # Delay deletion by 400 ms so file handlers can fully close
                 # run delete via the Qt event loop
-                QTimer.singleShot(400, lambda: self._delete_handlers())
+                QTimer.singleShot(400, lambda: self._delete_project_dir())
 
             except PermissionError as e:
                 QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
