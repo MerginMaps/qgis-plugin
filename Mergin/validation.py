@@ -471,11 +471,12 @@ class MerginProjectValidator(object):
                 expr_str = default_def.expression()  # returns string or empty if none
                 if not expr_str:
                     continue
+                field_name = fields[i].name()
                 if expr_str.lower() in DISALLOWED_FILENAME_EXPRESSIONS:
-                    self.issues.append(SingleLayerWarning(lid, Warning.INVALID_DEFAULT_FILENAME))
+                    self.issues.append(SingleLayerWarning(lid, Warning.INVALID_DEFAULT_FILENAME, field_name))
                     break
                 if not is_valid_filename(expr_str):
-                    self.issues.append(SingleLayerWarning(lid, Warning.INVALID_DEFAULT_FILENAME))
+                    self.issues.append(SingleLayerWarning(lid, Warning.INVALID_DEFAULT_FILENAME, field_name))
                     break
 
     def check_filenames(self):
@@ -549,6 +550,6 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.PROJECT_HOME_PATH:
         return "QGIS Project Home Path is specified. <a href='fix_project_home_path'>Quick fix the issue. (This will unset project home)</a>"
     elif warning_id == Warning.INVALID_DEFAULT_FILENAME:
-        return "You use invalid file name characters in some of your field's default expression. Files with invalid names cannot be upload to the cloud."
+        return f"The default expression set in field '{url}' will lead to invalid file name that cannot be synchronized. Please sanitize the expression."
     elif warning_id == Warning.INVALID_ADDED_FILENAME:
-        return f"You cannot upload a file with invalid characters in it's name. Please sanitize the name of this file '{url}'"
+        return f"You cannot synchronize a file with invalid characters in it's name. Please sanitize the name of this file '{url}'"
