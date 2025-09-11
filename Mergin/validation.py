@@ -6,6 +6,7 @@ import re
 from enum import Enum
 from collections import defaultdict
 from pathlib import Path
+from pathvalidate import is_valid_filename
 
 from qgis.core import (
     QgsMapLayerType,
@@ -29,8 +30,9 @@ from .utils import (
     get_layer_by_path,
 )
 
-INVALID_CHARS = re.compile('[\\\/\(\)\[\]\{\}"\n\r]')
+INVALID_FIELD_NAME_CHARS = re.compile('[\\\/\(\)\[\]\{\}"\n\r]')
 PROJECT_VARS = re.compile("\@project_home|\@project_path|\@project_folder")
+DISALLOWED_FILENAME_EXPRESSIONS = ["now()"]
 
 
 class Warning(Enum):
@@ -62,6 +64,7 @@ class Warning(Enum):
     EDITOR_JSON_CONFIG_CHANGE = 26
     EDITOR_DIFFBASED_FILE_REMOVED = 27
     PROJECT_HOME_PATH = 28
+    INVALID_FILENAME_CHARS = 29
 
 
 class MultipleLayersWarning:
@@ -128,6 +131,7 @@ class MerginProjectValidator(object):
         self.check_datum_shift_grids()
         self.check_svgs_embedded()
         self.check_editor_perms()
+        self.check_default_filenames()
 
         return self.issues
 
@@ -345,7 +349,7 @@ class MerginProjectValidator(object):
             if dp.storageType() == "GPKG":
                 fields = layer.fields()
                 for f in fields:
-                    if INVALID_CHARS.search(f.name()):
+                    if INVALID_FIELD_NAME_CHARS.search(f.name()):
                         self.issues.append(SingleLayerWarning(lid, Warning.INCORRECT_FIELD_NAME))
 
     def check_snapping(self):
@@ -452,6 +456,26 @@ class MerginProjectValidator(object):
                     url = f"reset_file?layer={path}"
                     self.issues.append(SingleLayerWarning(layer.id(), Warning.EDITOR_DIFFBASED_FILE_REMOVED, url))
 
+    def check_default_filenames(self):
+        """Checks that file names which will be created by the app will contain valid characters.
+        Rationale: when there is a default value set up for a photo field with `now()` or using characters that are not
+        allowed in filenames (e.g. ':'). The server would refuse whole sync when the app tries to push these photos."""
+        for lid, layer in self.layers.items():
+            if lid not in self.editable:
+                continue
+            fields = layer.fields()
+            for i in range(fields.count()):
+                default_def = layer.defaultValueDefinition(i)
+                expr_str = default_def.expression()  # returns string or empty if none
+                if not expr_str:
+                    continue
+                if expr_str.lower() in DISALLOWED_FILENAME_EXPRESSIONS:
+                    self.issues.append(SingleLayerWarning(lid, Warning.INVALID_FILENAME_CHARS))
+                    break
+                if not is_valid_filename(expr_str):
+                    self.issues.append(SingleLayerWarning(lid, Warning.INVALID_FILENAME_CHARS))
+                    break
+
 
 def warning_display_string(warning_id, url=None):
     """Returns a display string for a corresponding warning"""
@@ -516,3 +540,5 @@ def warning_display_string(warning_id, url=None):
         return f"You don't have permission to remove this layer. <a href='{url}'>Reset the layer</a> to be able to sync changes."
     elif warning_id == Warning.PROJECT_HOME_PATH:
         return "QGIS Project Home Path is specified. <a href='fix_project_home_path'>Quick fix the issue. (This will unset project home)</a>"
+    elif warning_id == Warning.INVALID_FILENAME_CHARS:
+        return "You use invalid file name characters in some of your field's default expression. Files with invalid names cannot be upload to the cloud."
