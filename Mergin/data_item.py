@@ -11,6 +11,7 @@ except ImportError:
     from PyQt6 import sip
 import os
 import shutil
+import logging
 import posixpath
 from qgis.PyQt.QtCore import pyqtSignal, QTimer, QSettings
 from qgis.PyQt.QtGui import QIcon
@@ -158,6 +159,44 @@ class MerginLocalProjectItem(QgsDirectoryItem):
             return
         self.project_manager.project_status(self.path)
 
+    def _release_project_log_file_locks(self):
+        """
+        Close any logging.FileHandler that writes inside `path` (project dir).
+        This releases Windows file locks (e.g. .mergin/client-log.txt) before rmtree.
+        """
+        path = os.path.abspath(self.path)
+        # Iterate all known loggers in this Python process
+        for logger in list(logging.Logger.manager.loggerDict.values()):
+            if isinstance(logger, logging.Logger):
+                for h in list(logger.handlers):
+                    # Only FileHandlers have baseFilename; skip others (Stream, etc.)
+                    bf = getattr(h, "baseFilename", None)
+                    if bf:
+                        try:
+                            # Close handlers whose files live under the project path
+                            if os.path.commonpath([os.path.abspath(bf), path]) == path:
+                                h.flush()
+                                h.close()
+                                logger.removeHandler(h)
+
+                        except (ValueError, OSError, RuntimeError):
+                            pass
+        # Ensure logging subsystem finishes cleanup
+        try:
+            logging.shutdown()
+        except (OSError, ValueError, RuntimeError):
+            pass
+
+    def _delete_project_dir(self):
+        """Delete project directory"""
+        try:
+            shutil.rmtree(self.path)
+        except PermissionError as e:
+            # Optional: user-facing message when files are still locked
+            QMessageBox.warning(
+                None, "Project delete", f"Some files are still in use.\n\n{e}\n\nClose the project/QGIS and try again."
+            )
+
     def remove_local_project(self):
         if not self.path:
             return
@@ -201,17 +240,13 @@ class MerginLocalProjectItem(QgsDirectoryItem):
                     registry = QgsProviderRegistry.instance()
                     registry.setLibraryDirectory(registry.libraryDirectory())
 
-                # remove logging file handler
-                mp = MerginProject(self.path)
-                log_file_handler = mp.log.handlers[0]
-                log_file_handler.close()
-                mp.log.removeHandler(log_file_handler)
-                del mp
+                # Close all file handlers under this project so Windows releases .mergin/client-log.txt before rmtree
+                self._release_project_log_file_locks()
 
-                # as releasing lock on previously open files takes some time
-                # we have to wait a bit before removing them, otherwise rmtree
-                # will fail and removal of the local rpoject will fail as well
-                QTimer.singleShot(500, lambda: shutil.rmtree(self.path))
+                # Delay deletion by 400 ms so file handlers can fully close
+                # run delete via the Qt event loop
+                QTimer.singleShot(400, lambda: self._delete_project_dir())
+
             except PermissionError as e:
                 QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: {str(e)}")
                 msg = (
