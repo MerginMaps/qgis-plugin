@@ -484,6 +484,7 @@ class MerginProjectValidator(object):
             if not is_valid_filename(file["path"]):
                 self.issues.append(MultipleLayersWarning(Warning.INVALID_ADDED_FILENAME, file["path"]))
 
+
 def warning_display_string(warning_id, url=None):
     """Returns a display string for a corresponding warning"""
     help_mgr = MerginHelp()
