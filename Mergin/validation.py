@@ -64,7 +64,8 @@ class Warning(Enum):
     EDITOR_JSON_CONFIG_CHANGE = 26
     EDITOR_DIFFBASED_FILE_REMOVED = 27
     PROJECT_HOME_PATH = 28
-    INVALID_FILENAME_CHARS = 29
+    INVALID_DEFAULT_FILENAME = 29
+    INVALID_ADDED_FILENAME = 30
 
 
 class MultipleLayersWarning:
@@ -132,6 +133,7 @@ class MerginProjectValidator(object):
         self.check_svgs_embedded()
         self.check_editor_perms()
         self.check_default_filenames()
+        self.check_filenames()
 
         return self.issues
 
@@ -470,12 +472,17 @@ class MerginProjectValidator(object):
                 if not expr_str:
                     continue
                 if expr_str.lower() in DISALLOWED_FILENAME_EXPRESSIONS:
-                    self.issues.append(SingleLayerWarning(lid, Warning.INVALID_FILENAME_CHARS))
+                    self.issues.append(SingleLayerWarning(lid, Warning.INVALID_DEFAULT_FILENAME))
                     break
                 if not is_valid_filename(expr_str):
-                    self.issues.append(SingleLayerWarning(lid, Warning.INVALID_FILENAME_CHARS))
+                    self.issues.append(SingleLayerWarning(lid, Warning.INVALID_DEFAULT_FILENAME))
                     break
 
+    def check_filenames(self):
+        """Checks that files to upload have valid filenames. Otherwise, push will be refused by the server."""
+        for file in self.changes["added"]:
+            if not is_valid_filename(file["path"]):
+                self.issues.append(MultipleLayersWarning(Warning.INVALID_ADDED_FILENAME, file["path"]))
 
 def warning_display_string(warning_id, url=None):
     """Returns a display string for a corresponding warning"""
@@ -540,5 +547,7 @@ def warning_display_string(warning_id, url=None):
         return f"You don't have permission to remove this layer. <a href='{url}'>Reset the layer</a> to be able to sync changes."
     elif warning_id == Warning.PROJECT_HOME_PATH:
         return "QGIS Project Home Path is specified. <a href='fix_project_home_path'>Quick fix the issue. (This will unset project home)</a>"
-    elif warning_id == Warning.INVALID_FILENAME_CHARS:
+    elif warning_id == Warning.INVALID_DEFAULT_FILENAME:
         return "You use invalid file name characters in some of your field's default expression. Files with invalid names cannot be upload to the cloud."
+    elif warning_id == Warning.INVALID_ADDED_FILENAME:
+        return f"You cannot upload a file with invalid characters in it's name. Please sanitize the name of this file '{url}'"
