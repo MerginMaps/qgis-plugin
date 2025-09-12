@@ -237,7 +237,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             # check if evaluated expression contains invalid filename characters
             match = illegal_filename_chars.search(val)
             if match:
-                self.label_preview.setText(f"The file name '{val}.jpg' contains an invalid character. Do not use '{match.group()}' character in the file name.")
+                self.label_preview.setText(
+                    f"The file name '{val}.jpg' contains an invalid character. Do not use '{match.group()}' character in the file name."
+                )
                 return
         config = layer.fields().field(field_name).editorWidgetSetup().config()
         target_dir = resolve_target_dir(layer, config)
