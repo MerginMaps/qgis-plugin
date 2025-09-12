@@ -64,8 +64,7 @@ class Warning(Enum):
     EDITOR_JSON_CONFIG_CHANGE = 26
     EDITOR_DIFFBASED_FILE_REMOVED = 27
     PROJECT_HOME_PATH = 28
-    INVALID_DEFAULT_FILENAME = 29
-    INVALID_ADDED_FILENAME = 30
+    INVALID_ADDED_FILENAME = 29
 
 
 class MultipleLayersWarning:
@@ -132,7 +131,6 @@ class MerginProjectValidator(object):
         self.check_datum_shift_grids()
         self.check_svgs_embedded()
         self.check_editor_perms()
-        self.check_default_filenames()
         self.check_filenames()
 
         return self.issues
@@ -458,27 +456,6 @@ class MerginProjectValidator(object):
                     url = f"reset_file?layer={path}"
                     self.issues.append(SingleLayerWarning(layer.id(), Warning.EDITOR_DIFFBASED_FILE_REMOVED, url))
 
-    def check_default_filenames(self):
-        """Checks that file names which will be created by the app will contain valid characters.
-        Rationale: when there is a default value set up for a photo field with `now()` or using characters that are not
-        allowed in filenames (e.g. ':'). The server would refuse whole sync when the app tries to push these photos."""
-        for lid, layer in self.layers.items():
-            if lid not in self.editable:
-                continue
-            fields = layer.fields()
-            for i in range(fields.count()):
-                default_def = layer.defaultValueDefinition(i)
-                expr_str = default_def.expression()  # returns string or empty if none
-                if not expr_str:
-                    continue
-                field_name = fields[i].name()
-                if expr_str.lower() in DISALLOWED_FILENAME_EXPRESSIONS:
-                    self.issues.append(SingleLayerWarning(lid, Warning.INVALID_DEFAULT_FILENAME, field_name))
-                    break
-                if not is_valid_filename(expr_str):
-                    self.issues.append(SingleLayerWarning(lid, Warning.INVALID_DEFAULT_FILENAME, field_name))
-                    break
-
     def check_filenames(self):
         """Checks that files to upload have valid filenames. Otherwise, push will be refused by the server."""
         for file in self.changes["added"]:
@@ -549,7 +526,5 @@ def warning_display_string(warning_id, url=None):
         return f"You don't have permission to remove this layer. <a href='{url}'>Reset the layer</a> to be able to sync changes."
     elif warning_id == Warning.PROJECT_HOME_PATH:
         return "QGIS Project Home Path is specified. <a href='fix_project_home_path'>Quick fix the issue. (This will unset project home)</a>"
-    elif warning_id == Warning.INVALID_DEFAULT_FILENAME:
-        return f"The default expression set in field '{url}' will lead to invalid file name that cannot be synchronized. Please sanitize the expression."
     elif warning_id == Warning.INVALID_ADDED_FILENAME:
         return f"You cannot synchronize a file with invalid characters in it's name. Please sanitize the name of this file '{url}'"
