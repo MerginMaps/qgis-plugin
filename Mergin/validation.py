@@ -6,7 +6,6 @@ import re
 from enum import Enum
 from collections import defaultdict
 from pathlib import Path
-from pathvalidate import is_valid_filename
 
 from qgis.core import (
     QgsMapLayerType,
