@@ -250,12 +250,12 @@ class MerginProjectValidator(object):
                     # check for relative paths
                     if "RelativeStorage" in cfg and cfg["RelativeStorage"] == 0:
                         self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH))
-                    if "DefaultRoot" in cfg:
+                    if "DefaultRoot" in cfg and cfg["RelativeStorage"] == 2:
                         # default root should not be set to the local path
                         if os.path.isabs(cfg["DefaultRoot"]):
                             self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH))
 
-                        # expression-based path should be set with the data-defined overrride
+                        # expression-based path should be set with the data-defined override
                         expr = QgsExpression(cfg["DefaultRoot"])
                         if expr.isValid():
                             self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_EXPRESSION_PATH))
