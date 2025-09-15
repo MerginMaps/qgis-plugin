@@ -28,11 +28,11 @@ from .utils import (
     QGIS_NET_PROVIDERS,
     is_versioned_file,
     get_layer_by_path,
+    invalid_filename_character,
 )
 
 INVALID_FIELD_NAME_CHARS = re.compile('[\\\/\(\)\[\]\{\}"\n\r]')
 PROJECT_VARS = re.compile("\@project_home|\@project_path|\@project_folder")
-DISALLOWED_FILENAME_EXPRESSIONS = ["now()"]
 
 
 class Warning(Enum):
@@ -459,7 +459,7 @@ class MerginProjectValidator(object):
     def check_filenames(self):
         """Checks that files to upload have valid filenames. Otherwise, push will be refused by the server."""
         for file in self.changes["added"]:
-            if not is_valid_filename(file["path"]):
+            if invalid_filename_character(file["path"]):
                 self.issues.append(MultipleLayersWarning(Warning.INVALID_ADDED_FILENAME, file["path"]))
 
 

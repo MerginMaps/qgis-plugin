@@ -4,7 +4,6 @@
 import json
 import os
 import typing
-import re
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import Qt
@@ -31,11 +30,11 @@ from .utils import (
     set_tracking_layer_flags,
     is_experimental_plugin_enabled,
     remove_prefix,
+    invalid_filename_character,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
 ProjectConfigUiWidget, _ = uic.loadUiType(ui_file)
-illegal_filename_chars = re.compile(r'[\x00-\x19<>:|?*"]')
 
 
 class MerginProjectConfigFactory(QgsOptionsWidgetFactory):
@@ -235,10 +234,10 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             return
         if val:
             # check if evaluated expression contains invalid filename characters
-            match = illegal_filename_chars.search(val)
-            if match:
+            invalid_char = invalid_filename_character(val)
+            if invalid_char:
                 self.label_preview.setText(
-                    f"The file name '{val}.jpg' contains an invalid character. Do not use '{match.group()}' character in the file name."
+                    f"The file name '{val}.jpg' contains an invalid character. Do not use '{invalid_char}' character in the file name."
                 )
                 return
         config = layer.fields().field(field_name).editorWidgetSetup().config()

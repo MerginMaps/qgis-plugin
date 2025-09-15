@@ -1656,3 +1656,12 @@ def is_experimental_plugin_enabled() -> bool:
     else:
         value = settings.value("plugin-manager/allow-experimental", False)
     return value
+
+
+def invalid_filename_character(filename: str) -> str:
+    """Returns invalid character for the filename"""
+    illegal_filename_chars = re.compile(r'[\x00-\x19<>:|?*"]')
+
+    match = illegal_filename_chars.search(filename)
+    if match:
+        return match.group()
