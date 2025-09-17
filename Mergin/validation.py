@@ -263,8 +263,6 @@ class MerginProjectValidator(object):
                                 expr = QgsExpression(cfg["DefaultRoot"])
                                 if not expr.isValid():
                                     self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_EXPRESSION_PATH))
-                            else:
-                                self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_DEFAULT_PATH))
 
                             # using hyperlinks for document path is not allowed when
                             if "UseLink" in cfg:
@@ -533,5 +531,3 @@ def warning_display_string(warning_id, url=None):
         return "QGIS Project Home Path is specified. <a href='fix_project_home_path'>Quick fix the issue. (This will unset project home)</a>"
     elif warning_id == Warning.INVALID_ADDED_FILENAME:
         return f"You cannot synchronize a file with invalid characters in it's name. Please sanitize the name of this file '{url}'"
-    elif warning_id == Warning.ATTACHMENT_DEFAULT_PATH:
-        return "Attachment widget uses default path that is not defined. Please set the default path or store the attachemt 'Relative to Project Path'"
