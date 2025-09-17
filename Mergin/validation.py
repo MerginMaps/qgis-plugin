@@ -7,6 +7,7 @@ from enum import Enum
 from collections import defaultdict
 from pathlib import Path
 
+from qgis._core import QgsExpressionContext, QgsExpressionContextUtils
 from qgis.core import (
     QgsMapLayerType,
     QgsProject,
@@ -64,6 +65,7 @@ class Warning(Enum):
     EDITOR_DIFFBASED_FILE_REMOVED = 27
     PROJECT_HOME_PATH = 28
     INVALID_ADDED_FILENAME = 29
+    ATTACHMENT_DEFAULT_PATH = 30
 
 
 class MultipleLayersWarning:
@@ -248,21 +250,25 @@ class MerginProjectValidator(object):
                 if ws and ws.type() == "ExternalResource":
                     cfg = ws.config()
                     # check for relative paths
-                    if "RelativeStorage" in cfg and cfg["RelativeStorage"] == 0:
-                        self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH))
-                    if "DefaultRoot" in cfg and cfg["RelativeStorage"] == 2:
-                        # default root should not be set to the local path
-                        if os.path.isabs(cfg["DefaultRoot"]):
-                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH))
+                    if "RelativeStorage" in cfg:
+                        if cfg["RelativeStorage"] == 0:
+                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH))
+                        if cfg["RelativeStorage"] == 2:
+                            if "DefaultRoot" in cfg:
+                                # default root should not be set to the local path
+                                if os.path.isabs(cfg["DefaultRoot"]):
+                                    self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH))
 
-                        # expression-based path should be set with the data-defined override
-                        expr = QgsExpression(cfg["DefaultRoot"])
-                        if expr.isValid():
-                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_EXPRESSION_PATH))
+                                # expression-based path should be set with the data-defined override
+                                expr = QgsExpression(cfg["DefaultRoot"])
+                                if not expr.isValid():
+                                    self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_EXPRESSION_PATH))
+                            else:
+                                self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_DEFAULT_PATH))
 
-                        # using hyperlinks for document path is not allowed when
-                        if "UseLink" in cfg:
-                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_HYPERLINK))
+                            # using hyperlinks for document path is not allowed when
+                            if "UseLink" in cfg:
+                                self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_HYPERLINK))
 
                     # check that expression uses Mergin variables
                     try:
@@ -527,3 +533,5 @@ def warning_display_string(warning_id, url=None):
         return "QGIS Project Home Path is specified. <a href='fix_project_home_path'>Quick fix the issue. (This will unset project home)</a>"
     elif warning_id == Warning.INVALID_ADDED_FILENAME:
         return f"You cannot synchronize a file with invalid characters in it's name. Please sanitize the name of this file '{url}'"
+    elif warning_id == Warning.ATTACHMENT_DEFAULT_PATH:
+        return "Attachment widget uses default path that is not defined. Please set the default path or store the attachemt 'Relative to Project Path'"
