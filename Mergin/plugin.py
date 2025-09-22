@@ -412,7 +412,7 @@ class MerginPlugin:
                 iface.messageBar().pushMessage(
                     "Mergin Maps",
                     "Your attention is required.&nbsp;Please visit the "
-                    f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required'>"
+                    f"<a href='{self.mc.url}/dashboard?utm_source=plugin&utm_medium=attention-required&workspace={workspace_id}'>"
                     "Mergin dashboard</a>",
                     level=Qgis.Critical,
                     duration=0,
