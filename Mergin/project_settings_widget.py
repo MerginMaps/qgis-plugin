@@ -30,6 +30,7 @@ from .utils import (
     set_tracking_layer_flags,
     is_experimental_plugin_enabled,
     remove_prefix,
+    invalid_filename_character,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -224,14 +225,21 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         exp = QgsExpression(expression)
         exp.prepare(context)
         if exp.hasParserError():
-            self.label_preview.setText(f"<i>{exp.parserErrorString()}</i>")
+            self.label_preview.setText(f"{exp.parserErrorString()}")
             return
 
         val = exp.evaluate(context)
         if exp.hasEvalError():
-            self.label_preview.setText(f"<i>{exp.evalErrorString()}</i>")
+            self.label_preview.setText(f"{exp.evalErrorString()}")
             return
-
+        if val:
+            # check if evaluated expression contains invalid filename characters
+            invalid_char = invalid_filename_character(val)
+            if invalid_char:
+                self.label_preview.setText(
+                    f"The file name '{val}.jpg' contains an invalid character. Do not use '{invalid_char}' character in the file name."
+                )
+                return
         config = layer.fields().field(field_name).editorWidgetSetup().config()
         target_dir = resolve_target_dir(layer, config)
         prefix = prefix_for_relative_path(
@@ -240,9 +248,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             target_dir,
         )
         if prefix:
-            self.label_preview.setText(f"<i>{remove_prefix(prefix, QgsProject.instance().homePath())}/{val}.jpg</i>")
+            self.label_preview.setText(f"{remove_prefix(prefix, QgsProject.instance().homePath())}/{val}.jpg")
         else:
-            self.label_preview.setText(f"<i>{val}.jpg</i>")
+            self.label_preview.setText(f"{val}.jpg")
 
     def check_project(self, state):
         """

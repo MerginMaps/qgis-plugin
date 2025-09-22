@@ -27,9 +27,10 @@ from .utils import (
     QGIS_NET_PROVIDERS,
     is_versioned_file,
     get_layer_by_path,
+    invalid_filename_character,
 )
 
-INVALID_CHARS = re.compile('[\\\/\(\)\[\]\{\}"\n\r]')
+INVALID_FIELD_NAME_CHARS = re.compile('[\\\/\(\)\[\]\{\}"\n\r]')
 PROJECT_VARS = re.compile("\@project_home|\@project_path|\@project_folder")
 
 
@@ -62,6 +63,7 @@ class Warning(Enum):
     EDITOR_JSON_CONFIG_CHANGE = 26
     EDITOR_DIFFBASED_FILE_REMOVED = 27
     PROJECT_HOME_PATH = 28
+    INVALID_ADDED_FILENAME = 29
 
 
 class MultipleLayersWarning:
@@ -128,6 +130,7 @@ class MerginProjectValidator(object):
         self.check_datum_shift_grids()
         self.check_svgs_embedded()
         self.check_editor_perms()
+        self.check_filenames()
 
         return self.issues
 
@@ -345,7 +348,7 @@ class MerginProjectValidator(object):
             if dp.storageType() == "GPKG":
                 fields = layer.fields()
                 for f in fields:
-                    if INVALID_CHARS.search(f.name()):
+                    if INVALID_FIELD_NAME_CHARS.search(f.name()):
                         self.issues.append(SingleLayerWarning(lid, Warning.INCORRECT_FIELD_NAME))
 
     def check_snapping(self):
@@ -452,6 +455,12 @@ class MerginProjectValidator(object):
                     url = f"reset_file?layer={path}"
                     self.issues.append(SingleLayerWarning(layer.id(), Warning.EDITOR_DIFFBASED_FILE_REMOVED, url))
 
+    def check_filenames(self):
+        """Checks that files to upload have valid filenames. Otherwise, push will be refused by the server."""
+        for file in self.changes["added"]:
+            if invalid_filename_character(file["path"]):
+                self.issues.append(MultipleLayersWarning(Warning.INVALID_ADDED_FILENAME, file["path"]))
+
 
 def warning_display_string(warning_id, url=None):
     """Returns a display string for a corresponding warning"""
@@ -516,3 +525,5 @@ def warning_display_string(warning_id, url=None):
         return f"You don't have permission to remove this layer. <a href='{url}'>Reset the layer</a> to be able to sync changes."
     elif warning_id == Warning.PROJECT_HOME_PATH:
         return "QGIS Project Home Path is specified. <a href='fix_project_home_path'>Quick fix the issue. (This will unset project home)</a>"
+    elif warning_id == Warning.INVALID_ADDED_FILENAME:
+        return f"You cannot synchronize a file with invalid characters in it's name. Please sanitize the name of this file '{url}'"
