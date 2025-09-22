@@ -7,7 +7,6 @@ from enum import Enum
 from collections import defaultdict
 from pathlib import Path
 
-from qgis._core import QgsExpressionContext, QgsExpressionContextUtils
 from qgis.core import (
     QgsMapLayerType,
     QgsProject,
@@ -65,7 +64,6 @@ class Warning(Enum):
     EDITOR_DIFFBASED_FILE_REMOVED = 27
     PROJECT_HOME_PATH = 28
     INVALID_ADDED_FILENAME = 29
-    ATTACHMENT_DEFAULT_PATH = 30
 
 
 class MultipleLayersWarning:

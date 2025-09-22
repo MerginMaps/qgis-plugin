@@ -79,7 +79,7 @@ class test_validations(unittest.TestCase):
         validator.issues = []
 
         # local path
-        config["RelativeStorage"] = 1
+        config["RelativeStorage"] = 2
         config["DefaultRoot"] = "/tmp/photos"
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
         layer.setEditorWidgetSetup(0, widget_setup)
