@@ -5,7 +5,6 @@ import os
 import re
 from enum import Enum
 from collections import defaultdict
-from pathlib import Path
 
 from qgis.core import (
     QgsMapLayerType,
@@ -28,6 +27,7 @@ from .utils import (
     is_versioned_file,
     get_layer_by_path,
     invalid_filename_character,
+    is_inside,
 )
 
 INVALID_FIELD_NAME_CHARS = re.compile('[\\\/\(\)\[\]\{\}"\n\r]')
@@ -249,18 +249,21 @@ class MerginProjectValidator(object):
                     cfg = ws.config()
                     # check for relative paths
                     if "RelativeStorage" in cfg:
-                        if cfg["RelativeStorage"] == 0:
+                        if cfg["RelativeStorage"] == 0:  # absolute path
                             self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH))
-                        if cfg["RelativeStorage"] == 2:
+                        if cfg["RelativeStorage"] == 2:  # relative to default path
                             if "DefaultRoot" in cfg:
-                                # default root should not be set to the local path
-                                if os.path.isabs(cfg["DefaultRoot"]):
-                                    self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH))
-
                                 # expression-based path should be set with the data-defined override
                                 expr = QgsExpression(cfg["DefaultRoot"])
                                 if not expr.isValid():
                                     self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_EXPRESSION_PATH))
+                                else:
+                                    # should be inside project folder
+                                    context = layer.createExpressionContext()
+                                    expr.prepare(context)
+                                    default_path = expr.evaluate(context)
+                                    if not is_inside(self.qgis_proj_dir, default_path):
+                                        self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH, fields[i].name()))
 
                             # using hyperlinks for document path is not allowed when
                             if "UseLink" in cfg:
@@ -396,28 +399,9 @@ class MerginProjectValidator(object):
                     # check 1: Embedded (base64-encoded) SVG -> OK
                     if sym_layer.path().startswith("base64:"):
                         continue
-
-                    if self.qgis_proj_dir is not None:
-                        proj_dir = Path(self.qgis_proj_dir).resolve()
-                        svg_path = Path(sym_layer.path())
-
-                        # sanitize the path and convert to absolute if it is not yet
-                        if not svg_path.is_absolute():
-                            svg_path = (proj_dir / svg_path).resolve()
-                        else:
-                            svg_path = svg_path.resolve()
-
-                        # check 2: Inside project directory
-                        try:
-                            if svg_path.is_relative_to(proj_dir):
-                                continue
-                        except AttributeError:
-                            # fallback for Python < 3.9
-                            try:
-                                svg_path.relative_to(proj_dir)
-                                continue
-                            except ValueError:
-                                pass
+                    # check 2: Inside project directory -> OK
+                    if is_inside(self.qgis_proj_dir, sym_layer.path()):
+                        continue
 
                     # both checks failed - not embedded/packaged -> display the warning
                     not_embedded = True
@@ -486,7 +470,7 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.ATTACHMENT_ABSOLUTE_PATH:
         return f"Attachment widget uses absolute paths. <a href='{help_mgr.howto_attachment_widget()}'>Read more.</a>"
     elif warning_id == Warning.ATTACHMENT_LOCAL_PATH:
-        return "Attachment widget uses local path"
+        return f"Attachment widget of '{url}' field uses a local path. You won't be able to add attachments to this field using the mobile app."
     elif warning_id == Warning.ATTACHMENT_EXPRESSION_PATH:
         return "Attachment widget incorrectly uses expression-based path"
     elif warning_id == Warning.ATTACHMENT_HYPERLINK:
