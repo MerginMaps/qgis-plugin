@@ -45,7 +45,6 @@ class Warning(Enum):
     NO_EDITABLE_LAYERS = 8
     ATTACHMENT_ABSOLUTE_PATH = 9
     ATTACHMENT_LOCAL_PATH = 10
-    ATTACHMENT_EXPRESSION_PATH = 11
     ATTACHMENT_HYPERLINK = 12
     DATABASE_SCHEMA_CHANGE = 13
     KEY_FIELD_NOT_UNIQUE = 14
@@ -253,17 +252,20 @@ class MerginProjectValidator(object):
                             self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH))
                         if cfg["RelativeStorage"] == 2:  # relative to default path
                             if "DefaultRoot" in cfg:
-                                # expression-based path should be set with the data-defined override
+                                # should be inside project folder
                                 expr = QgsExpression(cfg["DefaultRoot"])
                                 if not expr.isValid():
-                                    self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_EXPRESSION_PATH))
+                                    self.issues.append(
+                                        SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH, fields[i].name())
+                                    )
                                 else:
-                                    # should be inside project folder
                                     context = layer.createExpressionContext()
                                     expr.prepare(context)
                                     default_path = expr.evaluate(context)
                                     if not is_inside(self.qgis_proj_dir, default_path):
-                                        self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH, fields[i].name()))
+                                        self.issues.append(
+                                            SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH, fields[i].name())
+                                        )
 
                             # using hyperlinks for document path is not allowed when
                             if "UseLink" in cfg:
@@ -470,9 +472,7 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.ATTACHMENT_ABSOLUTE_PATH:
         return f"Attachment widget uses absolute paths. <a href='{help_mgr.howto_attachment_widget()}'>Read more.</a>"
     elif warning_id == Warning.ATTACHMENT_LOCAL_PATH:
-        return f"Attachment widget of '{url}' field uses a local path. You won't be able to add attachments to this field using the mobile app."
-    elif warning_id == Warning.ATTACHMENT_EXPRESSION_PATH:
-        return "Attachment widget incorrectly uses expression-based path"
+        return f"Attachment widget of '{url}' field uses a local or invalid path. Only paths inside the project folder are supported in the mobile app."
     elif warning_id == Warning.ATTACHMENT_HYPERLINK:
         return "Attachment widget uses hyperlink"
     elif warning_id == Warning.DATABASE_SCHEMA_CHANGE:
