@@ -1665,6 +1665,7 @@ def invalid_filename_character(filename: str) -> str:
     if match:
         return match.group()
 
+
 def is_inside(proj_dir: str, to_check: str) -> bool:
     """Checks if the given path is inside the project directory"""
     proj_dir_path = Path(proj_dir).resolve()
