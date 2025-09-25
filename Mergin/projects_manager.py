@@ -34,6 +34,9 @@ from .utils import (
     UnsavedChangesStrategy,
     write_project_variables,
     bytes_to_human_size,
+    get_push_changes_batch,
+    SYNC_ATTEMPTS,
+    SYNC_ATTEMPT_WAIT,
 )
 from .utils_auth import get_stored_mergin_server_url
 
@@ -366,102 +369,105 @@ class MerginProjectsManager(object):
             )
             return
 
-        dlg = SyncDialog()
-        dlg.pull_start(self.mc, project_dir, project_name)
-
-        dlg.exec()  # blocks until success, failure or cancellation
-
-        if dlg.exception:
-            # pull failed for some reason
-            if isinstance(dlg.exception, LoginError):
-                login_error_message(dlg.exception)
-            elif isinstance(dlg.exception, ClientError):
-                QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
-            elif isinstance(dlg.exception, AuthTokenExpiredError):
-                self.plugin.auth_token_expired()
+        has_push_changes = True
+        error_retries_attempts = 0
+        while has_push_changes:
+            dlg = SyncDialog()
+            pull_timeout = 250
+            if error_retries_attempts > 0:
+                pull_timeout = SYNC_ATTEMPT_WAIT * 1000
+                dlg.labelStatus.setText("A sync conflict was detected. We are now retrying the synchronization to ensure your project is up to date.")
             else:
-                unhandled_exception_message(
-                    dlg.exception_details(),
-                    "Project sync",
-                    f"Something went wrong while synchronising your project {project_name}.",
-                    self.mc,
-                )
-            return
+                dlg.labelStatus.setText("Starting project synchronisation...")
+            dlg.pull_start(self.mc, project_dir, project_name, pull_timeout)
+            dlg.exec()  # blocks until success, failure or cancellation
 
-        # after pull project might be in the unfinished pull state. So we
-        # have to check and if this is the case, try to close project and
-        # finish pull. As in the result we will have conflicted copies created
-        # we stop and ask user to examine them.
-        if self.mc.has_unfinished_pull(project_dir):
-            self.close_project_and_fix_pull(project_dir)
-            return
-
-        if dlg.pull_conflicts:
-            self.report_conflicts(dlg.pull_conflicts)
-            return
-
-        if not dlg.is_complete:
-            # we were cancelled
-            return
-
-        # pull finished, start push
-        if any(push_changes.values()) and not self.mc.has_writing_permissions(project_name):
-            QMessageBox.information(
-                None,
-                "Project sync",
-                "You have no writing rights to this project",
-                QMessageBox.StandardButton.Close,
-            )
-            return
-
-        dlg = SyncDialog()
-        dlg.push_start(self.mc, project_dir, project_name)
-        dlg.exec()  # blocks until success, failure or cancellation
-
-        qgis_proj_filename = os.path.normpath(QgsProject.instance().fileName())
-        qgis_proj_basename = os.path.basename(qgis_proj_filename)
-        qgis_proj_changed = False
-        for updated in pull_changes["updated"]:
-            if updated["path"] == qgis_proj_basename:
-                qgis_proj_changed = True
-                break
-        if qgis_proj_filename in find_qgis_files(project_dir) and qgis_proj_changed:
-            self.open_project(project_dir)
-
-        if dlg.exception:
-            # push failed for some reason
-            if isinstance(dlg.exception, LoginError):
-                login_error_message(dlg.exception)
-            elif isinstance(dlg.exception, ClientError):
-                if dlg.exception.http_error == 400 and "Another process" in dlg.exception.detail:
-                    # To note we check for a string since error in flask doesn't return server error code
-                    msg = "Somebody else is syncing, please try again later"
-                elif dlg.exception.server_code == ErrorCode.StorageLimitHit.value:
-                    msg = f"{dlg.exception.detail}\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response['storage_limit'])}"
+            if dlg.exception:
+                # pull failed for some reason
+                if isinstance(dlg.exception, LoginError):
+                    login_error_message(dlg.exception)
+                elif isinstance(dlg.exception, ClientError):
+                    QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
+                elif isinstance(dlg.exception, AuthTokenExpiredError):
+                    self.plugin.auth_token_expired()
                 else:
-                    msg = str(dlg.exception)
-                QMessageBox.critical(None, "Project sync", "Client error: \n" + msg)
-            elif isinstance(dlg.exception, AuthTokenExpiredError):
-                self.plugin.auth_token_expired()
-            else:
-                unhandled_exception_message(
-                    dlg.exception_details(),
-                    "Project sync",
-                    f"Something went wrong while synchronising your project {project_name}.",
-                    self.mc,
-                )
-            return
+                    unhandled_exception_message(
+                        dlg.exception_details(),
+                        "Project sync",
+                        f"Something went wrong while synchronising your project {project_name}.",
+                        self.mc,
+                    )
+                return
 
-        if dlg.is_complete:
-            # TODO: report success only when we have actually done anything
-            msg = "Mergin Maps project {} synchronised successfully".format(project_name)
-            QMessageBox.information(None, "Project sync", msg, QMessageBox.StandardButton.Close)
-            # clear canvas cache so any changes become immediately visible to users
-            self.iface.mapCanvas().clearCache()
-            self.iface.mapCanvas().refresh()
-        else:
-            # we were cancelled - but no need to show a message box about that...?
-            pass
+            # after pull project might be in the unfinished pull state. So we
+            # have to check and if this is the case, try to close project and
+            # finish pull. As in the result we will have conflicted copies created
+            # we stop and ask user to examine them.
+            if self.mc.has_unfinished_pull(project_dir):
+                self.close_project_and_fix_pull(project_dir)
+                return
+
+            if dlg.pull_conflicts:
+                self.report_conflicts(dlg.pull_conflicts)
+                return
+
+            if not dlg.is_complete:
+                # we were cancelled
+                return
+
+            dlg = SyncDialog()
+            dlg.labelStatus.setText("Preparing project upload...")
+            dlg.push_start(self.mc, project_dir, project_name)
+            dlg.exec()  # blocks until success, failure or cancellation
+
+            qgis_proj_filename = os.path.normpath(QgsProject.instance().fileName())
+            qgis_proj_basename = os.path.basename(qgis_proj_filename)
+            qgis_proj_changed = False
+            for updated in pull_changes["updated"]:
+                if updated["path"] == qgis_proj_basename:
+                    qgis_proj_changed = True
+                    break
+            if qgis_proj_filename in find_qgis_files(project_dir) and qgis_proj_changed:
+                self.open_project(project_dir)
+
+            if dlg.exception:
+                # push failed for some reason
+                if isinstance(dlg.exception, LoginError):
+                    login_error_message(dlg.exception)
+                elif isinstance(dlg.exception, ClientError):
+                    if error_retries_attempts < SYNC_ATTEMPTS - 1 and dlg.exception.is_retryable_sync():
+                        error_retries_attempts += 1
+                        continue  # try again
+                    if dlg.exception.http_error == 400 and "Another process" in dlg.exception.detail or dlg.exception.server_code == ErrorCode.AnotherUploadRunning.value:
+                        # To note we check for a string since error in flask doesn't return server error code
+                        msg = "Somebody else is syncing, please try again later"
+                    elif dlg.exception.server_code == ErrorCode.StorageLimitHit.value:
+                        msg = f"{dlg.exception.detail}\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response['storage_limit'])}"
+                    else:
+                        msg = str(dlg.exception)
+                    QMessageBox.critical(None, "Project sync", "Client error: \n" + msg)
+                elif isinstance(dlg.exception, AuthTokenExpiredError):
+                    self.plugin.auth_token_expired()
+                else:
+                    unhandled_exception_message(
+                        dlg.exception_details(),
+                        "Project sync",
+                        f"Something went wrong while synchronising your project {project_name}.",
+                        self.mc,
+                    )
+                return
+            _, has_push_changes = get_push_changes_batch(self.mc, project_dir)
+            error_retries_attempts = 0
+            if dlg.is_complete and not has_push_changes:
+                # TODO: report success only when we have actually done anything
+                msg = "Mergin Maps project {} synchronised successfully".format(project_name)
+                QMessageBox.information(None, "Project sync", msg, QMessageBox.StandardButton.Close)
+                # clear canvas cache so any changes become immediately visible to users
+                self.iface.mapCanvas().clearCache()
+                self.iface.mapCanvas().refresh()
+            else:
+                # we were cancelled - but no need to show a message box about that...?
+                pass
 
     def submit_logs(self, project_dir):
         logs_path = os.path.join(project_dir, ".mergin", "client-log.txt")
