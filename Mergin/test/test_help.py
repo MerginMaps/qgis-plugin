@@ -42,36 +42,11 @@ class test_help(unittest.TestCase):
         self.assertEqual(resp.status, 200)
 
 
-def create_temp_layer(location, name="test_layer", driver="GPKG") -> QgsVectorLayer:
+def create_mem_layer() -> QgsVectorLayer:
     """
-    Create a temporary file-based vector layer (default: GeoPackage).
-    Returns a QgsVectorLayer that you can use in tests.
+    Create a memory layer.
     """
-    path = os.path.join(location, f"{name}.gpkg" if driver == "GPKG" else f"{name}.shp")
-    # temp_project = QgsProject()
-
-    fields = QgsFields()
-    fields.append(QgsField("id", QVariant.Int))
-    fields.append(QgsField("name", QVariant.String))
-
-    options = QgsVectorFileWriter.SaveVectorOptions()
-    options.driverName = driver
-    options.layerName = name
-
-    writer = QgsVectorFileWriter.create(
-        path,
-        fields,
-        QgsWkbTypes.Point,
-        QgsCoordinateReferenceSystem("EPSG:4326"),
-        QgsCoordinateTransformContext(),
-        options,
-    )
-    del writer
-
-    layer = QgsVectorLayer(path, name, "ogr")
-    if not layer.isValid():
-        raise RuntimeError(f"Failed to create test layer at {path}")
-    # temp_project.addMapLayer(layer)
+    layer = QgsVectorLayer("Point", "test", "memory")
 
     return layer
 
