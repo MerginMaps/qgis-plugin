@@ -2,7 +2,7 @@
 # Copyright Lutra Consulting Limited
 
 import shutil
-from datetime import datetime, timezone, tzinfo
+from datetime import datetime, timezone
 from enum import Enum
 from urllib.error import URLError, HTTPError
 import configparser
@@ -17,6 +17,7 @@ import tempfile
 import json
 import glob
 import re
+from pathlib import Path
 
 from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog, QCheckBox
@@ -31,7 +32,6 @@ from qgis.core import (
     QgsDataProvider,
     QgsEditorWidgetSetup,
     QgsExpressionContextUtils,
-    QgsField,
     QgsMapLayerType,
     QgsMarkerSymbol,
     QgsMeshDataProvider,
@@ -39,7 +39,6 @@ from qgis.core import (
     QgsRaster,
     QgsRasterDataProvider,
     QgsRasterFileWriter,
-    QgsRasterLayer,
     QgsRasterPipe,
     QgsRasterProjector,
     QgsVectorDataProvider,
@@ -1667,3 +1666,18 @@ def invalid_filename_character(filename: str) -> str:
     match = illegal_filename_chars.search(filename)
     if match:
         return match.group()
+
+
+def is_inside(proj_dir: str, to_check: str) -> bool:
+    """Checks if the given path is inside the project directory"""
+    proj_dir_path = Path(proj_dir).resolve()
+    path_to_check = Path(to_check).resolve()
+    # Python 3.9+
+    if hasattr(path_to_check, "is_relative_to"):
+        return path_to_check.is_relative_to(proj_dir_path)
+    # Python <3.9
+    try:
+        path_to_check.relative_to(proj_dir_path)
+        return True
+    except ValueError:
+        return False

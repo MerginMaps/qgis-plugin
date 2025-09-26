@@ -6,15 +6,16 @@
 
 import os
 import base64
+import shutil
+import tempfile
 
 from qgis.PyQt.QtCore import QVariant
 
 from qgis.core import (
-    QgsVectorLayer,
+    QgsProject,
     QgsField,
     QgsEditorWidgetSetup,
     QgsMarkerSymbol,
-    QgsSvgMarkerSymbolLayer,
     QgsSvgMarkerSymbolLayer,
     QgsRasterLayer,
     QgsVectorTileLayer,
@@ -22,6 +23,7 @@ from qgis.core import (
 )
 from qgis.testing import start_app, unittest
 
+from Mergin.test.test_help import create_mem_layer
 from Mergin.validation import MerginProjectValidator, Warning, SingleLayerWarning
 from Mergin.utils import TILES_URL
 
@@ -35,20 +37,26 @@ class test_validations(unittest.TestCase):
         start_app()
 
     def tearDown(self):
-        pass
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def setUp(self):
-        pass
+        self.temp_dir = tempfile.mkdtemp()
+        self.mem_layer = create_mem_layer()
+        temp_proj = QgsProject.instance()
+        temp_proj.addMapLayer(self.mem_layer)
+        temp_proj.setFileName(f"{self.temp_dir}/test_project.qgz")
 
     def test_attachment_widget(self):
-        layer = QgsVectorLayer("Point", "test", "memory")
-        fields = [QgsField("photo", QVariant.String)]
-        layer.dataProvider().addAttributes(fields)
-        layer.updateFields()
+        photo_field = [QgsField("photo", QVariant.String)]
+        self.mem_layer.dataProvider().addAttributes(photo_field)
+        self.mem_layer.updateFields()
+        fields = self.mem_layer.fields()
+        photo_field_idx = fields.indexFromName("photo")
 
         validator = MerginProjectValidator()
-        validator.layers = {"mem_1": layer}
-        validator.editable = ["mem_1"]
+        validator.layers = {self.mem_layer.id(): self.mem_layer}
+        validator.editable = [self.mem_layer.id()]
+        validator.qgis_proj_dir = self.temp_dir
 
         # absolute path
         config = {
@@ -69,50 +77,53 @@ class test_validations(unittest.TestCase):
             "StorageType": None,
         }
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
-        layer.setEditorWidgetSetup(0, widget_setup)
+        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
         validator.check_attachment_widget()
         self.assertTrue(len(validator.issues) == 1)
         issue = validator.issues[0]
         self.assertTrue(isinstance(issue, SingleLayerWarning))
-        self.assertEqual(issue.layer_id, "mem_1")
+        self.assertEqual(issue.layer_id, self.mem_layer.id())
         self.assertEqual(issue.warning, Warning.ATTACHMENT_ABSOLUTE_PATH)
         validator.issues = []
 
         # local path
-        config["RelativeStorage"] = 1
+        config["RelativeStorage"] = 2
         config["DefaultRoot"] = "/tmp/photos"
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
-        layer.setEditorWidgetSetup(0, widget_setup)
+        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
         validator.check_attachment_widget()
         self.assertTrue(len(validator.issues) == 1)
         issue = validator.issues[0]
         self.assertTrue(isinstance(issue, SingleLayerWarning))
-        self.assertEqual(issue.layer_id, "mem_1")
+        self.assertEqual(issue.layer_id, self.mem_layer.id())
         self.assertEqual(issue.warning, Warning.ATTACHMENT_LOCAL_PATH)
         validator.issues = []
 
-        # default path not expression
+        # default path expression
         config["DefaultRoot"] = "@project_home + '/Photos'"
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
-        layer.setEditorWidgetSetup(0, widget_setup)
+        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
         validator.check_attachment_widget()
-        self.assertTrue(len(validator.issues) == 1)
-        issue = validator.issues[0]
-        self.assertTrue(isinstance(issue, SingleLayerWarning))
-        self.assertEqual(issue.layer_id, "mem_1")
-        self.assertEqual(issue.warning, Warning.ATTACHMENT_EXPRESSION_PATH)
-        validator.issues = []
+        self.assertTrue(len(validator.issues) == 0)
+
+        # relative to project path
+        config["RelativeStorage"] = 1
+        config.pop("DefaultRoot", None)
+        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
+        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
+        validator.check_attachment_widget()
+        self.assertTrue(len(validator.issues) == 0)
 
         # uses link
-        config["DefaultRoot"] = ""
+        config["RelativeStorage"] = 2
         config["UseLink"] = True
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
-        layer.setEditorWidgetSetup(0, widget_setup)
+        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
         validator.check_attachment_widget()
         self.assertTrue(len(validator.issues) == 1)
         issue = validator.issues[0]
         self.assertTrue(isinstance(issue, SingleLayerWarning))
-        self.assertEqual(issue.layer_id, "mem_1")
+        self.assertEqual(issue.layer_id, self.mem_layer.id())
         self.assertEqual(issue.warning, Warning.ATTACHMENT_HYPERLINK)
         validator.issues = []
 
@@ -130,31 +141,31 @@ class test_validations(unittest.TestCase):
             "type": "collection",
         }
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
-        layer.setEditorWidgetSetup(0, widget_setup)
+        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
         validator.check_attachment_widget()
         self.assertTrue(len(validator.issues) == 1)
         issue = validator.issues[0]
         self.assertTrue(isinstance(issue, SingleLayerWarning))
-        self.assertEqual(issue.layer_id, "mem_1")
+        self.assertEqual(issue.layer_id, self.mem_layer.id())
         self.assertEqual(issue.warning, Warning.ATTACHMENT_WRONG_EXPRESSION)
         validator.issues = []
 
     def test_embedded_svg(self):
-        layer = QgsVectorLayer("Point", "test", "memory")
         symbol = QgsMarkerSymbol()
         symbol_layer = QgsSvgMarkerSymbolLayer(os.path.join(test_data_path, "transport_aerodrome.svg"))
         symbol.changeSymbolLayer(0, symbol_layer)
-        layer.renderer().setSymbol(symbol)
+        self.mem_layer.renderer().setSymbol(symbol)
 
         validator = MerginProjectValidator()
-        validator.layers = {"mem_1": layer}
-        validator.editable = ["mem_1"]
+        validator.layers = {self.mem_layer.id(): self.mem_layer}
+        validator.editable = [self.mem_layer.id()]
+        validator.qgis_proj_dir = self.temp_dir
 
         validator.check_svgs_embedded()
         self.assertTrue(len(validator.issues) == 1)
         issue = validator.issues[0]
         self.assertTrue(isinstance(issue, SingleLayerWarning))
-        self.assertEqual(issue.layer_id, "mem_1")
+        self.assertEqual(issue.layer_id, self.mem_layer.id())
         self.assertEqual(issue.warning, Warning.SVG_NOT_EMBEDDED)
         validator.issues = []
 
@@ -166,10 +177,10 @@ class test_validations(unittest.TestCase):
         symbol = QgsMarkerSymbol()
         symbol_layer = QgsSvgMarkerSymbolLayer(svg)
         symbol.changeSymbolLayer(0, symbol_layer)
-        layer.renderer().setSymbol(symbol)
+        self.mem_layer.renderer().setSymbol(symbol)
 
-        validator.layers = {"mem_1": layer}
-        validator.editable = ["mem_1"]
+        validator.layers = {self.mem_layer.id(): self.mem_layer}
+        validator.editable = [self.mem_layer.id()]
         validator.check_svgs_embedded()
         self.assertTrue(len(validator.issues) == 0)
 
