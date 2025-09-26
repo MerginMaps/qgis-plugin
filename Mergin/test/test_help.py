@@ -5,8 +5,20 @@
 
 
 import os
+import tempfile
 import urllib.request
 
+from qgis.PyQt.QtCore import QVariant
+from qgis.core import (
+    QgsVectorLayer,
+    QgsFields,
+    QgsField,
+    QgsVectorFileWriter,
+    QgsWkbTypes,
+    QgsCoordinateTransformContext,
+    QgsCoordinateReferenceSystem,
+    QgsProject,
+)
 from qgis.testing import start_app, unittest
 from Mergin.help import MerginHelp
 
@@ -28,6 +40,15 @@ class test_help(unittest.TestCase):
         req = urllib.request.Request(mh.howto_background_maps(), method="HEAD")
         resp = urllib.request.urlopen(req)
         self.assertEqual(resp.status, 200)
+
+
+def create_mem_layer() -> QgsVectorLayer:
+    """
+    Create a memory layer.
+    """
+    layer = QgsVectorLayer("Point", "test", "memory")
+
+    return layer
 
 
 if __name__ == "__main__":
