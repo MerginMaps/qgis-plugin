@@ -170,6 +170,7 @@ class MerginProjectsManager(object):
             return True
 
         dlg = SyncDialog()
+        dlg.labelStatus.setText("Starting project upload...")
         dlg.push_start(self.mc, project_dir, full_project_name)
 
         dlg.exec()  # blocks until success, failure or cancellation
@@ -376,9 +377,7 @@ class MerginProjectsManager(object):
             pull_timeout = 250
             if error_retries_attempts > 0:
                 pull_timeout = SYNC_ATTEMPT_WAIT * 1000
-                dlg.labelStatus.setText("A sync conflict was detected. We are now retrying the synchronization to ensure your project is up to date.")
-            else:
-                dlg.labelStatus.setText("Starting project synchronisation...")
+            dlg.labelStatus.setText("Starting project synchronisation...")
             dlg.pull_start(self.mc, project_dir, project_name, pull_timeout)
             dlg.exec()  # blocks until success, failure or cancellation
 
