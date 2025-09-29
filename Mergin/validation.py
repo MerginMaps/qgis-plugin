@@ -253,12 +253,12 @@ class MerginProjectValidator(object):
                         if cfg["RelativeStorage"] == 2:  # relative to default path
                             if "DefaultRoot" in cfg:
                                 # should be inside project folder
-                                expr = QgsExpression(cfg["DefaultRoot"])
-                                if not expr.isValid():
+                                if not PROJECT_VARS.search(cfg["DefaultRoot"]):
                                     self.issues.append(
                                         SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH, fields[i].name())
                                     )
                                 else:
+                                    expr = QgsExpression(cfg["DefaultRoot"])
                                     context = layer.createExpressionContext()
                                     expr.prepare(context)
                                     default_path = expr.evaluate(context)

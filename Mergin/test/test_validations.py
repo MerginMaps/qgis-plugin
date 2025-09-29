@@ -106,6 +106,14 @@ class test_validations(unittest.TestCase):
         validator.check_attachment_widget()
         self.assertTrue(len(validator.issues) == 0)
 
+        # bad expression
+        config["DefaultRoot"] = "now()"
+        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
+        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
+        validator.check_attachment_widget()
+        self.assertTrue(len(validator.issues) == 1)
+        validator.issues = []
+
         # relative to project path
         config["RelativeStorage"] = 1
         config.pop("DefaultRoot", None)
