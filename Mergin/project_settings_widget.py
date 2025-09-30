@@ -4,6 +4,7 @@
 import json
 import os
 import typing
+import html
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import Qt
@@ -137,6 +138,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         else:
             # Hide by default
             self.groupBox_photo_sketching.setVisible(False)
+        # self.label_preview.setPlainText()
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
@@ -239,9 +241,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             return
 
         invalid_char = invalid_filename_character(str_val)
+        display_val = html.escape(str_val)
         if invalid_char:
+            display_invalid = html.escape(invalid_char)
             self.label_preview.setText(
-                f"The file name '{str_val}.jpg' contains an invalid character. Do not use '{invalid_char}' character in the file name."
+                f"The file name '{display_val}.jpg' contains an invalid character. Do not use '{display_invalid}' character in the file name."
             )
             return
         config = layer.fields().field(field_name).editorWidgetSetup().config()
@@ -252,9 +256,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             target_dir,
         )
         if prefix:
-            self.label_preview.setText(f"{remove_prefix(prefix, QgsProject.instance().homePath())}/{str_val}.jpg")
+            self.label_preview.setText(f"{remove_prefix(prefix, QgsProject.instance().homePath())}/{display_val}.jpg")
         else:
-            self.label_preview.setText(f"{str_val}.jpg")
+            self.label_preview.setText(f"{display_val}.jpg")
 
     def check_project(self, state):
         """
