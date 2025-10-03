@@ -31,7 +31,7 @@ from .utils import (
     is_experimental_plugin_enabled,
     remove_prefix,
     invalid_filename_character,
-    val_to_string,
+    qvariant_to_string,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -138,7 +138,6 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         else:
             # Hide by default
             self.groupBox_photo_sketching.setVisible(False)
-        # self.label_preview.setPlainText()
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
@@ -235,7 +234,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             self.label_preview.setText(f"{exp.evalErrorString()}")
             return
 
-        str_val = val_to_string(val)
+        str_val = qvariant_to_string(val)
         if not str_val:
             self.label_preview.setText("")
             return

@@ -1685,7 +1685,7 @@ def is_inside(proj_dir: str, to_check: str) -> bool:
         return False
 
 
-def val_to_string(val: Any) -> str:
+def qvariant_to_string(val: Any) -> str:
     """Convert common QGIS types to string."""
     if val is None:
         return ""
