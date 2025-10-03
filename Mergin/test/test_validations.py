@@ -87,7 +87,7 @@ class test_validations(unittest.TestCase):
         validator.issues = []
 
         # local path
-        config["RelativeStorage"] = 2
+        config["RelativeStorage"] = 1
         config["DefaultRoot"] = "/tmp/photos"
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
         self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
@@ -99,31 +99,20 @@ class test_validations(unittest.TestCase):
         self.assertEqual(issue.warning, Warning.ATTACHMENT_LOCAL_PATH)
         validator.issues = []
 
-        # default path expression
+        # default path expression - wrong setup
         config["DefaultRoot"] = "@project_home + '/Photos'"
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
         self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
         validator.check_attachment_widget()
-        self.assertTrue(len(validator.issues) == 0)
-
-        # bad expression
-        config["DefaultRoot"] = "now()"
-        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
-        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
-        validator.check_attachment_widget()
         self.assertTrue(len(validator.issues) == 1)
+        issue = validator.issues[0]
+        self.assertTrue(isinstance(issue, SingleLayerWarning))
+        self.assertEqual(issue.layer_id, self.mem_layer.id())
+        self.assertEqual(issue.warning, Warning.ATTACHMENT_EXPRESSION_PATH)
         validator.issues = []
 
-        # relative to project path
-        config["RelativeStorage"] = 1
-        config.pop("DefaultRoot", None)
-        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
-        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
-        validator.check_attachment_widget()
-        self.assertTrue(len(validator.issues) == 0)
-
         # uses link
-        config["RelativeStorage"] = 2
+        config["DefaultRoot"] = ""
         config["UseLink"] = True
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
         self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
@@ -135,8 +124,9 @@ class test_validations(unittest.TestCase):
         self.assertEqual(issue.warning, Warning.ATTACHMENT_HYPERLINK)
         validator.issues = []
 
-        # valid expression
+        # right setup, wrong expression
         del config["UseLink"]
+        del config["DefaultRoot"]
         config["PropertyCollection"] = {
             "name": "0",
             "properties": {
@@ -157,6 +147,13 @@ class test_validations(unittest.TestCase):
         self.assertEqual(issue.layer_id, self.mem_layer.id())
         self.assertEqual(issue.warning, Warning.ATTACHMENT_WRONG_EXPRESSION)
         validator.issues = []
+
+        # right setup, valid expression
+        config["PropertyCollection"]["properties"]["propertyRootPath"]["expression"] = "@project_folder + '/photos'"
+        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
+        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
+        validator.check_attachment_widget()
+        self.assertTrue(len(validator.issues) == 0)
 
     def test_embedded_svg(self):
         symbol = QgsMarkerSymbol()
