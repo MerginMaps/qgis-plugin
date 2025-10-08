@@ -251,27 +251,27 @@ class MerginProjectValidator(object):
                     # check for relative paths
                     if "RelativeStorage" in cfg and cfg["RelativeStorage"] == 0:
                         self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH, field_name))
-                    if "DefaultRoot" in cfg:
-                        # default root should not be set to the local path
-                        if os.path.isabs(cfg["DefaultRoot"]):
-                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH, field_name))
-
-                        # expression-based path should be set with the data-defined override
-                        expr = QgsExpression(cfg["DefaultRoot"])
-                        if expr.isValid():
-                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_EXPRESSION_PATH, field_name))
-
-                        # using hyperlinks for document path is not allowed when
-                        if "UseLink" in cfg:
-                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_HYPERLINK, field_name))
-
-                    # check that expression uses Mergin variables
+                    # check that correct expression is set
                     try:
-                        formula = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["expression"]
-                        if not PROJECT_VARS.search(formula):
-                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION, field_name))
+                        expression = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["expression"]
+                        if not PROJECT_VARS.search(expression):
+                            self.issues.append(
+                                SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION, field_name))
+                    # if expression-based path is not set with the data-defined override the app cannot resolve the path to save the photo
                     except (KeyError, TypeError):
-                        continue
+                        if "DefaultRoot" in cfg:
+                            # default root should not be set to the local path
+                            if os.path.isabs(cfg["DefaultRoot"]):
+                                self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH, field_name))
+
+                            # should be set with the data-defined override
+                            expr = QgsExpression(cfg["DefaultRoot"])
+                            if expr.isValid():
+                                self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_EXPRESSION_PATH, field_name))
+
+                            # using hyperlinks for document path is not allowed when
+                            if "UseLink" in cfg:
+                                self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_HYPERLINK, field_name))
 
     def check_db_schema(self):
         for lid, layer in self.layers.items():
@@ -466,9 +466,11 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.ATTACHMENT_ABSOLUTE_PATH:
         return f"Attachment widget of the {url} uses absolute paths. <a href='{help_mgr.howto_attachment_widget()}'>Read more.</a>"
     elif warning_id == Warning.ATTACHMENT_LOCAL_PATH:
-        return f"Attachment widget of the '{url}' field uses a local or invalid path. Only paths inside the project folder are supported in the mobile app. <a href='{help_mgr.howto_photo_attachment()}'>Read more.</a>"
+        return (f"Attachment widget of the '{url}' field uses a local path. Photos taken with the app won't be synced. "
+                f"<a href='{help_mgr.howto_photo_attachment()}'>Read more.</a>")
     elif warning_id == Warning.ATTACHMENT_EXPRESSION_PATH:
-        return f"Attachment widget of the '{url}' field incorrectly uses expression-based path. <a href='{help_mgr.howto_photo_attachment()}'>Read more.</a>"
+        return (f"Attachment widget of the '{url}' field doesn't use the <i>data defined override</i> for the expression-based path. "
+                f"Photos taken with the app won't be synced. <a href='{help_mgr.howto_photo_attachment()}'>Read more.</a>")
     elif warning_id == Warning.ATTACHMENT_HYPERLINK:
         return f"Attachment widget of the '{url}' field uses hyperlink"
     elif warning_id == Warning.DATABASE_SCHEMA_CHANGE:

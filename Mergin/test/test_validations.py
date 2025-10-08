@@ -27,7 +27,6 @@ from Mergin.test.test_help import create_mem_layer
 from Mergin.validation import MerginProjectValidator, Warning, SingleLayerWarning
 from Mergin.utils import TILES_URL
 
-
 test_data_path = os.path.join(os.path.dirname(__file__), "data")
 
 
@@ -150,6 +149,7 @@ class test_validations(unittest.TestCase):
 
         # right setup, valid expression
         config["PropertyCollection"]["properties"]["propertyRootPath"]["expression"] = "@project_folder + '/photos'"
+        config["DefaultRoot"] = "/tmp/photos"  # default root should be override
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
         self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
         validator.check_attachment_widget()
