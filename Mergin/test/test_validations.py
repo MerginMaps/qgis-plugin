@@ -10,7 +10,7 @@ import shutil
 import tempfile
 
 from qgis.PyQt.QtCore import QVariant
-
+from qgis.gui import QgsFileWidget
 from qgis.core import (
     QgsProject,
     QgsField,
@@ -70,7 +70,7 @@ class test_validations(unittest.TestCase):
                 "properties": {},
                 "type": "collection",
             },
-            "RelativeStorage": 0,
+            "RelativeStorage": QgsFileWidget.RelativeStorage.Absolute,
             "StorageAuthConfigId": None,
             "StorageMode": 0,
             "StorageType": None,
@@ -86,7 +86,7 @@ class test_validations(unittest.TestCase):
         validator.issues = []
 
         # local path
-        config["RelativeStorage"] = 1
+        config["RelativeStorage"] = QgsFileWidget.RelativeStorage.RelativeProject
         config["DefaultRoot"] = "/tmp/photos"
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
         self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)

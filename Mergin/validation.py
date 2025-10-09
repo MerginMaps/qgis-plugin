@@ -13,6 +13,7 @@ from qgis.core import (
     QgsExpression,
     QgsRenderContext,
 )
+from qgis.gui import QgsFileWidget
 
 from .help import MerginHelp
 from .utils import (
@@ -249,7 +250,7 @@ class MerginProjectValidator(object):
                     cfg = ws.config()
                     field_name = fields[i].name()
                     # check for relative paths
-                    if "RelativeStorage" in cfg and cfg["RelativeStorage"] == 0:
+                    if "RelativeStorage" in cfg and cfg["RelativeStorage"] == QgsFileWidget.RelativeStorage.Absolute:
                         self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH, field_name))
                     # check that correct expression is set
                     try:
