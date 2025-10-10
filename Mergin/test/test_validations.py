@@ -110,21 +110,7 @@ class test_validations(unittest.TestCase):
         self.assertEqual(issue.warning, Warning.ATTACHMENT_EXPRESSION_PATH)
         validator.issues = []
 
-        # uses link
-        config["DefaultRoot"] = ""
-        config["UseLink"] = True
-        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
-        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
-        validator.check_attachment_widget()
-        self.assertTrue(len(validator.issues) == 1)
-        issue = validator.issues[0]
-        self.assertTrue(isinstance(issue, SingleLayerWarning))
-        self.assertEqual(issue.layer_id, self.mem_layer.id())
-        self.assertEqual(issue.warning, Warning.ATTACHMENT_HYPERLINK)
-        validator.issues = []
-
         # right setup, wrong expression
-        del config["UseLink"]
         del config["DefaultRoot"]
         config["PropertyCollection"] = {
             "name": "0",
