@@ -70,6 +70,7 @@ from qgis.core import (
     QgsSymbolLayer,
     QgsGeometry,
 )
+from qgis.gui import QgsFileWidget
 
 from .mergin.utils import int_version, bytes_to_human_size
 from .mergin.merginproject import MerginProject
@@ -526,7 +527,7 @@ def create_basic_qgis_project(project_path=None, project_name=None):
         "FileWidget": True,
         "FileWidgetButton": True,
         "FileWidgetFilter": "",
-        "RelativeStorage": 1,
+        "RelativeStorage": QgsFileWidget.RelativeProject,
         "StorageMode": 0,
         "PropertyCollection": {"name": NULL, "properties": {}, "type": "collection"},
     }

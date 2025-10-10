@@ -250,30 +250,34 @@ class MerginProjectValidator(object):
                     cfg = ws.config()
                     field_name = fields[i].name()
                     # check for relative paths
-                    if "RelativeStorage" in cfg and cfg["RelativeStorage"] == QgsFileWidget.RelativeStorage.Absolute:
+                    if "RelativeStorage" in cfg and cfg["RelativeStorage"] == QgsFileWidget.Absolute:
                         self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH, field_name))
                     # check that correct expression is set
                     try:
+                        is_expression_enabled = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["active"]
+                    except KeyError:
+                        is_expression_enabled = False
+                    if is_expression_enabled:
                         expression = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["expression"]
                         if not PROJECT_VARS.search(expression):
                             self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION, field_name))
                     # if expression-based path is not set with the data-defined override the app cannot resolve the path to save the photo
-                    except (KeyError, TypeError):
+                    else:
                         if "DefaultRoot" in cfg:
                             # default root should not be set to the local path
                             if os.path.isabs(cfg["DefaultRoot"]):
                                 self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH, field_name))
 
-                            # should be set with the data-defined override
+                            # expression must be set with the data-defined override
                             expr = QgsExpression(cfg["DefaultRoot"])
                             if expr.isValid():
                                 self.issues.append(
-                                    SingleLayerWarning(lid, Warning.ATTACHMENT_EXPRESSION_PATH, field_name)
+                                    SingleLayerWarning(
+                                        lid,
+                                        Warning.ATTACHMENT_EXPRESSION_PATH,
+                                        url={"field_name": field_name, "layer_id": lid},
+                                    )
                                 )
-
-                            # using hyperlinks for document path is not allowed when
-                            if "UseLink" in cfg:
-                                self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_HYPERLINK, field_name))
 
     def check_db_schema(self):
         for lid, layer in self.layers.items():
@@ -466,16 +470,16 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.NO_EDITABLE_LAYERS:
         return "No editable layers in the project"
     elif warning_id == Warning.ATTACHMENT_ABSOLUTE_PATH:
-        return f"Attachment widget of the {url} uses absolute paths. <a href='{help_mgr.howto_attachment_widget()}'>Read more.</a>"
+        return f"Attachment widget of the {url} uses absolute paths. <a href='{help_mgr.howto_photo_attachment()}'>Read more.</a>"
     elif warning_id == Warning.ATTACHMENT_LOCAL_PATH:
         return (
-            f"Attachment widget of the '{url}' field uses a local path. Photos taken with the app won't be synced. "
+            f"Attachment widget of the '{url}' field uses a local path. Photos taken with the app might not be synced. "
             f"<a href='{help_mgr.howto_photo_attachment()}'>Read more.</a>"
         )
     elif warning_id == Warning.ATTACHMENT_EXPRESSION_PATH:
         return (
-            f"Attachment widget of the '{url}' field doesn't use the <i>data defined override</i> for the expression-based path. "
-            f"Photos taken with the app won't be synced. <a href='{help_mgr.howto_photo_attachment()}'>Read more.</a>"
+            f"Attachment widget of the '{url['field_name']}' field sets custom folder but the default path expression is not activated. "
+            f"Photos taken with the app might not be synced. <a href='activate_expression?layer_id={url['layer_id']}&field_name={url['field_name']}'>Activate expression</a> or <a href='{help_mgr.howto_photo_attachment()}'>read more</a>."
         )
     elif warning_id == Warning.ATTACHMENT_HYPERLINK:
         return f"Attachment widget of the '{url}' field uses hyperlink"
