@@ -47,7 +47,6 @@ class Warning(Enum):
     ATTACHMENT_ABSOLUTE_PATH = 9
     ATTACHMENT_LOCAL_PATH = 10
     ATTACHMENT_EXPRESSION_PATH = 11
-    ATTACHMENT_HYPERLINK = 12
     DATABASE_SCHEMA_CHANGE = 13
     KEY_FIELD_NOT_UNIQUE = 14
     FIELD_IS_PRIMARY_KEY = 15
@@ -466,23 +465,22 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.EXTERNAL_SRC:
         return "Layer stored out of the project directory"
     elif warning_id == Warning.NOT_FOR_OFFLINE:
-        return f"Layer might not be available when offline. <a href='{help_mgr.howto_background_maps()}'>Read more.</a>"
+        return f"Layer might not be available when offline. <a href='{help_mgr.howto_background_maps()}'>Learn more.</a>"
     elif warning_id == Warning.NO_EDITABLE_LAYERS:
         return "No editable layers in the project"
     elif warning_id == Warning.ATTACHMENT_ABSOLUTE_PATH:
-        return f"Attachment widget of the {url} uses absolute paths. <a href='{help_mgr.howto_photo_attachment()}'>Read more.</a>"
+        return f"The attachment widget of the {url} uses absolute paths. <a href='{help_mgr.howto_photo_attachment()}'>Learn more.</a>"
     elif warning_id == Warning.ATTACHMENT_LOCAL_PATH:
         return (
-            f"Attachment widget of the '{url}' field uses a local path. Photos taken with the app might not be synced. "
-            f"<a href='{help_mgr.howto_photo_attachment()}'>Read more.</a>"
+            f"The attachment widget of the '{url}' field uses a local path. Photos taken with the app might not be synced. "
+            f"<a href='{help_mgr.howto_photo_attachment()}'>Learn more.</a>"
         )
     elif warning_id == Warning.ATTACHMENT_EXPRESSION_PATH:
         return (
-            f"Attachment widget of the '{url['field_name']}' field sets custom folder but the default path expression is not activated. "
-            f"Photos taken with the app might not be synced. <a href='activate_expression?layer_id={url['layer_id']}&field_name={url['field_name']}'>Activate expression</a> or <a href='{help_mgr.howto_photo_attachment()}'>read more</a>."
+            f"The attachment widget of the '{url['field_name']}' field specifies a custom folder, but the default path expression is not activated. "
+            f"Photos taken with the app might not be synced. <a href='activate_expression?layer_id={url['layer_id']}&field_name={url['field_name']}'>"
+            f"Activate the expression</a> or <a href='{help_mgr.howto_photo_attachment()}'>learn more</a>."
         )
-    elif warning_id == Warning.ATTACHMENT_HYPERLINK:
-        return f"Attachment widget of the '{url}' field uses hyperlink"
     elif warning_id == Warning.DATABASE_SCHEMA_CHANGE:
         return "Database schema was changed"
     elif warning_id == Warning.KEY_FIELD_NOT_UNIQUE:
