@@ -465,7 +465,9 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.EXTERNAL_SRC:
         return "Layer stored out of the project directory"
     elif warning_id == Warning.NOT_FOR_OFFLINE:
-        return f"Layer might not be available when offline. <a href='{help_mgr.howto_background_maps()}'>Learn more.</a>"
+        return (
+            f"Layer might not be available when offline. <a href='{help_mgr.howto_background_maps()}'>Learn more.</a>"
+        )
     elif warning_id == Warning.NO_EDITABLE_LAYERS:
         return "No editable layers in the project"
     elif warning_id == Warning.ATTACHMENT_ABSOLUTE_PATH:
