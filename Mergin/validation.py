@@ -13,6 +13,7 @@ from qgis.core import (
     QgsExpression,
     QgsRenderContext,
 )
+from qgis.gui import QgsFileWidget
 
 from .help import MerginHelp
 from .utils import (
@@ -45,7 +46,7 @@ class Warning(Enum):
     NO_EDITABLE_LAYERS = 8
     ATTACHMENT_ABSOLUTE_PATH = 9
     ATTACHMENT_LOCAL_PATH = 10
-    ATTACHMENT_HYPERLINK = 12
+    ATTACHMENT_EXPRESSION_PATH = 11
     DATABASE_SCHEMA_CHANGE = 13
     KEY_FIELD_NOT_UNIQUE = 14
     FIELD_IS_PRIMARY_KEY = 15
@@ -246,38 +247,36 @@ class MerginProjectValidator(object):
                 ws = layer.editorWidgetSetup(i)
                 if ws and ws.type() == "ExternalResource":
                     cfg = ws.config()
+                    field_name = fields[i].name()
                     # check for relative paths
-                    if "RelativeStorage" in cfg:
-                        if cfg["RelativeStorage"] == 0:  # absolute path
-                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH))
-                        if cfg["RelativeStorage"] == 2:  # relative to default path
-                            if "DefaultRoot" in cfg:
-                                # should be inside project folder
-                                expr = QgsExpression(cfg["DefaultRoot"])
-                                if not expr.isValid():
-                                    self.issues.append(
-                                        SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH, fields[i].name())
-                                    )
-                                else:
-                                    context = layer.createExpressionContext()
-                                    expr.prepare(context)
-                                    default_path = expr.evaluate(context)
-                                    if not is_inside(self.qgis_proj_dir, default_path):
-                                        self.issues.append(
-                                            SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH, fields[i].name())
-                                        )
-
-                            # using hyperlinks for document path is not allowed when
-                            if "UseLink" in cfg:
-                                self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_HYPERLINK))
-
-                    # check that expression uses Mergin variables
+                    if "RelativeStorage" in cfg and cfg["RelativeStorage"] == QgsFileWidget.Absolute:
+                        self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH, field_name))
+                    # check that correct expression is set
                     try:
-                        formula = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["expression"]
-                        if not PROJECT_VARS.search(formula):
-                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION))
-                    except (KeyError, TypeError):
-                        continue
+                        is_expression_enabled = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["active"]
+                    except KeyError:
+                        is_expression_enabled = False
+                    if is_expression_enabled:
+                        expression = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["expression"]
+                        if not PROJECT_VARS.search(expression):
+                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION, field_name))
+                    # if expression-based path is not set with the data-defined override the app cannot resolve the path to save the photo
+                    else:
+                        if "DefaultRoot" in cfg:
+                            # default root should not be set to the local path
+                            if os.path.isabs(cfg["DefaultRoot"]):
+                                self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH, field_name))
+
+                            # expression must be set with the data-defined override
+                            expr = QgsExpression(cfg["DefaultRoot"])
+                            if expr.isValid():
+                                self.issues.append(
+                                    SingleLayerWarning(
+                                        lid,
+                                        Warning.ATTACHMENT_EXPRESSION_PATH,
+                                        url={"field_name": field_name, "layer_id": lid},
+                                    )
+                                )
 
     def check_db_schema(self):
         for lid, layer in self.layers.items():
@@ -466,15 +465,24 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.EXTERNAL_SRC:
         return "Layer stored out of the project directory"
     elif warning_id == Warning.NOT_FOR_OFFLINE:
-        return f"Layer might not be available when offline. <a href='{help_mgr.howto_background_maps()}'>Read more.</a>"
+        return (
+            f"Layer might not be available when offline. <a href='{help_mgr.howto_background_maps()}'>Learn more.</a>"
+        )
     elif warning_id == Warning.NO_EDITABLE_LAYERS:
         return "No editable layers in the project"
     elif warning_id == Warning.ATTACHMENT_ABSOLUTE_PATH:
-        return f"Attachment widget uses absolute paths. <a href='{help_mgr.howto_attachment_widget()}'>Read more.</a>"
+        return f"The attachment widget of the {url} uses absolute paths. <a href='{help_mgr.howto_photo_attachment()}'>Learn more.</a>"
     elif warning_id == Warning.ATTACHMENT_LOCAL_PATH:
-        return f"Attachment widget of '{url}' field uses a local or invalid path. Only paths inside the project folder are supported in the mobile app."
-    elif warning_id == Warning.ATTACHMENT_HYPERLINK:
-        return "Attachment widget uses hyperlink"
+        return (
+            f"The attachment widget of the '{url}' field uses a local path. Photos taken with the app might not be synced. "
+            f"<a href='{help_mgr.howto_photo_attachment()}'>Learn more.</a>"
+        )
+    elif warning_id == Warning.ATTACHMENT_EXPRESSION_PATH:
+        return (
+            f"The attachment widget of the '{url['field_name']}' field specifies a custom folder, but the default path expression is not activated. "
+            f"Photos taken with the app might not be synced. <a href='activate_expression?layer_id={url['layer_id']}&field_name={url['field_name']}'>"
+            f"Activate the expression</a> or <a href='{help_mgr.howto_photo_attachment()}'>learn more</a>."
+        )
     elif warning_id == Warning.DATABASE_SCHEMA_CHANGE:
         return "Database schema was changed"
     elif warning_id == Warning.KEY_FIELD_NOT_UNIQUE:
@@ -488,7 +496,7 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.BROKEN_VALUE_RELATION_CONFIG:
         return "Incomplete value relation configuration"
     elif warning_id == Warning.ATTACHMENT_WRONG_EXPRESSION:
-        return "Expression for the default path in the attachment widget configuration might be wrong. <a href='{help_mgr.howto_attachment_widget()}'>Read more.</a>"
+        return f"Expression for the default path in the attachment widget configuration might be wrong. <a href='{help_mgr.howto_photo_attachment()}'>Read more.</a>"
     elif warning_id == Warning.QGIS_SNAPPING_NOT_ENABLED:
         return "Snapping is currently disabled in this QGIS project, it will be thus disabled in the mobile app"
     elif warning_id == Warning.MERGIN_SNAPPING_NOT_ENABLED:

@@ -32,7 +32,7 @@ from .utils import (
     unsaved_project_check,
     UnsavedChangesStrategy,
 )
-from .repair import fix_datum_shift_grids, fix_project_home_path
+from .repair import fix_datum_shift_grids, fix_project_home_path, activate_expression
 
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_status_dialog.ui")
@@ -257,6 +257,9 @@ class ProjectStatusDialog(QDialog):
             self.reset_local_changes(query_parameters["layer"][0])
         if parsed_url.path == "fix_project_home_path":
             fix_project_home_path()
+        if parsed_url.path == "activate_expression":
+            query_parameters = parse_qs(parsed_url.query)
+            activate_expression(query_parameters["layer_id"][0], query_parameters["field_name"][0])
         self.validate_project()
 
     def validate_project(self):
