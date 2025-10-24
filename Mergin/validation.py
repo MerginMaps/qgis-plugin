@@ -254,7 +254,7 @@ class MerginProjectValidator(object):
                     # check that correct expression is set
                     try:
                         is_expression_enabled = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["active"]
-                    except KeyError:
+                    except (KeyError, TypeError):
                         is_expression_enabled = False
                     if is_expression_enabled:
                         expression = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["expression"]
