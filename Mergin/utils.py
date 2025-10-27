@@ -1718,4 +1718,11 @@ def qvariant_to_string(val: Any) -> str:
 
 def escape_html_minimal(s: str) -> str:
     """Escape HTML-sensitive characters, but keep quotes and others literal."""
-    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    replacements = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+    }
+    for char, escaped in replacements.items():
+        s = s.replace(char, escaped)
+    return s
