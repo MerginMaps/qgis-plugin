@@ -4,7 +4,6 @@
 import json
 import os
 import typing
-import html
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import Qt
@@ -32,6 +31,7 @@ from .utils import (
     remove_prefix,
     invalid_filename_character,
     qvariant_to_string,
+    escape_html_minimal,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -240,11 +240,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             return
 
         invalid_char = invalid_filename_character(str_val)
-        display_val = html.escape(str_val)
+        filename_display = escape_html_minimal(str_val)
         if invalid_char:
-            display_invalid = html.escape(invalid_char)
+            invalid_char_display = escape_html_minimal(invalid_char)
             self.label_preview.setText(
-                f"The file name '{display_val}.jpg' contains an invalid character. Do not use '{display_invalid}' character in the file name."
+                f"The file name '{filename_display}.jpg' contains an invalid character. Do not use '{invalid_char_display}' character in the file name."
             )
             return
         config = layer.fields().field(field_name).editorWidgetSetup().config()
@@ -255,9 +255,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             target_dir,
         )
         if prefix:
-            self.label_preview.setText(f"{remove_prefix(prefix, QgsProject.instance().homePath())}/{display_val}.jpg")
+            self.label_preview.setText(
+                f"{remove_prefix(prefix, QgsProject.instance().homePath())}/{filename_display}.jpg"
+            )
         else:
-            self.label_preview.setText(f"{display_val}.jpg")
+            self.label_preview.setText(f"{filename_display}.jpg")
 
     def check_project(self, state):
         """
