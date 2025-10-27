@@ -255,7 +255,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             target_dir,
         )
         if prefix:
-            self.label_preview.setText(f"{remove_prefix(prefix, QgsProject.instance().homePath())}/{filename_display}.jpg")
+            self.label_preview.setText(
+                f"{remove_prefix(prefix, QgsProject.instance().homePath())}/{filename_display}.jpg"
+            )
         else:
             self.label_preview.setText(f"{filename_display}.jpg")
 
