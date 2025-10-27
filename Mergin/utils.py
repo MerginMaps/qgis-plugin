@@ -1714,3 +1714,8 @@ def qvariant_to_string(val: Any) -> str:
 
     # Fallback
     return str(val)
+
+
+def escape_html_minimal(s: str) -> str:
+    """Escape HTML-sensitive characters, but keep quotes and others literal."""
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
