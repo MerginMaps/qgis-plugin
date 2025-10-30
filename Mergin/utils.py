@@ -95,7 +95,7 @@ try:
         push_project_is_running,
         push_project_finalize,
         push_project_cancel,
-        get_push_changes_batch
+        get_push_changes_batch,
     )
     from .mergin.report import create_report
     from .mergin.deps import pygeodiff
@@ -125,7 +125,7 @@ except ImportError:
         push_project_is_running,
         push_project_finalize,
         push_project_cancel,
-        get_push_changes_batch
+        get_push_changes_batch,
     )
     from .mergin.report import create_report
     from .mergin.deps import pygeodiff

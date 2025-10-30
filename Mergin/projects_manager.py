@@ -437,7 +437,11 @@ class MerginProjectsManager(object):
                     if error_retries_attempts < SYNC_ATTEMPTS - 1 and dlg.exception.is_retryable_sync():
                         error_retries_attempts += 1
                         continue  # try again
-                    if dlg.exception.http_error == 400 and "Another process" in dlg.exception.detail or dlg.exception.server_code == ErrorCode.AnotherUploadRunning.value:
+                    if (
+                        dlg.exception.http_error == 400
+                        and "Another process" in dlg.exception.detail
+                        or dlg.exception.server_code == ErrorCode.AnotherUploadRunning.value
+                    ):
                         # To note we check for a string since error in flask doesn't return server error code
                         msg = "Somebody else is syncing, please try again later"
                     elif dlg.exception.server_code == ErrorCode.StorageLimitHit.value:
