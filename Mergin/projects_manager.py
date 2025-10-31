@@ -5,6 +5,7 @@ import os
 from urllib.parse import urlparse
 from pathlib import Path
 import posixpath
+import json
 
 from qgis.core import QgsProject, Qgis, QgsApplication
 from qgis.utils import iface, OverrideCursor
@@ -111,9 +112,18 @@ class MerginProjectsManager(object):
                         "Please try renaming the project."
                     )
                 elif e.server_code == ErrorCode.ProjectsLimitHit.value:
+                    data = e.server_response
+                    if isinstance(data, str):
+                        try:
+                            data = json.loads(data) #convert string to json
+                        except Exception:
+                            data = {}
+
+                    quota = data.get("projects_quota", "unknown")
+
                     msg = (
                         "Maximum number of projects reached. Please upgrade your subscription to create new projects.\n"
-                        f"Projects quota: {e.server_response['projects_quota']}"
+                        f"Projects quota: {quota}"
                     )
                 elif e.server_code == ErrorCode.StorageLimitHit.value:
                     msg = f"{e.detail}\nCurrent limit: {bytes_to_human_size(e.server_response['storage_limit'])}"
