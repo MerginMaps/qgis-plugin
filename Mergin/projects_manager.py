@@ -115,7 +115,7 @@ class MerginProjectsManager(object):
                     data = e.server_response
                     if isinstance(data, str):
                         try:
-                            data = json.loads(data) #convert string to json
+                            data = json.loads(data)  # convert string to json
                         except Exception:
                             data = {}
 
