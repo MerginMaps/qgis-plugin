@@ -1308,7 +1308,16 @@ def is_valid_name(name):
     """
     return (
         re.match(
-            r".*[\@\#\$\%\^\&\*\(\)\{\}\[\]\?\'\"`,;\:\+\=\~\\\/\|\<\>].*|^[\s^\.].*$|^CON$|^PRN$|^AUX$|^NUL$|^COM\d$|^LPT\d|^support$|^helpdesk$|^merginmaps$|^lutraconsulting$|^mergin$|^lutra$|^input$|^admin$|^sales$|^$",
+            r".*[@#$%\^&\*\(\)\{\}\[\]\?\'\"`,;:\+\=\~\\\/\|<>].*"
+            r"|^[\s^\.].*$"
+            r"|\.+$"
+            r"|\s+$"
+            r"|[\x00-\x1F]"
+            r"|^\.$|^\.\.$"
+            r"|^CON$|^PRN$|^AUX$|^NUL$"
+            r"|^COM\d$|^LPT\d$"
+            r"|^support$|^helpdesk$|^merginmaps$|^lutraconsulting$"
+            r"|^mergin$|^lutra$|^input$|^admin$|^sales$|^$",
             name,
             re.IGNORECASE,
         )

@@ -4,6 +4,7 @@
 import os
 import shutil
 from pathlib import Path
+import re
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QSettings, Qt, QVariant, QSortFilterProxyModel
 from qgis.PyQt.QtWidgets import (
@@ -170,6 +171,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         if not self.project_workspace_cbo.currentData(Qt.ItemDataRole.UserRole):
             self.create_warning("You do not have permissions to create a project in this workspace!")
             return
+
         proj_name = self.project_name_ledit.text().strip()
         if not proj_name:
             self.create_warning("Project name missing!")
@@ -181,6 +183,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         path_text = self.path_ledit.text()
         if not path_text:
             return
+
         warn = ""
         if not os.path.exists(path_text):
             self.create_warning("The path does not exist")
@@ -191,6 +194,14 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         else:
             proj_dir = os.path.join(path_text, proj_name)
 
+        parts = re.split(r"[\\/]", proj_dir)
+        for part in parts:
+            if part.strip() == "":
+                continue
+            if part != part.rstrip():
+                self.create_warning(f"The folder name '{part}' cannot end with a space!")
+                return
+
         if os.path.exists(proj_dir):
             is_mergin = check_mergin_subdirs(proj_dir)
         else:
@@ -199,6 +210,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         if not self.for_current_proj:
             if os.path.exists(proj_dir):
                 warn = f"Selected directory:\n{proj_dir}\nalready exists."
+
         if not warn and not os.path.isabs(proj_dir):
             warn = "Incorrect project name!"
         if not warn and is_mergin:
