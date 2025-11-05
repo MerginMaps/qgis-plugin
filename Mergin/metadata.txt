@@ -4,14 +4,26 @@ name=Mergin
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=Handle Mergin Maps projects
-version=2025.3.4
+version=2025.4.0
 author=Lutra Consulting
 email=info@merginmaps.com
 about=Mergin Maps is a repository for storing and tracking changes to QGIS projects/data and has its mobile app for field geo-surveys. With this plugin, users can upload and sync their data to Mergin Maps service.
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2025.3.4
+changelog=2025.4.0
+  - Dropped support for out of date server version (< 2023)
+  - Improved link visibility on dark background
+  - Fixed deleting project locally on Windows
+  - Fixed incomplete list of local projects in QGIS Browser
+  - Fixed cleanup of obsolete files remain in .mergin folder
+  - Fixed error when syncing newly created project
+  - Fixed local paths handling
+  - Fix handling of https prefix in custom mergin maps server url 
+  - Added better unhandled exception dialog during project sync
+  - Changed photo sketching to opt-in
+  - Improved validations on forbidden characters, online basemaps and SVG rules
+  <p>2025.3.4
   - Introducing photo sketching for public use
   - Added support for QGIS 4+
   <p>2025.3.3
