@@ -12,17 +12,18 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 
 ; start of optional metadata
 changelog=2025.4.0
+  - Fix synchronisation issues when using OneDrive
+  - Show downloaded projects first in the browser
   - Dropped support for out of date server version (< 2023)
   - Improved link visibility on dark background
   - Fixed deleting project locally on Windows
-  - Fixed incomplete list of local projects in QGIS Browser
   - Fixed cleanup of obsolete files remain in .mergin folder
   - Fixed error when syncing newly created project
   - Fixed local paths handling
   - Fix handling of https prefix in custom mergin maps server url 
   - Added better unhandled exception dialog during project sync
-  - Changed photo sketching to opt-in
   - Improved validations on forbidden characters, online basemaps and SVG rules
+  - Improved photo name preview 
   <p>2025.3.4
   - Introducing photo sketching for public use
   - Added support for QGIS 4+
