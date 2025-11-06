@@ -8,7 +8,12 @@ from qgis.PyQt.QtCore import QSettings
 from qgis.PyQt.QtWidgets import QWizard, QFileDialog
 
 from qgis.gui import QgsFileWidget
-from qgis.core import QgsProject, QgsProviderRegistry, QgsApplication, QgsAuthMethodConfig
+from qgis.core import (
+    QgsProject,
+    QgsProviderRegistry,
+    QgsApplication,
+    QgsAuthMethodConfig,
+)
 
 from .utils_auth import get_stored_mergin_server_url, get_mergin_username_password
 
@@ -98,7 +103,12 @@ class DatabaseSelectionPage(ui_db_select_page, base_db_select_page):
         self.ledit_sync_schema.hide()
         self.populate_connections()
 
-        self.registerField("connection*", self.cmb_db_conn, "currentText", self.cmb_db_conn.currentTextChanged)
+        self.registerField(
+            "connection*",
+            self.cmb_db_conn,
+            "currentText",
+            self.cmb_db_conn.currentTextChanged,
+        )
         self.registerField("sync_schema*", self.ledit_sync_schema)
         self.registerField("internal_schema*", self.line_edit_internal_schema)
         self.cmb_db_conn.currentTextChanged.connect(self.populate_schemas)

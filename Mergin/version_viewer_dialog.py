@@ -26,7 +26,12 @@ except ImportError:
         pass
 
 
-from qgis.gui import QgsAttributeTableFilterModel, QgsAttributeTableModel, QgsGui, QgsMapToolPan
+from qgis.gui import (
+    QgsAttributeTableFilterModel,
+    QgsAttributeTableModel,
+    QgsGui,
+    QgsMapToolPan,
+)
 from qgis.PyQt import QtCore, uic
 from qgis.PyQt.QtCore import (
     QAbstractTableModel,
@@ -295,7 +300,10 @@ class VersionsFetcher(QThread):
         self.model.beginFetching()
         try:
             page_versions, _ = self.mc.paginated_project_versions(
-                self.project_path, self.current_page, per_page=self.per_page, descending=True
+                self.project_path,
+                self.current_page,
+                per_page=self.per_page,
+                descending=True,
             )
         except Exception as e:
             self.error_occured.emit(e)
@@ -356,7 +364,9 @@ class VersionViewerDialog(QDialog):
             self.history_control.setVisible(False)
 
             self.toggle_background_layers_action = QAction(
-                QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Background layers", self
+                QgsApplication.getThemeIcon("/mActionAddLayer.svg"),
+                "Background layers",
+                self,
             )
             self.toggle_background_layers_action.setCheckable(True)
             self.toggle_background_layers_action.setChecked(True)
@@ -374,14 +384,18 @@ class VersionViewerDialog(QDialog):
             self.toolbar.addSeparator()
 
             self.zoom_full_action = QAction(
-                QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"), "Zoom Full", self
+                QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"),
+                "Zoom Full",
+                self,
             )
             self.zoom_full_action.triggered.connect(self.zoom_full)
 
             self.toolbar.addAction(self.zoom_full_action)
 
             self.zoom_selected_action = QAction(
-                QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"), "Zoom To Selection", self
+                QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"),
+                "Zoom To Selection",
+                self,
             )
             self.zoom_selected_action.triggered.connect(self.zoom_selected)
 
@@ -392,7 +406,8 @@ class VersionViewerDialog(QDialog):
             btn_add_changes.setIcon(QgsApplication.getThemeIcon("/mActionAdd.svg"))
             menu = QMenu()
             add_current_action = menu.addAction(
-                QIcon(icon_path("file-plus.svg")), "Add current changes layer to project"
+                QIcon(icon_path("file-plus.svg")),
+                "Add current changes layer to project",
             )
             add_current_action.triggered.connect(self.add_current_to_project)
             add_all_action = menu.addAction(QIcon(icon_path("folder-plus.svg")), "Add all changes layers to project")
@@ -446,7 +461,9 @@ class VersionViewerDialog(QDialog):
             usage = self.mc.workspace_usage(ws_id)
             if not usage["view_history"]["allowed"]:
                 QMessageBox.warning(
-                    None, "Upgrade required", "To view the project history, please upgrade your subscription plan."
+                    None,
+                    "Upgrade required",
+                    "To view the project history, please upgrade your subscription plan.",
                 )
                 return
         except ClientError:
@@ -463,7 +480,10 @@ class VersionViewerDialog(QDialog):
     def save_splitters_state(self):
         settings = QSettings()
         settings.setValue("Mergin/versionViewerSplitterSize", self.splitter_map_table.saveState())
-        settings.setValue("Mergin/versionViewerSplitterVericalSize", self.splitter_vertical.saveState())
+        settings.setValue(
+            "Mergin/versionViewerSplitterVericalSize",
+            self.splitter_vertical.saveState(),
+        )
 
     def set_splitters_state(self):
         settings = QSettings()
@@ -482,7 +502,12 @@ class VersionViewerDialog(QDialog):
                 do_calc_height = False
 
         if do_calc_height:
-            height = max([self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()])
+            height = max(
+                [
+                    self.map_canvas.minimumSizeHint().height(),
+                    self.attribute_table.minimumSizeHint().height(),
+                ]
+            )
             self.splitter_map_table.setSizes([height, height])
 
     def fetch_from_server(self):
@@ -700,7 +725,11 @@ class VersionViewerDialog(QDialog):
             layers = iface.mapCanvas().layers()
 
             # Filter only "Background" type
-            whitelist_backgound_layer_types = [QgsRasterLayer, QgsVectorTileLayer, QgsTiledSceneLayer]
+            whitelist_backgound_layer_types = [
+                QgsRasterLayer,
+                QgsVectorTileLayer,
+                QgsTiledSceneLayer,
+            ]
             layers = [layer for layer in layers if type(layer) in whitelist_backgound_layer_types]
         else:
             layers = []

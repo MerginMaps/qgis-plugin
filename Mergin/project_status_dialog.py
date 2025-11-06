@@ -20,9 +20,19 @@ from qgis.gui import QgsGui
 from qgis.core import Qgis, QgsApplication, QgsProject
 from qgis.utils import OverrideCursor
 from .diff_dialog import DiffViewerDialog
-from .validation import MultipleLayersWarning, warning_display_string, MerginProjectValidator, SingleLayerWarning
-from .utils import is_versioned_file, icon_path, unsaved_project_check, UnsavedChangesStrategy
-from .repair import fix_datum_shift_grids, fix_project_home_path
+from .validation import (
+    MultipleLayersWarning,
+    warning_display_string,
+    MerginProjectValidator,
+    SingleLayerWarning,
+)
+from .utils import (
+    is_versioned_file,
+    icon_path,
+    unsaved_project_check,
+    UnsavedChangesStrategy,
+)
+from .repair import fix_datum_shift_grids, fix_project_home_path, activate_expression
 
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_status_dialog.ui")
@@ -85,7 +95,11 @@ class ProjectStatusDialog(QDialog):
             has_files_to_replace = any(
                 ["diff" not in file and is_versioned_file(file["path"]) for file in push_changes["updated"]]
             )
-            info_text = self._get_info_text(has_files_to_replace, has_write_permissions, self.mp.has_unfinished_pull())
+            info_text = self._get_info_text(
+                has_files_to_replace,
+                has_write_permissions,
+                self.mp.has_unfinished_pull(),
+            )
             for msg in info_text:
                 lbl = QLabel(msg)
                 lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
@@ -243,6 +257,9 @@ class ProjectStatusDialog(QDialog):
             self.reset_local_changes(query_parameters["layer"][0])
         if parsed_url.path == "fix_project_home_path":
             fix_project_home_path()
+        if parsed_url.path == "activate_expression":
+            query_parameters = parse_qs(parsed_url.query)
+            activate_expression(query_parameters["layer_id"][0], query_parameters["field_name"][0])
         self.validate_project()
 
     def validate_project(self):

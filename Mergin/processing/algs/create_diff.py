@@ -28,13 +28,24 @@ from ...mergin.merginproject import MerginProject
 from ...mergin.utils import get_versions_with_file_changes
 from ...mergin.deps import pygeodiff
 
-from ...diff import parse_db_schema, parse_diff, get_table_name, create_field_list, diff_table_to_features
+from ...diff import (
+    parse_db_schema,
+    parse_diff,
+    get_table_name,
+    create_field_list,
+    diff_table_to_features,
+)
 
 from ...utils import (
     mm_symbol_path,
     check_mergin_subdirs,
 )
-from ...utils_auth import create_mergin_client, MissingAuthConfigError, AuthTokenExpiredError, ClientError
+from ...utils_auth import (
+    create_mergin_client,
+    MissingAuthConfigError,
+    AuthTokenExpiredError,
+    ClientError,
+)
 
 
 class CreateDiff(QgsProcessingAlgorithm):
@@ -80,12 +91,22 @@ class CreateDiff(QgsProcessingAlgorithm):
         self.addParameter(QgsProcessingParameterVectorLayer(self.LAYER, "Input layer"))
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.START_VERSION, "Start version", QgsProcessingParameterNumber.Integer, 1, False, 1
+                self.START_VERSION,
+                "Start version",
+                QgsProcessingParameterNumber.Integer,
+                1,
+                False,
+                1,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.END_VERSION, "End version", QgsProcessingParameterNumber.Integer, None, True, 1
+                self.END_VERSION,
+                "End version",
+                QgsProcessingParameterNumber.Integer,
+                None,
+                True,
+                1,
             )
         )
         self.addParameter(QgsProcessingParameterFeatureSink(self.OUTPUT, "Diff layer"))
@@ -132,7 +153,13 @@ class CreateDiff(QgsProcessingAlgorithm):
 
         diff_file = QgsProcessingUtils.generateTempFilename(file_name + ".diff")
         try:
-            mc.get_file_diff(project_dir, file_name, diff_file, f"v{start}", f"v{end}" if end else None)
+            mc.get_file_diff(
+                project_dir,
+                file_name,
+                diff_file,
+                f"v{start}",
+                f"v{end}" if end else None,
+            )
         except KeyError:
             # see https://github.com/MerginMaps/python-api-client/issues/196
             raise QgsProcessingException(

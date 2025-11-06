@@ -68,7 +68,10 @@ class test_utils(unittest.TestCase):
         modified_schema[0]["columns"][0]["name"] = "id"
         equal, msg = same_schema(self.base_schema, modified_schema)
         self.assertFalse(equal)
-        self.assertEqual(msg, "Fields in table 'Survey_points' added/removed: added: id; removed: fid")
+        self.assertEqual(
+            msg,
+            "Fields in table 'Survey_points' added/removed: added: id; removed: fid",
+        )
         modified_schema[0]["columns"][0]["name"] = "fid"
 
         # change column type from datetime to date
@@ -243,11 +246,13 @@ class test_utils(unittest.TestCase):
 
             sl = layer.renderer().symbol().symbolLayer(0)
             self.assertEqual(
-                sl.dataDefinedProperties().property(QgsSymbolLayer.PropertyStrokeColor).expressionString(), '"color"'
+                sl.dataDefinedProperties().property(QgsSymbolLayer.PropertyStrokeColor).expressionString(),
+                '"color"',
             )
 
             self.assertEqual(
-                sl.dataDefinedProperties().property(QgsSymbolLayer.PropertyStrokeWidth).expressionString(), '"width"'
+                sl.dataDefinedProperties().property(QgsSymbolLayer.PropertyStrokeWidth).expressionString(),
+                '"width"',
             )
 
 

@@ -42,7 +42,7 @@
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QComboBox" name="project_owner_cbo">
+        <widget class="QComboBox" name="project_workspace_cbo">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>

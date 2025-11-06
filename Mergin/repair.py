@@ -1,9 +1,13 @@
 # GPLv3 license
 # Copyright Lutra Consulting Limited
 
-from qgis.core import QgsProject
+from qgis.core import QgsProject, QgsEditorWidgetSetup
 
-from .utils import project_grids_directory, copy_datum_shift_grids, set_qgis_project_home_ignore
+from .utils import (
+    project_grids_directory,
+    copy_datum_shift_grids,
+    set_qgis_project_home_ignore,
+)
 
 
 def fix_datum_shift_grids(mp):
@@ -31,3 +35,23 @@ def fix_project_home_path():
     cur_project = QgsProject.instance()
     set_qgis_project_home_ignore(cur_project)
     return None
+
+
+def activate_expression(layer_id, field_name):
+    """Attachment widget uses default path without data-defined override. Move it to the right place."""
+    layer = QgsProject.instance().mapLayer(layer_id)
+    field_idx = layer.fields().indexFromName(field_name)
+    ws = layer.editorWidgetSetup(field_idx)
+    cfg = ws.config().copy()
+    # blank (MM) projects lack some keys
+    pc = cfg.setdefault("PropertyCollection", {})
+    props = pc.setdefault("properties", {})
+    prp = props.setdefault("propertyRootPath", {})
+    # copy the path to the expression and activate data-defined override
+    default_root = cfg.pop("DefaultRoot", None)
+    if default_root is not None:
+        prp["expression"] = default_root
+        prp["active"] = True
+        prp["type"] = 3
+    new_ws = QgsEditorWidgetSetup(ws.type(), cfg)
+    layer.setEditorWidgetSetup(field_idx, new_ws)

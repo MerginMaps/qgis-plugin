@@ -17,7 +17,12 @@ from qgis.core import (
     QgsApplication,
     QgsWkbTypes,
 )
-from qgis.gui import QgsGui, QgsMapToolPan, QgsAttributeTableModel, QgsAttributeTableFilterModel
+from qgis.gui import (
+    QgsGui,
+    QgsMapToolPan,
+    QgsAttributeTableModel,
+    QgsAttributeTableFilterModel,
+)
 from qgis.utils import iface, OverrideCursor
 
 from .mergin.merginproject import MerginProject
@@ -40,12 +45,17 @@ class DiffViewerDialog(QDialog):
                 self.splitter.restoreState(state)
             else:
                 height = max(
-                    [self.map_canvas.minimumSizeHint().height(), self.attribute_table.minimumSizeHint().height()]
+                    [
+                        self.map_canvas.minimumSizeHint().height(),
+                        self.attribute_table.minimumSizeHint().height(),
+                    ]
                 )
                 self.splitter.setSizes([height, height])
 
             self.toggle_layers_action = QAction(
-                QgsApplication.getThemeIcon("/mActionAddLayer.svg"), "Toggle Project Layers", self
+                QgsApplication.getThemeIcon("/mActionAddLayer.svg"),
+                "Toggle Project Layers",
+                self,
             )
             self.toggle_layers_action.setCheckable(True)
             self.toggle_layers_action.setChecked(True)
@@ -55,13 +65,17 @@ class DiffViewerDialog(QDialog):
             self.toolbar.addSeparator()
 
             self.zoom_full_action = QAction(
-                QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"), "Zoom Full", self
+                QgsApplication.getThemeIcon("/mActionZoomFullExtent.svg"),
+                "Zoom Full",
+                self,
             )
             self.zoom_full_action.triggered.connect(self.zoom_full)
             self.toolbar.addAction(self.zoom_full_action)
 
             self.zoom_selected_action = QAction(
-                QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"), "Zoom To Selection", self
+                QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"),
+                "Zoom To Selection",
+                self,
             )
             self.zoom_selected_action.triggered.connect(self.zoom_selected)
             self.toolbar.addAction(self.zoom_selected_action)
@@ -72,7 +86,8 @@ class DiffViewerDialog(QDialog):
             btn_add_changes.setIcon(QgsApplication.getThemeIcon("/mActionAdd.svg"))
             menu = QMenu()
             add_current_action = menu.addAction(
-                QIcon(icon_path("file-plus.svg")), "Add current changes layer to project"
+                QIcon(icon_path("file-plus.svg")),
+                "Add current changes layer to project",
             )
             add_current_action.triggered.connect(self.add_current_to_project)
             add_all_action = menu.addAction(QIcon(icon_path("folder-plus.svg")), "Add all changes layers to project")

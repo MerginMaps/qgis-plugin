@@ -15,7 +15,6 @@ from qgis.core import (
     QgsFeature,
     QgsFeatureRequest,
     QgsExpression,
-    QgsVectorLayer,
     QgsMapLayer,
 )
 from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget, QgsColorButton
@@ -29,6 +28,9 @@ from .utils import (
     create_map_sketches_layer,
     set_tracking_layer_flags,
     remove_prefix,
+    invalid_filename_character,
+    qvariant_to_string,
+    escape_html_minimal,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -132,7 +134,10 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
-            None, "Select directory", self.local_project_dir, QFileDialog.Option.ShowDirsOnly
+            None,
+            "Select directory",
+            self.local_project_dir,
+            QFileDialog.Option.ShowDirsOnly,
         )
         if self.local_project_dir not in abs_path:
             return
@@ -172,7 +177,10 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         field_name = None
         if index.isValid():
             item = self.attachments_model.item(index.row(), 1)
-            item.setData(self.edit_photo_expression.expression(), AttachmentFieldsModel.EXPRESSION)
+            item.setData(
+                self.edit_photo_expression.expression(),
+                AttachmentFieldsModel.EXPRESSION,
+            )
             layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
             field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
 
@@ -211,23 +219,40 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         exp = QgsExpression(expression)
         exp.prepare(context)
         if exp.hasParserError():
-            self.label_preview.setText(f"<i>{exp.parserErrorString()}</i>")
+            self.label_preview.setText(f"{exp.parserErrorString()}")
             return
 
         val = exp.evaluate(context)
         if exp.hasEvalError():
-            self.label_preview.setText(f"<i>{exp.evalErrorString()}</i>")
+            self.label_preview.setText(f"{exp.evalErrorString()}")
             return
 
+        str_val = qvariant_to_string(val)
+        if not str_val:
+            self.label_preview.setText("")
+            return
+
+        invalid_char = invalid_filename_character(str_val)
+        filename_display = escape_html_minimal(str_val)
+        if invalid_char:
+            invalid_char_display = escape_html_minimal(invalid_char)
+            self.label_preview.setText(
+                f"The file name '{filename_display}.jpg' contains an invalid character. Do not use '{invalid_char_display}' character in the file name."
+            )
+            return
         config = layer.fields().field(field_name).editorWidgetSetup().config()
         target_dir = resolve_target_dir(layer, config)
         prefix = prefix_for_relative_path(
-            config.get("RelativeStorage", 0), QgsProject.instance().homePath(), target_dir
+            config.get("RelativeStorage", 0),
+            QgsProject.instance().homePath(),
+            target_dir,
         )
         if prefix:
-            self.label_preview.setText(f"<i>{remove_prefix(prefix, QgsProject.instance().homePath())}/{val}.jpg</i>")
+            self.label_preview.setText(
+                f"{remove_prefix(prefix, QgsProject.instance().homePath())}/{filename_display}.jpg"
+            )
         else:
-            self.label_preview.setText(f"<i>{val}.jpg</i>")
+            self.label_preview.setText(f"{filename_display}.jpg")
 
     def check_project(self, state):
         """
@@ -289,11 +314,15 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         QgsProject.instance().writeEntry("Mergin", "Snapping", self.cmb_snapping_mode.currentData())
         QgsProject.instance().writeEntry("Mergin", "PositionTracking/Enabled", self.chk_tracking_enabled.isChecked())
         QgsProject.instance().writeEntry(
-            "Mergin", "PositionTracking/UpdateFrequency", self.cmb_tracking_precision.currentData()
+            "Mergin",
+            "PositionTracking/UpdateFrequency",
+            self.cmb_tracking_precision.currentData(),
         )
 
         QgsProject.instance().writeEntry(
-            "Mergin", "PhotoSketching/Enabled", self.chk_photo_sketching_enabled.isChecked()
+            "Mergin",
+            "PhotoSketching/Enabled",
+            self.chk_photo_sketching_enabled.isChecked(),
         )
 
         QgsProject.instance().writeEntry("Mergin", "MapSketching/Enabled", self.chk_map_sketches_enabled.isChecked())

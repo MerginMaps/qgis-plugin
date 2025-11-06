@@ -2,11 +2,15 @@
 # Copyright Lutra Consulting Limited
 
 import shutil
-from datetime import datetime, timezone, tzinfo
+from datetime import datetime, timezone
 from enum import Enum
+from typing import Any
 from urllib.error import URLError, HTTPError
 import configparser
 import os
+import webbrowser
+
+from PyQt5.QtCore import QDateTime
 from osgeo import gdal
 import pathlib
 import platform
@@ -16,9 +20,10 @@ import tempfile
 import json
 import glob
 import re
+from pathlib import Path
 
 from qgis.PyQt.QtCore import QSettings, QVariant
-from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog
+from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog, QCheckBox
 from qgis.PyQt.QtGui import QPalette, QColor, QIcon
 from qgis.PyQt.QtXml import QDomDocument
 from qgis.core import (
@@ -30,7 +35,6 @@ from qgis.core import (
     QgsDataProvider,
     QgsEditorWidgetSetup,
     QgsExpressionContextUtils,
-    QgsField,
     QgsMapLayerType,
     QgsMarkerSymbol,
     QgsMeshDataProvider,
@@ -38,7 +42,6 @@ from qgis.core import (
     QgsRaster,
     QgsRasterDataProvider,
     QgsRasterFileWriter,
-    QgsRasterLayer,
     QgsRasterPipe,
     QgsRasterProjector,
     QgsVectorDataProvider,
@@ -65,7 +68,9 @@ from qgis.core import (
     QgsMapLayer,
     QgsProperty,
     QgsSymbolLayer,
+    QgsGeometry,
 )
+from qgis.gui import QgsFileWidget
 
 from .mergin.utils import int_version, bytes_to_human_size
 from .mergin.merginproject import MerginProject
@@ -126,7 +131,16 @@ except ImportError:
 MERGIN_URL = "https://app.merginmaps.com"
 MERGIN_LOGS_URL = "https://g4pfq226j0.execute-api.eu-west-1.amazonaws.com/mergin_client_log_submit"
 
-QGIS_NET_PROVIDERS = ("WFS", "arcgisfeatureserver", "arcgismapserver", "geonode", "ows", "wcs", "wms", "vectortile")
+QGIS_NET_PROVIDERS = (
+    "WFS",
+    "arcgisfeatureserver",
+    "arcgismapserver",
+    "geonode",
+    "ows",
+    "wcs",
+    "wms",
+    "vectortile",
+)
 QGIS_DB_PROVIDERS = ("postgres", "mssql", "oracle", "hana", "postgresraster", "DB2")
 QGIS_MESH_PROVIDERS = ("mdal", "mesh_memory")
 QGIS_FILE_BASED_PROVIDERS = (
@@ -312,7 +326,12 @@ def send_logs(mc: MerginClient, logfile: str):
     global_log_file = os.environ.get("MERGIN_CLIENT_LOG", None)
 
     try:
-        resp = mc.send_logs(logfile, global_log_file, application="plugin-{}-{}".format(system, version), meta=meta)
+        resp = mc.send_logs(
+            logfile,
+            global_log_file,
+            application="plugin-{}-{}".format(system, version),
+            meta=meta,
+        )
         if resp.msg != "OK":
             return None, str(resp.reason)
         return logfile, None
@@ -390,7 +409,9 @@ def unsaved_project_check():
                         write_ok = QgsProject.instance().write()
                         if not write_ok:
                             QMessageBox.warning(
-                                None, "Error Saving Project", "QGIS project was not saved properly. Cancelling..."
+                                None,
+                                "Error Saving Project",
+                                "QGIS project was not saved properly. Cancelling...",
                             )
                             return UnsavedChangesStrategy.HasUnsavedChanges
                     else:
@@ -419,7 +440,10 @@ def save_vector_layer_as_gpkg(layer, target_dir, update_datasource=False):
         writer_opts.fieldValueConverter = converter
     res, err = QgsVectorFileWriter.writeAsVectorFormatV2(layer, layer_filename, transform_context, writer_opts)
     if res != QgsVectorFileWriter.NoError:
-        return layer_filename, f"Couldn't properly save layer: {layer_filename}. \n{err}"
+        return (
+            layer_filename,
+            f"Couldn't properly save layer: {layer_filename}. \n{err}",
+        )
     if update_datasource:
         provider_opts = QgsDataProvider.ProviderOptions()
         provider_opts.fileEncoding = "UTF-8"
@@ -468,7 +492,11 @@ def create_basic_qgis_project(project_path=None, project_name=None):
     mem_layer.updateFields()
     vector_fname, err = save_vector_layer_as_gpkg(mem_layer, os.path.dirname(project_path))
     if err:
-        QMessageBox.warning(None, "Error Creating New Project", f"Couldn't save vector layer to:\n{vector_fname}")
+        QMessageBox.warning(
+            None,
+            "Error Creating New Project",
+            f"Couldn't save vector layer to:\n{vector_fname}",
+        )
     vector_layer = QgsVectorLayer(vector_fname, "Survey", "ogr")
     symbol = QgsMarkerSymbol.createSimple(
         {
@@ -499,7 +527,7 @@ def create_basic_qgis_project(project_path=None, project_name=None):
         "FileWidget": True,
         "FileWidgetButton": True,
         "FileWidgetFilter": "",
-        "RelativeStorage": 1,
+        "RelativeStorage": QgsFileWidget.RelativeProject,
         "StorageMode": 0,
         "PropertyCollection": {"name": NULL, "properties": {}, "type": "collection"},
     }
@@ -511,7 +539,11 @@ def create_basic_qgis_project(project_path=None, project_name=None):
 
     write_success = new_project.write()
     if not write_success:
-        QMessageBox.warning(None, "Error Creating New Project", f"Couldn't create new project:\n{project_path}")
+        QMessageBox.warning(
+            None,
+            "Error Creating New Project",
+            f"Couldn't create new project:\n{project_path}",
+        )
         return None
     return project_path
 
@@ -639,7 +671,11 @@ def package_layer(layer, project_dir):
     src_filepath = datasource_filepath(layer)
     if src_filepath and same_dir(os.path.dirname(src_filepath), project_dir):
         # layer already stored in the target project dir
-        if layer.type() in (QgsMapLayerType.RasterLayer, QgsMapLayerType.MeshLayer, QgsMapLayerType.VectorTileLayer):
+        if layer.type() in (
+            QgsMapLayerType.RasterLayer,
+            QgsMapLayerType.MeshLayer,
+            QgsMapLayerType.VectorTileLayer,
+        ):
             return True
         if layer.type() == QgsMapLayerType.VectorLayer:
             # if it is a GPKG we do not need to rewrite it
@@ -719,9 +755,19 @@ def update_datasource(layer, new_path):
     options = QgsDataProvider.ProviderOptions()
     options.layerName = layer.name()
     if layer.dataProvider().name() in ("vectortile", "mbtilesvectortiles"):
-        layer.setDataSource(f"url={new_path}&type=mbtiles", layer.name(), layer.dataProvider().name(), options)
+        layer.setDataSource(
+            f"url={new_path}&type=mbtiles",
+            layer.name(),
+            layer.dataProvider().name(),
+            options,
+        )
     elif layer.dataProvider().name() == "wms":
-        layer.setDataSource(f"url=file://{new_path}&type=mbtiles", layer.name(), layer.dataProvider().name(), options)
+        layer.setDataSource(
+            f"url=file://{new_path}&type=mbtiles",
+            layer.name(),
+            layer.dataProvider().name(),
+            options,
+        )
     else:
         layer.setDataSource(new_path, layer.name(), layer.dataProvider().name(), options)
 
@@ -820,30 +866,48 @@ def login_error_message(e):
     QMessageBox.critical(None, "Login failed", msg, QMessageBox.StandardButton.Close)
 
 
-def unhandled_exception_message(error_details, dialog_title, error_text, log_file=None, username=None):
-    msg = (
-        error_text + "<p>This should not happen, "
-        '<a href="https://github.com/MerginMaps/qgis-mergin-plugin/issues">'
-        "please report the problem</a>."
-    )
+def unhandled_exception_message(error_details, dialog_title, error_text, mm_client, log_file=None):
     box = QMessageBox()
     box.setIcon(QMessageBox.Icon.Critical)
     box.setWindowTitle(dialog_title)
-    box.setText(msg)
-    if log_file is None:
-        box.setDetailedText(error_details)
-    else:
-        error_details = (
-            "An error occured during project synchronisation. The log was saved to "
-            f"{log_file}. Click 'Send logs' to send a diagnostic log to the developers "
-            "to help them determine the exact cause of the problem.\n\n"
-            "The log does not contain any of your data, only file names. "
-            "It would be useful if you also send a mail to support@merginmaps.com "
-            "and briefly describe the problem to add more context to the diagnostic log."
+    box.setText(error_text)
+    box.setInformativeText(
+        "An unexpected error occurred. "
+        "You can help us fix it by reporting the problem. "
+        "Click the button below to create a report we can review."
+    )
+
+    if log_file:
+        check = QCheckBox("Include diagnostic log (what is this?)")
+        check.setChecked(True)
+        check.setToolTip(
+            "The diagnostic log contains only file names and activity steps that "
+            "help us understand what went wrong. It does not include your data."
         )
-        box.setDetailedText(error_details)
-        btn = box.addButton("Send logs", QMessageBox.ButtonRole.ActionRole)
-        btn.clicked.connect(lambda: send_logs(username, log_file))
+
+        box.setCheckBox(check)
+
+        error_details = f"The diagnostic log is saved here: {log_file}.\n\n" f"Error details:\n{error_details}"
+
+    box.setDetailedText(error_details)
+    username = mm_client.username() if mm_client else "Unknown"
+
+    email_subject = "Problem with sync from QGIS"
+    email_body = (
+        "Hi,\n"
+        "I encountered an issue during synchronisation. (Please add more details here).\n\n"
+        f"Problem: {error_text}\n"
+        f"Username: {username}\n"
+        f"{error_details}"
+    )
+
+    btn = box.addButton("Report problem", QMessageBox.ButtonRole.HelpRole)
+    btn.clicked.connect(
+        lambda: (
+            send_logs(mm_client, log_file) if box.checkBox() and box.checkBox().isChecked() else None,
+            webbrowser.open(f"mailto:support@merginmaps.com?subject={email_subject}&body={email_body}"),
+        )
+    )
     box.exec()
 
 
@@ -884,8 +948,11 @@ def pretty_summary(summary):
     return msg
 
 
-def get_local_mergin_projects_info():
-    """Get a list of local Mergin Maps projects info from QSettings."""
+def get_local_mergin_projects_info(workspace=None):
+    """
+    Get a list of local Mergin Maps projects info from QSettings.
+    if workspace is specified only the one
+    """
     local_projects_info = []
     settings = QSettings()
     config_server = settings.value("Mergin/server", None)
@@ -897,6 +964,9 @@ def get_local_mergin_projects_info():
         # - needs project dir to load metadata
         key_parts = key.split("/")
         if len(key_parts) > 2 and key_parts[2] == "path":
+            if workspace != None and key_parts[0] != workspace:
+                continue
+
             local_path = settings.value(key, None)
             # double check if the path exists - it might get deleted manually
             if local_path is None or not os.path.exists(local_path):
@@ -955,7 +1025,13 @@ def mergin_project_local_path(project_name=None):
 
 def icon_path(icon_filename):
     icon_set = "white" if is_dark_theme() else "default"
-    ipath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images", icon_set, "tabler_icons", icon_filename)
+    ipath = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "images",
+        icon_set,
+        "tabler_icons",
+        icon_filename,
+    )
     return ipath
 
 
@@ -1106,8 +1182,9 @@ def same_schema(schema_a, schema_b):
         for column_a in table_a["columns"]:
             column_b = next(item for item in table_b["columns"] if item["name"] == column_a["name"])
             if column_a != column_b:
-                return False, "Definition of '{}' field in '{}' table is not the same".format(
-                    column_a["name"], table_a["table"]
+                return (
+                    False,
+                    "Definition of '{}' field in '{}' table is not the same".format(column_a["name"], table_a["table"]),
                 )
 
     return True, "No schema changes"
@@ -1573,3 +1650,69 @@ def duplicate_layer(layer: QgsVectorLayer) -> QgsVectorLayer:
         raise Exception(err_msg)
 
     return lyr_clone
+
+
+def invalid_filename_character(filename: str) -> str:
+    """Returns invalid character for the filename"""
+    illegal_filename_chars = re.compile(r'[\x00-\x19<>:|?*"]')
+
+    match = illegal_filename_chars.search(filename)
+    if match:
+        return match.group()
+
+
+def is_inside(proj_dir: str, to_check: str) -> bool:
+    """Checks if the given path is inside the project directory"""
+    proj_dir_path = Path(proj_dir).resolve()
+    path_to_check = Path(to_check).resolve()
+    # Python 3.9+
+    if hasattr(path_to_check, "is_relative_to"):
+        return path_to_check.is_relative_to(proj_dir_path)
+    # Python <3.9
+    try:
+        path_to_check.relative_to(proj_dir_path)
+        return True
+    except ValueError:
+        return False
+
+
+def qvariant_to_string(val: Any) -> str:
+    """Convert common QGIS types to string."""
+    if val is None:
+        return ""
+
+    if isinstance(val, str):
+        return val.strip()
+
+    if isinstance(val, QDateTime):
+        return val.toString()
+
+    if isinstance(val, QgsGeometry):
+        try:
+            return val.asWkt()
+        except Exception:
+            return str(val)
+
+    # If supports toString() - prefer that over Python str()
+    if hasattr(val, "toString") and callable(val.toString):
+        try:
+            s = val.toString()
+            if s:
+                return s
+        except Exception:
+            pass
+
+    # Fallback
+    return str(val)
+
+
+def escape_html_minimal(s: str) -> str:
+    """Escape HTML-sensitive characters, but keep quotes and others literal."""
+    replacements = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+    }
+    for char, escaped in replacements.items():
+        s = s.replace(char, escaped)
+    return s

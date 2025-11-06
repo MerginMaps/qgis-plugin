@@ -7,9 +7,8 @@ from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, QSettings, QTimer
 from qgis.PyQt.QtGui import QPixmap
-from qgis.core import QgsApplication, Qgis
+from qgis.core import QgsApplication
 from qgis.utils import OverrideCursor
-from urllib.error import URLError
 
 
 from .utils_auth import (
@@ -109,7 +108,11 @@ class ConfigurationDialog(QDialog):
         set_mergin_settings(url=url, login_type=self.login_type())
 
         if self.login_type() == LoginType.PASSWORD:
-            set_mergin_auth_password(url=url, username=self.ui.username.text(), password=self.ui.password.text())
+            set_mergin_auth_password(
+                url=url,
+                username=self.ui.username.text(),
+                password=self.ui.password.text(),
+            )
         else:
             settings = QSettings()
             settings.setValue("Mergin/sso_email", self.ui.sso_email.text())
@@ -120,7 +123,12 @@ class ConfigurationDialog(QDialog):
         self.ui.merginURL.setVisible(self.ui.custom_url.isChecked())
 
     def server_url(self):
-        return self.ui.merginURL.text() if self.ui.custom_url.isChecked() else MERGIN_URL
+        if self.ui.custom_url.isChecked():
+            url = self.ui.merginURL.text().strip()
+            if not url.lower().startswith(("http://", "https://")):
+                url = "https://" + url
+            return url
+        return MERGIN_URL
 
     def check_credentials(self):
         enable_buttons = False
@@ -169,7 +177,7 @@ class ConfigurationDialog(QDialog):
 
             if url_reachable(self.server_url()):
                 if mergin_server_deprecated_version(self.server_url()):
-                    msg = "This server is running an outdated version that will no longer be supported. Please contact your server administrator to upgrade."
+                    msg = "This server is running an unsupported version of Mergin Maps (earlier than 2023.2.0).<br>Please ask your administrator to upgrade the server to a supported version."
                     QMessageBox.information(
                         self,
                         "Deprecated server version",

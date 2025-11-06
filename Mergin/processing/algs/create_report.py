@@ -13,7 +13,12 @@ from qgis.core import (
 )
 
 from ...utils import mm_symbol_path, create_report, InvalidProject
-from ...utils_auth import create_mergin_client, MissingAuthConfigError, AuthTokenExpiredError, ClientError
+from ...utils_auth import (
+    create_mergin_client,
+    MissingAuthConfigError,
+    AuthTokenExpiredError,
+    ClientError,
+)
 
 
 class CreateReport(QgsProcessingAlgorithm):
@@ -55,12 +60,22 @@ class CreateReport(QgsProcessingAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.START_VERSION, "Start version", QgsProcessingParameterNumber.Integer, 1, False, 1
+                self.START_VERSION,
+                "Start version",
+                QgsProcessingParameterNumber.Integer,
+                1,
+                False,
+                1,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.END_VERSION, "End version", QgsProcessingParameterNumber.Integer, None, True, 1
+                self.END_VERSION,
+                "End version",
+                QgsProcessingParameterNumber.Integer,
+                None,
+                True,
+                1,
             )
         )
         self.addParameter(QgsProcessingParameterFileDestination(self.REPORT, "Report", "CSV files (*.csv *.CSV)"))
