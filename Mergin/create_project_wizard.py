@@ -4,7 +4,6 @@
 import os
 import shutil
 from pathlib import Path
-import re
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QSettings, Qt, QVariant, QSortFilterProxyModel
 from qgis.PyQt.QtWidgets import (
@@ -194,10 +193,7 @@ class ProjectSettingsPage(ui_proj_settings, base_proj_settings):
         else:
             proj_dir = os.path.join(path_text, proj_name)
 
-        parts = re.split(r"[\\/]", proj_dir)
-        for part in parts:
-            if part.strip() == "":
-                continue
+        for part in Path(proj_dir).parts:
             if part != part.rstrip():
                 self.create_warning(f"The folder name '{part}' cannot end with a space!")
                 return
