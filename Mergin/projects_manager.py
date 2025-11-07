@@ -116,7 +116,7 @@ class MerginProjectsManager(object):
                     if isinstance(data, str):
                         try:
                             data = json.loads(data)  # convert string to json
-                        except Exception:
+                        except json.JSONDecodeError:
                             data = {}
 
                     quota = data.get("projects_quota", "unknown")
