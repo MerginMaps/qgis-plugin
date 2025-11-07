@@ -1652,16 +1652,6 @@ def duplicate_layer(layer: QgsVectorLayer) -> QgsVectorLayer:
     return lyr_clone
 
 
-def is_experimental_plugin_enabled() -> bool:
-    """Returns True if the experimental flag is enable in the plugin manager else false"""
-    settings = QSettings()
-    if Qgis.versionInt() <= 33000:  # Changed QSettings key in 3.30
-        value = settings.value("app/plugin_installer/allowExperimental", False)
-    else:
-        value = settings.value("plugin-manager/allow-experimental", False)
-    return value
-
-
 def invalid_filename_character(filename: str) -> str:
     """Returns invalid character for the filename"""
     illegal_filename_chars = re.compile(r'[\x00-\x19<>:|?*"]')
