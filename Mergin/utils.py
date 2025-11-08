@@ -10,7 +10,6 @@ import configparser
 import os
 import webbrowser
 
-from PyQt5.QtCore import QDateTime
 from osgeo import gdal
 import pathlib
 import platform
@@ -22,7 +21,7 @@ import glob
 import re
 from pathlib import Path
 
-from qgis.PyQt.QtCore import QSettings, QVariant
+from qgis.PyQt.QtCore import QSettings, QVariant, QDateTime
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog, QCheckBox
 from qgis.PyQt.QtGui import QPalette, QColor, QIcon
 from qgis.PyQt.QtXml import QDomDocument
