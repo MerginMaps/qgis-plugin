@@ -459,9 +459,13 @@ class MerginProjectsManager(object):
                         self.mc,
                     )
                 return
+
+            if not dlg.is_complete:
+                # we were cancelled
+                return
             _, has_push_changes = get_push_changes_batch(self.mc, project_dir)
             error_retries_attempts = 0
-            if dlg.is_complete and not has_push_changes:
+            if not has_push_changes:
                 # TODO: report success only when we have actually done anything
                 msg = "Mergin Maps project {} synchronised successfully".format(project_name)
                 QMessageBox.information(None, "Project sync", msg, QMessageBox.StandardButton.Close)
