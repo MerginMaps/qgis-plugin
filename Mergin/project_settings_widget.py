@@ -31,6 +31,7 @@ from .utils import (
     invalid_filename_character,
     qvariant_to_string,
     escape_html_minimal,
+    sanitize_path,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -177,14 +178,13 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         field_name = None
         if index.isValid():
             item = self.attachments_model.item(index.row(), 1)
-            item.setData(
-                self.edit_photo_expression.expression(),
-                AttachmentFieldsModel.EXPRESSION,
-            )
+            expr = self.edit_photo_expression.expression()
+            clean_expr = sanitize_path(expr)
+            item.setData(clean_expr, AttachmentFieldsModel.EXPRESSION)
             layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
             field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
 
-        self.update_preview(expression, layer, field_name)
+        self.update_preview(clean_expr, layer, field_name)
 
     def update_expression_edit(self, current, previous):
         item = self.attachments_model.item(current.row(), 1)
@@ -200,7 +200,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.update_preview(exp, layer, field_name)
 
     def update_preview(self, expression, layer, field_name):
-        if expression == "":
+        if not expression:
             self.label_preview.setText("")
             return
 
@@ -219,12 +219,12 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         exp = QgsExpression(expression)
         exp.prepare(context)
         if exp.hasParserError():
-            self.label_preview.setText(f"{exp.parserErrorString()}")
+            self.label_preview.setText(exp.parserErrorString())
             return
 
         val = exp.evaluate(context)
         if exp.hasEvalError():
-            self.label_preview.setText(f"{exp.evalErrorString()}")
+            self.label_preview.setText(exp.evalErrorString())
             return
 
         str_val = qvariant_to_string(val)
@@ -240,6 +240,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 f"The file name '{filename_display}.jpg' contains an invalid character. Do not use '{invalid_char_display}' character in the file name."
             )
             return
+
         config = layer.fields().field(field_name).editorWidgetSetup().config()
         target_dir = resolve_target_dir(layer, config)
         prefix = prefix_for_relative_path(
