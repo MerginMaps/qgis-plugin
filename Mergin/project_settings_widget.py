@@ -180,9 +180,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             item = self.attachments_model.item(index.row(), 1)
             expr = self.edit_photo_expression.expression()
             clean_expr = sanitize_path(expr)
-            item.setData(clean_expr,
-            AttachmentFieldsModel.EXPRESSION
-            )
+            item.setData(clean_expr, AttachmentFieldsModel.EXPRESSION)
             layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
             field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
 
