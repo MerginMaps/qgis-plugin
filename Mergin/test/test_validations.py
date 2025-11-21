@@ -10,7 +10,7 @@ import shutil
 import tempfile
 
 from qgis.PyQt.QtCore import QVariant
-
+from qgis.gui import QgsFileWidget
 from qgis.core import (
     QgsProject,
     QgsField,
@@ -26,7 +26,6 @@ from qgis.testing import start_app, unittest
 from Mergin.test.test_help import create_mem_layer
 from Mergin.validation import MerginProjectValidator, Warning, SingleLayerWarning
 from Mergin.utils import TILES_URL
-
 
 test_data_path = os.path.join(os.path.dirname(__file__), "data")
 
@@ -71,7 +70,7 @@ class test_validations(unittest.TestCase):
                 "properties": {},
                 "type": "collection",
             },
-            "RelativeStorage": 0,
+            "RelativeStorage": QgsFileWidget.RelativeStorage.Absolute,
             "StorageAuthConfigId": None,
             "StorageMode": 0,
             "StorageType": None,
@@ -87,7 +86,7 @@ class test_validations(unittest.TestCase):
         validator.issues = []
 
         # local path
-        config["RelativeStorage"] = 2
+        config["RelativeStorage"] = QgsFileWidget.RelativeStorage.RelativeProject
         config["DefaultRoot"] = "/tmp/photos"
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
         self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
@@ -99,24 +98,8 @@ class test_validations(unittest.TestCase):
         self.assertEqual(issue.warning, Warning.ATTACHMENT_LOCAL_PATH)
         validator.issues = []
 
-        # default path expression
+        # default path expression - wrong setup
         config["DefaultRoot"] = "@project_home + '/Photos'"
-        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
-        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
-        validator.check_attachment_widget()
-        self.assertTrue(len(validator.issues) == 0)
-
-        # relative to project path
-        config["RelativeStorage"] = 1
-        config.pop("DefaultRoot", None)
-        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
-        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
-        validator.check_attachment_widget()
-        self.assertTrue(len(validator.issues) == 0)
-
-        # uses link
-        config["RelativeStorage"] = 2
-        config["UseLink"] = True
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
         self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
         validator.check_attachment_widget()
@@ -124,11 +107,11 @@ class test_validations(unittest.TestCase):
         issue = validator.issues[0]
         self.assertTrue(isinstance(issue, SingleLayerWarning))
         self.assertEqual(issue.layer_id, self.mem_layer.id())
-        self.assertEqual(issue.warning, Warning.ATTACHMENT_HYPERLINK)
+        self.assertEqual(issue.warning, Warning.ATTACHMENT_EXPRESSION_PATH)
         validator.issues = []
 
-        # valid expression
-        del config["UseLink"]
+        # right setup, wrong expression
+        del config["DefaultRoot"]
         config["PropertyCollection"] = {
             "name": "0",
             "properties": {
@@ -149,6 +132,14 @@ class test_validations(unittest.TestCase):
         self.assertEqual(issue.layer_id, self.mem_layer.id())
         self.assertEqual(issue.warning, Warning.ATTACHMENT_WRONG_EXPRESSION)
         validator.issues = []
+
+        # right setup, valid expression
+        config["PropertyCollection"]["properties"]["propertyRootPath"]["expression"] = "@project_folder + '/photos'"
+        config["DefaultRoot"] = "/tmp/photos"  # default root should be override
+        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
+        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
+        validator.check_attachment_widget()
+        self.assertTrue(len(validator.issues) == 0)
 
     def test_embedded_svg(self):
         symbol = QgsMarkerSymbol()

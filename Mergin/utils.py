@@ -4,10 +4,13 @@
 import shutil
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any
 from urllib.error import URLError, HTTPError
 import configparser
 import os
 import webbrowser
+
+from PyQt5.QtCore import QDateTime
 from osgeo import gdal
 import pathlib
 import platform
@@ -65,7 +68,9 @@ from qgis.core import (
     QgsMapLayer,
     QgsProperty,
     QgsSymbolLayer,
+    QgsGeometry,
 )
+from qgis.gui import QgsFileWidget
 
 from .mergin.utils import int_version, bytes_to_human_size
 from .mergin.merginproject import MerginProject
@@ -522,7 +527,7 @@ def create_basic_qgis_project(project_path=None, project_name=None):
         "FileWidget": True,
         "FileWidgetButton": True,
         "FileWidgetFilter": "",
-        "RelativeStorage": 1,
+        "RelativeStorage": QgsFileWidget.RelativeProject,
         "StorageMode": 0,
         "PropertyCollection": {"name": NULL, "properties": {}, "type": "collection"},
     }
@@ -1656,16 +1661,6 @@ def duplicate_layer(layer: QgsVectorLayer) -> QgsVectorLayer:
     return lyr_clone
 
 
-def is_experimental_plugin_enabled() -> bool:
-    """Returns True if the experimental flag is enable in the plugin manager else false"""
-    settings = QSettings()
-    if Qgis.versionInt() <= 33000:  # Changed QSettings key in 3.30
-        value = settings.value("app/plugin_installer/allowExperimental", False)
-    else:
-        value = settings.value("plugin-manager/allow-experimental", False)
-    return value
-
-
 def invalid_filename_character(filename: str) -> str:
     """Returns invalid character for the filename"""
     illegal_filename_chars = re.compile(r'[\x00-\x19<>:|?*"]')
@@ -1688,3 +1683,45 @@ def is_inside(proj_dir: str, to_check: str) -> bool:
         return True
     except ValueError:
         return False
+
+
+def qvariant_to_string(val: Any) -> str:
+    """Convert common QGIS types to string."""
+    if val is None:
+        return ""
+
+    if isinstance(val, str):
+        return val.strip()
+
+    if isinstance(val, QDateTime):
+        return val.toString()
+
+    if isinstance(val, QgsGeometry):
+        try:
+            return val.asWkt()
+        except Exception:
+            return str(val)
+
+    # If supports toString() - prefer that over Python str()
+    if hasattr(val, "toString") and callable(val.toString):
+        try:
+            s = val.toString()
+            if s:
+                return s
+        except Exception:
+            pass
+
+    # Fallback
+    return str(val)
+
+
+def escape_html_minimal(s: str) -> str:
+    """Escape HTML-sensitive characters, but keep quotes and others literal."""
+    replacements = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+    }
+    for char, escaped in replacements.items():
+        s = s.replace(char, escaped)
+    return s

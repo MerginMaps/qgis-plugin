@@ -15,7 +15,6 @@ from qgis.core import (
     QgsFeature,
     QgsFeatureRequest,
     QgsExpression,
-    QgsVectorLayer,
     QgsMapLayer,
 )
 from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget, QgsColorButton
@@ -28,9 +27,10 @@ from .utils import (
     create_tracking_layer,
     create_map_sketches_layer,
     set_tracking_layer_flags,
-    is_experimental_plugin_enabled,
     remove_prefix,
     invalid_filename_character,
+    qvariant_to_string,
+    escape_html_minimal,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -131,12 +131,6 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.attachment_fields.setModel(self.attachments_model)
         self.attachment_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
         self.edit_photo_expression.expressionChanged.connect(self.expression_changed)
-
-        if is_experimental_plugin_enabled():
-            self.groupBox_photo_sketching.setTitle(self.groupBox_photo_sketching.title() + " (Experimental)")
-        else:
-            # Hide by default
-            self.groupBox_photo_sketching.setVisible(False)
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
@@ -240,14 +234,19 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         if isinstance(val, str):
             val = val.replace(" ", "")
 
-        if val:
-            # check if evaluated expression contains invalid filename characters
-            invalid_char = invalid_filename_character(val)
-            if invalid_char:
-                self.label_preview.setText(
-                    f"The file name '{val}.jpg' contains an invalid character. Do not use '{invalid_char}' character in the file name."
-                )
-                return
+        str_val = qvariant_to_string(val)
+        if not str_val:
+            self.label_preview.setText("")
+            return
+
+        invalid_char = invalid_filename_character(str_val)
+        filename_display = escape_html_minimal(str_val)
+        if invalid_char:
+            invalid_char_display = escape_html_minimal(invalid_char)
+            self.label_preview.setText(
+                f"The file name '{filename_display}.jpg' contains an invalid character. Do not use '{invalid_char_display}' character in the file name."
+            )
+            return
 
         config = layer.fields().field(field_name).editorWidgetSetup().config()
         target_dir = resolve_target_dir(layer, config)
@@ -257,9 +256,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             target_dir,
         )
         if prefix:
-            self.label_preview.setText(f"{remove_prefix(prefix, QgsProject.instance().homePath())}/{val}.jpg")
+            self.label_preview.setText(
+                f"{remove_prefix(prefix, QgsProject.instance().homePath())}/{filename_display}.jpg"
+            )
         else:
-            self.label_preview.setText(f"{val}.jpg")
+            self.label_preview.setText(f"{filename_display}.jpg")
 
     def check_project(self, state):
         """

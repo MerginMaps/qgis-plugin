@@ -5,6 +5,7 @@ import os
 from urllib.parse import urlparse
 from pathlib import Path
 import posixpath
+import json
 
 from qgis.core import QgsProject, Qgis, QgsApplication
 from qgis.utils import iface, OverrideCursor
@@ -111,9 +112,18 @@ class MerginProjectsManager(object):
                         "Please try renaming the project."
                     )
                 elif e.server_code == ErrorCode.ProjectsLimitHit.value:
+                    data = e.server_response
+                    if isinstance(data, str):
+                        try:
+                            data = json.loads(data)  # convert string to json
+                        except json.JSONDecodeError:
+                            data = {}
+
+                    quota = data.get("projects_quota", "unknown")
+
                     msg = (
                         "Maximum number of projects reached. Please upgrade your subscription to create new projects.\n"
-                        f"Projects quota: {e.server_response['projects_quota']}"
+                        f"Projects quota: {quota}"
                     )
                 elif e.server_code == ErrorCode.StorageLimitHit.value:
                     msg = f"{e.detail}\nCurrent limit: {bytes_to_human_size(e.server_response['storage_limit'])}"
@@ -298,32 +308,48 @@ class MerginProjectsManager(object):
 
         current_project_filename = os.path.normpath(QgsProject.instance().fileName())
         current_project_path = os.path.normpath(QgsProject.instance().absolutePath())
+
+        # Windows-specific behavior:
+        # When a project is opened from this directory, QGIS may keep GPKG file handles
+        # for a short time after closing the project. The same workaround is used in
+        # `close_project_and_fix_pull()` (unfinished pull handling).
+        delay = 0
         if current_project_path == os.path.normpath(project_dir):
             QgsProject.instance().clear()
+            QApplication.processEvents()
+            delay = 2500  # allow OS to release locked GPKG handles
 
-        try:
-            self.mc.reset_local_changes(project_dir, files_to_reset)
-            if files_to_reset:
-                msg = f"File {files_to_reset} was successfully reset"
-            else:
-                msg = "Project local changes were successfully reset"
-            QMessageBox.information(
-                None,
-                "Project reset local changes",
-                msg,
-                QMessageBox.StandardButton.Close,
-            )
+        def do_reset():
+            try:
+                self.mc.reset_local_changes(project_dir, files_to_reset)
 
-        except Exception as e:
-            msg = f"Failed to reset local changes:\n\n{str(e)}"
-            QMessageBox.critical(
-                None,
-                "Project reset local changes",
-                msg,
-                QMessageBox.StandardButton.Close,
-            )
+                if files_to_reset:
+                    msg = f"File {files_to_reset} was successfully reset"
+                else:
+                    msg = "Project local changes were successfully reset"
 
-        self.open_project(os.path.dirname(current_project_filename))
+                QMessageBox.information(
+                    None,
+                    "Project reset local changes",
+                    msg,
+                    QMessageBox.StandardButton.Close,
+                )
+
+            except Exception as e:
+                msg = f"Failed to reset local changes:\n\n{str(e)}"
+                QMessageBox.critical(
+                    None,
+                    "Project reset local changes",
+                    msg,
+                    QMessageBox.StandardButton.Close,
+                )
+
+            # Reopen the project after successful or failed reset
+            self.open_project(os.path.dirname(current_project_filename))
+
+        # Run the reset after delay (0 ms on Linux/macOS, 2500 ms on Windows)
+        # This mirrors the pattern from unfinished pull resolution.
+        QTimer.singleShot(delay, do_reset)
 
     def sync_project(self, project_dir, project_name=None):
         if not project_dir:
