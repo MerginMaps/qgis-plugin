@@ -1726,9 +1726,10 @@ def escape_html_minimal(s: str) -> str:
         s = s.replace(char, escaped)
     return s
 
+
 def sanitize_path(expr: str) -> str:
     if not expr:
         return expr
-    parts = expr.split('/')
+    parts = expr.split("/")
     cleaned = [p.rstrip() for p in parts]
-    return '/'.join(cleaned)
+    return "/".join(cleaned)
