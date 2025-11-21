@@ -183,14 +183,16 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         field_name = None
         if index.isValid():
             item = self.attachments_model.item(index.row(), 1)
+            expr = self.edit_photo_expression.expression()
+            clean_expr = expr.replace(" ", "")
             item.setData(
-                self.edit_photo_expression.expression(),
+                clean_expr,
                 AttachmentFieldsModel.EXPRESSION,
             )
             layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
             field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
 
-        self.update_preview(expression, layer, field_name)
+        self.update_preview(clean_expr, layer, field_name)
 
     def update_expression_edit(self, current, previous):
         item = self.attachments_model.item(current.row(), 1)
@@ -209,6 +211,8 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         if expression == "":
             self.label_preview.setText("")
             return
+
+        expression = expression.replace(" ", "")
 
         context = None
         if layer and layer.isValid():
@@ -232,6 +236,10 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         if exp.hasEvalError():
             self.label_preview.setText(f"{exp.evalErrorString()}")
             return
+
+        if isinstance(val, str):
+            val = val.replace(" ", "")
+
         if val:
             # check if evaluated expression contains invalid filename characters
             invalid_char = invalid_filename_character(val)
@@ -240,6 +248,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                     f"The file name '{val}.jpg' contains an invalid character. Do not use '{invalid_char}' character in the file name."
                 )
                 return
+
         config = layer.fields().field(field_name).editorWidgetSetup().config()
         target_dir = resolve_target_dir(layer, config)
         prefix = prefix_for_relative_path(
