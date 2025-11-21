@@ -31,6 +31,7 @@ from .utils import (
     invalid_filename_character,
     qvariant_to_string,
     escape_html_minimal,
+    sanitize_path,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -178,10 +179,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         if index.isValid():
             item = self.attachments_model.item(index.row(), 1)
             expr = self.edit_photo_expression.expression()
-            clean_expr = expr.replace(" ", "")
-            item.setData(
-                clean_expr,
-                AttachmentFieldsModel.EXPRESSION,
+            clean_expr = sanitize_path(expr)
+            item.setData(clean_expr,
+            AttachmentFieldsModel.EXPRESSION
             )
             layer = QgsProject.instance().mapLayer(item.data(AttachmentFieldsModel.LAYER_ID))
             field_name = item.data(AttachmentFieldsModel.FIELD_NAME)
@@ -202,11 +202,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.update_preview(exp, layer, field_name)
 
     def update_preview(self, expression, layer, field_name):
-        if expression == "":
+        if not expression:
             self.label_preview.setText("")
             return
-
-        expression = expression.replace(" ", "")
 
         context = None
         if layer and layer.isValid():
@@ -223,16 +221,13 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         exp = QgsExpression(expression)
         exp.prepare(context)
         if exp.hasParserError():
-            self.label_preview.setText(f"{exp.parserErrorString()}")
+            self.label_preview.setText(exp.parserErrorString())
             return
 
         val = exp.evaluate(context)
         if exp.hasEvalError():
-            self.label_preview.setText(f"{exp.evalErrorString()}")
+            self.label_preview.setText(exp.evalErrorString())
             return
-
-        if isinstance(val, str):
-            val = val.replace(" ", "")
 
         str_val = qvariant_to_string(val)
         if not str_val:
