@@ -1279,6 +1279,7 @@ def copy_datum_shift_grids(grids_dir):
 
     return missed_files
 
+
 def copy_file_new(dst_dir, src_file):
     """
     Copies file, which doesn't exist in destination directory, specified by absolute path.
@@ -1292,6 +1293,7 @@ def copy_file_new(dst_dir, src_file):
             copy_ok = True
 
     return copy_ok
+
 
 def project_grids_directory(mp):
     """

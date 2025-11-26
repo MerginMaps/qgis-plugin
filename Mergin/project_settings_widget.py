@@ -128,9 +128,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
         self.cmb_vertical_crs.setFilters(QgsCoordinateReferenceSystemProxyModel.FilterVertical)
         vcrs_def, ok = QgsProject.instance().readEntry("Mergin", "TargetVerticalCRS")
-        vertical_crs = QgsCoordinateReferenceSystem.fromWkt(vcrs_def) if ok else QgsCoordinateReferenceSystem.fromEpsgId(5773) #EGM96 geoid model
+        vertical_crs = (
+            QgsCoordinateReferenceSystem.fromWkt(vcrs_def) if ok else QgsCoordinateReferenceSystem.fromEpsgId(5773)
+        )  # EGM96 geoid model
         self.cmb_vertical_crs.crsChanged.connect(self.geoid_model_path_change_state)
-        self.cmb_vertical_crs.setCrs(vertical_crs) 
+        self.cmb_vertical_crs.setCrs(vertical_crs)
         self.cmb_vertical_crs.setOptionVisible(QgsProjectionSelectionWidget.CurrentCrs, True)
         self.cmb_vertical_crs.setDialogTitle("Target Vertical CRS")
         self.btn_get_geoid_file.clicked.connect(self.get_geoid_path)
@@ -162,13 +164,12 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
     def get_geoid_path(self):
         # open the set location or user home
-        open_path = QFileInfo(self.edit_geoid_file.text()).absolutePath() if len(self.edit_geoid_file.text()) > 0 else os.path.expanduser("~")
-        abs_path = QFileDialog.getOpenFileName(
-            None,
-            "Select File",
-            open_path,
-            "Geoid Model Files (*.tif *.gtx)"
+        open_path = (
+            QFileInfo(self.edit_geoid_file.text()).absolutePath()
+            if len(self.edit_geoid_file.text()) > 0
+            else os.path.expanduser("~")
         )
+        abs_path = QFileDialog.getOpenFileName(None, "Select File", open_path, "Geoid Model Files (*.tif *.gtx)")
         if len(abs_path[0]) > 0:
             self.edit_geoid_file.setText(abs_path[0])
 
@@ -356,7 +357,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         """
         if len(self.edit_geoid_file.text()) == 0:
             return True
-        
+
         project_proj_dir = os.path.join(mergin_project_local_path(), "proj")
         return copy_file_new(project_proj_dir, self.edit_geoid_file.text())
 
