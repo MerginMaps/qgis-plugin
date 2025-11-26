@@ -7,7 +7,7 @@ import typing
 import re
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QColor
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import Qt, QFileInfo
 from qgis.PyQt.QtWidgets import QFileDialog, QMessageBox
 from qgis.core import (
     QgsProject,
@@ -18,6 +18,8 @@ from qgis.core import (
     QgsExpression,
     QgsMapLayer,
     QgsCoordinateReferenceSystem,
+    QgsProjUtils,
+    QgsMessageLog,
 )
 from qgis.gui import (
     QgsOptionsWidgetFactory,
@@ -131,9 +133,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.cmb_vertical_crs.setFilters(QgsCoordinateReferenceSystemProxyModel.FilterVertical)
         vcrs_def, ok = QgsProject.instance().readEntry("Mergin", "TargetVerticalCRS")
         vertical_crs = QgsCoordinateReferenceSystem.fromWkt(vcrs_def) if ok else QgsCoordinateReferenceSystem.fromEpsgId(5773) #EGM96 geoid model
+        self.cmb_vertical_crs.crsChanged.connect(self.geoid_model_path_change_state)
         self.cmb_vertical_crs.setCrs(vertical_crs) 
         self.cmb_vertical_crs.setOptionVisible(QgsProjectionSelectionWidget.CurrentCrs, True)
         self.cmb_vertical_crs.setDialogTitle("Target Vertical CRS")
+        self.btn_get_geoid_file.clicked.connect(self.get_geoid_path)
 
         self.local_project_dir = mergin_project_local_path()
 
@@ -148,6 +152,29 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.attachment_fields.setModel(self.attachments_model)
         self.attachment_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
         self.edit_photo_expression.expressionChanged.connect(self.expression_changed)
+
+    def geoid_model_path_change_state(self, newCRS):
+        if newCRS == QgsCoordinateReferenceSystem.fromEpsgId(5773):
+            self.label_geoid_file.hide()
+            self.edit_geoid_file.hide()
+            self.edit_geoid_file.clear()
+            self.btn_get_geoid_file.hide()
+        else:
+            self.label_geoid_file.show()
+            self.edit_geoid_file.show()
+            self.btn_get_geoid_file.show()
+
+    def get_geoid_path(self):
+        # open the set location or user home
+        open_path = QFileInfo(self.edit_geoid_file.text()).absolutePath() if len(self.edit_geoid_file.text()) > 0 else os.path.expanduser("~")
+        abs_path = QFileDialog.getOpenFileName(
+            None,
+            "Select File",
+            open_path,
+            "Geoid Model Files (*.tif *.gtx)"
+        )
+        if len(abs_path[0]) > 0:
+            self.edit_geoid_file.setText(abs_path[0])
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
@@ -326,6 +353,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             # create a new layer and add it as a map sketches layer
             create_map_sketches_layer(QgsProject.instance().absolutePath())
 
+    #we could possibly first lookup if the gridfile is available with QGSProjUtils.gridsUsed()`
     def package_vcrs_file(self, vertical_crs):
         """
         Get the grid shift file name from proj definition and copy it to project proj folder. We do this only for vertical CRS different than EGM96.
