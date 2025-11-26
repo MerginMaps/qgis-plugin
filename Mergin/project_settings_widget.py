@@ -4,7 +4,6 @@
 import json
 import os
 import typing
-import re
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import Qt, QFileInfo
@@ -18,8 +17,6 @@ from qgis.core import (
     QgsExpression,
     QgsMapLayer,
     QgsCoordinateReferenceSystem,
-    QgsProjUtils,
-    QgsMessageLog,
 )
 from qgis.gui import (
     QgsOptionsWidgetFactory,
@@ -41,8 +38,7 @@ from .utils import (
     invalid_filename_character,
     qvariant_to_string,
     escape_html_minimal,
-    copy_datum_shift_grid,
-    project_grids_directory,
+    copy_file_new,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -353,22 +349,16 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             # create a new layer and add it as a map sketches layer
             create_map_sketches_layer(QgsProject.instance().absolutePath())
 
-    #we could possibly first lookup if the gridfile is available with QGSProjUtils.gridsUsed()`
+    # we could possibly first lookup if the gridfile is available with QGSProjUtils.gridsUsed()`
     def package_vcrs_file(self, vertical_crs):
         """
-        Get the grid shift file name from proj definition and copy it to project proj folder. We do this only for vertical CRS different than EGM96.
+        Get the grid shift file picked by user and copy it to project proj folder. We do this only for vertical CRS different than EGM96.
         """
-        if vertical_crs != QgsCoordinateReferenceSystem.fromEpsgId(5773):
-            # search for required file name
-            result = re.search("=.*\.tif ", vertical_crs.toProj())
-            if result is not None:
-                # sanitize matched result
-                vcrs_file = result.group()[1:-1]
-                grids_directory = os.path.join(mergin_project_local_path(), "proj")
-                if grids_directory is not None:
-                    return copy_datum_shift_grid(grids_directory, vcrs_file)
-            return False
-        return True
+        if len(self.edit_geoid_file.text()) == 0:
+            return True
+        
+        project_proj_dir = os.path.join(mergin_project_local_path(), "proj")
+        return copy_file_new(project_proj_dir, self.edit_geoid_file.text())
 
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
