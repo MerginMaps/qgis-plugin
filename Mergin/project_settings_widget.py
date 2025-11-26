@@ -6,7 +6,7 @@ import os
 import typing
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QColor
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import Qt, QFileInfo
 from qgis.PyQt.QtWidgets import QFileDialog, QMessageBox
 from qgis.core import (
     QgsProject,
@@ -16,8 +16,15 @@ from qgis.core import (
     QgsFeatureRequest,
     QgsExpression,
     QgsMapLayer,
+    QgsCoordinateReferenceSystem,
 )
-from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget, QgsColorButton
+from qgis.gui import (
+    QgsOptionsWidgetFactory,
+    QgsOptionsPageWidget,
+    QgsColorButton,
+    QgsCoordinateReferenceSystemProxyModel,
+    QgsProjectionSelectionWidget,
+)
 from .attachment_fields_model import AttachmentFieldsModel
 from .utils import (
     mm_symbol_path,
@@ -31,6 +38,7 @@ from .utils import (
     invalid_filename_character,
     qvariant_to_string,
     escape_html_minimal,
+    copy_file_new,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -118,6 +126,17 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         idx = self.cmb_sort_method.findData(mode) if ok else 1
         self.cmb_sort_method.setCurrentIndex(idx)
 
+        self.cmb_vertical_crs.setFilters(QgsCoordinateReferenceSystemProxyModel.FilterVertical)
+        vcrs_def, ok = QgsProject.instance().readEntry("Mergin", "TargetVerticalCRS")
+        vertical_crs = (
+            QgsCoordinateReferenceSystem.fromWkt(vcrs_def) if ok else QgsCoordinateReferenceSystem.fromEpsgId(5773)
+        )  # EGM96 geoid model
+        self.cmb_vertical_crs.crsChanged.connect(self.geoid_model_path_change_state)
+        self.cmb_vertical_crs.setCrs(vertical_crs)
+        self.cmb_vertical_crs.setOptionVisible(QgsProjectionSelectionWidget.CurrentCrs, True)
+        self.cmb_vertical_crs.setDialogTitle("Target Vertical CRS")
+        self.btn_get_geoid_file.clicked.connect(self.get_geoid_path)
+
         self.local_project_dir = mergin_project_local_path()
 
         if self.local_project_dir:
@@ -131,6 +150,28 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.attachment_fields.setModel(self.attachments_model)
         self.attachment_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
         self.edit_photo_expression.expressionChanged.connect(self.expression_changed)
+
+    def geoid_model_path_change_state(self, newCRS):
+        if newCRS == QgsCoordinateReferenceSystem.fromEpsgId(5773):
+            self.label_geoid_file.hide()
+            self.edit_geoid_file.hide()
+            self.edit_geoid_file.clear()
+            self.btn_get_geoid_file.hide()
+        else:
+            self.label_geoid_file.show()
+            self.edit_geoid_file.show()
+            self.btn_get_geoid_file.show()
+
+    def get_geoid_path(self):
+        # open the set location or user home
+        open_path = (
+            QFileInfo(self.edit_geoid_file.text()).absolutePath()
+            if len(self.edit_geoid_file.text()) > 0
+            else os.path.expanduser("~")
+        )
+        abs_path = QFileDialog.getOpenFileName(None, "Select File", open_path, "Geoid Model Files (*.tif *.gtx)")
+        if len(abs_path[0]) > 0:
+            self.edit_geoid_file.setText(abs_path[0])
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
@@ -309,6 +350,17 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             # create a new layer and add it as a map sketches layer
             create_map_sketches_layer(QgsProject.instance().absolutePath())
 
+    # we could possibly first lookup if the gridfile is available with QGSProjUtils.gridsUsed()`
+    def package_vcrs_file(self, vertical_crs):
+        """
+        Get the grid shift file picked by user and copy it to project proj folder. We do this only for vertical CRS different than EGM96.
+        """
+        if len(self.edit_geoid_file.text()) == 0:
+            return True
+
+        project_proj_dir = os.path.join(mergin_project_local_path(), "proj")
+        return copy_file_new(project_proj_dir, self.edit_geoid_file.text())
+
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
         QgsProject.instance().writeEntry("Mergin", "Snapping", self.cmb_snapping_mode.currentData())
@@ -345,10 +397,12 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 expression = item.data(AttachmentFieldsModel.EXPRESSION)
                 QgsProject.instance().writeEntry("Mergin", f"PhotoNaming/{layer_id}/{field_name}", expression)
 
+        QgsProject.instance().writeEntry("Mergin", "TargetVerticalCRS", self.cmb_vertical_crs.crs().toWkt())
         QgsProject.instance().writeEntry("Mergin", "SortLayersMethod/Method", self.cmb_sort_method.currentData())
         self.save_config_file()
         self.setup_tracking()
         self.setup_map_sketches()
+        self.package_vcrs_file(self.cmb_vertical_crs.crs())
 
     def colors_change_state(self) -> None:
         """

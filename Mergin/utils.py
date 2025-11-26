@@ -1279,6 +1279,21 @@ def copy_datum_shift_grids(grids_dir):
     return missed_files
 
 
+def copy_file_new(dst_dir, src_file):
+    """
+    Copies file, which doesn't exist in destination directory, specified by absolute path.
+    """
+    os.makedirs(dst_dir, exist_ok=True)
+    copy_ok = False
+    if os.path.exists(src_file):
+        dst = os.path.join(dst_dir, Path(src_file).name)
+        if not os.path.exists(dst):
+            shutil.copy(src_file, dst)
+            copy_ok = True
+
+    return copy_ok
+
+
 def project_grids_directory(mp):
     """
     Returns location of the "proj" directory inside MerginMaps project root directory
