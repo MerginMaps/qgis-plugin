@@ -44,9 +44,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-888</y>
-        <width>628</width>
-        <height>1444</height>
+        <y>-1120</y>
+        <width>621</width>
+        <height>1678</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -153,15 +153,15 @@
           <string>Snapping</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_4">
-          <item row="1" column="1">
-           <widget class="QComboBox" name="cmb_snapping_mode"/>
-          </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_5">
             <property name="text">
              <string>Snapping settings</string>
             </property>
            </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="cmb_snapping_mode"/>
           </item>
           <item row="0" column="0" colspan="2">
            <widget class="QLabel" name="label_4">
@@ -352,7 +352,7 @@
            <layout class="QHBoxLayout" name="mColorsHorizontalLayout">
             <item>
              <widget class="QgsColorButton" name="mColorButton_2">
-              <property name="color">
+              <property name="color" stdset="0">
                <color>
                 <red>255</red>
                 <green>255</green>
@@ -363,7 +363,7 @@
             </item>
             <item>
              <widget class="QgsColorButton" name="mColorButton_6">
-              <property name="color">
+              <property name="color" stdset="0">
                <color>
                 <red>18</red>
                 <green>24</green>
@@ -374,7 +374,7 @@
             </item>
             <item>
              <widget class="QgsColorButton" name="mColorButton_5">
-              <property name="color">
+              <property name="color" stdset="0">
                <color>
                 <red>94</red>
                 <green>158</green>
@@ -385,7 +385,7 @@
             </item>
             <item>
              <widget class="QgsColorButton" name="mColorButton_4">
-              <property name="color">
+              <property name="color" stdset="0">
                <color>
                 <red>87</red>
                 <green>180</green>
@@ -396,7 +396,7 @@
             </item>
             <item>
              <widget class="QgsColorButton" name="mColorButton_3">
-              <property name="color">
+              <property name="color" stdset="0">
                <color>
                 <red>253</red>
                 <green>203</green>
@@ -407,7 +407,7 @@
             </item>
             <item>
              <widget class="QgsColorButton" name="mColorButton_1">
-              <property name="color">
+              <property name="color" stdset="0">
                <color>
                 <red>255</red>
                 <green>156</green>
@@ -418,7 +418,7 @@
             </item>
             <item>
              <widget class="QgsColorButton" name="mColorButton_7">
-              <property name="color">
+              <property name="color" stdset="0">
                <color>
                 <red>255</red>
                 <green>143</green>
@@ -472,6 +472,64 @@
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="groupBox_4">
+         <property name="title">
+          <string>Vertical CRS</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QLabel" name="label_15">
+            <property name="text">
+             <string>Choose which vertical CRS will be used for elevation calculation. By default the mobile application uses EGM96_15 geoid model.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="openExternalLinks">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QGridLayout" name="gridLayout_8">
+            <property name="sizeConstraint">
+             <enum>QLayout::SetDefaultConstraint</enum>
+            </property>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_16">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Vertical CRS</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QgsProjectionSelectionWidget" name="cmb_vertical_crs" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>16777215</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="groupBox_photo_sketching">
          <property name="title">
           <string>Photo sketching [Preview]</string>
@@ -493,7 +551,7 @@
              <string>Photo sketching lets mobile app users draw freehand annotations directly on captured photos. This feature is in Preview: it works, but may still have some issues.</string>
             </property>
             <property name="wordWrap">
-              <bool>true</bool>
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -529,6 +587,12 @@
    <class>QgsExpressionLineEdit</class>
    <extends>QWidget</extends>
    <header>qgsexpressionlineedit.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QgsProjectionSelectionWidget</class>
+   <extends>QWidget</extends>
+   <header>qgsprojectionselectionwidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

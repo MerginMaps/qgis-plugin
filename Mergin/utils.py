@@ -1279,6 +1279,24 @@ def copy_datum_shift_grids(grids_dir):
 
     return missed_files
 
+def copy_datum_shift_grid(grids_dir, grid_file):
+    """
+    Copies datum shift grid file specified by name inside MerginMaps "proj" directory.
+    """
+    os.makedirs(grids_dir, exist_ok=True)
+    copy_ok = False
+    for p in QgsProjUtils.searchPaths():
+        src = os.path.join(p, grid_file)
+        if not os.path.exists(src):
+            continue
+
+        dst = os.path.join(grids_dir, grid_file)
+        if not os.path.exists(dst):
+            shutil.copy(src, dst)
+            copy_ok = True
+            break
+
+    return copy_ok
 
 def project_grids_directory(mp):
     """
