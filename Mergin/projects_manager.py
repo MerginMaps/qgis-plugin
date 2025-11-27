@@ -36,7 +36,7 @@ from .utils import (
     write_project_variables,
     bytes_to_human_size,
 )
-from .utils_auth import get_stored_mergin_server_url
+from .utils_auth import AuthSync
 
 from .mergin.merginproject import MerginProject
 from .project_status_dialog import ProjectStatusDialog
@@ -68,6 +68,9 @@ class MerginProjectsManager(object):
 
         qgis_files = find_qgis_files(project_dir)
         if len(qgis_files) == 1:
+            # singleton project object is not in the interface yet, we need to pass the qgis file to retrieve the project id
+            AuthSync(qgis_files[0]).import_auth()
+
             iface.addProject(qgis_files[0])
             if self.mc.has_unfinished_pull(project_dir):
                 widget = iface.messageBar().createMessage(

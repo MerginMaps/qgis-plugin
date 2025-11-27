@@ -43,7 +43,6 @@ from .utils import (
     icon_path,
     mm_symbol_path,
     mergin_project_local_path,
-    PROJS_PER_PAGE,
     remove_project_variables,
     set_qgis_project_mergin_variables,
     unsaved_project_check,
@@ -55,6 +54,7 @@ from .utils_auth import (
     AuthTokenExpiredError,
     set_qgsexpressionscontext,
     get_authcfg,
+    AuthSync,
 )
 
 from .mergin.merginproject import MerginProject
@@ -478,6 +478,7 @@ class MerginPlugin:
 
     def current_project_sync(self):
         """Synchronise current Mergin Maps project."""
+        AuthSync().export_auth(self.mc)
         self.manager.project_status(self.mergin_proj_dir)
 
     def find_project(self):
