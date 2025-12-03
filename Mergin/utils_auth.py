@@ -20,7 +20,7 @@ from qgis.core import (
     QgsExpressionContextUtils,
     Qgis,
     QgsProject,
-    QgsDataSourceUri,
+    QgsProviderRegistry,
 )
 from qgis.PyQt.QtCore import QSettings, QUrl
 from qgis.PyQt.QtNetwork import QNetworkRequest
@@ -582,11 +582,14 @@ class AuthSync:
     def get_layers_auth_ids(self) -> list[str]:
         """Get the auth config IDs of the protected layers in the current project."""
         auth_ids = set()
+        reg = QgsProviderRegistry.instance()
         for layer in self.project.mapLayers().values():
             source = layer.source()
-            uri = QgsDataSourceUri(source)
-            if uri.authConfigId():
-                auth_ids.add(uri.authConfigId())
+            prov_type = layer.providerType()
+            decoded_uri = reg.decodeUri(prov_type, source)
+            auth_id = decoded_uri.get("authcfg")
+            if auth_id:
+                auth_ids.add(auth_id)
         return list(auth_ids)
 
     def get_auth_config_hash(self, auth_ids: list[str]) -> str:
