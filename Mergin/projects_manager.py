@@ -126,7 +126,21 @@ class MerginProjectsManager(object):
                         f"Projects quota: {quota}"
                     )
                 elif e.server_code == ErrorCode.StorageLimitHit.value:
-                    msg = f"{e.detail}\nCurrent limit: {bytes_to_human_size(e.server_response['storage_limit'])}"
+                    data = e.server_response
+                    if isinstance(data, str):
+                        try:
+                            data = json.loads(data)
+                        except json.JSONDecodeError:
+                            data = {}
+
+                    storage_limit = data.get("storage_limit")
+                    human_limit = (
+                        bytes_to_human_size(storage_limit)
+                        if storage_limit is not None
+                        else "unknown"
+                    )
+
+                    msg = f"{e.detail}\nCurrent limit: {human_limit}"
 
                 QMessageBox.critical(
                     None,
@@ -186,7 +200,27 @@ class MerginProjectsManager(object):
             if isinstance(dlg.exception, LoginError):
                 login_error_message(dlg.exception)
             elif isinstance(dlg.exception, ClientError):
-                QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
+                exc = dlg.exception
+                msg = str(exc)
+
+                if exc.server_code == ErrorCode.StorageLimitHit.value:
+                    data = exc.server_response
+                    if isinstance(data, str):
+                        try:
+                            data = json.loads(data)
+                        except json.JSONDecodeError:
+                            data = {}
+
+                    storage_limit = data.get("storage_limit")
+                    human_limit = (
+                        bytes_to_human_size(storage_limit)
+                        if storage_limit is not None
+                        else "unknown"
+                    )
+
+                    msg = f"{exc.detail}\nCurrent limit: {human_limit}"
+
+                QMessageBox.critical(None, "Project sync", "Client error: " + msg)
             else:
                 unhandled_exception_message(
                     dlg.exception_details(),
@@ -218,6 +252,7 @@ class MerginProjectsManager(object):
         )
 
         return True
+
 
     def project_status(self, project_dir):
         if project_dir is None:
@@ -463,7 +498,19 @@ class MerginProjectsManager(object):
                     # To note we check for a string since error in flask doesn't return server error code
                     msg = "Somebody else is syncing, please try again later"
                 elif dlg.exception.server_code == ErrorCode.StorageLimitHit.value:
-                    msg = f"{dlg.exception.detail}\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response['storage_limit'])}"
+                    data = dlg.exception.server_response
+                    if isinstance(data, str):
+                        try:
+                            data = json.loads(data)
+                        except json.JSONDecodeError:
+                            data = {}
+                    storage_limit = data.get("storage_limit")
+                    human_limit = (
+                        bytes_to_human_size(storage_limit)
+                        if storage_limit is not None
+                        else "unknown"
+                    )
+                    msg = f"{dlg.exception.detail}\nCurrent limit: {human_limit}"
                 else:
                     msg = str(dlg.exception)
                 QMessageBox.critical(None, "Project sync", "Client error: \n" + msg)
