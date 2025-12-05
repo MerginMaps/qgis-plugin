@@ -134,11 +134,7 @@ class MerginProjectsManager(object):
                             data = {}
 
                     storage_limit = data.get("storage_limit")
-                    human_limit = (
-                        bytes_to_human_size(storage_limit)
-                        if storage_limit is not None
-                        else "unknown"
-                    )
+                    human_limit = bytes_to_human_size(storage_limit) if storage_limit is not None else "unknown"
 
                     msg = f"{e.detail}\nCurrent limit: {human_limit}"
 
@@ -212,11 +208,7 @@ class MerginProjectsManager(object):
                             data = {}
 
                     storage_limit = data.get("storage_limit")
-                    human_limit = (
-                        bytes_to_human_size(storage_limit)
-                        if storage_limit is not None
-                        else "unknown"
-                    )
+                    human_limit = bytes_to_human_size(storage_limit) if storage_limit is not None else "unknown"
 
                     msg = f"{exc.detail}\nCurrent limit: {human_limit}"
 
@@ -252,7 +244,6 @@ class MerginProjectsManager(object):
         )
 
         return True
-
 
     def project_status(self, project_dir):
         if project_dir is None:
@@ -505,11 +496,7 @@ class MerginProjectsManager(object):
                         except json.JSONDecodeError:
                             data = {}
                     storage_limit = data.get("storage_limit")
-                    human_limit = (
-                        bytes_to_human_size(storage_limit)
-                        if storage_limit is not None
-                        else "unknown"
-                    )
+                    human_limit = bytes_to_human_size(storage_limit) if storage_limit is not None else "unknown"
                     msg = f"{dlg.exception.detail}\nCurrent limit: {human_limit}"
                 else:
                     msg = str(dlg.exception)
