@@ -622,6 +622,8 @@ class AuthSync:
 
         auth_ids = self.get_layers_auth_ids()
         if not auth_ids:
+            if os.path.exists(self.auth_file):
+                os.remove(self.auth_file)
             return
 
         if not client.has_writing_permissions(self.mp.project_full_name()):
@@ -657,9 +659,9 @@ class AuthSync:
         # Export and inject hash
         temp_file = os.path.join(self.project_path, f"temp_{AUTH_CONFIG_FILENAME}")
 
-        success = self.auth_mngr.exportAuthenticationConfigsToXml(temp_file, list(auth_ids), self.project_id)
+        ok = self.auth_mngr.exportAuthenticationConfigsToXml(temp_file, list(auth_ids), self.project_id)
 
-        if success:
+        if ok:
             with open(temp_file, "r", encoding="utf-8") as f:
                 xml_content = f.read()
 
