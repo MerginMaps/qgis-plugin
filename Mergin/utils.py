@@ -1734,6 +1734,7 @@ def sanitize_path(expr: str) -> str:
     cleaned = [p.rstrip() for p in parts]
     return "/".join(cleaned)
 
+
 def storage_limit_fail(exc):
     data = exc.server_response
     if isinstance(data, str):
@@ -1744,6 +1745,7 @@ def storage_limit_fail(exc):
     storage_limit = data.get("storage_limit")
     human_limit = bytes_to_human_size(storage_limit) if storage_limit is not None else "unknown"
     return f"{exc.detail}\nCurrent limit: {human_limit}"
+
 
 def push_error_message(dlg, project_name, plugin, mc):
     if isinstance(dlg.exception, LoginError):
