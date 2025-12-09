@@ -35,6 +35,7 @@ from .utils import (
     UnsavedChangesStrategy,
     write_project_variables,
     bytes_to_human_size,
+    push_error_message,
 )
 from .utils_auth import get_stored_mergin_server_url
 
@@ -192,34 +193,7 @@ class MerginProjectsManager(object):
         dlg.exec()  # blocks until success, failure or cancellation
 
         if dlg.exception:
-            # push failed for some reason
-            if isinstance(dlg.exception, LoginError):
-                login_error_message(dlg.exception)
-            elif isinstance(dlg.exception, ClientError):
-                exc = dlg.exception
-                msg = str(exc)
-
-                if exc.server_code == ErrorCode.StorageLimitHit.value:
-                    data = exc.server_response
-                    if isinstance(data, str):
-                        try:
-                            data = json.loads(data)
-                        except json.JSONDecodeError:
-                            data = {}
-
-                    storage_limit = data.get("storage_limit")
-                    human_limit = bytes_to_human_size(storage_limit) if storage_limit is not None else "unknown"
-
-                    msg = f"{exc.detail}\nCurrent limit: {human_limit}"
-
-                QMessageBox.critical(None, "Project sync", "Client error: " + msg)
-            else:
-                unhandled_exception_message(
-                    dlg.exception_details(),
-                    "Project sync",
-                    f"Something went wrong while synchronising your project {project_name}.",
-                    self.mc,
-                )
+            push_error_message(dlg, project_name, self.plugin, self.mc)
             return True
 
         if not dlg.is_complete:
@@ -481,35 +455,7 @@ class MerginProjectsManager(object):
             self.open_project(project_dir)
 
         if dlg.exception:
-            # push failed for some reason
-            if isinstance(dlg.exception, LoginError):
-                login_error_message(dlg.exception)
-            elif isinstance(dlg.exception, ClientError):
-                if dlg.exception.http_error == 400 and "Another process" in dlg.exception.detail:
-                    # To note we check for a string since error in flask doesn't return server error code
-                    msg = "Somebody else is syncing, please try again later"
-                elif dlg.exception.server_code == ErrorCode.StorageLimitHit.value:
-                    data = dlg.exception.server_response
-                    if isinstance(data, str):
-                        try:
-                            data = json.loads(data)
-                        except json.JSONDecodeError:
-                            data = {}
-                    storage_limit = data.get("storage_limit")
-                    human_limit = bytes_to_human_size(storage_limit) if storage_limit is not None else "unknown"
-                    msg = f"{dlg.exception.detail}\nCurrent limit: {human_limit}"
-                else:
-                    msg = str(dlg.exception)
-                QMessageBox.critical(None, "Project sync", "Client error: \n" + msg)
-            elif isinstance(dlg.exception, AuthTokenExpiredError):
-                self.plugin.auth_token_expired()
-            else:
-                unhandled_exception_message(
-                    dlg.exception_details(),
-                    "Project sync",
-                    f"Something went wrong while synchronising your project {project_name}.",
-                    self.mc,
-                )
+            push_error_message(dlg, project_name, self.plugin, self.mc)
             return
 
         if dlg.is_complete:
