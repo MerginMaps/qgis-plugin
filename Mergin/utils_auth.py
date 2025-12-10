@@ -27,7 +27,7 @@ from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.PyQt.QtWidgets import QMessageBox
 
 from .mergin.client import MerginClient, ServerType, AuthTokenExpiredError
-from .mergin.common import ClientError, LoginError
+from .mergin.common import ClientError, LoginError, ProjectRole
 from .mergin.merginproject import MerginProject
 
 from .utils import MERGIN_URL, get_qgis_proxy_config, get_plugin_version
@@ -625,8 +625,9 @@ class AuthSync:
             if os.path.exists(self.auth_file):
                 os.remove(self.auth_file)
             return
-
-        if not client.has_writing_permissions(self.mp.project_full_name()):
+        project_info = client.project_info(self.mp.project_full_name())
+        role = project_info.get("role")
+        if not (role and role in ("writer", "owner")):
             return
 
         if not self.auth_mngr.masterPasswordIsSet():
