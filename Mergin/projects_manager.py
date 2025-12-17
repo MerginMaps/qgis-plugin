@@ -487,6 +487,7 @@ class MerginProjectsManager(object):
             QMessageBox.information(None, "Project sync", msg, QMessageBox.StandardButton.Close)
             # clear canvas cache so any changes become immediately visible to users
             self.iface.mapCanvas().clearCache()
+            AuthSync().import_auth()
             self.iface.mapCanvas().refresh()
         else:
             # we were cancelled - but no need to show a message box about that...?
