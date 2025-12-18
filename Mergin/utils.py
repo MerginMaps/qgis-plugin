@@ -4,7 +4,7 @@
 import shutil
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any
+from typing import Any, Dict, List
 from urllib.error import URLError, HTTPError
 import configparser
 import os
@@ -1725,3 +1725,12 @@ def escape_html_minimal(s: str) -> str:
     for char, escaped in replacements.items():
         s = s.replace(char, escaped)
     return s
+
+
+def is_file_changed(changes: Dict[str, List[dict]], filename: str) -> bool:
+    """Check whether a file is added or updated"""
+    return any(
+        f.get('path') == filename
+        for key in ['added', 'updated']
+        for f in changes.get(key, [])
+    )

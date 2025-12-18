@@ -35,8 +35,9 @@ from .utils import (
     UnsavedChangesStrategy,
     write_project_variables,
     bytes_to_human_size,
+    is_file_changed,
 )
-from .utils_auth import AuthSync
+from .utils_auth import AuthSync, AUTH_CONFIG_FILENAME
 
 from .mergin.merginproject import MerginProject
 from .project_status_dialog import ProjectStatusDialog
@@ -427,11 +428,16 @@ class MerginProjectsManager(object):
 
         if dlg.pull_conflicts:
             self.report_conflicts(dlg.pull_conflicts)
+            if is_file_changed(pull_changes, AUTH_CONFIG_FILENAME):
+                AuthSync().import_auth()
             return
 
         if not dlg.is_complete:
             # we were cancelled
             return
+
+        if is_file_changed(pull_changes, AUTH_CONFIG_FILENAME):
+            AuthSync().import_auth()
 
         # pull finished, start push
         if any(push_changes.values()) and not self.mc.has_writing_permissions(project_name):
@@ -487,7 +493,6 @@ class MerginProjectsManager(object):
             QMessageBox.information(None, "Project sync", msg, QMessageBox.StandardButton.Close)
             # clear canvas cache so any changes become immediately visible to users
             self.iface.mapCanvas().clearCache()
-            AuthSync().import_auth()
             self.iface.mapCanvas().refresh()
         else:
             # we were cancelled - but no need to show a message box about that...?
