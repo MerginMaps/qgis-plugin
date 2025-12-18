@@ -1729,8 +1729,4 @@ def escape_html_minimal(s: str) -> str:
 
 def is_file_changed(changes: Dict[str, List[dict]], filename: str) -> bool:
     """Check whether a file is added or updated"""
-    return any(
-        f.get('path') == filename
-        for key in ['added', 'updated']
-        for f in changes.get(key, [])
-    )
+    return any(f.get("path") == filename for key in ["added", "updated"] for f in changes.get(key, []))
