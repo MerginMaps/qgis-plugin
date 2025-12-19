@@ -299,7 +299,6 @@ class MerginProjectValidator(object):
 
             # check fields are unique
             self._check_field_unique(parent_layer, parent_fields)
-            self._check_field_unique(child_layer, child_fields)
 
             # check that fields used in relation are not primary keys
             if parent_layer.dataProvider().storageType() == "GPKG":
@@ -330,7 +329,6 @@ class MerginProjectValidator(object):
                     # and is not a primary key
                     if child_layer.dataProvider().storageType() == "GPKG":
                         idx = child_layer.fields().indexFromName(str(cfg["Key"]))
-                        self._check_field_unique(child_layer, [idx])
                         self._check_primary_keys(child_layer, [idx])
 
     def _check_field_unique(self, layer, fields):
