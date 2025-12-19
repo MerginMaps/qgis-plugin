@@ -10,7 +10,6 @@ import configparser
 import os
 import webbrowser
 
-from PyQt5.QtCore import QDateTime
 from osgeo import gdal
 import pathlib
 import platform
@@ -22,7 +21,7 @@ import glob
 import re
 from pathlib import Path
 
-from qgis.PyQt.QtCore import QSettings, QVariant
+from qgis.PyQt.QtCore import QSettings, QVariant, QDateTime
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog, QCheckBox
 from qgis.PyQt.QtGui import QPalette, QColor, QIcon
 from qgis.PyQt.QtXml import QDomDocument
@@ -77,7 +76,7 @@ from .mergin.merginproject import MerginProject
 
 try:
     from .mergin.common import ClientError, ErrorCode, LoginError, InvalidProject
-    from .mergin.client import MerginClient, ServerType
+    from .mergin.client import MerginClient, ServerType, AuthTokenExpiredError
     from .mergin.client_pull import (
         download_project_async,
         download_project_is_running,
@@ -1730,3 +1729,48 @@ def escape_html_minimal(s: str) -> str:
 def is_file_changed(changes: Dict[str, List[dict]], filename: str) -> bool:
     """Check whether a file is added or updated"""
     return any(f.get("path") == filename for key in ["added", "updated"] for f in changes.get(key, []))
+
+
+def sanitize_path(expr: str) -> str:
+    if not expr:
+        return expr
+    parts = expr.split("/")
+    cleaned = [p.rstrip() for p in parts]
+    return "/".join(cleaned)
+
+
+def storage_limit_fail(exc):
+    data = exc.server_response
+    if isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except json.JSONDecodeError:
+            data = {}
+    storage_limit = data.get("storage_limit")
+    human_limit = bytes_to_human_size(storage_limit) if storage_limit is not None else "unknown"
+    return f"{exc.detail}\nCurrent limit: {human_limit}"
+
+
+def push_error_message(dlg, project_name, plugin, mc):
+    if isinstance(dlg.exception, LoginError):
+        login_error_message(dlg.exception)
+    elif isinstance(dlg.exception, ClientError):
+        exc = dlg.exception
+
+        if exc.http_error == 400 and "Another process" in exc.detail:
+            msg = "Somebody else is syncing, please try again later"
+        elif exc.server_code == ErrorCode.StorageLimitHit.value:
+            msg = storage_limit_fail(exc)
+        else:
+            msg = str(exc)
+
+        QMessageBox.critical(None, "Project sync", "Client error: \n" + msg)
+    elif isinstance(dlg.exception, AuthTokenExpiredError):
+        plugin.auth_token_expired()
+    else:
+        unhandled_exception_message(
+            dlg.exception_details(),
+            "Project sync",
+            f"Something went wrong while synchronising your project {project_name}.",
+            mc,
+        )
