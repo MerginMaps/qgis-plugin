@@ -35,9 +35,10 @@ from .utils import (
     UnsavedChangesStrategy,
     write_project_variables,
     bytes_to_human_size,
+    is_file_changed,
     push_error_message,
 )
-from .utils_auth import get_stored_mergin_server_url
+from .utils_auth import AuthSync, AUTH_CONFIG_FILENAME
 
 from .mergin.merginproject import MerginProject
 from .project_status_dialog import ProjectStatusDialog
@@ -69,6 +70,9 @@ class MerginProjectsManager(object):
 
         qgis_files = find_qgis_files(project_dir)
         if len(qgis_files) == 1:
+            # singleton project object is not in the interface yet, we need to pass the qgis file to retrieve the project id
+            AuthSync(qgis_files[0]).import_auth()
+
             iface.addProject(qgis_files[0])
             if self.mc.has_unfinished_pull(project_dir):
                 widget = iface.messageBar().createMessage(
@@ -424,11 +428,16 @@ class MerginProjectsManager(object):
 
         if dlg.pull_conflicts:
             self.report_conflicts(dlg.pull_conflicts)
+            if is_file_changed(pull_changes, AUTH_CONFIG_FILENAME):
+                AuthSync().import_auth()
             return
 
         if not dlg.is_complete:
             # we were cancelled
             return
+
+        if is_file_changed(pull_changes, AUTH_CONFIG_FILENAME):
+            AuthSync().import_auth()
 
         # pull finished, start push
         if any(push_changes.values()) and not self.mc.has_writing_permissions(project_name):
