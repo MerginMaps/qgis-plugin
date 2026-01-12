@@ -1061,11 +1061,8 @@ def mm_symbol_path():
 
 def check_mergin_subdirs(directory):
     """Check if the directory has a Mergin Maps project subdir (.mergin)."""
-    for root, dirs, files in os.walk(directory):
-        for name in dirs:
-            if name == ".mergin":
-                return os.path.join(root, name)
-    return False
+    mergin_dir = os.path.join(directory, ".mergin")
+    return mergin_dir if os.path.isdir(mergin_dir) else False
 
 
 def is_number(s):
