@@ -5,6 +5,7 @@ import os
 from urllib.parse import urlparse
 from pathlib import Path
 import posixpath
+import json
 
 from qgis.core import QgsProject, Qgis, QgsApplication
 from qgis.utils import iface, OverrideCursor
@@ -34,6 +35,7 @@ from .utils import (
     UnsavedChangesStrategy,
     write_project_variables,
     bytes_to_human_size,
+    push_error_message,
 )
 from .utils_auth import get_stored_mergin_server_url
 
@@ -111,12 +113,31 @@ class MerginProjectsManager(object):
                         "Please try renaming the project."
                     )
                 elif e.server_code == ErrorCode.ProjectsLimitHit.value:
+                    data = e.server_response
+                    if isinstance(data, str):
+                        try:
+                            data = json.loads(data)  # convert string to json
+                        except json.JSONDecodeError:
+                            data = {}
+
+                    quota = data.get("projects_quota", "unknown")
+
                     msg = (
                         "Maximum number of projects reached. Please upgrade your subscription to create new projects.\n"
-                        f"Projects quota: {e.server_response['projects_quota']}"
+                        f"Projects quota: {quota}"
                     )
                 elif e.server_code == ErrorCode.StorageLimitHit.value:
-                    msg = f"{e.detail}\nCurrent limit: {bytes_to_human_size(e.server_response['storage_limit'])}"
+                    data = e.server_response
+                    if isinstance(data, str):
+                        try:
+                            data = json.loads(data)
+                        except json.JSONDecodeError:
+                            data = {}
+
+                    storage_limit = data.get("storage_limit")
+                    human_limit = bytes_to_human_size(storage_limit) if storage_limit is not None else "unknown"
+
+                    msg = f"{e.detail}\nCurrent limit: {human_limit}"
 
                 QMessageBox.critical(
                     None,
@@ -172,18 +193,7 @@ class MerginProjectsManager(object):
         dlg.exec()  # blocks until success, failure or cancellation
 
         if dlg.exception:
-            # push failed for some reason
-            if isinstance(dlg.exception, LoginError):
-                login_error_message(dlg.exception)
-            elif isinstance(dlg.exception, ClientError):
-                QMessageBox.critical(None, "Project sync", "Client error: " + str(dlg.exception))
-            else:
-                unhandled_exception_message(
-                    dlg.exception_details(),
-                    "Project sync",
-                    f"Something went wrong while synchronising your project {project_name}.",
-                    self.mc,
-                )
+            push_error_message(dlg, project_name, self.plugin, self.mc)
             return True
 
         if not dlg.is_complete:
@@ -298,32 +308,48 @@ class MerginProjectsManager(object):
 
         current_project_filename = os.path.normpath(QgsProject.instance().fileName())
         current_project_path = os.path.normpath(QgsProject.instance().absolutePath())
+
+        # Windows-specific behavior:
+        # When a project is opened from this directory, QGIS may keep GPKG file handles
+        # for a short time after closing the project. The same workaround is used in
+        # `close_project_and_fix_pull()` (unfinished pull handling).
+        delay = 0
         if current_project_path == os.path.normpath(project_dir):
             QgsProject.instance().clear()
+            QApplication.processEvents()
+            delay = 2500  # allow OS to release locked GPKG handles
 
-        try:
-            self.mc.reset_local_changes(project_dir, files_to_reset)
-            if files_to_reset:
-                msg = f"File {files_to_reset} was successfully reset"
-            else:
-                msg = "Project local changes were successfully reset"
-            QMessageBox.information(
-                None,
-                "Project reset local changes",
-                msg,
-                QMessageBox.StandardButton.Close,
-            )
+        def do_reset():
+            try:
+                self.mc.reset_local_changes(project_dir, files_to_reset)
 
-        except Exception as e:
-            msg = f"Failed to reset local changes:\n\n{str(e)}"
-            QMessageBox.critical(
-                None,
-                "Project reset local changes",
-                msg,
-                QMessageBox.StandardButton.Close,
-            )
+                if files_to_reset:
+                    msg = f"File {files_to_reset} was successfully reset"
+                else:
+                    msg = "Project local changes were successfully reset"
 
-        self.open_project(os.path.dirname(current_project_filename))
+                QMessageBox.information(
+                    None,
+                    "Project reset local changes",
+                    msg,
+                    QMessageBox.StandardButton.Close,
+                )
+
+            except Exception as e:
+                msg = f"Failed to reset local changes:\n\n{str(e)}"
+                QMessageBox.critical(
+                    None,
+                    "Project reset local changes",
+                    msg,
+                    QMessageBox.StandardButton.Close,
+                )
+
+            # Reopen the project after successful or failed reset
+            self.open_project(os.path.dirname(current_project_filename))
+
+        # Run the reset after delay (0 ms on Linux/macOS, 2500 ms on Windows)
+        # This mirrors the pattern from unfinished pull resolution.
+        QTimer.singleShot(delay, do_reset)
 
     def sync_project(self, project_dir, project_name=None):
         if not project_dir:
@@ -429,27 +455,7 @@ class MerginProjectsManager(object):
             self.open_project(project_dir)
 
         if dlg.exception:
-            # push failed for some reason
-            if isinstance(dlg.exception, LoginError):
-                login_error_message(dlg.exception)
-            elif isinstance(dlg.exception, ClientError):
-                if dlg.exception.http_error == 400 and "Another process" in dlg.exception.detail:
-                    # To note we check for a string since error in flask doesn't return server error code
-                    msg = "Somebody else is syncing, please try again later"
-                elif dlg.exception.server_code == ErrorCode.StorageLimitHit.value:
-                    msg = f"{dlg.exception.detail}\nCurrent limit: {bytes_to_human_size(dlg.exception.server_response['storage_limit'])}"
-                else:
-                    msg = str(dlg.exception)
-                QMessageBox.critical(None, "Project sync", "Client error: \n" + msg)
-            elif isinstance(dlg.exception, AuthTokenExpiredError):
-                self.plugin.auth_token_expired()
-            else:
-                unhandled_exception_message(
-                    dlg.exception_details(),
-                    "Project sync",
-                    f"Something went wrong while synchronising your project {project_name}.",
-                    self.mc,
-                )
+            push_error_message(dlg, project_name, self.plugin, self.mc)
             return
 
         if dlg.is_complete:
