@@ -10,7 +10,6 @@ import configparser
 import os
 import webbrowser
 
-from PyQt5.QtCore import QDateTime
 from osgeo import gdal
 import pathlib
 import platform
@@ -22,7 +21,7 @@ import glob
 import re
 from pathlib import Path
 
-from qgis.PyQt.QtCore import QSettings, QVariant
+from qgis.PyQt.QtCore import QSettings, QVariant, QDateTime
 from qgis.PyQt.QtWidgets import QMessageBox, QFileDialog, QCheckBox
 from qgis.PyQt.QtGui import QPalette, QColor, QIcon
 from qgis.PyQt.QtXml import QDomDocument
@@ -77,7 +76,7 @@ from .mergin.merginproject import MerginProject
 
 try:
     from .mergin.common import ClientError, ErrorCode, LoginError, InvalidProject, SYNC_ATTEMPTS, SYNC_ATTEMPT_WAIT
-    from .mergin.client import MerginClient, ServerType
+    from .mergin.client import MerginClient, ServerType, AuthTokenExpiredError
     from .mergin.client_pull import (
         download_project_async,
         download_project_is_running,
@@ -106,7 +105,7 @@ except ImportError:
     path = os.path.join(this_dir, "mergin_client.whl")
     sys.path.append(path)
     from mergin.client import MerginClient, ServerType
-    from mergin.common import ClientError, InvalidProject, LoginError, PUSH_ATTEMPTS, PUSH_ATTEMPT_WAIT
+    from mergin.common import ClientError, InvalidProject, LoginError, SYNC_ATTEMPTS, SYNC_ATTEMPT_WAIT
 
     from mergin.client_pull import (
         download_project_async,
@@ -1315,7 +1314,16 @@ def is_valid_name(name):
     """
     return (
         re.match(
-            r".*[\@\#\$\%\^\&\*\(\)\{\}\[\]\?\'\"`,;\:\+\=\~\\\/\|\<\>].*|^[\s^\.].*$|^CON$|^PRN$|^AUX$|^NUL$|^COM\d$|^LPT\d|^support$|^helpdesk$|^merginmaps$|^lutraconsulting$|^mergin$|^lutra$|^input$|^admin$|^sales$|^$",
+            r".*[@#$%\^&\*\(\)\{\}\[\]\?\'\"`,;:\+\=\~\\\/\|<>].*"
+            r"|^[\s^\.].*$"
+            r"|\.+$"
+            r"|\s+$"
+            r"|[\x00-\x1F]"
+            r"|^\.$|^\.\.$"
+            r"|^CON$|^PRN$|^AUX$|^NUL$"
+            r"|^COM\d$|^LPT\d$"
+            r"|^support$|^helpdesk$|^merginmaps$|^lutraconsulting$"
+            r"|^mergin$|^lutra$|^input$|^admin$|^sales$|^$",
             name,
             re.IGNORECASE,
         )
@@ -1654,16 +1662,6 @@ def duplicate_layer(layer: QgsVectorLayer) -> QgsVectorLayer:
     return lyr_clone
 
 
-def is_experimental_plugin_enabled() -> bool:
-    """Returns True if the experimental flag is enable in the plugin manager else false"""
-    settings = QSettings()
-    if Qgis.versionInt() <= 33000:  # Changed QSettings key in 3.30
-        value = settings.value("app/plugin_installer/allowExperimental", False)
-    else:
-        value = settings.value("plugin-manager/allow-experimental", False)
-    return value
-
-
 def invalid_filename_character(filename: str) -> str:
     """Returns invalid character for the filename"""
     illegal_filename_chars = re.compile(r'[\x00-\x19<>:|?*"]')
@@ -1728,3 +1726,48 @@ def escape_html_minimal(s: str) -> str:
     for char, escaped in replacements.items():
         s = s.replace(char, escaped)
     return s
+
+
+def sanitize_path(expr: str) -> str:
+    if not expr:
+        return expr
+    parts = expr.split("/")
+    cleaned = [p.rstrip() for p in parts]
+    return "/".join(cleaned)
+
+
+def storage_limit_fail(exc):
+    data = exc.server_response
+    if isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except json.JSONDecodeError:
+            data = {}
+    storage_limit = data.get("storage_limit")
+    human_limit = bytes_to_human_size(storage_limit) if storage_limit is not None else "unknown"
+    return f"{exc.detail}\nCurrent limit: {human_limit}"
+
+
+def push_error_message(dlg, project_name, plugin, mc):
+    if isinstance(dlg.exception, LoginError):
+        login_error_message(dlg.exception)
+    elif isinstance(dlg.exception, ClientError):
+        exc = dlg.exception
+
+        if exc.http_error == 400 and "Another process" in exc.detail:
+            msg = "Somebody else is syncing, please try again later"
+        elif exc.server_code == ErrorCode.StorageLimitHit.value:
+            msg = storage_limit_fail(exc)
+        else:
+            msg = str(exc)
+
+        QMessageBox.critical(None, "Project sync", "Client error: \n" + msg)
+    elif isinstance(dlg.exception, AuthTokenExpiredError):
+        plugin.auth_token_expired()
+    else:
+        unhandled_exception_message(
+            dlg.exception_details(),
+            "Project sync",
+            f"Something went wrong while synchronising your project {project_name}.",
+            mc,
+        )
