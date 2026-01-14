@@ -191,19 +191,22 @@ class MerginProjectsManager(object):
             )
             return True
 
-        dlg = SyncDialog()
-        dlg.labelStatus.setText("Starting project upload...")
-        dlg.push_start(self.mc, project_dir, full_project_name)
+        has_changes = True
+        while has_changes:
+            dlg = SyncDialog()
+            dlg.labelStatus.setText("Starting project upload...")
+            dlg.push_start(self.mc, project_dir, full_project_name)
 
-        dlg.exec()  # blocks until success, failure or cancellation
+            dlg.exec()  # blocks until success, failure or cancellation
 
-        if dlg.exception:
-            push_error_message(dlg, project_name, self.plugin, self.mc)
-            return True
+            if dlg.exception:
+                push_error_message(dlg, project_name, self.plugin, self.mc)
+                return True
 
-        if not dlg.is_complete:
-            # we were cancelled - but no need to show a message box about that...?
-            return True
+            if not dlg.is_complete:
+                # we were cancelled - but no need to show a message box about that...?
+                return True
+            _, has_changes = get_push_changes_batch(self.mc, project_dir)
 
         settings = QSettings()
         server_url = self.mc.url.rstrip("/")
