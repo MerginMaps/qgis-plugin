@@ -75,7 +75,7 @@ from .mergin.utils import int_version, bytes_to_human_size
 from .mergin.merginproject import MerginProject
 
 try:
-    from .mergin.common import ClientError, ErrorCode, LoginError, InvalidProject
+    from .mergin.common import ClientError, ErrorCode, LoginError, InvalidProject, SYNC_ATTEMPTS, SYNC_ATTEMPT_WAIT
     from .mergin.client import MerginClient, ServerType, AuthTokenExpiredError
     from .mergin.client_pull import (
         download_project_async,
@@ -94,6 +94,7 @@ try:
         push_project_is_running,
         push_project_finalize,
         push_project_cancel,
+        get_push_changes_batch,
     )
     from .mergin.report import create_report
     from .mergin.deps import pygeodiff
@@ -104,7 +105,7 @@ except ImportError:
     path = os.path.join(this_dir, "mergin_client.whl")
     sys.path.append(path)
     from mergin.client import MerginClient, ServerType
-    from mergin.common import ClientError, InvalidProject, LoginError
+    from mergin.common import ClientError, InvalidProject, LoginError, SYNC_ATTEMPTS, SYNC_ATTEMPT_WAIT
 
     from mergin.client_pull import (
         download_project_async,
@@ -123,6 +124,7 @@ except ImportError:
         push_project_is_running,
         push_project_finalize,
         push_project_cancel,
+        get_push_changes_batch,
     )
     from .mergin.report import create_report
     from .mergin.deps import pygeodiff

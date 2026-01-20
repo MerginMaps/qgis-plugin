@@ -161,17 +161,15 @@ class SyncDialog(QDialog):
         else:
             self.cancel_sync_operation("Cancelling download...", download_project_cancel)
 
-    def push_start(self, mergin_client, target_dir, project_name):
+    def push_start(self, mergin_client, target_dir, project_name, timeout=250):
         self.operation = self.PUSH
         self.mergin_client = mergin_client
         self.target_dir = target_dir
         self.project_name = project_name
 
-        self.labelStatus.setText("Querying project...")
-
         # we would like to get the dialog displayed at least for a bit
         # with low timeout (or zero) it may not even appear before it is closed
-        QTimer.singleShot(250, self.push_start_internal)
+        QTimer.singleShot(timeout, self.push_start_internal)
 
     def push_start_internal(self):
         with OverrideCursor(Qt.CursorShape.WaitCursor):
@@ -227,17 +225,15 @@ class SyncDialog(QDialog):
         else:
             self.cancel_sync_operation("Cancelling sync...", push_project_cancel)
 
-    def pull_start(self, mergin_client, target_dir, project_name):
+    def pull_start(self, mergin_client, target_dir, project_name, timeout=250):
         self.operation = self.PULL
         self.mergin_client = mergin_client
         self.target_dir = target_dir
         self.project_name = project_name
 
-        self.labelStatus.setText("Querying project...")
-
         # we would like to get the dialog displayed at least for a bit
         # with low timeout (or zero) it may not even appear before it is closed
-        QTimer.singleShot(250, self.pull_start_internal)
+        QTimer.singleShot(timeout, self.pull_start_internal)
 
     def pull_start_internal(self):
         with OverrideCursor(Qt.CursorShape.WaitCursor):
