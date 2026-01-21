@@ -80,11 +80,9 @@ jobs:
           name: artifact-pygeodiff-windows
           path: ./pygeodiff-binaries/*.pyd
 
-  build_macos_binary:
+  build_macos_binaries:
     name: Extract geodiff binary macos
     runs-on: macos-latest
-    env:
-      PY_PLATFORM: "macosx_10_9_x86_64"
     steps:
       - uses: actions/setup-python@v4
         name: Install Python
@@ -93,14 +91,16 @@ jobs:
         run: |
           brew install unzip
 
-      - name: Download pygeodiff binaries
+      - name: Download pygeodiff binaries (Intel)
+        env:
+          PY_PLATFORM: "macosx_10_9_x86_64"
         run: |
           pip3 download --only-binary=:all: --no-deps --platform ${PY_PLATFORM} --python-version ${PYTHON_VER} --implementation cp --abi cp${PYTHON_VER} pygeodiff==$GEODIFF_VER
           unzip -o pygeodiff-$GEODIFF_VER-cp${PYTHON_VER}-cp${PYTHON_VER}-${PY_PLATFORM}.whl -d tmp
           mkdir pygeodiff-binaries
           cp tmp/pygeodiff/*.dylib ./pygeodiff-binaries/
 
-      - name: Patching pygeodiff binaries
+      - name: Patching pygeodiff binaries (Intel)
         run: |
           install_name_tool -change @loader_path/.dylibs/libsqlite3.0.dylib @rpath/libsqlite3.dylib ./pygeodiff-binaries/libpygeodiff-$GEODIFF_VER-python.dylib
           OTOOL_L=$(otool -L ./pygeodiff-binaries/libpygeodiff-$GEODIFF_VER-python.dylib)
@@ -110,13 +110,31 @@ jobs:
             exit 1
           fi
 
+      - name: Download pygeodiff binaries (arm64)
+        env:
+          PY_PLATFORM: "macosx_14_0_arm64"
+        run: |
+          pip3 download --only-binary=:all: --no-deps --platform ${PY_PLATFORM} --python-version ${PYTHON_VER} --implementation cp --abi cp${PYTHON_VER} pygeodiff==$GEODIFF_VER
+          unzip -o pygeodiff-$GEODIFF_VER-cp${PYTHON_VER}-cp${PYTHON_VER}-${PY_PLATFORM}.whl -d tmp
+          cp tmp/pygeodiff/*.dylib ./pygeodiff-binaries/ # expects that the folder is created before in the intel job
+
+      - name: Patching pygeodiff binaries (arm64)
+        run: |
+          install_name_tool -change @loader_path/.dylibs/libsqlite3.0.dylib @rpath/libsqlite3.dylib ./pygeodiff-binaries/libpygeodiff-$GEODIFF_VER-python-arm64.dylib
+          OTOOL_L=$(otool -L ./pygeodiff-binaries/libpygeodiff-$GEODIFF_VER-python-arm64.dylib)
+          if echo "${OTOOL_L}" | grep -q loader_path
+          then
+            echo "libpygeodiff-$GEODIFF_VER-python-arm64.dylib was not patched correctly, maybe sqlite version changed??"
+            exit 1
+          fi  
+
       - uses: actions/upload-artifact@v4
         with:
           name: artifact-pygeodiff-macos
           path: ./pygeodiff-binaries/*.dylib
 
   create_mergin_plugin_package:
-    needs: [build_windows_binaries, build_linux_binary, build_macos_binary]
+    needs: [build_windows_binaries, build_linux_binary, build_macos_binaries]
     runs-on: ubuntu-latest
     steps:  
       - uses: actions/checkout@v3
