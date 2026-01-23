@@ -12,14 +12,12 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 
 ; start of optional metadata
 changelog=2026.1.0
-  - Integration to improved push mechanism
-  - Implementing restart of sync process by conflict in server version
+  - Integration of improved push mechanism
+  - Added restart of sync process
   - Preventing trailing whitespace in project creation and photo name path
   - Fix reset changes fail on Windows
   - Fix relation key warning messages
-  - Fix limit dialogues display
-  - Fix storage limit dialog
-  - Fix import for Qt6 QGIS
+  - Fix problems with QGIS 4.0 compatibility
   <p>2025.4.0
   - Fix synchronisation issues when using OneDrive
   - Show downloaded projects first in the browser
