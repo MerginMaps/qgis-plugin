@@ -34,7 +34,7 @@ jobs:
             --no-deps --platform ${PY_PLATFORM} \
             --implementation cp \
             --abi cp${PYTHON_VER} pygeodiff==${GEODIFF_VER}
-          unzip -o pygeodiff-$GEODIFF_VER-cp${PYTHON_VER}-cp${PYTHON_VER}-${PY_PLATFORM}.${PY_PLATFORM}.whl -d tmp || true
+          unzip -o pygeodiff-$GEODIFF_VER-cp${PYTHON_VER}-cp${PYTHON_VER}-${PY_PLATFORM}.whl -d tmp || true
           mkdir pygeodiff-binaries
           cp tmp/pygeodiff/libpygeodiff-${GEODIFF_VER}-python.so ./pygeodiff-binaries/
 
