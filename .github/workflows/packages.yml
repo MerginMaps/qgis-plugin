@@ -121,12 +121,13 @@ jobs:
       - name: Patching pygeodiff binaries (arm64)
         run: |
           install_name_tool -change @loader_path/.dylibs/libsqlite3.0.dylib @rpath/libsqlite3.dylib ./pygeodiff-binaries/libpygeodiff-$GEODIFF_VER-python-arm64.dylib
+          codesign --force --sign - ./pygeodiff-binaries/libpygeodiff-$GEODIFF_VER-python-arm64.dylib
           OTOOL_L=$(otool -L ./pygeodiff-binaries/libpygeodiff-$GEODIFF_VER-python-arm64.dylib)
           if echo "${OTOOL_L}" | grep -q loader_path
           then
             echo "libpygeodiff-$GEODIFF_VER-python-arm64.dylib was not patched correctly, maybe sqlite version changed??"
             exit 1
-          fi  
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
