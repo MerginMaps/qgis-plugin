@@ -449,7 +449,7 @@ class MerginProjectsManager(object):
             if not dlg.is_complete:
                 # we were cancelled
                 return
-            
+
             if is_file_changed(pull_changes, AUTH_CONFIG_FILENAME):
                 AuthSync().import_auth()
 
