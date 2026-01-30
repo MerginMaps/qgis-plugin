@@ -27,7 +27,7 @@ from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.PyQt.QtWidgets import QMessageBox
 
 from .mergin.client import MerginClient, ServerType, AuthTokenExpiredError
-from .mergin.common import ClientError, LoginError, ProjectRole
+from .mergin.common import ClientError, LoginError
 from .mergin.merginproject import MerginProject
 
 from .utils import MERGIN_URL, get_qgis_proxy_config, get_plugin_version
@@ -579,7 +579,7 @@ class AuthSync:
         self.project_id = self.mp.project_id()
         self.auth_mngr = QgsApplication.authManager()
 
-    def get_layers_auth_ids(self) -> list[str]:
+    def get_layers_auth_ids(self) -> typing.List[str]:
         """Get the auth config IDs of the protected layers in the current project."""
         auth_ids = set()
         reg = QgsProviderRegistry.instance()
@@ -592,7 +592,7 @@ class AuthSync:
                 auth_ids.add(auth_id)
         return list(auth_ids)
 
-    def get_auth_config_hash(self, auth_ids: list[str]) -> str:
+    def get_auth_config_hash(self, auth_ids: typing.List[str]) -> str:
         """
         Generates a stable hash from the decrypted content of the given auth IDs.
         This allows us to detect config changes regardless of random encryption salts in the encrypted XML file.
