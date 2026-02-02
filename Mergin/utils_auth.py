@@ -624,13 +624,13 @@ class AuthSync:
         available_ids = self.auth_mngr.configIds()
         auth_ids = [aid for aid in referenced_ids if aid in available_ids]
 
-        if not auth_ids:
-            if os.path.exists(self.auth_file):
-                os.remove(self.auth_file)
-            return
         project_info = client.project_info(self.mp.project_full_name())
         role = project_info.get("role")
         if not (role and role in ("writer", "owner")):
+            return
+        if not auth_ids:
+            if os.path.exists(self.auth_file):
+                os.remove(self.auth_file)
             return
 
         if not self.auth_mngr.masterPasswordIsSet():
