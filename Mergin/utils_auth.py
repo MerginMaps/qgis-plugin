@@ -620,17 +620,18 @@ class AuthSync:
     def export_auth(self, client) -> None:
         """Export auth DB credentials for protected layers if they have changed"""
 
-        referenced_ids = self.get_layers_auth_ids()
-        available_ids = self.auth_mngr.configIds()
-        auth_ids = [aid for aid in referenced_ids if aid in available_ids]
-
-        if not auth_ids:
-            if os.path.exists(self.auth_file):
-                os.remove(self.auth_file)
-            return
+        # permission check - auth config .xml file can be modified from the writer role above
         project_info = client.project_info(self.mp.project_full_name())
         role = project_info.get("role")
         if not (role and role in ("writer", "owner")):
+            return
+
+        referenced_ids = self.get_layers_auth_ids()
+        available_ids = self.auth_mngr.configIds()
+        auth_ids = [aid for aid in referenced_ids if aid in available_ids]
+        if not auth_ids:
+            if os.path.exists(self.auth_file):
+                os.remove(self.auth_file)
             return
 
         if not self.auth_mngr.masterPasswordIsSet():
