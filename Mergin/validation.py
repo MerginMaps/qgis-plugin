@@ -335,7 +335,37 @@ class MerginProjectValidator(object):
         feature_count = layer.dataProvider().featureCount()
         for f in fields:
             if len(layer.uniqueValues(f)) != feature_count:
-                self.issues.append(SingleLayerWarning(layer.id(), Warning.KEY_FIELD_NOT_UNIQUE))
+                field_name = layer.fields()[f].name()
+
+                # collect duplicates sample
+                sample_limit = 10  # this number determines number of samples
+                counts = defaultdict(int)
+                sample = []
+
+                for feat in layer.getFeatures():
+                    v = feat.attribute(f)
+
+                    # skip NULLs
+                    if v is None:
+                        continue
+
+                    counts[v] += 1
+                    if counts[v] == 2:
+                        sample.append(str(v))
+                        if len(sample) >= sample_limit:
+                            break
+
+                self.issues.append(
+                    SingleLayerWarning(
+                        layer.id(),
+                        Warning.KEY_FIELD_NOT_UNIQUE,
+                        url={
+                            "type": "relation_key_not_unique",
+                            "fields": [field_name],
+                            "sample": sample,
+                        },
+                    )
+                )
 
     def _check_primary_keys(self, layer, fields):
         layer_fields = layer.fields()
@@ -484,7 +514,25 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.DATABASE_SCHEMA_CHANGE:
         return "Database schema was changed"
     elif warning_id == Warning.KEY_FIELD_NOT_UNIQUE:
-        return "Relation key field contains duplicated values"
+        # if no details passed, keep old message
+        # if details passed (dict with type), enrich message with field(s) + sample values
+        base = "Relation key field contains duplicated values"
+
+        if isinstance(url, dict) and url.get("type") == "relation_key_not_unique":
+            fields = url.get("fields") or []
+            sample = url.get("sample") or []
+
+            # key field(s)
+            if len(fields) == 1:
+                base = f"Relation key field '{fields[0]}' contains duplicated values"
+            elif len(fields) > 1:
+                base = f"Relation key fields {fields} contain duplicated values"
+
+            # sample values
+            if sample:
+                base += f". Sample: {', '.join(sample)}"
+
+        return base
     elif warning_id == Warning.FIELD_IS_PRIMARY_KEY:
         return "Relation uses primary key field"
     elif warning_id == Warning.VALUE_RELATION_LAYER_MISSED:
