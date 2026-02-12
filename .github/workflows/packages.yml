@@ -102,6 +102,7 @@ jobs:
       - name: Patching pygeodiff binaries (Intel)
         run: |
           install_name_tool -change @loader_path/.dylibs/libsqlite3.0.dylib @rpath/libsqlite3.dylib ./pygeodiff-binaries/libpygeodiff-$GEODIFF_VER-python.dylib
+          codesign --force --sign - ./pygeodiff-binaries/libpygeodiff-$GEODIFF_VER-python.dylib
           OTOOL_L=$(otool -L ./pygeodiff-binaries/libpygeodiff-$GEODIFF_VER-python.dylib)
           if echo "${OTOOL_L}" | grep -q loader_path
           then
