@@ -55,6 +55,7 @@ from .utils_auth import (
     AuthTokenExpiredError,
     set_qgsexpressionscontext,
     get_authcfg,
+    setup_qgis_ssl_for_mergin_client,
 )
 
 from .mergin.merginproject import MerginProject
@@ -63,6 +64,11 @@ import processing
 
 MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
 os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
+
+try:
+    setup_qgis_ssl_for_mergin_client()
+except Exception:
+    pass
 
 
 class MerginPlugin:
