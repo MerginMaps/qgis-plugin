@@ -65,6 +65,7 @@ jobs:
         run: |
           pip3 download --only-binary=:all: --no-deps --platform "win_amd64" --python-version $env:PYTHON_VER pygeodiff==$env:GEODIFF_VER
           unzip -o pygeodiff-$env:GEODIFF_VER-cp$env:PYTHON_VER-cp$env:PYTHON_VER-win_amd64.whl -d tmp64
+          mkdir pygeodiff-binaries
           copy tmp64\pygeodiff\*.pyd pygeodiff-binaries\
 
       - uses: actions/upload-artifact@v4
