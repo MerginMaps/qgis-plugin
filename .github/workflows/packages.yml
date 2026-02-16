@@ -61,13 +61,6 @@ jobs:
         run: |
           choco install unzip
 
-      - name: Download pygeodiff 32 binaries
-        run: |
-          pip3 download --only-binary=:all: --no-deps --platform "win32" --python-version $env:PYTHON_VER pygeodiff==$env:GEODIFF_VER
-          unzip -o pygeodiff-$env:GEODIFF_VER-cp$env:PYTHON_VER-cp$env:PYTHON_VER-win32.whl -d tmp32
-          mkdir pygeodiff-binaries
-          copy tmp32\pygeodiff\*.pyd pygeodiff-binaries\
-
       - name: Download pygeodiff 64 binaries
         run: |
           pip3 download --only-binary=:all: --no-deps --platform "win_amd64" --python-version $env:PYTHON_VER pygeodiff==$env:GEODIFF_VER
