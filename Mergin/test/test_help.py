@@ -7,6 +7,7 @@
 import os
 import tempfile
 import urllib.request
+import requests
 
 from qgis.PyQt.QtCore import QVariant
 from qgis.core import (
@@ -33,13 +34,11 @@ class test_help(unittest.TestCase):
     def test_help_urls(self):
         mh = MerginHelp()
 
-        req = urllib.request.Request(mh.howto_attachment_widget(), method="HEAD")
-        resp = urllib.request.urlopen(req)
-        self.assertEqual(resp.status, 200)
-
-        req = urllib.request.Request(mh.howto_background_maps(), method="HEAD")
-        resp = urllib.request.urlopen(req)
-        self.assertEqual(resp.status, 200)
+        resp = requests.head(mh.howto_attachment_widget())
+        self.assertEqual(resp.status_code, 200)
+        
+        resp = requests.head(mh.howto_background_maps())
+        self.assertEqual(resp.status_code, 200)
 
 
 def create_mem_layer() -> QgsVectorLayer:
