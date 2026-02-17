@@ -78,15 +78,25 @@ def get_row_from_db(db_conn, schema_table, entry_changes):
     Fetches a single row from DB's table based on the values of pkeys
     in changeset entry
     """
-    c = db_conn.cursor()
-    where_bits = []
-    for i, col in enumerate(schema_table.columns):
-        if col.pkey:
-            where_bits.append('"{}" = {}'.format(col.name, old_value_for_column_by_index(entry_changes, i)))
+    with db_conn.cursor() as c:
+        where_clauses = []
+        query_params = []
 
-    c.execute('SELECT * FROM "{}" WHERE {}'.format(schema_table.name, " AND ".join(where_bits)))
-    return c.fetchone()
+        for i, col in enumerate(schema_table.columns):
+            if col.pkey:
+                where_clauses.append('"{}" = %s'.format(col.name))
+                val = old_value_for_column_by_index(entry_changes, i)
+                query_params.append(val)
 
+        query = 'SELECT * FROM "{}" WHERE {}'.format(
+            schema_table.name, 
+            " AND ".join(where_clauses)
+        )
+
+        c.execute(query, tuple(query_params))
+        
+        return c.fetchone()
+         
 
 def parse_gpkg_geom_encoding(wkb_with_gpkg_hdr):
     """Parse header of GPKG WKB and return WKB geometry"""
