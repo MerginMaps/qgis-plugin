@@ -1710,7 +1710,7 @@ def qvariant_to_string(val: Any) -> str:
             if s:
                 return s
         except Exception:
-            pass
+            pass  # nosec
 
     # Fallback
     return str(val)

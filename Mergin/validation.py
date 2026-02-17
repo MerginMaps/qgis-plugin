@@ -160,7 +160,8 @@ class MerginProjectValidator(object):
     def check_proj_paths_relative(self):
         """Check if the QGIS project has relative paths, i.e. not absolute ones."""
         abs_paths, ok = self.qgis_proj.readEntry("Paths", "/Absolute")
-        assert ok
+        if not ok:
+            raise RuntimeError("Cannot read project paths configuration")
         if not abs_paths == "false":
             self.issues.append(MultipleLayersWarning(Warning.ABSOLUTE_PATHS))
 
