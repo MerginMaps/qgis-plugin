@@ -206,7 +206,7 @@ class ProjectStatusDialog(QDialog):
         # string as a title and list of affected layers/items
         if "multi" in groups:
             for w in groups["multi"]:
-                issue = warning_display_string(w.id, w.url)
+                issue = warning_display_string(w.id, w.details)
                 html.append(f"<h3>{issue}</h3>")
                 if w.items:
                     items = []
@@ -225,7 +225,7 @@ class ProjectStatusDialog(QDialog):
                 html.append(f"<h3>{map_layers[lid].name()}</h3>")
                 items = []
                 for w in layers[lid]:
-                    items.append(f"<li>{warning_display_string(w.warning, w.url)}</li>")
+                    items.append(f"<li>{warning_display_string(w.warning, w.details)}</li>")
                 html.append(f"<ul>{''.join(items)}</ul>")
 
         self.txtWarnings.setHtml("".join(html))
