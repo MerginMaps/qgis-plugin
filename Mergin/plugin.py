@@ -491,8 +491,8 @@ class MerginPlugin:
         try:
             workspaces = self.mc.workspaces_list()
             dlg.enable_workspace_switching(len(workspaces) > 1)
-        except:
-            pass
+        except ClientError:
+            dlg.enable_workspace_switching(False)
 
         dlg.exec()
 
