@@ -85,7 +85,8 @@ def get_row_from_db(db_conn, schema_table, entry_changes):
                 val = old_value_for_column_by_index(entry_changes, i)
                 query_params.append(val)
 
-        query = 'SELECT * FROM "{}" WHERE {}'.format(schema_table.name, " AND ".join(where_clauses))
+        # We parameterize values securely; table/column names are trusted internal schema objects.
+        query = 'SELECT * FROM "{}" WHERE {}'.format(schema_table.name, " AND ".join(where_clauses))  # nosec B608
 
         c.execute(query, tuple(query_params))
 

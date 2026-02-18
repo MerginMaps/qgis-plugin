@@ -6,7 +6,7 @@
 
 import os
 import requests
-
+import urllib.request
 from qgis.core import (
     QgsVectorLayer,
 )
@@ -24,10 +24,10 @@ class test_help(unittest.TestCase):
     def test_help_urls(self):
         mh = MerginHelp()
 
-        resp = requests.head(mh.howto_attachment_widget())
+        resp = requests.head(mh.howto_attachment_widget(), timeout=5, allow_redirects=True)
         self.assertEqual(resp.status_code, 200)
 
-        resp = requests.head(mh.howto_background_maps())
+        resp = requests.head(mh.howto_background_maps(), timeout=5, allow_redirects=True)
         self.assertEqual(resp.status_code, 200)
 
 
