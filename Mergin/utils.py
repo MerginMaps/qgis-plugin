@@ -104,29 +104,9 @@ except ImportError:
     this_dir = os.path.dirname(os.path.realpath(__file__))
     path = os.path.join(this_dir, "mergin_client.whl")
     sys.path.append(path)
-    from mergin.client import MerginClient, ServerType
-    from mergin.common import ClientError, InvalidProject, LoginError, SYNC_ATTEMPTS, SYNC_ATTEMPT_WAIT
+    from mergin.client import MerginClient
+    from mergin.common import ClientError, InvalidProject, LoginError
 
-    from mergin.client_pull import (
-        download_project_async,
-        download_project_is_running,
-        download_project_finalize,
-        download_project_cancel,
-    )
-    from mergin.client_pull import (
-        pull_project_async,
-        pull_project_is_running,
-        pull_project_finalize,
-        pull_project_cancel,
-    )
-    from mergin.client_push import (
-        push_project_async,
-        push_project_is_running,
-        push_project_finalize,
-        push_project_cancel,
-        get_push_changes_batch,
-    )
-    from .mergin.report import create_report
     from .mergin.deps import pygeodiff
 
 MERGIN_URL = "https://app.merginmaps.com"

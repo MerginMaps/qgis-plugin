@@ -41,7 +41,6 @@ from .utils import (
     SYNC_ATTEMPT_WAIT,
     push_error_message,
 )
-from .utils_auth import get_stored_mergin_server_url
 
 from .mergin.merginproject import MerginProject
 from .project_status_dialog import ProjectStatusDialog

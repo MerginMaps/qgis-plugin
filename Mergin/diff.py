@@ -13,14 +13,11 @@ from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt.QtGui import QColor
 
 from qgis.core import (
-    QgsApplication,
     QgsVectorLayer,
     QgsFeature,
     QgsGeometry,
     QgsFields,
     QgsField,
-    QgsProject,
-    QgsLayerTreeLayer,
     QgsConditionalStyle,
     QgsSymbolLayerUtils,
     QgsMarkerSymbol,
@@ -367,7 +364,7 @@ def make_local_changes_layer(mp, layer):
         "memory",
     )
     if not vl.isValid():
-        return None, f"Failed to create memory layer for local changes"
+        return None, "Failed to create memory layer for local changes"
 
     vl.dataProvider().addAttributes(fields)
     vl.updateFields()

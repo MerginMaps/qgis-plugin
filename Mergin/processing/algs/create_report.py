@@ -2,8 +2,6 @@
 
 from qgis.PyQt.QtGui import QIcon
 from qgis.core import (
-    QgsVectorFileWriter,
-    QgsProcessing,
     QgsProcessingException,
     QgsProcessingAlgorithm,
     QgsProcessingContext,

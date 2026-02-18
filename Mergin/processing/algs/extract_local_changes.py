@@ -10,10 +10,8 @@ import sqlite3
 from qgis.PyQt.QtGui import QIcon
 from qgis.core import (
     QgsFeatureSink,
-    QgsProcessing,
     QgsProcessingException,
     QgsProcessingAlgorithm,
-    QgsProcessingContext,
     QgsProcessingParameterFile,
     QgsProcessingParameterVectorLayer,
     QgsProcessingParameterFeatureSink,

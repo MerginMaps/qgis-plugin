@@ -5,7 +5,7 @@
 try:
     import sip
 except ImportError:
-    from PyQt6 import sip
+    pass
 import os
 from functools import partial
 from qgis.PyQt.QtCore import QUrl, QSettings, Qt
@@ -43,7 +43,6 @@ from .utils import (
     icon_path,
     mm_symbol_path,
     mergin_project_local_path,
-    PROJS_PER_PAGE,
     remove_project_variables,
     set_qgis_project_mergin_variables,
     unsaved_project_check,
@@ -351,7 +350,7 @@ class MerginPlugin:
         mp = MerginProject(project_path)
         try:
             project_name = mp.project_full_name()
-        except InvalidProject as e:
+        except InvalidProject:
             iface.messageBar().pushMessage(
                 "Mergin",
                 "Current project is not a Mergin project. Please open a Mergin project first.",
@@ -401,7 +400,7 @@ class MerginPlugin:
             # check action required flag
             try:
                 service_response = self.mc.workspace_service(workspace_id)
-            except ClientError as e:
+            except ClientError:
                 return
             except AuthTokenExpiredError:
                 self.auth_token_expired()
@@ -500,7 +499,7 @@ class MerginPlugin:
         """Open new Switch workspace dialog"""
         try:
             workspaces = self.mc.workspaces_list()
-        except (URLError, ClientError) as e:
+        except (URLError, ClientError):
             return  # Server does not support workspaces
         except AuthTokenExpiredError:
             self.auth_token_expired()

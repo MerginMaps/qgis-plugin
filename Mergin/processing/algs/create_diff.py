@@ -6,16 +6,13 @@
 
 import os
 import sqlite3
-import shutil
 
 from qgis.PyQt.QtGui import QIcon
 from qgis.core import (
     QgsFeatureSink,
-    QgsProcessing,
     QgsProcessingUtils,
     QgsProcessingException,
     QgsProcessingAlgorithm,
-    QgsProcessingContext,
     QgsProcessingParameterFile,
     QgsProcessingParameterNumber,
     QgsProcessingParameterVectorLayer,
@@ -25,7 +22,6 @@ from qgis.core import (
 from ..postprocessors import StylingPostProcessor
 
 from ...mergin.merginproject import MerginProject
-from ...mergin.utils import get_versions_with_file_changes
 from ...mergin.deps import pygeodiff
 
 from ...diff import (

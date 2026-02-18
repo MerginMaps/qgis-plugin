@@ -4,7 +4,6 @@
 # Copyright Lutra Consulting Limited
 
 
-import os
 
 from qgis.PyQt.QtGui import QIcon
 

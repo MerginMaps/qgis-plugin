@@ -18,7 +18,6 @@ from qgis.core import (
     QgsCsException,
     QgsCoordinateReferenceSystem,
     QgsBlockingNetworkRequest,
-    QgsSqliteUtils,
     QgsDataSourceUri,
     QgsVectorTileLayer,
     QgsCoordinateTransform,
@@ -218,9 +217,9 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
                 f"{wgs_extent.xMinimum()},{wgs_extent.yMinimum()},{wgs_extent.xMaximum()},{wgs_extent.yMaximum()}"
             )
             writer.set_metadata_value("bounds", bounds_str)
-        except QgsCsException as e:
+        except QgsCsException:
             pass
-        except AttributeError as e:
+        except AttributeError:
             pass
 
         step_feedback = QgsProcessingMultiStepFeedback(self.max_zoom + 1, feedback)

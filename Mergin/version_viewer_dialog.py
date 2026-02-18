@@ -32,13 +32,12 @@ from qgis.gui import (
     QgsGui,
     QgsMapToolPan,
 )
-from qgis.PyQt import QtCore, uic
+from qgis.PyQt import uic
 from qgis.PyQt.QtCore import (
     QAbstractTableModel,
     QItemSelectionModel,
     QModelIndex,
     QSettings,
-    QStringListModel,
     Qt,
     QThread,
     pyqtSignal,
@@ -62,7 +61,6 @@ from .mergin.client import AuthTokenExpiredError
 from .mergin.merginproject import MerginProject
 from .mergin.utils import bytes_to_human_size, int_version
 from .utils import (
-    PROJS_PER_PAGE,
     ClientError,
     contextual_date,
     format_datetime,
@@ -469,7 +467,7 @@ class VersionViewerDialog(QDialog):
         except ClientError:
             # Some versions e.g CE, EE edition doesn't have
             pass
-        except AuthTokenExpiredError as e:
+        except AuthTokenExpiredError:
             self.plugin.auth_token_expired()
         super().exec()
 
@@ -715,7 +713,7 @@ class VersionViewerDialog(QDialog):
         else:
             self.failed_to_fetch = True
             additional_log = str(e)
-            QgsMessageLog.logMessage(f"Download history error: " + additional_log, "Mergin")
+            QgsMessageLog.logMessage("Download history error: " + additional_log, "Mergin")
             self.label_info.setText(
                 "There was an issue loading this version. Please try again later or contact our support if the issue persists. Refer to the QGIS messages log for more details."
             )

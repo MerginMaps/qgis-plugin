@@ -47,7 +47,6 @@ from .utils import (
     get_local_mergin_projects_info,
 )
 from .utils_auth import AuthTokenExpiredError
-from .mergin.merginproject import MerginProject
 
 
 class MerginRemoteProjectItem(QgsDataItem):
@@ -204,7 +203,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
         cur_proj_path = cur_proj.absolutePath()
         msg = (
             "Your local changes will be lost. Make sure your project is synchronised with server. \n\n"
-            "Do you want to proceed?".format(self.project_name)
+            "Do you want to proceed?"
         )
         btn_reply = QMessageBox.question(
             None,
@@ -221,7 +220,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
                 if same_dir(cur_proj_path, self.path):
                     msg = (
                         "The project is currently open. It will get cleared if you proceed.\n\n"
-                        "Proceed anyway?".format(self.project_name)
+                        "Proceed anyway?"
                     )
                     btn_reply = QMessageBox.question(
                         None,
