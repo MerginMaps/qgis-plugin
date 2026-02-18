@@ -26,7 +26,7 @@ class test_help(unittest.TestCase):
 
         resp = requests.head(mh.howto_attachment_widget())
         self.assertEqual(resp.status_code, 200)
-        
+
         resp = requests.head(mh.howto_background_maps())
         self.assertEqual(resp.status_code, 200)
 
@@ -41,4 +41,4 @@ def create_mem_layer() -> QgsVectorLayer:
 
 
 if __name__ == "__main__":
-    nose2.main()
+    nose2.main()  # noqa: F821

@@ -283,7 +283,7 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
         tile_layer = QgsVectorTileLayer(bytes(ds_uri.encodedUri()).decode(), name)
         if tile_layer.isValid():
             if context.project():
-                err = tile_layer.importNamedStyle(self.style_document)
+                tile_layer.importNamedStyle(self.style_document)
                 metadata = tile_layer.metadata()
                 metadata.setRights(self.attribution)
                 tile_layer.setMetadata(metadata)

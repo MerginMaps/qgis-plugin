@@ -212,7 +212,7 @@ class ChangesetsDownloader(QThread):
     def run(self):
         try:
             version_info = self.mc.project_version_info(self.mp.project_id(), version=f"v{self.version}")
-        except AuthTokenExpiredError:
+        except AuthTokenExpiredError as e:
             self.error_occured.emit(e)
             return
 
@@ -241,7 +241,7 @@ class ChangesetsDownloader(QThread):
             if "diff" not in f:
                 continue
             try:
-                file_diffs = self.mc.download_file_diffs(self.mp.dir, f["path"], [f"v{self.version}"])
+                self.mc.download_file_diffs(self.mp.dir, f["path"], [f"v{self.version}"])
                 full_gpkg = self.mp.fpath_cache(f["path"], version=f"v{self.version}")
                 if not os.path.exists(full_gpkg):
                     self.mc.download_file(self.mp.dir, f["path"], full_gpkg, f"v{self.version}")
@@ -293,7 +293,7 @@ class VersionsFetcher(QThread):
         return self.current_page <= self.nb_page
 
     def fetch_another_page(self):
-        if self.has_more_page() == False:
+        if self.has_more_page() is False:
             return
         self.model.beginFetching()
         try:
@@ -544,7 +544,7 @@ class VersionViewerDialog(QDialog):
 
         try:
             item = self.versionModel.item_from_index(current_index)
-        except:
+        except Exception:
             # Click on invalid item like loading
             return
         version_name = item["name"]
@@ -631,7 +631,7 @@ class VersionViewerDialog(QDialog):
         self.update_canvas(layers, set_extent=False)
 
     def update_canvas(self, layers, set_extent=True):
-        if self.current_diff and self.current_diff.isSpatial() == False:
+        if self.current_diff and self.current_diff.isSpatial() is False:
             self.map_canvas.setEnabled(False)
             self.save_splitters_state()
             self.splitter_map_table.setSizes([0, 1])

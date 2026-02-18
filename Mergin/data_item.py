@@ -507,7 +507,7 @@ class MerginRootItem(QgsDataCollectionItem):
             QMessageBox.information(None, "Fetch Mergin Maps Projects", "All projects already listed.")
             return
         page_to_get = floor(len(self.projects) / PROJS_PER_PAGE) + 1
-        dummy = self.fetch_projects(page=page_to_get)
+        self.fetch_projects(page=page_to_get)
         self.refresh()
 
     def reload(self):

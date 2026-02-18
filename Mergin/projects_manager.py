@@ -50,7 +50,7 @@ from .mergin.client import AuthTokenExpiredError, MerginClient
 class MerginProjectsManager(object):
     """Class for managing Mergin Maps projects in QGIS."""
 
-    def __init__(self, plugin: "MerginPlugin"):
+    def __init__(self, plugin: "MerginPlugin"):  # noqa F821
         self.mc: MerginClient = plugin.mc
         self.iface = iface
         self.plugin = plugin

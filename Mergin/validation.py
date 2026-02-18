@@ -31,8 +31,8 @@ from .utils import (
     is_inside,
 )
 
-INVALID_FIELD_NAME_CHARS = re.compile('[\\\/\(\)\[\]\{\}"\n\r]')
-PROJECT_VARS = re.compile("\@project_home|\@project_path|\@project_folder")
+INVALID_FIELD_NAME_CHARS = re.compile(r'[\\\/\(\)\[\]\{\}"\n\r]')
+PROJECT_VARS = re.compile("@project_home|@project_path|@project_folder")
 
 
 class Warning(Enum):

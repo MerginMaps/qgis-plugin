@@ -124,7 +124,7 @@ class test_utils(unittest.TestCase):
             (" project", False),
             (".project", False),
             ("proj~ect", False),
-            ("pro\ject", False),
+            (r"pro\ject", False),
             ("pro/ject", False),
             ("pro|ject", False),
             ("pro+ject", False),
@@ -257,4 +257,4 @@ class test_utils(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    nose2.main()
+    nose2.main()  # noqa: F821

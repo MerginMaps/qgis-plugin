@@ -3,7 +3,7 @@
 # GPLv3 license
 # Copyright Lutra Consulting Limited
 try:
-    import sip
+    import sip  # noqa: F401
 except ImportError:
     pass
 import os
@@ -545,9 +545,9 @@ class MerginPlugin:
                 "arcgisvectortileservice",
                 "vtpkvectortiles",
             )
-        for l in layers:
-            if l.dataProvider().name() in provider_names:
-                self.iface.addCustomActionForLayer(self.action_export_mbtiles, l)
+        for layer in layers:
+            if layer.dataProvider().name() in provider_names:
+                self.iface.addCustomActionForLayer(self.action_export_mbtiles, layer)
 
     def unload(self):
         if self.iface is not None:

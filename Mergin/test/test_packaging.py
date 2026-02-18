@@ -61,4 +61,4 @@ class test_packaging(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    nose2.main()
+    nose2.main()  # noqa: F821

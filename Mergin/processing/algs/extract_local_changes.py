@@ -120,7 +120,6 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
             features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, fields_mapping, db_conn)
             feedback.setProgress(20)
 
-            current = 20
             step = 80.0 / len(features) if features else 0
             for i, f in enumerate(features):
                 if feedback.isCanceled():
