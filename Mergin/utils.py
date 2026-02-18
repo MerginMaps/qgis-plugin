@@ -75,7 +75,14 @@ from .mergin.utils import int_version, bytes_to_human_size
 from .mergin.merginproject import MerginProject
 
 try:
-    from .mergin.common import ClientError, ErrorCode, LoginError, InvalidProject, SYNC_ATTEMPTS, SYNC_ATTEMPT_WAIT  # noqa: F401
+    from .mergin.common import (  # noqa: F401
+        ClientError,
+        ErrorCode,
+        LoginError,
+        InvalidProject,
+        SYNC_ATTEMPTS,
+        SYNC_ATTEMPT_WAIT,
+    )
     from .mergin.client import MerginClient, ServerType, AuthTokenExpiredError  # noqa: F401
     from .mergin.client_pull import (  # noqa: F401
         download_project_async,

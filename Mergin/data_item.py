@@ -218,10 +218,7 @@ class MerginLocalProjectItem(QgsDirectoryItem):
         if os.path.exists(self.path):
             try:
                 if same_dir(cur_proj_path, self.path):
-                    msg = (
-                        "The project is currently open. It will get cleared if you proceed.\n\n"
-                        "Proceed anyway?"
-                    )
+                    msg = "The project is currently open. It will get cleared if you proceed.\n\n" "Proceed anyway?"
                     btn_reply = QMessageBox.question(
                         None,
                         "Remove local project",
