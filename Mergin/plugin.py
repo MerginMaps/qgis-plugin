@@ -552,6 +552,8 @@ class MerginPlugin:
                 self.iface.addCustomActionForLayer(self.action_export_mbtiles, l)
 
     def unload(self):
+        from .utils import pygeodiff
+
         if self.iface is not None:
             # Disconnect Mergin related signals
             self.iface.projectRead.disconnect(self.on_qgis_project_changed)
@@ -577,6 +579,8 @@ class MerginPlugin:
         QgsExpressionContextUtils.removeGlobalVariable("mm_user_email")
         QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.data_item_provider)
         self.data_item_provider = None
+        # unload pygeodiff to avoid .pyd to be write-protected and thus impossible to delete on Windows
+        pygeodiff.shutdown()
         # this is crashing qgis on exit
         # self.iface.browserModel().reload()
 
