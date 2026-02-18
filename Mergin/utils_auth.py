@@ -26,7 +26,7 @@ from .utils import MERGIN_URL, get_qgis_proxy_config, get_plugin_version
 class LoginType(Enum):
     """Types of login supported by Mergin Maps."""
 
-    PASSWORD = "password"  # classic login with username and password
+    PASSWORD = "password"  # pragma: allowlist secret
     SSO = "sso"  # login with SSO token
 
     def __str__(self) -> str:
