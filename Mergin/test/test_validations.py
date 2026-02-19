@@ -206,4 +206,4 @@ class test_validations(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    nose2.main()  # noqa: F821
+    nose2.main()

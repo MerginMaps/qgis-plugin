@@ -5,7 +5,6 @@
 
 
 import os
-import requests
 import urllib.request
 from qgis.core import (
     QgsVectorLayer,
@@ -24,11 +23,13 @@ class test_help(unittest.TestCase):
     def test_help_urls(self):
         mh = MerginHelp()
 
-        resp = requests.head(mh.howto_attachment_widget(), timeout=5, allow_redirects=True)
-        self.assertEqual(resp.status_code, 200)
+        req = urllib.request.Request(mh.howto_attachment_widget(), method="HEAD")
+        resp = urllib.request.urlopen(req)
+        self.assertEqual(resp.status, 200)
 
-        resp = requests.head(mh.howto_background_maps(), timeout=5, allow_redirects=True)
-        self.assertEqual(resp.status_code, 200)
+        req = urllib.request.Request(mh.howto_background_maps(), method="HEAD")
+        resp = urllib.request.urlopen(req)
+        self.assertEqual(resp.status, 200)
 
 
 def create_mem_layer() -> QgsVectorLayer:
@@ -41,4 +42,4 @@ def create_mem_layer() -> QgsVectorLayer:
 
 
 if __name__ == "__main__":
-    nose2.main()  # noqa: F821
+    nose2.main()
