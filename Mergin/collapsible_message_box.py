@@ -2,10 +2,10 @@
 # Copyright Lutra Consulting Limited
 
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtWidgets import QMessageBox
+from qgis.PyQt.QtWidgets import QMessageBox, QWidget
 
 
-class CollapsibleBox(QtWidgets.QWidget):
+class CollapsibleBox(QWidget):
     def __init__(self, text, details, title="Mergin Maps error", parent=None):
         msg = QMessageBox()
         msg.setWindowTitle(title)

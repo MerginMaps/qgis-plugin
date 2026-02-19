@@ -6,16 +6,13 @@
 
 import os
 import sqlite3
-import shutil
 
 from qgis.PyQt.QtGui import QIcon
 from qgis.core import (
     QgsFeatureSink,
-    QgsProcessing,
     QgsProcessingUtils,
     QgsProcessingException,
     QgsProcessingAlgorithm,
-    QgsProcessingContext,
     QgsProcessingParameterFile,
     QgsProcessingParameterNumber,
     QgsProcessingParameterVectorLayer,
@@ -25,7 +22,6 @@ from qgis.core import (
 from ..postprocessors import StylingPostProcessor
 
 from ...mergin.merginproject import MerginProject
-from ...mergin.utils import get_versions_with_file_changes
 from ...mergin.deps import pygeodiff
 
 from ...diff import (
@@ -144,7 +140,7 @@ class CreateDiff(QgsProcessingAlgorithm):
         except (ClientError, ValueError) as e:
             raise QgsProcessingException(f"Error creating Mergin Maps client: {e}")
 
-        mp = MerginProject(project_dir)
+        mp = MerginProject(project_dir)  # noqa: F841
 
         feedback.pushInfo("Downloading base file…")
         base_file = QgsProcessingUtils.generateTempFilename(file_name)
@@ -189,7 +185,6 @@ class CreateDiff(QgsProcessingAlgorithm):
             features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, fields_mapping, db_conn)
             feedback.setProgress(40)
 
-            current = 40
             step = 60.0 / len(features) if features else 0
             for i, f in enumerate(features):
                 if feedback.isCanceled():

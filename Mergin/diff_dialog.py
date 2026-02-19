@@ -6,7 +6,7 @@ import os
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, QSettings
 from qgis.PyQt.QtGui import QIcon, QColor
-from qgis.PyQt.QtWidgets import QDialog, QPushButton, QDialogButtonBox, QMenu, QAction
+from qgis.PyQt.QtWidgets import QDialog, QPushButton, QMenu, QAction
 from qgis.core import (
     QgsProject,
     QgsVectorLayerCache,
@@ -15,7 +15,6 @@ from qgis.core import (
     QgsMessageLog,
     Qgis,
     QgsApplication,
-    QgsWkbTypes,
 )
 from qgis.gui import (
     QgsGui,

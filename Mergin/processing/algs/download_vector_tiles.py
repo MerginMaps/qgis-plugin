@@ -18,7 +18,6 @@ from qgis.core import (
     QgsCsException,
     QgsCoordinateReferenceSystem,
     QgsBlockingNetworkRequest,
-    QgsSqliteUtils,
     QgsDataSourceUri,
     QgsVectorTileLayer,
     QgsCoordinateTransform,
@@ -218,9 +217,9 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
                 f"{wgs_extent.xMinimum()},{wgs_extent.yMinimum()},{wgs_extent.xMaximum()},{wgs_extent.yMaximum()}"
             )
             writer.set_metadata_value("bounds", bounds_str)
-        except QgsCsException as e:
+        except QgsCsException:
             pass
-        except AttributeError as e:
+        except AttributeError:
             pass
 
         step_feedback = QgsProcessingMultiStepFeedback(self.max_zoom + 1, feedback)
@@ -284,7 +283,7 @@ class DownloadVectorTiles(QgsProcessingAlgorithm):
         tile_layer = QgsVectorTileLayer(bytes(ds_uri.encodedUri()).decode(), name)
         if tile_layer.isValid():
             if context.project():
-                err = tile_layer.importNamedStyle(self.style_document)
+                tile_layer.importNamedStyle(self.style_document)
                 metadata = tile_layer.metadata()
                 metadata.setRights(self.attribution)
                 tile_layer.setMetadata(metadata)

@@ -41,7 +41,6 @@ from .utils import (
     SYNC_ATTEMPT_WAIT,
     push_error_message,
 )
-from .utils_auth import get_stored_mergin_server_url
 
 from .mergin.merginproject import MerginProject
 from .project_status_dialog import ProjectStatusDialog
@@ -51,7 +50,7 @@ from .mergin.client import AuthTokenExpiredError, MerginClient
 class MerginProjectsManager(object):
     """Class for managing Mergin Maps projects in QGIS."""
 
-    def __init__(self, plugin: "MerginPlugin"):
+    def __init__(self, plugin: "MerginPlugin"):  # noqa F821
         self.mc: MerginClient = plugin.mc
         self.iface = iface
         self.plugin = plugin

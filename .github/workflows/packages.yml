@@ -154,7 +154,7 @@ jobs:
           pip3 wheel -r mergin_client.egg-info/requires.txt -w mergin/deps
           # special care for pygeodiff
           unzip mergin/deps/pygeodiff-*.whl -d mergin/deps
-          # remove unncesessary files
+          # remove unnecessary files
           rm -rf mergin/deps/*.dist-info
           rm -rf mergin/deps/*.data
           rm -rf mergin/deps/pygeodiff.libs

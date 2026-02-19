@@ -5,10 +5,9 @@ import os
 import shutil
 from pathlib import Path
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import QSettings, Qt, QVariant, QSortFilterProxyModel
+from qgis.PyQt.QtCore import QSettings, Qt, QSortFilterProxyModel
 from qgis.PyQt.QtWidgets import (
     QAbstractItemView,
-    QApplication,
     QComboBox,
     QFileDialog,
     QHeaderView,

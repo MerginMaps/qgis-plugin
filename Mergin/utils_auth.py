@@ -1,4 +1,3 @@
-import datetime
 import typing
 import uuid
 import json
@@ -27,7 +26,7 @@ from .utils import MERGIN_URL, get_qgis_proxy_config, get_plugin_version
 class LoginType(Enum):
     """Types of login supported by Mergin Maps."""
 
-    PASSWORD = "password"  # classic login with username and password
+    PASSWORD = "password"  # nosec B105  # pragma: allowlist secret
     SSO = "sso"  # login with SSO token
 
     def __str__(self) -> str:
@@ -283,7 +282,7 @@ def login_sso(server_url: str, oauth2_client_id: str, email: typing.Optional[str
         "id": "mmmmsso",
         "name": "Mergin Maps SSO",
         "objectName": "",
-        "password": "",
+        "password": "",  # nosec B105
         "persistToken": False,
         "queryPairs": {
             "state": str(uuid.uuid4()),

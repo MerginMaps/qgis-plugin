@@ -32,13 +32,12 @@ from qgis.gui import (
     QgsGui,
     QgsMapToolPan,
 )
-from qgis.PyQt import QtCore, uic
+from qgis.PyQt import uic
 from qgis.PyQt.QtCore import (
     QAbstractTableModel,
     QItemSelectionModel,
     QModelIndex,
     QSettings,
-    QStringListModel,
     Qt,
     QThread,
     pyqtSignal,
@@ -62,7 +61,6 @@ from .mergin.client import AuthTokenExpiredError
 from .mergin.merginproject import MerginProject
 from .mergin.utils import bytes_to_human_size, int_version
 from .utils import (
-    PROJS_PER_PAGE,
     ClientError,
     contextual_date,
     format_datetime,
@@ -214,7 +212,7 @@ class ChangesetsDownloader(QThread):
     def run(self):
         try:
             version_info = self.mc.project_version_info(self.mp.project_id(), version=f"v{self.version}")
-        except AuthTokenExpiredError:
+        except AuthTokenExpiredError as e:
             self.error_occured.emit(e)
             return
 
@@ -243,7 +241,7 @@ class ChangesetsDownloader(QThread):
             if "diff" not in f:
                 continue
             try:
-                file_diffs = self.mc.download_file_diffs(self.mp.dir, f["path"], [f"v{self.version}"])
+                self.mc.download_file_diffs(self.mp.dir, f["path"], [f"v{self.version}"])
                 full_gpkg = self.mp.fpath_cache(f["path"], version=f"v{self.version}")
                 if not os.path.exists(full_gpkg):
                     self.mc.download_file(self.mp.dir, f["path"], full_gpkg, f"v{self.version}")
@@ -295,7 +293,7 @@ class VersionsFetcher(QThread):
         return self.current_page <= self.nb_page
 
     def fetch_another_page(self):
-        if self.has_more_page() == False:
+        if self.has_more_page() is False:
             return
         self.model.beginFetching()
         try:
@@ -469,7 +467,7 @@ class VersionViewerDialog(QDialog):
         except ClientError:
             # Some versions e.g CE, EE edition doesn't have
             pass
-        except AuthTokenExpiredError as e:
+        except AuthTokenExpiredError:
             self.plugin.auth_token_expired()
         super().exec()
 
@@ -546,7 +544,7 @@ class VersionViewerDialog(QDialog):
 
         try:
             item = self.versionModel.item_from_index(current_index)
-        except:
+        except Exception:
             # Click on invalid item like loading
             return
         version_name = item["name"]
@@ -633,7 +631,7 @@ class VersionViewerDialog(QDialog):
         self.update_canvas(layers, set_extent=False)
 
     def update_canvas(self, layers, set_extent=True):
-        if self.current_diff and self.current_diff.isSpatial() == False:
+        if self.current_diff and self.current_diff.isSpatial() is False:
             self.map_canvas.setEnabled(False)
             self.save_splitters_state()
             self.splitter_map_table.setSizes([0, 1])
@@ -715,7 +713,7 @@ class VersionViewerDialog(QDialog):
         else:
             self.failed_to_fetch = True
             additional_log = str(e)
-            QgsMessageLog.logMessage(f"Download history error: " + additional_log, "Mergin")
+            QgsMessageLog.logMessage("Download history error: " + additional_log, "Mergin")
             self.label_info.setText(
                 "There was an issue loading this version. Please try again later or contact our support if the issue persists. Refer to the QGIS messages log for more details."
             )
