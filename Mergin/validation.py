@@ -12,6 +12,7 @@ from qgis.core import (
     QgsVectorDataProvider,
     QgsExpression,
     QgsRenderContext,
+    QgsFeatureRequest,
 )
 from qgis.gui import QgsFileWidget
 
@@ -74,19 +75,19 @@ class MultipleLayersWarning:
     layers.
     """
 
-    def __init__(self, warning_id, url=""):
+    def __init__(self, warning_id, details=""):
         self.id = warning_id
         self.items = list()
-        self.url = url
+        self.details = details
 
 
 class SingleLayerWarning:
     """Class for warning which is associated with single layer."""
 
-    def __init__(self, layer_id, warning, url=None):
+    def __init__(self, layer_id, warning, details=None):
         self.layer_id = layer_id
         self.warning = warning
-        self.url = url
+        self.details = details
 
 
 class MerginProjectValidator(object):
@@ -274,7 +275,7 @@ class MerginProjectValidator(object):
                                     SingleLayerWarning(
                                         lid,
                                         Warning.ATTACHMENT_EXPRESSION_PATH,
-                                        url={"field_name": field_name, "layer_id": lid},
+                                        details={"field_name": field_name, "layer_id": lid},
                                     )
                                 )
 
@@ -333,9 +334,44 @@ class MerginProjectValidator(object):
 
     def _check_field_unique(self, layer, fields):
         feature_count = layer.dataProvider().featureCount()
-        for f in fields:
-            if len(layer.uniqueValues(f)) != feature_count:
-                self.issues.append(SingleLayerWarning(layer.id(), Warning.KEY_FIELD_NOT_UNIQUE))
+        for f_idx in fields:
+            # Quick check for uniqueness
+            if len(layer.uniqueValues(f_idx)) == feature_count:
+                continue
+
+            field_name = layer.fields()[f_idx].name()
+            sample_limit = 5
+            sample = []
+            seen_values = set()
+
+            # Fetch only the required attribute
+            request = QgsFeatureRequest().setSubsetOfAttributes([f_idx])
+
+            for feat in layer.getFeatures(request):
+                v = feat.attribute(f_idx)
+                val_str = "NULL" if v is None else str(v)
+
+                if val_str in seen_values:
+                    # Add to sample if not already present
+                    if val_str not in sample:
+                        sample.append(val_str)
+                    if len(sample) >= sample_limit:
+                        break
+                else:
+                    seen_values.add(val_str)
+
+            self.issues.append(
+                SingleLayerWarning(
+                    layer.id(),
+                    Warning.KEY_FIELD_NOT_UNIQUE,
+                    # Metadata for the warning message
+                    details={
+                        "type": "relation_key_not_unique",
+                        "fields": [field_name],
+                        "sample": sample,
+                    },
+                )
+            )
 
     def _check_primary_keys(self, layer, fields):
         layer_fields = layer.fields()
@@ -447,7 +483,7 @@ class MerginProjectValidator(object):
                 self.issues.append(MultipleLayersWarning(Warning.INVALID_ADDED_FILENAME, file["path"]))
 
 
-def warning_display_string(warning_id, url=None):
+def warning_display_string(warning_id, details=None):
     """Returns a display string for a corresponding warning"""
     help_mgr = MerginHelp()
     if warning_id == Warning.PROJ_NOT_LOADED:
@@ -469,22 +505,38 @@ def warning_display_string(warning_id, url=None):
     elif warning_id == Warning.NO_EDITABLE_LAYERS:
         return "No editable layers in the project"
     elif warning_id == Warning.ATTACHMENT_ABSOLUTE_PATH:
-        return f"The attachment widget of the {url} uses absolute paths. <a href='{help_mgr.howto_photo_attachment()}'>Learn more.</a>"
+        return f"The attachment widget of the {details} uses absolute paths. <a href='{help_mgr.howto_photo_attachment()}'>Learn more.</a>"
     elif warning_id == Warning.ATTACHMENT_LOCAL_PATH:
         return (
-            f"The attachment widget of the '{url}' field uses a local path. Photos taken with the app might not be synced. "
+            f"The attachment widget of the '{details}' field uses a local path. Photos taken with the app might not be synced. "
             f"<a href='{help_mgr.howto_photo_attachment()}'>Learn more.</a>"
         )
     elif warning_id == Warning.ATTACHMENT_EXPRESSION_PATH:
         return (
-            f"The attachment widget of the '{url['field_name']}' field specifies a custom folder, but the default path expression is not activated. "
-            f"Photos taken with the app might not be synced. <a href='activate_expression?layer_id={url['layer_id']}&field_name={url['field_name']}'>"
+            f"The attachment widget of the '{details['field_name']}' field specifies a custom folder, but the default path expression is not activated. "
+            f"Photos taken with the app might not be synced. <a href='activate_expression?layer_id={details['layer_id']}&field_name={details['field_name']}'>"
             f"Activate the expression</a> or <a href='{help_mgr.howto_photo_attachment()}'>learn more</a>."
         )
     elif warning_id == Warning.DATABASE_SCHEMA_CHANGE:
         return "Database schema was changed"
     elif warning_id == Warning.KEY_FIELD_NOT_UNIQUE:
-        return "Relation key field contains duplicated values"
+        fields = details.get("fields", [])
+        sample = details.get("sample", [])
+
+        # Format field names with quotes
+        fields_fmt = ", ".join([f"'{f}'" for f in fields])
+
+        if len(fields) == 1:
+            base = f"Relation key field {fields_fmt} contains duplicated values"
+        else:
+            base = f"Relation key fields: {fields_fmt} contain duplicated values"
+
+        if sample:
+            # Format duplicate samples with quotes
+            sample_fmt = ", ".join([f"'{s}'" for s in sample])
+            base += f". Sample: {sample_fmt}"
+
+        return base
     elif warning_id == Warning.FIELD_IS_PRIMARY_KEY:
         return "Relation uses primary key field"
     elif warning_id == Warning.VALUE_RELATION_LAYER_MISSED:
@@ -507,15 +559,15 @@ def warning_display_string(warning_id, url=None):
         return (
             f"You don't have permission to edit the QGIS project file. Your changes to this file will not be sent to the server. "
             f"Ask the workspace admin to upgrade your permission if you want your changes sent to the server. "
-            f"You can also <a href='{url}'>reset this QGIS project file</a> to the server version."
+            f"You can also <a href='{details}'>reset this QGIS project file</a> to the server version."
         )
     elif warning_id == Warning.EDITOR_NON_DIFFABLE_CHANGE:
-        return f"You don't have permission to edit layer fields and properties. Ask the workspace admin to upgrade your permission or <a href='{url}'>reset the layer</a> to be able to sync changes."
+        return f"You don't have permission to edit layer fields and properties. Ask the workspace admin to upgrade your permission or <a href='{details}'>reset the layer</a> to be able to sync changes."
     elif warning_id == Warning.EDITOR_JSON_CONFIG_CHANGE:
-        return f"You don't have permission to change the configuration of this project. <a href='{url}'>Reset the configuration</a> to be able to sync data changes."
+        return f"You don't have permission to change the configuration of this project. <a href='{details}'>Reset the configuration</a> to be able to sync data changes."
     elif warning_id == Warning.EDITOR_DIFFBASED_FILE_REMOVED:
-        return f"You don't have permission to remove this layer. <a href='{url}'>Reset the layer</a> to be able to sync changes."
+        return f"You don't have permission to remove this layer. <a href='{details}'>Reset the layer</a> to be able to sync changes."
     elif warning_id == Warning.PROJECT_HOME_PATH:
         return "QGIS Project Home Path is specified. <a href='fix_project_home_path'>Quick fix the issue. (This will unset project home)</a>"
     elif warning_id == Warning.INVALID_ADDED_FILENAME:
-        return f"You cannot synchronize a file with invalid characters in it's name. Please sanitize the name of this file '{url}'"
+        return f"You cannot synchronize a file with invalid characters in it's name. Please sanitize the name of this file '{details}'"
