@@ -1,4 +1,9 @@
-import datetime
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
+import hashlib
+import os
+import re
 import typing
 import uuid
 import json
@@ -14,14 +19,21 @@ from qgis.core import (
     QgsNetworkAccessManager,
     QgsExpressionContextUtils,
     Qgis,
+    QgsProject,
+    QgsProviderRegistry,
 )
 from qgis.PyQt.QtCore import QSettings, QUrl
 from qgis.PyQt.QtNetwork import QNetworkRequest
+from qgis.PyQt.QtWidgets import QMessageBox
 
 from .mergin.client import MerginClient, ServerType, AuthTokenExpiredError
 from .mergin.common import ClientError, LoginError
+from .mergin.merginproject import MerginProject
 
 from .utils import MERGIN_URL, get_qgis_proxy_config, get_plugin_version
+
+
+AUTH_CONFIG_FILENAME = "qgis_cfg.xml"
 
 
 class LoginType(Enum):
@@ -552,3 +564,129 @@ def qgis_support_sso() -> bool:
     """
     # QGIS 3.40+ supports SSO
     return Qgis.versionInt() >= 34000
+
+
+class AuthSync:
+    def __init__(self, qgis_file=None):
+        if qgis_file is None:
+            self.project = QgsProject.instance()
+        else:
+            self.project = QgsProject()
+            self.project.read(qgis_file)
+        self.project_path = self.project.homePath()
+        self.auth_file = os.path.join(self.project_path, AUTH_CONFIG_FILENAME)
+        self.mp = MerginProject(self.project_path)
+        self.project_id = self.mp.project_id()
+        self.auth_mngr = QgsApplication.authManager()
+
+    def get_layers_auth_ids(self) -> typing.List[str]:
+        """Get the auth config IDs of the protected layers in the current project."""
+        auth_ids = set()
+        reg = QgsProviderRegistry.instance()
+        for layer in self.project.mapLayers().values():
+            source = layer.source()
+            prov_type = layer.providerType()
+            decoded_uri = reg.decodeUri(prov_type, source)
+            auth_id = decoded_uri.get("authcfg")
+            if auth_id:
+                auth_ids.add(auth_id)
+        return list(auth_ids)
+
+    def get_auth_config_hash(self, auth_ids: typing.List[str]) -> str:
+        """
+        Generates a stable hash from the decrypted content of the given auth IDs.
+        This allows us to detect config changes regardless of random encryption salts in the encrypted XML file.
+        """
+        sorted_ids = sorted(auth_ids)
+
+        hasher = hashlib.sha256()
+
+        for auth_id in sorted_ids:
+            config = QgsAuthMethodConfig()
+            if not self.auth_mngr.loadAuthenticationConfig(auth_id, config, True):  # True to decrypt full details
+                self.mp.log.error(f"Failed to load the authentication config for the auth ID: {auth_id}")
+                continue
+
+            header_data = f"{config.id()}|{config.method()}|{config.uri()}"
+            hasher.update(header_data.encode("utf-8"))
+
+            config_map = config.configMap()
+            for key in sorted(config_map.keys()):
+                entry = f"|{key}={config_map[key]}"
+                hasher.update(entry.encode("utf-8"))
+
+        return hasher.hexdigest()
+
+    def export_auth(self, client) -> None:
+        """Export auth DB credentials for protected layers if they have changed"""
+
+        # permission check - auth config .xml file can be modified from the writer role above
+        project_info = client.project_info(self.mp.project_full_name())
+        role = project_info.get("role")
+        if not (role and role in ("writer", "owner")):
+            return
+
+        referenced_ids = self.get_layers_auth_ids()
+        available_ids = self.auth_mngr.configIds()
+        auth_ids = [aid for aid in referenced_ids if aid in available_ids]
+        if not auth_ids:
+            if os.path.exists(self.auth_file):
+                os.remove(self.auth_file)
+            return
+
+        if not self.auth_mngr.masterPasswordIsSet():
+            self.mp.log.warning("Master Password not set. Cannot export auth configs.")
+            msg = "Failed to export authentication configuration. If you want to share the credentials of the protected layer(s), set the master password please."
+            QMessageBox.warning(
+                None, "Cannot export configuration for protected layer", msg, QMessageBox.StandardButton.Close
+            )
+            return
+
+        current_hash = self.get_auth_config_hash(auth_ids)
+
+        # Compare current hash with the hash in the existing file
+        file_exists = os.path.exists(self.auth_file)
+        if file_exists:
+            with open(self.auth_file, "r", encoding="utf-8") as f:
+                content = f.read()
+                pattern = r"<!--\s*HASH:\s*([A-Za-z0-9]+)\s*-->"
+                match = re.search(pattern, content)
+                if match:
+                    existing_hash = match.group(1)
+                    if existing_hash == current_hash:
+                        self.mp.log.info("No change in auth config. No update needed.")
+                        return
+                    else:
+                        self.mp.log.info("Auth config file change detected. Updating file...")
+                else:
+                    self.mp.log.warning("No hash found in existing config file. Creating one...")
+
+        # Export and inject hash
+        temp_file = os.path.join(self.project_path, f"temp_{AUTH_CONFIG_FILENAME}")
+
+        ok = self.auth_mngr.exportAuthenticationConfigsToXml(temp_file, list(auth_ids), self.project_id)
+
+        if ok:
+            with open(temp_file, "r", encoding="utf-8") as f:
+                xml_content = f.read()
+
+            hashed_content = xml_content + f"\n<!-- HASH: {current_hash} -->"
+
+            with open(self.auth_file, "w", encoding="utf-8") as f:
+                f.write(hashed_content)
+
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+
+    def import_auth(self) -> None:
+        """Import credentials for protected layers"""
+
+        if os.path.isfile(self.auth_file):
+            if not self.auth_mngr.masterPasswordIsSet():
+                self.mp.log.warning("Master password is not set. Could not import auth config.")
+                user_msg = "Could not import authentication configuration for the protected layer(s). Set the master password and reload the project if you want to access the protected layer(s)."
+                QMessageBox.warning(None, "Could not load protected layer", user_msg, QMessageBox.StandardButton.Close)
+                return
+
+            ok = self.auth_mngr.importAuthenticationConfigsFromXml(self.auth_file, self.project_id, overwrite=True)
+            self.mp.log.info(f"QGIS auth imported: {ok}")

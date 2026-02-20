@@ -10,11 +10,11 @@ on:
         type: string
       REQUESTED_GEODIFF_VER:
         description: 'Geodiff version'
-        default: '2.1.2'
+        default: '2.2.0'
         type: string
 env:
   PYTHON_API_CLIENT_VER: ${{ inputs.REQUESTED_PYTHON_API_CLIENT_VER || '0.12.2' }}
-  GEODIFF_VER:  ${{ inputs.REQUESTED_GEODIFF_VER || '2.1.2' }}
+  GEODIFF_VER:  ${{ inputs.REQUESTED_GEODIFF_VER || '2.2.0' }}
   PYTHON_VER: "38"
 jobs:
   build_linux_binary:
@@ -61,17 +61,11 @@ jobs:
         run: |
           choco install unzip
 
-      - name: Download pygeodiff 32 binaries
-        run: |
-          pip3 download --only-binary=:all: --no-deps --platform "win32" --python-version $env:PYTHON_VER pygeodiff==$env:GEODIFF_VER
-          unzip -o pygeodiff-$env:GEODIFF_VER-cp$env:PYTHON_VER-cp$env:PYTHON_VER-win32.whl -d tmp32
-          mkdir pygeodiff-binaries
-          copy tmp32\pygeodiff\*.pyd pygeodiff-binaries\
-
       - name: Download pygeodiff 64 binaries
         run: |
           pip3 download --only-binary=:all: --no-deps --platform "win_amd64" --python-version $env:PYTHON_VER pygeodiff==$env:GEODIFF_VER
           unzip -o pygeodiff-$env:GEODIFF_VER-cp$env:PYTHON_VER-cp$env:PYTHON_VER-win_amd64.whl -d tmp64
+          mkdir pygeodiff-binaries
           copy tmp64\pygeodiff\*.pyd pygeodiff-binaries\
 
       - uses: actions/upload-artifact@v4
