@@ -244,7 +244,7 @@ class MerginProjectValidator(object):
                 continue
             for field in layer.fields():
                 ws = field.editorWidgetSetup()
-                
+
                 if ws and ws.type() == "ExternalResource":
                     cfg = ws.config()
                     field_name = field.name()
@@ -257,18 +257,24 @@ class MerginProjectValidator(object):
 
                     # Check for absolute paths
                     if not (is_root_active or is_storage_active):
-                        if cfg.get("RelativeStorage") == QgsFileWidget.Absolute:  # Absolute= 0, RelativeProject= 1, RelativeDefaultPath= 2
+                        if (
+                            cfg.get("RelativeStorage") == QgsFileWidget.Absolute
+                        ):  # Absolute= 0, RelativeProject= 1, RelativeDefaultPath= 2
                             self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH, field_name))
 
                     # Check Data Defined Overrides
                     if is_root_active:
-                        prop_type = root_path_prop.get("type")  # types are more reliable than keys which can be empty - QGIS decides based on type value
+                        prop_type = root_path_prop.get(
+                            "type"
+                        )  # types are more reliable than keys which can be empty - QGIS decides based on type value
                         if prop_type == 3:  # ExpressionBasedProperty
                             expression = root_path_prop.get("expression", "").strip()
                             is_field_ref = expression.startswith('"') and expression.endswith('"')
-                            
+
                             if not (PROJECT_VARS.search(expression) or is_field_ref):
-                                self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION, field_name))
+                                self.issues.append(
+                                    SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION, field_name)
+                                )
                         elif prop_type == 2:  # FieldBasedProperty
                             pass
                         else:  # 1 = StaticProperty or 0 = InvalidProperty

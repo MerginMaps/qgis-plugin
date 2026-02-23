@@ -174,7 +174,7 @@ class test_validations(unittest.TestCase):
             }
         }
         # clear DefaultRoot doesn't trigger the warning
-        config.pop("DefaultRoot", None) 
+        config.pop("DefaultRoot", None)
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
         self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
         validator.check_attachment_widget()
