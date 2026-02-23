@@ -242,12 +242,12 @@ class MerginProjectValidator(object):
         for lid, layer in self.layers.items():
             if lid not in self.editable:
                 continue
-            fields = layer.fields()
-            for i in range(fields.count()):
-                ws = layer.editorWidgetSetup(i)
+            for field in layer.fields():
+                ws = field.editorWidgetSetup()
+                
                 if ws and ws.type() == "ExternalResource":
                     cfg = ws.config()
-                    field_name = fields[i].name()
+                    field_name = field.name()
                     properties = cfg.get("PropertyCollection", {}).get("properties", {})
                     root_path_prop = properties.get("propertyRootPath", {})
                     storage_url_prop = properties.get("storageUrl", {})
