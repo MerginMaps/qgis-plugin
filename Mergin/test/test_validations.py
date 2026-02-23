@@ -141,6 +141,45 @@ class test_validations(unittest.TestCase):
         validator.check_attachment_widget()
         self.assertTrue(len(validator.issues) == 0)
 
+        # right setup, field-based override (Type 2)
+        config["PropertyCollection"]["properties"]["propertyRootPath"] = {
+            "active": True,
+            "field": "photo",
+            "expression": "",
+            "type": 2,
+        }
+        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
+        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
+        validator.check_attachment_widget()
+        self.assertTrue(len(validator.issues) == 0)
+
+        # right setup, expression-based override with quoted field name (Type 3)
+        config["PropertyCollection"]["properties"]["propertyRootPath"] = {
+            "active": True,
+            "expression": '"photo"',
+            "type": 3,
+        }
+        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
+        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
+        validator.check_attachment_widget()
+        self.assertTrue(len(validator.issues) == 0)
+
+        # absolute path bypass when storageUrl is active (e.g. Google Drive URLs)
+        config["RelativeStorage"] = QgsFileWidget.RelativeStorage.Absolute
+        config["PropertyCollection"]["properties"] = {
+            "storageUrl": {
+                "active": True,
+                "field": "photo",
+                "type": 2,
+            }
+        }
+        # clear DefaultRoot doesn't trigger the warning
+        config.pop("DefaultRoot", None) 
+        widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
+        self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
+        validator.check_attachment_widget()
+        self.assertTrue(len(validator.issues) == 0)
+
     def test_embedded_svg(self):
         symbol = QgsMarkerSymbol()
         symbol_layer = QgsSvgMarkerSymbolLayer(os.path.join(test_data_path, "transport_aerodrome.svg"))

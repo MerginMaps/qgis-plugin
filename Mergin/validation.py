@@ -248,27 +248,39 @@ class MerginProjectValidator(object):
                 if ws and ws.type() == "ExternalResource":
                     cfg = ws.config()
                     field_name = fields[i].name()
-                    # check for relative paths
-                    if "RelativeStorage" in cfg and cfg["RelativeStorage"] == QgsFileWidget.Absolute:
-                        self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH, field_name))
-                    # check that correct expression is set
-                    try:
-                        is_expression_enabled = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["active"]
-                    except (KeyError, TypeError):
-                        is_expression_enabled = False
-                    if is_expression_enabled:
-                        expression = cfg["PropertyCollection"]["properties"]["propertyRootPath"]["expression"]
-                        if not PROJECT_VARS.search(expression):
+                    properties = cfg.get("PropertyCollection", {}).get("properties", {})
+                    root_path_prop = properties.get("propertyRootPath", {})
+                    storage_url_prop = properties.get("storageUrl", {})
+
+                    is_root_active = root_path_prop.get("active", False)
+                    is_storage_active = storage_url_prop.get("active", False)
+
+                    # Check for absolute paths
+                    if not (is_root_active or is_storage_active):
+                        if cfg.get("RelativeStorage") == QgsFileWidget.Absolute:  # Absolute= 0, RelativeProject= 1, RelativeDefaultPath= 2
+                            self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_ABSOLUTE_PATH, field_name))
+
+                    # Check Data Defined Overrides
+                    if is_root_active:
+                        prop_type = root_path_prop.get("type")  # types are more reliable than keys which can be empty - QGIS decides based on type value
+                        if prop_type == 3:  # ExpressionBasedProperty
+                            expression = root_path_prop.get("expression", "").strip()
+                            is_field_ref = expression.startswith('"') and expression.endswith('"')
+                            
+                            if not (PROJECT_VARS.search(expression) or is_field_ref):
+                                self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION, field_name))
+                        elif prop_type == 2:  # FieldBasedProperty
+                            pass
+                        else:  # 1 = StaticProperty or 0 = InvalidProperty
                             self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_WRONG_EXPRESSION, field_name))
-                    # if expression-based path is not set with the data-defined override the app cannot resolve the path to save the photo
-                    else:
+
+                    # Fallback if expression-based path is not set
+                    elif not is_storage_active:
                         if "DefaultRoot" in cfg:
-                            # default root should not be set to the local path
-                            if os.path.isabs(cfg["DefaultRoot"]):
+                            if os.path.isabs(cfg.get("DefaultRoot", "")):
                                 self.issues.append(SingleLayerWarning(lid, Warning.ATTACHMENT_LOCAL_PATH, field_name))
 
-                            # expression must be set with the data-defined override
-                            expr = QgsExpression(cfg["DefaultRoot"])
+                            expr = QgsExpression(cfg.get("DefaultRoot", ""))
                             if expr.isValid():
                                 self.issues.append(
                                     SingleLayerWarning(
