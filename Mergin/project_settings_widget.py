@@ -3,10 +3,12 @@
 
 import json
 import os
+import re
 import typing
+import urllib.request
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QColor
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import Qt, QTimer
 from qgis.PyQt.QtWidgets import QFileDialog, QMessageBox
 from qgis.core import (
     QgsProject,
@@ -16,8 +18,19 @@ from qgis.core import (
     QgsFeatureRequest,
     QgsExpression,
     QgsMapLayer,
+    QgsCoordinateReferenceSystem,
+    QgsProjUtils,
+    QgsDatumTransform,
+    QgsTask,
+    QgsApplication,
 )
-from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget, QgsColorButton
+from qgis.gui import (
+    QgsOptionsWidgetFactory,
+    QgsOptionsPageWidget,
+    QgsColorButton,
+    QgsProjectionSelectionWidget,
+    QgsCoordinateReferenceSystemProxyModel,
+)
 from .attachment_fields_model import AttachmentFieldsModel
 from .utils import (
     mm_symbol_path,
@@ -36,6 +49,36 @@ from .utils import (
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
 ProjectConfigUiWidget, _ = uic.loadUiType(ui_file)
+
+# Matches both PROJ4-style (+geoidgrids=file.tif) and pipeline-style (+grids=file.tif).
+_PROJ_GRIDS_RE = re.compile(r"\b(?:geoidgrids|grids)=([\w./@,]+)")
+_SKIP_GRID_NAMES = {"@null", "null", "@none", "none"}
+
+
+class _GridRef:
+    """Minimal grid reference parsed from a PROJ string (no download URL)."""
+
+    __slots__ = ("shortName", "url")
+
+    def __init__(self, name):
+        self.shortName = name
+        self.url = ""
+
+
+def _grids_from_proj_string(proj_str):
+    """Extract grid references from a PROJ string.
+
+    Covers two cases:
+    - PROJ pipeline style:  +proj=vgridshift +grids=us_nga_egm96_15.tif
+    - PROJ4 style:          +geoidgrids=us_nga_egm08_25.tif
+    """
+    result = []
+    for m in _PROJ_GRIDS_RE.finditer(proj_str or ""):
+        for name in m.group(1).split(","):
+            name = name.strip()
+            if name and name not in _SKIP_GRID_NAMES:
+                result.append(_GridRef(name))
+    return result
 
 
 class MerginProjectConfigFactory(QgsOptionsWidgetFactory):
@@ -132,6 +175,33 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.attachment_fields.setModel(self.attachments_model)
         self.attachment_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
         self.edit_photo_expression.expressionChanged.connect(self.expression_changed)
+
+        # Vertical CRS section
+        self.cmb_vertical_crs.setFilters(QgsCoordinateReferenceSystemProxyModel.FilterVertical)
+        self.cmb_vertical_crs.setOptionVisible(QgsProjectionSelectionWidget.CurrentCrs, False)
+        self.cmb_vertical_crs.setDialogTitle("Target Vertical CRS")
+        self.label_vcrs_warning.setVisible(False)
+        self.label_vcrs_warning.setOpenExternalLinks(False)
+        self.label_vcrs_warning.linkActivated.connect(self._download_geoid_grid)
+
+        skip, ok = QgsProject.instance().readBoolEntry("Mergin", "SkipElevationTransformation", True)
+        use_vcrs = not skip
+        self.chk_use_vertical_crs.setChecked(use_vcrs)
+        self.cmb_vertical_crs.setEnabled(use_vcrs)
+
+        vcrs_wkt, ok = QgsProject.instance().readEntry("Mergin", "TargetVerticalCRS")
+        if ok and vcrs_wkt:
+            crs = QgsCoordinateReferenceSystem.fromWkt(vcrs_wkt)
+            if crs.isValid():
+                self.cmb_vertical_crs.setCrs(crs)
+
+        self._pending_grids = []
+        self.chk_use_vertical_crs.stateChanged.connect(self._vcrs_checkbox_changed)
+        self.cmb_vertical_crs.crsChanged.connect(self._check_geoid_grid)
+
+        # Run initial grid check if already enabled
+        if use_vcrs and vcrs_wkt:
+            self._check_geoid_grid(self.cmb_vertical_crs.crs())
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
@@ -310,6 +380,178 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             # create a new layer and add it as a map sketches layer
             create_map_sketches_layer(QgsProject.instance().absolutePath())
 
+    def _vcrs_checkbox_changed(self, state):
+        enabled = self.chk_use_vertical_crs.isChecked()
+        self.cmb_vertical_crs.setEnabled(enabled)
+        if enabled:
+            self._check_geoid_grid(self.cmb_vertical_crs.crs())
+        else:
+            self.label_vcrs_warning.setVisible(False)
+
+    def _check_geoid_grid(self, crs):
+        """
+        Check whether all grids required by at least one transformation operation from
+        WGS84 3D to the selected vertical CRS are present in the PROJ search paths.
+        Operations are alternatives — only one needs to be satisfied.
+        """
+        self.label_vcrs_warning.setVisible(False)
+        self._pending_grids = []
+        if not crs.isValid() or not self.chk_use_vertical_crs.isChecked():
+            return
+
+        # Validate CRS kind using WKT keywords (works across all QGIS versions;
+        # setFilter is not functional in all versions so we enforce the type here).
+        # WKT1: VERT_CS / COMPD_CS  —  WKT2: VERTCRS / COMPOUNDCRS
+        wkt = crs.toWkt()
+        if not wkt.startswith(("VERT_CS[", "COMPD_CS[", "VERTCRS[", "COMPOUNDCRS[")):
+            self.label_vcrs_warning.setText(
+                '<font color="red">The selected CRS is not a vertical or compound CRS. '
+                "Please select a vertical CRS (e.g. EGM2008 height) or a compound CRS "
+                "(e.g. WGS 84 + EGM96 height).</font>"
+            )
+            self.label_vcrs_warning.setVisible(True)
+            return
+
+        wgs84_3d = QgsCoordinateReferenceSystem("EPSG:4979")
+        operations = QgsDatumTransform.operations(wgs84_3d, crs)
+
+        def grid_available(grid):
+            # When a local project exists, only the project's proj/ folder counts —
+            # a system-wide PROJ installation is not sufficient for mobile sync.
+            if self.local_project_dir:
+                return os.path.exists(os.path.join(self.local_project_dir, "proj", grid.shortName))
+            # No local project: fall back to any PROJ search path.
+            return any(os.path.exists(os.path.join(p, grid.shortName)) for p in QgsProjUtils.searchPaths())
+
+        # Level 1: operations that report grids via the proper QgsDatumTransform API.
+        ops_with_grids = [(op, list(op.grids)) for op in operations if op.grids]
+
+        if not ops_with_grids:
+            # Level 2: some PROJ versions / ESRI-coded CRS leave op.grids empty but embed
+            # the grid name in the PROJ pipeline string — parse those as a fallback.
+            for op in operations:
+                parsed = _grids_from_proj_string(getattr(op, "proj", "") or "")
+                if parsed:
+                    ops_with_grids.append((op, parsed))
+
+        if not ops_with_grids:
+            # Level 3: no operation has grid info at all — try the CRS's own PROJ string.
+            # Vertical CRS sometimes embed the geoid grid directly in their definition.
+            parsed = _grids_from_proj_string(crs.toProj())
+            if parsed:
+                ops_with_grids = [(None, parsed)]
+
+        if not ops_with_grids:
+            # No geoid grid data found at any level. PROJ uses a ballpark (approximate)
+            # transformation for this CRS — it does not know which geoid file is required.
+            # Show an advisory so the user is aware heights may be inaccurate.
+            self.label_vcrs_warning.setText(
+                '<font color="#CC7700">Note: PROJ does not have geoid grid data for the selected vertical CRS. '
+                "Heights reported in the field app may not accurately represent heights above the geoid. "
+                "If you have the appropriate geoid file, add it to your project\u2019s <tt>proj/</tt> folder "
+                "and install it via the QGIS Resource Manager.</font>"
+            )
+            self.label_vcrs_warning.setVisible(True)
+            return
+
+        # If any single operation has all its grids locally available, nothing to do.
+        for _op, grids in ops_with_grids:
+            if all(grid_available(g) for g in grids):
+                return
+
+        # No operation is fully satisfied. Pick the best one for the warning:
+        # prefer ops where all missing grids are downloadable (have a url), then fewest missing.
+        def op_score(item):
+            _, grids = item
+            missing = [g for g in grids if not grid_available(g)]
+            return (not all(g.url for g in missing), len(missing))
+
+        _, best_grids = min(ops_with_grids, key=op_score)
+        missing = [g for g in best_grids if not grid_available(g)]
+        if not missing:
+            return
+
+        self._pending_grids = missing  # may contain _GridRef instances (no URL) when parsed from PROJ string
+        names = ", ".join(g.shortName for g in missing)
+        self.label_vcrs_warning.setText(
+            f'<font color="red">The selected vertical CRS requires the following geoid grid(s) '
+            f"in order to work properly \u2013 {names}. "
+            f'<a href="download"><font color="red">Click here</font></a> to automatically '
+            f"download it and add to your project.</font>"
+        )
+        self.label_vcrs_warning.setVisible(True)
+
+    def _download_geoid_grid(self, link):
+        if not self._pending_grids:
+            return
+
+        no_url = [g.shortName for g in self._pending_grids if not g.url]
+        downloadable = [g for g in self._pending_grids if g.url]
+
+        if no_url:
+            QMessageBox.warning(
+                self,
+                "Cannot download automatically",
+                "The following grid(s) have no download URL and must be installed manually "
+                "via the QGIS Resource Manager or by installing a PROJ data package:\n\n" + ", ".join(no_url),
+            )
+            if not downloadable:
+                return
+
+        if not self.local_project_dir:
+            urls = "\n".join(g.url for g in downloadable)
+            QMessageBox.information(
+                self,
+                "Download geoid grid",
+                f"Please download the geoid grid(s) manually and place them in your project's 'proj/' folder:\n{urls}",
+            )
+            return
+
+        dest_dir = os.path.join(self.local_project_dir, "proj")
+        # Capture data needed by the background task (no closure over self).
+        grids_snapshot = [(g.shortName, g.url) for g in downloadable]
+
+        # Animate the warning label while the download runs.
+        self._download_dot_count = 0
+
+        def _tick():
+            self._download_dot_count = (self._download_dot_count + 1) % 4
+            dots = "." * self._download_dot_count
+            self.label_vcrs_warning.setText(f'<font color="gray">Downloading geoid grid(s){dots}</font>')
+
+        self._download_timer = QTimer(self)
+        self._download_timer.timeout.connect(_tick)
+        _tick()
+        self._download_timer.start(400)
+
+        def run_download(task):
+            os.makedirs(dest_dir, exist_ok=True)
+            failed = []
+            for i, (name, url) in enumerate(grids_snapshot):
+                if task.isCanceled():
+                    break
+                try:
+                    urllib.request.urlretrieve(url, os.path.join(dest_dir, name))
+                except Exception as e:
+                    failed.append(f"{name}: {e}")
+                task.setProgress((i + 1) / len(grids_snapshot) * 100)
+            return {"failed": failed}
+
+        def on_finished(exception, result):
+            self._download_timer.stop()
+            if exception:
+                QMessageBox.warning(self, "Download failed", f"Download error: {exception}")
+            elif result and result["failed"]:
+                QMessageBox.warning(self, "Download failed", "Could not download:\n" + "\n".join(result["failed"]))
+            else:
+                self.label_vcrs_warning.setVisible(False)
+                QMessageBox.information(
+                    self, "Download complete", "Geoid grid(s) downloaded and added to your project."
+                )
+
+        self._download_task = QgsTask.fromFunction("Downloading geoid grid(s)", run_download, on_finished=on_finished)
+        QgsApplication.taskManager().addTask(self._download_task)
+
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
         QgsProject.instance().writeEntry("Mergin", "Snapping", self.cmb_snapping_mode.currentData())
@@ -350,6 +592,14 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.save_config_file()
         self.setup_tracking()
         self.setup_map_sketches()
+
+        use_vcrs = self.chk_use_vertical_crs.isChecked()
+        QgsProject.instance().writeEntry("Mergin", "SkipElevationTransformation", not use_vcrs)
+        if use_vcrs:
+            crs = self.cmb_vertical_crs.crs()
+            QgsProject.instance().writeEntry("Mergin", "TargetVerticalCRS", crs.toWkt() if crs.isValid() else "")
+        else:
+            QgsProject.instance().writeEntry("Mergin", "TargetVerticalCRS", "")
 
     def colors_change_state(self) -> None:
         """
