@@ -14,6 +14,7 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 changelog=2026.2.0
   - Export and import of QGIS authorization configurations for external layers
   - Fix issues when upgrading the plugin on Windows
+  - Fix directory validation for project creation
   <p>2026.1.2
   - Fix for inability to sync removed geopackages
   <p>2026.1.1
