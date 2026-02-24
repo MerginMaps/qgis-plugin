@@ -1,0 +1,42 @@
+name: QGIS Plugin QA (Security & Style)
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  quality-assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          # Install all tools mentioned in the task
+          python -m pip install --upgrade pip
+          pip install bandit detect-secrets flake8 ruff
+
+      - name: Run Bandit (Security Scan)
+        # Scan for security issues, excluding test and venv folders
+        run: bandit -r . -ll -x ./test,./tests,./.venv,./venv
+
+      - name: Run Detect Secrets
+        # Scan for hardcoded credentials
+        run: detect-secrets scan . --all-files
+
+      - name: Run Ruff
+        # Ruff is used to catch and potentially fix flake8 issues automatically
+        run: ruff check .
+
+      - name: Run Flake8 (Style Check)
+        # Using exact parameters from the task image
+        # Ignoring E501 and W503 as requested
+        # Excluding venv and test directories
+        run: |
+          flake8 . --max-line-length=120 --ignore=E501,W503 --exclude=test,tests,.venv,venv,python-api-client
