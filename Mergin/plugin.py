@@ -54,6 +54,7 @@ from .utils_auth import (
     AuthTokenExpiredError,
     set_qgsexpressionscontext,
     get_authcfg,
+    AuthSync,
 )
 
 from .mergin.merginproject import MerginProject
@@ -477,6 +478,7 @@ class MerginPlugin:
 
     def current_project_sync(self):
         """Synchronise current Mergin Maps project."""
+        AuthSync().export_auth(self.mc)
         self.manager.project_status(self.mergin_proj_dir)
 
     def find_project(self):
@@ -550,6 +552,8 @@ class MerginPlugin:
                 self.iface.addCustomActionForLayer(self.action_export_mbtiles, layer)
 
     def unload(self):
+        from .utils import pygeodiff
+
         if self.iface is not None:
             # Disconnect Mergin related signals
             self.iface.projectRead.disconnect(self.on_qgis_project_changed)
@@ -575,6 +579,8 @@ class MerginPlugin:
         QgsExpressionContextUtils.removeGlobalVariable("mm_user_email")
         QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.data_item_provider)
         self.data_item_provider = None
+        # unload pygeodiff to avoid .pyd to be write-protected and thus impossible to delete on Windows
+        pygeodiff.shutdown()
         # this is crashing qgis on exit
         # self.iface.browserModel().reload()
 
