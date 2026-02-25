@@ -67,7 +67,7 @@ class test_validations(unittest.TestCase):
             "FileWidgetFilter": "",
             "PropertyCollection": {
                 "name": None,
-                "properties": {},
+                "properties": None,
                 "type": "collection",
             },
             "RelativeStorage": QgsFileWidget.RelativeStorage.Absolute,

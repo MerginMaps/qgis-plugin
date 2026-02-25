@@ -248,9 +248,10 @@ class MerginProjectValidator(object):
                 if ws and ws.type() == "ExternalResource":
                     cfg = ws.config()
                     field_name = field.name()
-                    properties = cfg.get("PropertyCollection", {}).get("properties", {})
-                    root_path_prop = properties.get("propertyRootPath", {})
-                    storage_url_prop = properties.get("storageUrl", {})
+                    prop_collection = cfg.get("PropertyCollection") or {}
+                    properties = prop_collection.get("properties") or {}
+                    root_path_prop = properties.get("propertyRootPath") or {}
+                    storage_url_prop = properties.get("storageUrl") or {}
 
                     is_root_active = root_path_prop.get("active", False)
                     is_storage_active = storage_url_prop.get("active", False)
