@@ -356,7 +356,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
     def _check_geoid_grid(self, crs):
         """
-        Evaluates the selected vertical CRS to determine if a PROJ transformation grid 
+        Evaluates the selected vertical CRS to determine if a PROJ transformation grid
         is required for accurate elevation calculation in the mobile app.
         """
         self.label_vcrs_warning.setVisible(False)
@@ -403,8 +403,8 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
     def _download_geoid_grid(self, link):
         """
         Triggered when the user clicks the download link in the missing grid warning label.
-        
-        Initiates a background QgsTask to download the required PROJ grids 
+
+        Initiates a background QgsTask to download the required PROJ grids
         from the official CDN directly into the project's 'proj/' directory.
 
         :param link: The href string of the clicked HTML link.

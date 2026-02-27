@@ -294,7 +294,7 @@ class ProjectStatusDialog(QDialog):
         if btn_reply != QMessageBox.StandardButton.Yes:
             return
         return self.done(self.RESET_CHANGES)
-    
+
     def download_vcrs_grids(self):
         """
         Triggered when the user clicks the download link in the validation warning.
@@ -303,7 +303,7 @@ class ProjectStatusDialog(QDialog):
         if not project_path:
             QMessageBox.warning(self, "Project Not Saved", "Please save your project first.")
             return
-            
+
         project_dir = os.path.dirname(project_path)
 
         vcrs_wkt, ok = QgsProject.instance().readEntry("Mergin", "TargetVerticalCRS")
@@ -321,14 +321,12 @@ class ProjectStatusDialog(QDialog):
 
         if not downloadable:
             QMessageBox.information(self, "Info", "No downloadable grids found, or they are already downloaded.")
-            self.run_validation() # Assuming this is your method to refresh the validation screen
+            self.validate_project()
             return
 
         # callbacks
         def on_success():
             QMessageBox.information(self, "Success", "Geoid grid(s) successfully added to your project.")
-            # Instantly re-run validation so the warning disappears and Sync is unblocked!
-            # self.run_validation() 
             self.validate_project()
 
         def on_error(errors):
@@ -337,4 +335,3 @@ class ProjectStatusDialog(QDialog):
         # fire the task
         dest_dir = os.path.join(project_dir, "proj")
         self._download_task = download_grids_task(downloadable, dest_dir, on_success, on_error)
-

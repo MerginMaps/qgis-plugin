@@ -521,7 +521,7 @@ class MerginProjectValidator(object):
             return
 
         status = get_missing_geoid_grids(crs, self.qgis_proj_dir)
-        
+
         if status["missing"]:
             w = MultipleLayersWarning(Warning.MISSING_VCRS_GRID, details="download_vcrs_grids")
             for grid in status["missing"]:

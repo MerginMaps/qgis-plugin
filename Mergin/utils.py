@@ -1784,10 +1784,13 @@ def push_error_message(dlg, project_name, plugin, mc):
 
 class _GridRef:
     """Minimal grid reference parsed from a PROJ string."""
+
     __slots__ = ("shortName", "url")
+
     def __init__(self, name, url=""):
         self.shortName = name
         self.url = url
+
 
 def _grids_from_proj_string(proj_str):
     """Extract grid references from a PROJ string."""
@@ -1799,14 +1802,15 @@ def _grids_from_proj_string(proj_str):
                 result.append(_GridRef(name))
     return result
 
+
 def get_missing_geoid_grids(crs, local_project_dir):
     """
-    Checks if the given vertical CRS requires grid files that are missing 
+    Checks if the given vertical CRS requires grid files that are missing
     from the project's 'proj/' folder.
     Returns a dict: {"missing": list of _GridRef, "ballpark": bool}
     """
     result = {"missing": [], "ballpark": False}
-    
+
     if not crs or not crs.isValid():
         return result
 
@@ -1837,7 +1841,7 @@ def get_missing_geoid_grids(crs, local_project_dir):
 
     for _op, grids in ops_with_grids:
         if all(grid_available(g) for g in grids):
-            return result  # Fully satisfied
+            return result
 
     def op_score(item):
         _, grids = item
@@ -1846,14 +1850,14 @@ def get_missing_geoid_grids(crs, local_project_dir):
 
     _, best_grids = min(ops_with_grids, key=op_score)
     result["missing"] = [g for g in best_grids if not grid_available(g)]
-    
+
     return result
 
 
 def download_grids_task(grids, dest_dir, on_success_callback, on_error_callback=None):
     """
     Starts a background QgsTask to download PROJ grids without freezing the QGIS UI.
-    
+
     :param grids: List of _GridRef objects or (name, url) tuples.
     :param dest_dir: String path to the target 'proj' directory.
     :param on_success_callback: Callable with no arguments triggered on complete success.
@@ -1862,7 +1866,7 @@ def download_grids_task(grids, dest_dir, on_success_callback, on_error_callback=
     # normalize the grids input so it safely accepts objects or tuples
     grids_snapshot = []
     for g in grids:
-        if hasattr(g, 'shortName') and hasattr(g, 'url'):
+        if hasattr(g, "shortName") and hasattr(g, "url"):
             grids_snapshot.append((g.shortName, g.url))
         elif isinstance(g, tuple) and len(g) == 2:
             grids_snapshot.append(g)
@@ -1876,20 +1880,20 @@ def download_grids_task(grids, dest_dir, on_success_callback, on_error_callback=
     def run_download(task):
         os.makedirs(dest_dir, exist_ok=True)
         failed = []
-        
+
         for i, (name, url) in enumerate(grids_snapshot):
             if task.isCanceled():
                 failed.append(f"{name}: Download canceled by user.")
                 break
-                
+
             try:
                 urllib.request.urlretrieve(url, os.path.join(dest_dir, name))
             except Exception as e:
                 failed.append(f"{name}: {str(e)}")
-            
+
             # Report progress back to the QGIS task manager (0 to 100%)
             task.setProgress((i + 1) / len(grids_snapshot) * 100)
-            
+
         return {"failed": failed}
 
     # Completion Handler (runs back on the main UI thread)
@@ -1906,5 +1910,5 @@ def download_grids_task(grids, dest_dir, on_success_callback, on_error_callback=
 
     task = QgsTask.fromFunction("Downloading geoid grid(s)", run_download, on_finished=on_finished)
     QgsApplication.taskManager().addTask(task)
-    
+
     return task
