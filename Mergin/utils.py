@@ -111,7 +111,7 @@ except ImportError:
     this_dir = os.path.dirname(os.path.realpath(__file__))
     path = os.path.join(this_dir, "mergin_client.whl")
     sys.path.append(path)
-    from mergin.client import MerginClient
+    from mergin.client import MerginClient, ServerType, AuthTokenExpiredError  # noqa: F401
     from mergin.common import ClientError, InvalidProject, LoginError, SYNC_ATTEMPTS, SYNC_ATTEMPT_WAIT  # noqa: F401
 
     from mergin.client_pull import (  # noqa: F401
