@@ -120,19 +120,19 @@ class ProjectStatusDialog(QDialog):
         msg = []
         if not has_write_permissions:
             msg.append(
-                f"You don't have writing permissions to this project. Changes won't be synced!\n"
-                f"You may package the current project to a writable workspace instead, by selecting Create New Project."
+                "You don't have writing permissions to this project. Changes won't be synced!\n"
+                "You may package the current project to a writable workspace instead, by selecting Create New Project."
             )
 
         if has_files_to_replace:
             msg.append(
-                f"Unable to compare some of the modified files with their server version - "
-                f"their history will be lost if uploaded."
+                "Unable to compare some of the modified files with their server version - "
+                "their history will be lost if uploaded."
             )
 
         if has_unfinished_pull:
             msg.append(
-                f"The previous pull has not finished completely: status of some files may be reported incorrectly."
+                "The previous pull has not finished completely: status of some files may be reported incorrectly."
             )
 
         return msg

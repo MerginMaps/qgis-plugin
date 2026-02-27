@@ -172,7 +172,7 @@ class ConfigurationDialog(QDialog):
                     self.ui.test_status.setText("<font color=green> OK </font>")
                     return True
 
-                self.ui.test_status.setText(f"<font color=orange>Follow the instructions in the browser...</font>")
+                self.ui.test_status.setText("<font color=orange>Follow the instructions in the browser...</font>")
                 ok, msg = test_server_connection(self.server_url(), use_sso=True, sso_email=self.get_sso_email())
 
             if url_reachable(self.server_url()):

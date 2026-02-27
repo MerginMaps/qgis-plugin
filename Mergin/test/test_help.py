@@ -5,19 +5,9 @@
 
 
 import os
-import tempfile
 import urllib.request
-
-from qgis.PyQt.QtCore import QVariant
 from qgis.core import (
     QgsVectorLayer,
-    QgsFields,
-    QgsField,
-    QgsVectorFileWriter,
-    QgsWkbTypes,
-    QgsCoordinateTransformContext,
-    QgsCoordinateReferenceSystem,
-    QgsProject,
 )
 from qgis.testing import start_app, unittest
 from Mergin.help import MerginHelp
