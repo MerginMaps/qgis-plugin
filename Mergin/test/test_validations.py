@@ -87,7 +87,7 @@ class test_validations(unittest.TestCase):
 
         # local path
         config["RelativeStorage"] = QgsFileWidget.RelativeStorage.RelativeProject
-        config["DefaultRoot"] = "/tmp/photos"
+        config["DefaultRoot"] = os.path.join(self.temp_dir, "photos")
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
         self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
         validator.check_attachment_widget()
@@ -135,7 +135,7 @@ class test_validations(unittest.TestCase):
 
         # right setup, valid expression
         config["PropertyCollection"]["properties"]["propertyRootPath"]["expression"] = "@project_folder + '/photos'"
-        config["DefaultRoot"] = "/tmp/photos"  # default root should be override
+        config["DefaultRoot"] = os.path.join(self.temp_dir, "photos")  # default root should be override
         widget_setup = QgsEditorWidgetSetup("ExternalResource", config)
         self.mem_layer.setEditorWidgetSetup(photo_field_idx, widget_setup)
         validator.check_attachment_widget()

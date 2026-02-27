@@ -124,7 +124,7 @@ class test_utils(unittest.TestCase):
             (" project", False),
             (".project", False),
             ("proj~ect", False),
-            ("pro\ject", False),
+            (r"pro\ject", False),
             ("pro/ject", False),
             ("pro|ject", False),
             ("pro+ject", False),

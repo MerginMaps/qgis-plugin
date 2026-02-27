@@ -31,8 +31,8 @@ from .utils import (
     is_inside,
 )
 
-INVALID_FIELD_NAME_CHARS = re.compile('[\\\/\(\)\[\]\{\}"\n\r]')
-PROJECT_VARS = re.compile("\@project_home|\@project_path|\@project_folder")
+INVALID_FIELD_NAME_CHARS = re.compile(r'[\\\/\(\)\[\]\{\}"\n\r]')
+PROJECT_VARS = re.compile("@project_home|@project_path|@project_folder")
 
 
 class Warning(Enum):
@@ -160,7 +160,8 @@ class MerginProjectValidator(object):
     def check_proj_paths_relative(self):
         """Check if the QGIS project has relative paths, i.e. not absolute ones."""
         abs_paths, ok = self.qgis_proj.readEntry("Paths", "/Absolute")
-        assert ok
+        if not ok:
+            raise RuntimeError("Cannot read project paths configuration")
         if not abs_paths == "false":
             self.issues.append(MultipleLayersWarning(Warning.ABSOLUTE_PATHS))
 
