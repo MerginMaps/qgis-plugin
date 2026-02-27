@@ -119,7 +119,7 @@ class SyncDialog(QDialog):
                 return
 
             if not self.job:
-                raise RuntimeError("Failed to create download job")
+                return
 
             # use kilobytes as a unit, so we do not need to worry about int overflow with projects of few GB size
             self.progress.setMaximum(int(self.job.total_size / 1024))
