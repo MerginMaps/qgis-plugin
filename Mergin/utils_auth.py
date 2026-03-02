@@ -444,6 +444,7 @@ def validate_mergin_url(url):
     :param url: String Mergin Maps URL to ping.
     :return: String error message as result of validation. If None, URL is valid.
     """
+    setup_qgis_ssl_for_mergin_client()
     try:
         MerginClient(url, proxy_config=get_qgis_proxy_config(url))
 
@@ -529,6 +530,7 @@ def set_qgsexpressionscontext(url: str, mc: typing.Optional[MerginClient] = None
 
 
 def mergin_server_deprecated_version(url: str) -> bool:
+    setup_qgis_ssl_for_mergin_client()
     mc = MerginClient(
         url=url,
         auth_token=None,
@@ -567,23 +569,12 @@ def setup_qgis_ssl_for_mergin_client() -> None:
     2. On macOS, appends the QGIS CAs to MerginClient's bundled cert.pem
        so that the macOS fallback code path also trusts them.
     """
-    auth_manager = QgsApplication.authManager()
-    ca_certs = auth_manager.trustedCaCertsCache()
+    qgis_ca_pem = QgsApplication.authManager().trustedCaCertsPemText()
+    if hasattr(qgis_ca_pem, "data"):
+        qgis_ca_pem = qgis_ca_pem.data().decode("utf-8")
 
-    if not ca_certs:
+    if not qgis_ca_pem:
         return
-
-    # Convert QSslCertificate objects to PEM text
-    pem_blocks = []
-    for cert in ca_certs:
-        pem_data = bytes(cert.toPem()).decode("ascii")
-        if pem_data:
-            pem_blocks.append(pem_data)
-
-    if not pem_blocks:
-        return
-
-    qgis_ca_pem = "\n".join(pem_blocks)
 
     # 1. Write to a PEM file and set SSL_CERT_FILE
     settings_dir = QgsApplication.qgisSettingsDirPath()
@@ -601,10 +592,13 @@ def setup_qgis_ssl_for_mergin_client() -> None:
             marker = "# --- QGIS trusted CAs ---"
             with open(bundled_cert, "r") as f:
                 existing = f.read()
-            if marker not in existing:
-                with open(bundled_cert, "a") as f:
-                    f.write(f"\n{marker}\n")
-                    f.write(qgis_ca_pem)
+            # Always replace the QGIS section so stale CAs get refreshed
+            if marker in existing:
+                base_content = existing[: existing.index(marker)].rstrip()
+            else:
+                base_content = existing.rstrip()
+            with open(bundled_cert, "w") as f:
+                f.write(base_content + f"\n\n{marker}\n" + qgis_ca_pem)
 
 
 def qgis_support_sso() -> bool:

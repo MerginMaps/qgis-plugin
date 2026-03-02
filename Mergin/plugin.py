@@ -66,6 +66,8 @@ MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-c
 os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
 
 try:
+    # Best-effort early init; auth manager may not be ready yet so this may be a no-op.
+    # The real call happens in initGui() and before each MerginClient creation.
     setup_qgis_ssl_for_mergin_client()
 except Exception:
     pass
@@ -118,6 +120,11 @@ class MerginPlugin:
         # the dialog asking for master password is started from the main thread -> no crash.
 
         self.initProcessing()
+
+        try:
+            setup_qgis_ssl_for_mergin_client()
+        except Exception:
+            pass
 
         if self.iface is not None:
             self.add_action(
