@@ -13,14 +13,11 @@ from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt.QtGui import QColor
 
 from qgis.core import (
-    QgsApplication,
     QgsVectorLayer,
     QgsFeature,
     QgsGeometry,
     QgsFields,
     QgsField,
-    QgsProject,
-    QgsLayerTreeLayer,
     QgsConditionalStyle,
     QgsSymbolLayerUtils,
     QgsMarkerSymbol,
@@ -78,14 +75,22 @@ def get_row_from_db(db_conn, schema_table, entry_changes):
     Fetches a single row from DB's table based on the values of pkeys
     in changeset entry
     """
-    c = db_conn.cursor()
-    where_bits = []
-    for i, col in enumerate(schema_table.columns):
-        if col.pkey:
-            where_bits.append('"{}" = {}'.format(col.name, old_value_for_column_by_index(entry_changes, i)))
+    with db_conn.cursor() as c:
+        where_clauses = []
+        query_params = []
 
-    c.execute('SELECT * FROM "{}" WHERE {}'.format(schema_table.name, " AND ".join(where_bits)))
-    return c.fetchone()
+        for i, col in enumerate(schema_table.columns):
+            if col.pkey:
+                where_clauses.append('"{}" = %s'.format(col.name))
+                val = old_value_for_column_by_index(entry_changes, i)
+                query_params.append(val)
+
+        # We parameterize values securely; table/column names are trusted internal schema objects.
+        query = 'SELECT * FROM "{}" WHERE {}'.format(schema_table.name, " AND ".join(where_clauses))  # nosec B608
+
+        c.execute(query, tuple(query_params))
+
+        return c.fetchone()
 
 
 def parse_gpkg_geom_encoding(wkb_with_gpkg_hdr):
@@ -215,7 +220,6 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
     Input is list of tuples (type, changes) where type is 'insert'/'update'/'delete'
     and changes is a list of dicts. Each dict with 'column', 'old', 'new' (old/new optional)
     """
-    column_names = [column.name for column in schema_table.columns]
     features = []
 
     fld_geometry_idx = fields.indexOf("geometry")
@@ -225,7 +229,6 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
 
     for entry_type, entry_changes in diff_table:
         f = QgsFeature(fields)
-        row = [None for i in range(len(column_names))]
 
         f["_op"] = entry_type
 
@@ -235,7 +238,7 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
 
             for i in range(len(db_row)):
                 if i == geom_col_index:
-                    if db_row[i] == None:
+                    if db_row[i] is None:
                         continue
                     wkb = parse_gpkg_geom_encoding(db_row[i])
                     g = QgsGeometry()
@@ -254,7 +257,7 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
                 i = entry_change["column"]
                 if "old" in entry_change:
                     if i == geom_col_index:
-                        if entry_change["old"] == None:
+                        if entry_change["old"] is None:
                             # Empty geometry
                             continue
                         wkb_with_gpkg_hdr = base64.decodebytes(entry_change["old"].encode("ascii"))
@@ -278,7 +281,7 @@ def diff_table_to_features(diff_table, schema_table, fields, cols_to_flds, db_co
                 value = "?"
 
             if i == geom_col_index:
-                if value == None:
+                if value is None:
                     # Empty geometry
                     continue
                 wkb_with_gpkg_hdr = base64.decodebytes(value.encode("ascii"))
@@ -357,7 +360,7 @@ def make_local_changes_layer(mp, layer):
         "memory",
     )
     if not vl.isValid():
-        return None, f"Failed to create memory layer for local changes"
+        return None, "Failed to create memory layer for local changes"
 
     vl.dataProvider().addAttributes(fields)
     vl.updateFields()
@@ -443,7 +446,7 @@ def get_layer_geometry_info(schema_json, table_name):
 
 def style_diff_layer(layer, schema_table):
     """Apply conditional styling and symbology to diff layer"""
-    ### setup conditional styles!
+    # setup conditional styles!
     st = layer.conditionalStyles()
     color_red = QColor("#ffdce0")
     color_green = QColor("#dcffe4")

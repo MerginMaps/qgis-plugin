@@ -27,7 +27,7 @@ from qgis.PyQt.QtGui import (
     QStandardItemModel,
 )
 
-from .mergin.client import MerginProject, ServerType
+from .mergin.client import MerginProject
 from .mergin.common import InvalidProject
 from .mergin.client import AuthTokenExpiredError
 from .utils import (
@@ -219,7 +219,7 @@ class ResultFetcher(QThread):
                 return
             self.finished.emit(projects)
 
-        except (URLError, ClientError) as e:
+        except (URLError, ClientError):
             return
         except AuthTokenExpiredError:
             return
