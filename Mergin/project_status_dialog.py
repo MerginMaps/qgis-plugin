@@ -17,7 +17,7 @@ from qgis.PyQt.QtWidgets import (
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem, QIcon
 from qgis.gui import QgsGui
-from qgis.core import Qgis, QgsApplication, QgsProject
+from qgis.core import Qgis, QgsApplication, QgsProject, QgsCoordinateReferenceSystem
 from qgis.utils import OverrideCursor
 from .diff_dialog import DiffViewerDialog
 from .validation import (
@@ -31,6 +31,8 @@ from .utils import (
     icon_path,
     unsaved_project_check,
     UnsavedChangesStrategy,
+    get_missing_geoid_grids,
+    download_grids_task,
 )
 from .repair import fix_datum_shift_grids, fix_project_home_path, activate_expression
 
@@ -206,7 +208,7 @@ class ProjectStatusDialog(QDialog):
         # string as a title and list of affected layers/items
         if "multi" in groups:
             for w in groups["multi"]:
-                issue = warning_display_string(w.id, w.url)
+                issue = warning_display_string(w.id, w.details)
                 html.append(f"<h3>{issue}</h3>")
                 if w.items:
                     items = []
@@ -225,7 +227,7 @@ class ProjectStatusDialog(QDialog):
                 html.append(f"<h3>{map_layers[lid].name()}</h3>")
                 items = []
                 for w in layers[lid]:
-                    items.append(f"<li>{warning_display_string(w.warning, w.url)}</li>")
+                    items.append(f"<li>{warning_display_string(w.warning, w.details)}</li>")
                 html.append(f"<ul>{''.join(items)}</ul>")
 
         self.txtWarnings.setHtml("".join(html))
@@ -252,14 +254,17 @@ class ProjectStatusDialog(QDialog):
             if msg is not None:
                 self.ui.messageBar.pushMessage("Mergin", f"Failed to fix issue: {msg}", Qgis.Warning)
                 return
-        if parsed_url.path == "reset_file":
+        elif parsed_url.path == "reset_file":
             query_parameters = parse_qs(parsed_url.query)
             self.reset_local_changes(query_parameters["layer"][0])
-        if parsed_url.path == "fix_project_home_path":
+        elif parsed_url.path == "fix_project_home_path":
             fix_project_home_path()
-        if parsed_url.path == "activate_expression":
+        elif parsed_url.path == "activate_expression":
             query_parameters = parse_qs(parsed_url.query)
             activate_expression(query_parameters["layer_id"][0], query_parameters["field_name"][0])
+        elif parsed_url.path == "download_vcrs_grids":
+            self.download_vcrs_grids()
+            return
         self.validate_project()
 
     def validate_project(self):
@@ -289,3 +294,44 @@ class ProjectStatusDialog(QDialog):
         if btn_reply != QMessageBox.StandardButton.Yes:
             return
         return self.done(self.RESET_CHANGES)
+
+    def download_vcrs_grids(self):
+        """
+        Triggered when the user clicks the download link in the validation warning.
+        """
+        project_path = QgsProject.instance().fileName()
+        if not project_path:
+            QMessageBox.warning(self, "Project Not Saved", "Please save your project first.")
+            return
+
+        project_dir = os.path.dirname(project_path)
+
+        vcrs_wkt, ok = QgsProject.instance().readEntry("Mergin", "TargetVerticalCRS")
+        if not ok or not vcrs_wkt:
+            return
+
+        crs = QgsCoordinateReferenceSystem.fromWkt(vcrs_wkt)
+        if not crs.isValid():
+            return
+
+        # what is missing right now
+        status = get_missing_geoid_grids(crs, project_dir)
+        missing_grids = status.get("missing", [])
+        downloadable = [g for g in missing_grids if g.url]
+
+        if not downloadable:
+            QMessageBox.information(self, "Info", "No downloadable grids found, or they are already downloaded.")
+            self.validate_project()
+            return
+
+        # callbacks
+        def on_success():
+            QMessageBox.information(self, "Success", "Geoid grid(s) successfully added to your project.")
+            self.validate_project()
+
+        def on_error(errors):
+            QMessageBox.warning(self, "Download failed", "Could not download:\n" + "\n".join(errors))
+
+        # fire the task
+        dest_dir = os.path.join(project_dir, "proj")
+        self._download_task = download_grids_task(downloadable, dest_dir, on_success, on_error)
