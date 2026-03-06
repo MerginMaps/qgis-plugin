@@ -55,6 +55,7 @@ from .utils_auth import (
     set_qgsexpressionscontext,
     get_authcfg,
     AuthSync,
+    setup_qgis_ssl_for_mergin_client,
 )
 
 from .mergin.merginproject import MerginProject
@@ -63,7 +64,6 @@ import processing
 
 MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-client-log.txt")
 os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
-
 
 class MerginPlugin:
     def __init__(self, iface):
@@ -112,6 +112,11 @@ class MerginPlugin:
         # the dialog asking for master password is started from the main thread -> no crash.
 
         self.initProcessing()
+
+        try:
+            setup_qgis_ssl_for_mergin_client()
+        except Exception as e:
+            QgsApplication.messageLog().logMessage(f"Mergin Maps plugin: failed to set up SSL certificates: {e}")
 
         if self.iface is not None:
             self.add_action(
