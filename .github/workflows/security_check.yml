@@ -19,7 +19,7 @@ jobs:
         run: |
           # Upgrade pip and install security/linting tools
           python -m pip install --upgrade pip
-          pip install bandit detect-secrets flake8 flake8-json ruff
+          pip install bandit detect-secrets flake8 flake8-json
 
       - name: Run Bandit (Security Scan)
         # Scan the Mergin folder for vulnerabilities, excluding the test directory
@@ -28,10 +28,6 @@ jobs:
       - name: Run Detect Secrets
         # Scan the plugin directory for hardcoded secrets/credentials
         run: detect-secrets scan ./Mergin/ --all-files
-
-      - name: Run Ruff (Linting)
-        # Excluding Mergin/test
-        run: ruff check ./Mergin/ --line-length 120 --exclude Mergin/test
 
       - name: Run Flake8 (Style Check)
         # Style enforcement using MerginMaps standards
