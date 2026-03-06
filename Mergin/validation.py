@@ -203,18 +203,24 @@ class MerginProjectValidator(object):
                 self.issues.append(SingleLayerWarning(lid, Warning.EDITABLE_NON_GPKG))
 
     def check_saved_in_proj_dir(self):
-        """Check if layers saved in project's directory."""
+        """Check if layers are stored inside the project's directory."""
         for lid, layer in self.layers.items():
             if lid not in self.layers_by_prov["gdal"] + self.layers_by_prov["ogr"]:
                 continue
+
             pub_src = layer.publicSource()
+
             if pub_src.startswith("GPKG:"):
                 pub_src = pub_src[5:]
                 l_path = pub_src[: pub_src.rfind(":")]
             else:
                 l_path = layer.publicSource().split("|")[0]
-            l_dir = os.path.dirname(l_path)
-            if not same_dir(l_dir, self.qgis_proj_dir):
+
+            # normalize path
+            l_path = os.path.abspath(l_path)
+
+            # check if layer file is inside project directory
+            if not is_inside(self.qgis_proj_dir, l_path):
                 self.issues.append(SingleLayerWarning(lid, Warning.EXTERNAL_SRC))
 
     def check_offline(self):
