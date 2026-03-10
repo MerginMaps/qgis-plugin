@@ -8,8 +8,6 @@ import typing
 import uuid
 import json
 from urllib.error import URLError
-import requests
-import urllib3
 from enum import Enum
 
 from qgis.core import (
@@ -445,6 +443,7 @@ def validate_mergin_url(url):
     :param url: String Mergin Maps URL to ping.
     :return: String error message as result of validation. If None, URL is valid.
     """
+    setup_qgis_ssl_for_mergin_client()
     try:
         MerginClient(url, proxy_config=get_qgis_proxy_config(url))
 
@@ -530,6 +529,7 @@ def set_qgsexpressionscontext(url: str, mc: typing.Optional[MerginClient] = None
 
 
 def mergin_server_deprecated_version(url: str) -> bool:
+    setup_qgis_ssl_for_mergin_client()
     mc = MerginClient(
         url=url,
         auth_token=None,
@@ -547,14 +547,50 @@ def mergin_server_deprecated_version(url: str) -> bool:
 
 def url_reachable(url: str) -> bool:
     try:
-        requests.get(url, timeout=3)
-    except (
-        requests.RequestException,
-        urllib3.exceptions.LocationParseError,
-        UnicodeError,
-    ):
+        br = QgsBlockingNetworkRequest()
+        request = QNetworkRequest(QUrl(url))
+        request.setTransferTimeout(3000)  # 3s timeout
+        error = br.get(request)
+        return error == QgsBlockingNetworkRequest.ErrorCode.NoError
+    except Exception:
         return False
-    return True
+
+
+def setup_qgis_ssl_for_mergin_client() -> None:
+    """
+    Register QGIS trusted CA certificates with the mergin client module so that
+    all subsequent MerginClient instances trust servers signed by CAs configured
+    in QGIS.
+
+    Writes the QGIS trusted CAs to a PEM file, then passes that path to
+    mergin.client.set_trusted_certificates() so MerginClient loads those CAs
+    in addition to its default bundle (system CAs on Linux/Windows, bundled
+    cert.pem on macOS). Also sets SSL_CERT_FILE as a fallback for code paths
+    that use Python's default SSL context directly.
+    """
+    qgis_ca_pem = QgsApplication.authManager().trustedCaCertsPemText()
+    if hasattr(qgis_ca_pem, "data"):
+        qgis_ca_pem = qgis_ca_pem.data().decode("utf-8")
+
+    if not qgis_ca_pem:
+        return
+
+    settings_dir = QgsApplication.qgisSettingsDirPath()
+    ca_file_path = os.path.join(settings_dir, "mergin-trusted-cas.pem")
+    with open(ca_file_path, "w") as f:
+        f.write(qgis_ca_pem)
+
+    # Fallback: SSL_CERT_FILE is respected by Python's default SSL context.
+    os.environ["SSL_CERT_FILE"] = ca_file_path
+
+    # Primary path: register the CA file with the mergin client module so that
+    # every MerginClient instance (on all platforms) loads it alongside its
+    # default CA bundle. Requires mergin.client.set_trusted_certificates()
+    # from python-api-client >= <next release>.
+    from .mergin import client as mergin_client
+
+    if hasattr(mergin_client, "set_trusted_certificates"):
+        mergin_client.set_trusted_certificates(ca_file_path)
 
 
 def qgis_support_sso() -> bool:
