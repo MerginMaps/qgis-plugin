@@ -4,7 +4,7 @@
 import shutil
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Callable, Union, Optional, Tuple
 from urllib.error import URLError, HTTPError
 import configparser
 import os
@@ -1883,7 +1883,12 @@ def get_missing_geoid_grids(crs: QgsCoordinateReferenceSystem, local_project_dir
     return result
 
 
-def download_grids_task(grids, dest_dir, on_success_callback, on_error_callback=None):
+def download_grids_task(
+    grids: List[QgsDatumTransform.GridDetails],
+    dest_dir: str,
+    on_success_callback: Callable[[], None],
+    on_error_callback: Optional[Callable[[Union[str, List[str]]], None]] = None,
+):
     """
     Starts a background QgsTask to download PROJ grids without freezing the QGIS UI.
 
