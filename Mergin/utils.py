@@ -1803,7 +1803,42 @@ def _grids_from_proj_string(proj_str):
     return result
 
 
-def get_missing_geoid_grids(crs, local_project_dir):
+def _get_operations(
+    crs: QgsCoordinateReferenceSystem,
+) -> List[QgsDatumTransform.TransformDetails]:
+    return QgsDatumTransform.operations(QgsCoordinateReferenceSystem("EPSG:4979"), crs)
+
+
+def _operations_with_grids(
+    operations: List[QgsDatumTransform.TransformDetails],
+) -> List[Tuple[QgsDatumTransform.TransformDetails, List[QgsDatumTransform.GridDetails]]]:
+    return [(op, list(op.grids)) for op in operations if op.grids]
+
+
+def _grid_names(operations: List[QgsDatumTransform.TransformDetails]) -> List[str]:
+    operations_grids = _operations_with_grids(operations)
+    names = set()
+    for _, grids in operations_grids:
+        for grid in grids:
+            names.add(grid.shortName)
+    return list(names)
+
+
+def _grid_available_in_project(local_project_dir: str, grid_name: str) -> bool:
+    if local_project_dir:
+        return os.path.exists(os.path.join(local_project_dir, "proj", grid_name))
+    return False
+
+
+def existing_grid_files_for_crs(local_project_dir: str, crs: QgsCoordinateReferenceSystem) -> List[str]:
+    existing_grids = []
+    for grid_name in _grid_names(_get_operations(crs)):
+        if _grid_available_in_project(local_project_dir, grid_name):
+            existing_grids.append(grid_name)
+    return existing_grids
+
+
+def get_missing_geoid_grids(crs: QgsCoordinateReferenceSystem, local_project_dir: str) -> Dict[str, Any]:
     """
     Checks if the given vertical CRS requires grid files that are missing
     from the project's 'proj/' folder.
@@ -1814,15 +1849,9 @@ def get_missing_geoid_grids(crs, local_project_dir):
     if not crs or not crs.isValid():
         return result
 
-    wgs84_3d = QgsCoordinateReferenceSystem("EPSG:4979")
-    operations = QgsDatumTransform.operations(wgs84_3d, crs)
+    operations = _get_operations(crs)
 
-    def grid_available(grid):
-        if local_project_dir:
-            return os.path.exists(os.path.join(local_project_dir, "proj", grid.shortName))
-        return False
-
-    ops_with_grids = [(op, list(op.grids)) for op in operations if op.grids]
+    ops_with_grids = _operations_with_grids(operations)
 
     if not ops_with_grids:
         for op in operations:
@@ -1840,16 +1869,16 @@ def get_missing_geoid_grids(crs, local_project_dir):
         return result
 
     for _op, grids in ops_with_grids:
-        if all(grid_available(g) for g in grids):
+        if all(_grid_available_in_project(local_project_dir, g.shortName) for g in grids):
             return result
 
     def op_score(item):
         _, grids = item
-        missing = [g for g in grids if not grid_available(g)]
+        missing = [g for g in grids if not _grid_available_in_project(local_project_dir, g.shortName)]
         return (not all(g.url for g in missing), len(missing))
 
     _, best_grids = min(ops_with_grids, key=op_score)
-    result["missing"] = [g for g in best_grids if not grid_available(g)]
+    result["missing"] = [g for g in best_grids if not _grid_available_in_project(local_project_dir, g.shortName)]
 
     return result
 
