@@ -41,6 +41,7 @@ from .utils import (
     sanitize_path,
     get_missing_geoid_grids,
     download_grids_task,
+    existing_grid_files_for_crs,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -353,7 +354,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         else:
             self.label_vcrs_warning.setVisible(False)
 
-    def _check_geoid_grid(self, crs):
+    def _check_geoid_grid(self, crs: QgsCoordinateReferenceSystem):
         """
         Evaluates the selected vertical CRS to determine if a PROJ transformation grid
         is required for accurate elevation calculation in the mobile app.
@@ -373,6 +374,17 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             self.label_vcrs_warning.setVisible(True)
             return
 
+        existing_grids = existing_grid_files_for_crs(self.local_project_dir, crs)
+
+        if existing_grids:
+            text = f'<font color="green">Using grid {existing_grids[0]} \u2713.</font>'
+            if len(existing_grids) > 1:
+                text += f'<font color="red"> Also found other relevant grids: {', '.join(existing_grids[1:])}. You should only have one relevant grid for conversion.</font>'
+
+            self.label_vcrs_warning.setText(text)
+            self.label_vcrs_warning.setVisible(True)
+            return
+
         grid_status = get_missing_geoid_grids(crs, self.local_project_dir)
 
         if grid_status["ballpark"]:
@@ -387,6 +399,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
         missing = grid_status["missing"]
         if not missing:
+            self.label_vcrs_warning.setVisible(False)
             return
 
         self._pending_grids = missing
