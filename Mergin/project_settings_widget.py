@@ -387,14 +387,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
         grid_status = get_missing_geoid_grids(crs, self.local_project_dir)
 
+        # no grid required according to PROJ
         if grid_status["ballpark"]:
-            self.label_vcrs_warning.setText(
-                '<font color="#CC7700">Note: PROJ does not have geoid grid data for the selected vertical CRS. '
-                "Heights reported in the field app may not accurately represent heights above the geoid. "
-                "If you have the appropriate geoid file, add it to your project\u2019s 'proj/' folder "
-                "and install it via the QGIS Resource Manager.</font>"
-            )
-            self.label_vcrs_warning.setVisible(True)
+            self.label_vcrs_warning.setVisible(False)
             return
 
         missing = grid_status["missing"]
