@@ -150,8 +150,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.label_vcrs_warning.setOpenExternalLinks(False)
         self.label_vcrs_warning.linkActivated.connect(self._download_geoid_grid)
 
-        skip, ok = QgsProject.instance().readBoolEntry("Mergin", "SkipElevationTransformation", True)
-        use_vcrs = not skip
+        use_vcrs, ok = QgsProject.instance().readBoolEntry("Mergin", "ElevationTransformationEnabled", False)
         self.chk_use_vertical_crs.setChecked(use_vcrs)
         self.cmb_vertical_crs.setEnabled(use_vcrs)
 
@@ -507,7 +506,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.setup_map_sketches()
 
         use_vcrs = self.chk_use_vertical_crs.isChecked()
-        QgsProject.instance().writeEntry("Mergin", "SkipElevationTransformation", not use_vcrs)
+        QgsProject.instance().writeEntry("Mergin", "ElevationTransformationEnabled", use_vcrs)
         if use_vcrs:
             crs = self.cmb_vertical_crs.crs()
             QgsProject.instance().writeEntry("Mergin", "TargetVerticalCRS", crs.toWkt() if crs.isValid() else "")

@@ -508,8 +508,8 @@ class MerginProjectValidator(object):
 
     def check_vertical_crs_grids(self):
         """Check if custom vertical CRS is configured but the PROJ grid is missing from project."""
-        skip, ok = QgsProject.instance().readBoolEntry("Mergin", "SkipElevationTransformation", True)
-        if skip:
+        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "ElevationTransformationEnabled", True)
+        if not enabled:
             return
 
         vcrs_wkt, ok = QgsProject.instance().readEntry("Mergin", "TargetVerticalCRS")
