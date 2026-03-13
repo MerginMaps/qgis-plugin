@@ -171,7 +171,7 @@ PROJS_PER_PAGE = 50
 TILES_URL = "https://tiles.merginmaps.com"
 
 # Matches both PROJ4-style (+geoidgrids=file.tif) and pipeline-style (+grids=file.tif).
-_PROJ_GRIDS_RE = re.compile(r"\b(?:geoidgrids|grids)=([\w./@,]+)")
+_PROJ_GRIDS_RE = re.compile(r"\b(?:geoidgrids|grids)=([\w./@,-]+)")
 _SKIP_GRID_NAMES = {"@null", "null", "@none", "none"}
 
 DEFAULT_VERTICAL_CRS = QgsCoordinateReferenceSystem("EPSG:4979")
