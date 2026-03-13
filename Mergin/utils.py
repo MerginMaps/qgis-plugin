@@ -134,7 +134,7 @@ except ImportError:
         push_project_cancel,
         get_push_changes_batch,
     )
-    from .mergin.report import create_report
+    from .mergin.report import create_report  # noqa: F401
     from .mergin.deps import pygeodiff
 
 MERGIN_URL = "https://app.merginmaps.com"

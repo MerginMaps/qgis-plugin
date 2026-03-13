@@ -572,7 +572,7 @@ class AuthSync:
             self.project = QgsProject.instance()
         else:
             self.project = QgsProject()
-            self.project.read(qgis_file)
+            self.project.setFileName(qgis_file)
         self.project_path = self.project.homePath()
         self.auth_file = os.path.join(self.project_path, AUTH_CONFIG_FILENAME)
         self.mp = MerginProject(self.project_path)

@@ -1,0 +1,36 @@
+name: QGIS Plugin QA (Security & Style)
+
+# Trigger the workflow on every push
+on: [push]
+
+jobs:
+  quality-assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          # Upgrade pip and install security/linting tools
+          python -m pip install --upgrade pip
+          pip install bandit detect-secrets flake8 flake8-json
+
+      - name: Run Bandit (Security Scan)
+        # Scan the Mergin folder for vulnerabilities, excluding the test directory
+        run: bandit -r ./Mergin/ -ll --exclude ./Mergin/test
+
+      - name: Run Detect Secrets
+        # Scan the plugin directory for hardcoded secrets/credentials
+        run: detect-secrets scan ./Mergin/ --all-files
+
+      - name: Run Flake8 (Style Check)
+        # Style enforcement using MerginMaps standards
+        # Ignoring E501 (line length) and W503 (operator line breaks)
+        run: |
+          flake8 ./Mergin/ --max-line-length=120 --ignore=E501,W503 --exclude=test
