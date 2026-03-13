@@ -42,6 +42,10 @@ from .utils import (
     get_missing_geoid_grids,
     download_grids_task,
     existing_grid_files_for_crs,
+    project_defined_transformation,
+    _grids_from_proj_string,
+    _grid_available_in_project,
+    _get_operations,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -358,6 +362,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         """
         Evaluates the selected vertical CRS to determine if a PROJ transformation grid
         is required for accurate elevation calculation in the mobile app.
+
+        If the project has a datum transformation defined between EPSG:4979 and the CRS,
+        that specific transform is used to determine grid requirements. Otherwise the
+        standard PROJ operation list is consulted. When multiple operations exist and no
+        project-level transform is configured the user is warned to set one up.
         """
         self.label_vcrs_warning.setVisible(False)
         self._pending_grids = []
@@ -374,14 +383,67 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             self.label_vcrs_warning.setVisible(True)
             return
 
+        # Check if the project has an explicit datum transformation configured.
+        has_transform, transform_str = project_defined_transformation(crs)
+
+        if has_transform:
+            # Derive grid requirements solely from the project-defined transform string.
+            grids = _grids_from_proj_string(transform_str)
+            if not grids:
+                # Transform does not require any grid file.
+                self.label_vcrs_warning.setVisible(False)
+                return
+
+            project_dir = self.local_project_dir or ""
+            available = [g for g in grids if _grid_available_in_project(project_dir, g.shortName)]
+            missing = get_missing_geoid_grids(crs, self.local_project_dir)["missing"]
+
+            if available:
+                text = f'<font color="green">Using grid {available[0].shortName} \u2713.</font>'
+                if len(available) > 1:
+                    text += (
+                        f'<font color="red"> Also found other relevant grids: '
+                        f'{", ".join(g.shortName for g in available[1:])}. '
+                        f"You should only have one relevant grid for conversion.</font>"
+                    )
+                self.label_vcrs_warning.setText(text)
+                self.label_vcrs_warning.setVisible(True)
+                return
+
+            self._pending_grids = missing
+            names = ", ".join(g.shortName for g in missing)
+            self.label_vcrs_warning.setText(
+                f'<font color="red">The selected vertical CRS requires the following geoid grid(s) '
+                f"in order to work properly \u2013 {names}. "
+                f'<a href="download"><font color="red">Click here</font></a> to automatically '
+                f"download it and add to your project.</font>"
+            )
+            self.label_vcrs_warning.setVisible(True)
+            return
+
+        # No project-defined transformation – use the standard process.
+        # Warn when multiple operations are available so the user knows to pick one.
+        operations = _get_operations(crs)
+        multi_op_warning = ""
+        if len(operations) > 1:
+            multi_op_warning = (
+                ' <font color="orange">Multiple coordinate operations are available for this CRS. '
+                "Please configure the datum transformation on the project level "
+                "(Project \u2192 Properties \u2192 Transformations) "
+                "to ensure the correct operation is used.</font>"
+            )
+
         existing_grids = existing_grid_files_for_crs(self.local_project_dir, crs)
 
         if existing_grids:
             text = f'<font color="green">Using grid {existing_grids[0]} \u2713.</font>'
             if len(existing_grids) > 1:
-                text += f'<font color="red"> Also found other relevant grids: {', '.join(existing_grids[1:])}. You should only have one relevant grid for conversion.</font>'
-
-            self.label_vcrs_warning.setText(text)
+                text += (
+                    f'<font color="red"> Also found other relevant grids: '
+                    f'{", ".join(existing_grids[1:])}. '
+                    f"You should only have one relevant grid for conversion.</font>"
+                )
+            self.label_vcrs_warning.setText(text + multi_op_warning)
             self.label_vcrs_warning.setVisible(True)
             return
 
@@ -389,12 +451,20 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
         # no grid required according to PROJ
         if grid_status["ballpark"]:
-            self.label_vcrs_warning.setVisible(False)
+            if multi_op_warning:
+                self.label_vcrs_warning.setText(multi_op_warning.strip())
+                self.label_vcrs_warning.setVisible(True)
+            else:
+                self.label_vcrs_warning.setVisible(False)
             return
 
         missing = grid_status["missing"]
         if not missing:
-            self.label_vcrs_warning.setVisible(False)
+            if multi_op_warning:
+                self.label_vcrs_warning.setText(multi_op_warning.strip())
+                self.label_vcrs_warning.setVisible(True)
+            else:
+                self.label_vcrs_warning.setVisible(False)
             return
 
         self._pending_grids = missing
@@ -403,11 +473,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             f'<font color="red">The selected vertical CRS requires the following geoid grid(s) '
             f"in order to work properly \u2013 {names}. "
             f'<a href="download"><font color="red">Click here</font></a> to automatically '
-            f"download it and add to your project.</font>"
+            f"download it and add to your project.</font>" + multi_op_warning
         )
         self.label_vcrs_warning.setVisible(True)
 
-    def _download_geoid_grid(self, link):
+    def _download_geoid_grid(self, link: str):
         """
         Triggered when the user clicks the download link in the missing grid warning label.
 
