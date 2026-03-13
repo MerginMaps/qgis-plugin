@@ -443,7 +443,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                     f'{", ".join(existing_grids[1:])}. '
                     f"You should only have one relevant grid for conversion.</font>"
                 )
-            self.label_vcrs_warning.setText(text + multi_op_warning)
+            self.label_vcrs_warning.setText(text)
             self.label_vcrs_warning.setVisible(True)
             return
 
