@@ -249,7 +249,7 @@ class MerginPlugin:
                 self.choose_active_workspace()
                 self.manager = MerginProjectsManager(self)
             else:
-                error = "Please configure the Mergin Maps plugin \nto access your projects"
+                error = "Configure the Mergin Maps plugin \nto access your projects"
         except (URLError, ClientError, LoginError):
             error = "Plugin not configured or \nQGIS master password not set up"
         except Exception as err:
