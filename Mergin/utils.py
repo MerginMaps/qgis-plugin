@@ -174,6 +174,8 @@ TILES_URL = "https://tiles.merginmaps.com"
 _PROJ_GRIDS_RE = re.compile(r"\b(?:geoidgrids|grids)=([\w./@,]+)")
 _SKIP_GRID_NAMES = {"@null", "null", "@none", "none"}
 
+DEFAULT_VERTICAL_CRS = QgsCoordinateReferenceSystem("EPSG:4979")
+
 
 class PackagingError(Exception):
     pass
