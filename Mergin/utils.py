@@ -1808,7 +1808,25 @@ def _grids_from_proj_string(proj_str):
 def _get_operations(
     crs: QgsCoordinateReferenceSystem,
 ) -> List[QgsDatumTransform.TransformDetails]:
-    return QgsDatumTransform.operations(QgsCoordinateReferenceSystem("EPSG:4979"), crs)
+    return QgsDatumTransform.operations(DEFAULT_VERTICAL_CRS, crs)
+
+
+def project_defined_transformation(crs: QgsCoordinateReferenceSystem) -> Tuple[bool, str]:
+    """If extracting conversion from project's transform context we need to manually search
+    because the project specify compound CRS to compound CRS transformation, but MM provides
+    vertical CRS only. So we need to check if any operation fits with the given vertical CRS."""
+    context = QgsProject.instance().transformContext()
+    has_transform = False
+    transform = ""
+    operations = context.coordinateOperations()
+    for src, dst in operations.keys():
+        crs_src = QgsCoordinateReferenceSystem(src)
+        crs_dst = QgsCoordinateReferenceSystem(dst)
+        if crs_src == DEFAULT_VERTICAL_CRS and crs_dst.verticalCrs() == crs:
+            transform = operations[(src, dst)]
+            has_transform = True
+            break
+    return has_transform, transform
 
 
 def _operations_with_grids(
