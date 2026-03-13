@@ -13,6 +13,7 @@ from qgis.core import (
     QgsExpression,
     QgsRenderContext,
     QgsFeatureRequest,
+    QgsCoordinateReferenceSystem,
 )
 from qgis.gui import QgsFileWidget
 
@@ -30,6 +31,7 @@ from .utils import (
     get_layer_by_path,
     invalid_filename_character,
     is_inside,
+    get_missing_geoid_grids,
 )
 
 INVALID_FIELD_NAME_CHARS = re.compile(r'[\\\/\(\)\[\]\{\}"\n\r]')
@@ -65,6 +67,7 @@ class Warning(Enum):
     EDITOR_DIFFBASED_FILE_REMOVED = 27
     PROJECT_HOME_PATH = 28
     INVALID_ADDED_FILENAME = 29
+    MISSING_VCRS_GRID = 30
 
 
 class MultipleLayersWarning:
@@ -132,6 +135,7 @@ class MerginProjectValidator(object):
         self.check_svgs_embedded()
         self.check_editor_perms()
         self.check_filenames()
+        self.check_vertical_crs_grids()
 
         return self.issues
 
@@ -508,6 +512,28 @@ class MerginProjectValidator(object):
             if invalid_filename_character(file["path"]):
                 self.issues.append(MultipleLayersWarning(Warning.INVALID_ADDED_FILENAME, file["path"]))
 
+    def check_vertical_crs_grids(self):
+        """Check if custom vertical CRS is configured but the PROJ grid is missing from project."""
+        enabled, ok = QgsProject.instance().readBoolEntry("Mergin", "ElevationTransformationEnabled", True)
+        if not enabled:
+            return
+
+        vcrs_wkt, ok = QgsProject.instance().readEntry("Mergin", "TargetVerticalCRS")
+        if not ok or not vcrs_wkt:
+            return
+
+        crs = QgsCoordinateReferenceSystem.fromWkt(vcrs_wkt)
+        if not crs.isValid():
+            return
+
+        status = get_missing_geoid_grids(crs, self.qgis_proj_dir)
+
+        if status["missing"]:
+            w = MultipleLayersWarning(Warning.MISSING_VCRS_GRID, details="download_vcrs_grids")
+            for grid in status["missing"]:
+                w.items.append(grid.shortName)
+            self.issues.append(w)
+
 
 def warning_display_string(warning_id, details=None):
     """Returns a display string for a corresponding warning"""
@@ -597,3 +623,5 @@ def warning_display_string(warning_id, details=None):
         return "QGIS Project Home Path is specified. <a href='fix_project_home_path'>Quick fix the issue. (This will unset project home)</a>"
     elif warning_id == Warning.INVALID_ADDED_FILENAME:
         return f"You cannot synchronize a file with invalid characters in it's name. Please sanitize the name of this file '{details}'"
+    elif warning_id == Warning.MISSING_VCRS_GRID:
+        return f"Required vertical CRS transformation grid is missing from the 'proj/' folder. <a href='{details}'>Click here to automatically download it</a>."
