@@ -245,8 +245,11 @@ class MerginPlugin:
                     self.auth_token_expired()
                     return
 
-            self.choose_active_workspace()
-            self.manager = MerginProjectsManager(self)
+            if self.mc is not None:
+                self.choose_active_workspace()
+                self.manager = MerginProjectsManager(self)
+            else:
+                error = "Please configure the Mergin Maps plugin \nto access your projects"
         except (URLError, ClientError, LoginError):
             error = "Plugin not configured or \nQGIS master password not set up"
         except Exception as err:
