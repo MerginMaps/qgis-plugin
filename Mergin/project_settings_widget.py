@@ -504,16 +504,14 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         """
         layer = self.cmb_filter_layer.currentLayer()
         self.cmb_filter_field.setLayer(layer)
-        match self.cmb_filter_type.currentData():
-            case FieldFilterType.SINGLE_SELECT:
-                self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.AllTypes)
-            case FieldFilterType.MULTI_SELECT:
-                self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.AllTypes)
-            case FieldFilterType.CHECKBOX:
-                self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.Boolean)
-            case FieldFilterType.DATE:
-                self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.Date)
-            case FieldFilterType.NUMBER:
-                self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.Numeric | QgsFieldProxyModel.Filter.String)
-            case FieldFilterType.TEXT:
-                self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.String | QgsFieldProxyModel.Filter.Numeric)
+        filter_type = self.cmb_filter_type.currentData()
+        if filter_type in (FieldFilterType.SINGLE_SELECT, FieldFilterType.MULTI_SELECT):
+            self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.AllTypes)
+        elif filter_type == FieldFilterType.CHECKBOX:
+            self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.Boolean)
+        elif filter_type == FieldFilterType.DATE:
+            self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.Date)
+        elif filter_type in (FieldFilterType.NUMBER, FieldFilterType.TEXT):
+            self.cmb_filter_field.setFilters(
+                QgsFieldProxyModel.Filter(QgsFieldProxyModel.Filter.Numeric | QgsFieldProxyModel.Filter.String)
+            )
