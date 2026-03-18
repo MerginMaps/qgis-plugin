@@ -1941,7 +1941,11 @@ def download_grids_task(
                 break
 
             try:
-                urllib.request.urlretrieve(url, os.path.join(dest_dir, name))
+                parsed = urllib.parse.urlparse(url)
+                if parsed.scheme in ("http", "https"):
+                    urllib.request.urlretrieve(url, os.path.join(dest_dir, name))
+                else:
+                    failed.append(f"{name}: Unsupported URL scheme '{parsed.scheme}'.")
             except Exception as e:
                 failed.append(f"{name}: {str(e)}")
 
