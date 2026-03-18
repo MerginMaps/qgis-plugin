@@ -27,12 +27,12 @@ def excluded_filtering_providers() -> List[str]:
 
 def field_filters_to_json(filters: List["FieldFilter"]) -> str:
     """Serialize a list of FieldFilter objects to a JSON string."""
-    return json.dumps([f.to_json() for f in filters])
+    return json.dumps([f.to_dict() for f in filters])
 
 
 def field_filters_from_json(data: str) -> List["FieldFilter"]:
     """Deserialize a JSON string into a list of FieldFilter objects."""
-    return [FieldFilter.from_json(item) for item in json.loads(data)]
+    return [FieldFilter.from_dict(item) for item in json.loads(data)]
 
 
 class FieldFilter:
@@ -47,8 +47,8 @@ class FieldFilter:
         self.sql_expression = ""
 
     @classmethod
-    def from_json(cls, data: dict) -> "FieldFilter":
-        """Create a FieldFilter instance from a JSON dictionary"""
+    def from_dict(cls, data: dict) -> "FieldFilter":
+        """Create a FieldFilter instance from a dictionary"""
         f = object.__new__(cls)
         f.layer_id = data["layer_id"]
         f.provider = data.get("provider", "")
@@ -58,8 +58,8 @@ class FieldFilter:
         f.sql_expression = data.get("sql_expression", "")
         return f
 
-    def to_json(self) -> dict:
-        """Convert the object to a JSON-serializable dictionary"""
+    def to_dict(self) -> dict:
+        """Convert the object to a dictionary"""
         return {
             "layer_id": self.layer_id,
             "provider": self.provider,
