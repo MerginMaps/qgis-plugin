@@ -8,7 +8,7 @@ import typing
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import Qt, QModelIndex
-from qgis.PyQt.QtWidgets import QFileDialog, QMessageBox, QGroupBox, QComboBox, QListView
+from qgis.PyQt.QtWidgets import QFileDialog, QMessageBox, QGroupBox, QComboBox
 from qgis.core import (
     QgsProject,
     QgsExpressionContext,
