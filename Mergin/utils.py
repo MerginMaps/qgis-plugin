@@ -1943,7 +1943,8 @@ def download_grids_task(
             try:
                 parsed = urllib.parse.urlparse(url)
                 if parsed.scheme in ("http", "https"):
-                    urllib.request.urlretrieve(url, os.path.join(dest_dir, name))
+                    # scheme is validated, bandit error can be suppressed on next line
+                    urllib.request.urlretrieve(url, os.path.join(dest_dir, name))  # nosec B310
                 else:
                     failed.append(f"{name}: Unsupported URL scheme '{parsed.scheme}'.")
             except Exception as e:
