@@ -4,10 +4,11 @@
 import json
 import os
 import typing
+
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QColor
-from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtWidgets import QFileDialog, QMessageBox
+from qgis.PyQt.QtCore import Qt, QModelIndex
+from qgis.PyQt.QtWidgets import QFileDialog, QMessageBox, QGroupBox, QComboBox, QListView
 from qgis.core import (
     QgsProject,
     QgsExpressionContext,
@@ -16,8 +17,15 @@ from qgis.core import (
     QgsFeatureRequest,
     QgsExpression,
     QgsMapLayer,
+    QgsFieldProxyModel,
 )
-from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget, QgsColorButton
+from qgis.gui import (
+    QgsOptionsWidgetFactory,
+    QgsOptionsPageWidget,
+    QgsColorButton,
+    QgsMapLayerComboBox,
+    QgsFieldComboBox,
+)
 from .attachment_fields_model import AttachmentFieldsModel
 from .utils import (
     mm_symbol_path,
@@ -32,6 +40,13 @@ from .utils import (
     qvariant_to_string,
     escape_html_minimal,
     sanitize_path,
+)
+from .field_filtering import (
+    FieldFilterType,
+    FieldFilter,
+    FieldFilterModel,
+    DeselectableListView,
+    excluded_filtering_providers,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -53,6 +68,13 @@ class MerginProjectConfigFactory(QgsOptionsWidgetFactory):
 
 
 class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
+
+    cmb_filter_type: QComboBox
+    cmb_filter_layer: QgsMapLayerComboBox
+    cmb_filter_field: QgsFieldComboBox
+    groupBox_filters_list: QGroupBox
+    groupBox_filter_detail: QGroupBox
+
     def __init__(self, parent=None):
         QgsOptionsPageWidget.__init__(self, parent)
         self.setupUi(self)
@@ -118,6 +140,39 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         mode, ok = QgsProject.instance().readNumEntry("Mergin", "SortLayersMethod/Method")
         idx = self.cmb_sort_method.findData(mode) if ok else 1
         self.cmb_sort_method.setCurrentIndex(idx)
+
+        self.filters_model = FieldFilterModel()
+        self.btn_add_filter.clicked.connect(self.on_add_filter_clicked)
+        self.btn_remove_filter.clicked.connect(self.on_remove_filter_clicked)
+        self.btn_move_filter_up.clicked.connect(self.on_move_filter_up_clicked)
+        self.btn_move_filter_down.clicked.connect(self.on_move_filter_down_clicked)
+
+        self.lst_filters = DeselectableListView(self)
+        self.groupBox_filters_list.layout().insertWidget(0, self.lst_filters)
+        self.lst_filters.setModel(self.filters_model)
+        self.lst_filters.selectionCleared.connect(self.on_filter_selection_changed)
+        self.lst_filters.selectionModel().selectionChanged.connect(self._update_filter_buttons)
+        self.lst_filters.selectionModel().currentChanged.connect(self.on_filter_selection_changed)
+
+        enabled, _ = QgsProject.instance().readBoolEntry("Mergin", "Filtering/Enabled", False)
+        self.chk_filtering_enabled.setChecked(enabled)
+        self.groupBox_filters_list.setEnabled(enabled)
+        self.groupBox_filter_detail.setEnabled(enabled)
+        self.chk_filtering_enabled.stateChanged.connect(self.on_filtering_state_changed)
+
+        filters_json, _ = QgsProject.instance().readEntry("Mergin", "Filtering/Filters", "[]")
+        self.filters_model.load_from_json(filters_json)
+
+        self.cmb_filter_layer.setAllowEmptyLayer(True)
+        self.cmb_filter_layer.setExcludedProviders(excluded_filtering_providers())
+        self.cmb_filter_layer.layerChanged.connect(self.on_filter_layer_fields_changed)
+
+        for f in FieldFilterType:
+            self.cmb_filter_type.addItem(f.value, f)
+        self.cmb_filter_type.currentIndexChanged.connect(self.on_filter_layer_fields_changed)
+
+        self._update_filter_buttons()
+        self.on_filter_layer_fields_changed()
 
         self.local_project_dir = mergin_project_local_path()
 
@@ -351,6 +406,9 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.setup_tracking()
         self.setup_map_sketches()
 
+        QgsProject.instance().writeEntry("Mergin", "Filtering/Enabled", self.chk_filtering_enabled.isChecked())
+        QgsProject.instance().writeEntry("Mergin", "Filtering/Filters", self.filters_model.to_json())
+
     def colors_change_state(self) -> None:
         """
         Enable/disable color buttons based on the state of the map sketches checkbox.
@@ -359,3 +417,103 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             item = self.mColorsHorizontalLayout.itemAt(i).widget()
             if isinstance(item, QgsColorButton):
                 item.setEnabled(self.chk_map_sketches_enabled.isChecked())
+
+    def on_filtering_state_changed(self, state: Qt.CheckState) -> None:
+        """
+        Enable/disable filtering options based on the state of the filtering checkbox.
+        """
+        if state == Qt.CheckState.Checked:
+            self.groupBox_filters_list.setEnabled(True)
+            self.groupBox_filter_detail.setEnabled(True)
+        else:
+            self.groupBox_filters_list.setEnabled(False)
+            self.groupBox_filter_detail.setEnabled(False)
+
+    def on_add_filter_clicked(self) -> None:
+        layer = self.cmb_filter_layer.currentLayer()
+        field_name = self.cmb_filter_field.currentField()
+        filter_type = self.cmb_filter_type.currentData()
+        filter_name = self.edit_filter_title.text().strip()
+
+        if not layer or not layer.isValid():
+            return
+        if not field_name:
+            return
+        if not filter_name:
+            return
+
+        self.filters_model.add_filter(
+            FieldFilter(
+                layer=layer,
+                field_name=field_name,
+                filter_type=filter_type,
+                filter_name=filter_name,
+            )
+        )
+
+    def on_filter_selection_changed(self, current: QModelIndex, previous: QModelIndex) -> None:
+        field_filter: typing.Optional[FieldFilter] = self.filters_model.data(current, Qt.ItemDataRole.UserRole)
+        if field_filter is None:
+            self.cmb_filter_layer.setLayer(None)
+            self.cmb_filter_field.setLayer(None)
+            self.cmb_filter_type.setCurrentIndex(0)
+            self.edit_filter_title.clear()
+            return
+
+        layer = QgsProject.instance().mapLayer(field_filter.layer_id)
+
+        self.cmb_filter_layer.blockSignals(True)
+        self.cmb_filter_layer.setLayer(layer)
+        self.cmb_filter_layer.blockSignals(False)
+
+        self.cmb_filter_field.blockSignals(True)
+        self.cmb_filter_field.setLayer(layer)
+        self.cmb_filter_field.setField(field_filter.field_name)
+        self.cmb_filter_field.blockSignals(False)
+
+        idx = self.cmb_filter_type.findData(field_filter.filter_type)
+        self.cmb_filter_type.blockSignals(True)
+        self.cmb_filter_type.setCurrentIndex(idx)
+        self.cmb_filter_type.blockSignals(False)
+
+        self.edit_filter_title.setText(field_filter.filter_name)
+
+    def _update_filter_buttons(self) -> None:
+        has_selection = self.lst_filters.selectionModel().hasSelection()
+        self.btn_remove_filter.setEnabled(has_selection)
+        self.btn_move_filter_up.setEnabled(has_selection)
+        self.btn_move_filter_down.setEnabled(has_selection)
+
+    def on_remove_filter_clicked(self) -> None:
+        row = self.lst_filters.currentIndex().row()
+        self.filters_model.remove_filter(row)
+
+    def on_move_filter_up_clicked(self) -> None:
+        row = self.lst_filters.currentIndex().row()
+        self.filters_model.move_filter(row, -1)
+        self.lst_filters.setCurrentIndex(self.filters_model.index(row - 1))
+
+    def on_move_filter_down_clicked(self) -> None:
+        row = self.lst_filters.currentIndex().row()
+        self.filters_model.move_filter(row, 1)
+        self.lst_filters.setCurrentIndex(self.filters_model.index(row + 1))
+
+    def on_filter_layer_fields_changed(self) -> None:
+        """
+        Update the fields in the filter field combo box based on the selected layer.
+        """
+        layer = self.cmb_filter_layer.currentLayer()
+        self.cmb_filter_field.setLayer(layer)
+        match self.cmb_filter_type.currentData():
+            case FieldFilterType.SINGLE_SELECT:
+                self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.AllTypes)
+            case FieldFilterType.MULTI_SELECT:
+                self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.AllTypes)
+            case FieldFilterType.CHECKBOX:
+                self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.Boolean)
+            case FieldFilterType.DATE:
+                self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.Date)
+            case FieldFilterType.NUMBER:
+                self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.Numeric | QgsFieldProxyModel.Filter.String)
+            case FieldFilterType.TEXT:
+                self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.String | QgsFieldProxyModel.Filter.Numeric)
