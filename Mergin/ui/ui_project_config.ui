@@ -501,6 +501,180 @@
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="groupBox_filtering">
+         <property name="title">
+          <string>Filtering</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_filtering">
+          <item>
+           <widget class="QLabel" name="label_filtering">
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Define which fields mobile app users can filter by. When enabled, the filters configured here appear in the mobile app. Not all filter types are compatible with every field. &lt;a href=&quot;https://merginmaps.com/docs/field/filtering/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#1d99f3;&quot;&gt;Learn more here&lt;/span&gt;&lt;/a&gt; about filtering and how to use it in the mobile app.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="openExternalLinks">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="chk_filtering_enabled">
+            <property name="text">
+             <string>Enable filtering</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_filters">
+            <item>
+             <widget class="QGroupBox" name="groupBox_filters_list">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+               <property name="title">
+                <string/>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_filters_list">
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_filter_buttons">
+                  <item>
+                   <widget class="QToolButton" name="btn_add_filter">
+                    <property name="text">
+                     <string>Add filter</string>
+                    </property>
+                    <property name="icon">
+                     <iconset>
+                      <normaloff>:/images/themes/default/mActionAdd.svg</normaloff>:/images/themes/default/mActionAdd.svg</iconset>
+                    </property>
+                    <property name="popupMode">
+                     <enum>QToolButton::MenuButtonPopup</enum>
+                    </property>
+                    <property name="toolButtonStyle">
+                     <enum>Qt::ToolButtonTextBesideIcon</enum>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="horizontalSpacer_filters">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QToolButton" name="btn_remove_filter">
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="icon">
+                     <iconset>
+                      <normaloff>:/images/themes/default/mActionRemove.svg</normaloff>:/images/themes/default/mActionRemove.svg</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QToolButton" name="btn_move_filter_up">
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="icon">
+                     <iconset>
+                      <normaloff>:/images/themes/default/mActionArrowUp.svg</normaloff>:/images/themes/default/mActionArrowUp.svg</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QToolButton" name="btn_move_filter_down">
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="icon">
+                     <iconset>
+                      <normaloff>:/images/themes/default/mActionArrowDown.svg</normaloff>:/images/themes/default/mActionArrowDown.svg</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox_filter_detail">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+               <property name="title">
+                <string/>
+               </property>
+               <layout class="QGridLayout" name="gridLayout_filter_detail">
+                <item row="0" column="0">
+                 <widget class="QLabel" name="label_filter_type">
+                  <property name="text">
+                   <string>Type</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QComboBox" name="cmb_filter_type"/>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_filter_layer">
+                  <property name="text">
+                   <string>Layer</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="label_filter_field">
+                  <property name="text">
+                   <string>Field</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="0" colspan="2">
+                 <widget class="QFrame" name="line_filter_sep">
+                  <property name="frameShape">
+                   <enum>QFrame::HLine</enum>
+                  </property>
+                  <property name="frameShadow">
+                   <enum>QFrame::Sunken</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="0">
+                 <widget class="QLabel" name="label_filter_title">
+                  <property name="text">
+                   <string>Title</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="1">
+                 <widget class="QLineEdit" name="edit_filter_title"/>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QgsMapLayerComboBox" name="cmb_filter_layer"/>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QgsFieldComboBox" name="cmb_filter_field"/>
+                </item>
+               </layout>
+               </widget>
+              </item>
+              </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -524,6 +698,16 @@
    <class>QgsColorButton</class>
    <extends>QToolButton</extends>
    <header>qgscolorbutton.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QgsFieldComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qgsfieldcombobox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QgsMapLayerComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qgsmaplayercombobox.h</header>
   </customwidget>
   <customwidget>
    <class>QgsExpressionLineEdit</class>
