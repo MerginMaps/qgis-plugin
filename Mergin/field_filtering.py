@@ -2,7 +2,7 @@ import json
 from enum import Enum
 from typing import Optional, Union, List
 
-from qgis.core import QgsMapLayer, QgsProviderRegistry
+from qgis.core import QgsProviderRegistry, QgsVectorLayer
 from qgis.PyQt.QtCore import Qt, QAbstractListModel, QModelIndex, pyqtSignal
 from qgis.PyQt.QtWidgets import QListView
 from qgis.PyQt.QtGui import QMouseEvent
@@ -37,10 +37,22 @@ def field_filters_from_json(data: str) -> List["FieldFilter"]:
 
 class FieldFilter:
 
-    def __init__(self, layer: QgsMapLayer, field_name: str, filter_type: FieldFilterType, filter_name: str):
+    def __init__(
+        self,
+        layer: QgsVectorLayer,
+        field_name: str,
+        filter_type: FieldFilterType,
+        filter_name: str,
+    ):
+        if not isinstance(layer, QgsVectorLayer):
+            raise ValueError("layer must be a QgsVectorLayer")
+
+        if field_name not in layer.fields().names():
+            raise ValueError(f"Field '{field_name}' does not exist in layer '{layer.name()}'")
+
         provider = layer.dataProvider()
-        self.layer_id = layer.id()
         self.provider = provider.name() if provider else ""
+        self.layer_id = layer.id()
         self.field_name = field_name
         self.filter_type = filter_type
         self.filter_name = filter_name
