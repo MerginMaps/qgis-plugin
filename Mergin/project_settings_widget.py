@@ -18,6 +18,7 @@ from qgis.core import (
     QgsFeatureRequest,
     QgsExpression,
     QgsMapLayer,
+    QgsVectorLayer,
     QgsFieldProxyModel,
 )
 from qgis.gui import (
@@ -178,6 +179,12 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         for f in FieldFilterType:
             self.cmb_filter_type.addItem(f.value, f)
         self.cmb_filter_type.currentIndexChanged.connect(self.on_filter_layer_fields_changed)
+
+        # update existing FileFilter on edits
+        self.cmb_filter_layer.layerChanged.connect(self.on_filter_detail_changed)
+        self.cmb_filter_type.currentIndexChanged.connect(self.on_filter_detail_changed)
+        self.cmb_filter_field.fieldChanged.connect(self.on_filter_detail_changed)
+        self.edit_filter_title.textChanged.connect(self.on_filter_detail_changed)
 
         self._update_filter_buttons()
         self.on_filter_layer_fields_changed()
@@ -521,6 +528,34 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         row = self.lst_filters.currentIndex().row()
         self.filters_model.move_filter(row, 1)
         self.lst_filters.setCurrentIndex(self.filters_model.index(row + 1))
+
+    def on_filter_detail_changed(self) -> None:
+        """Recreate and replace the selected filter when any detail widget changes."""
+        current = self.lst_filters.currentIndex()
+        if not current.isValid():
+            return
+
+        layer = self.cmb_filter_layer.currentLayer()
+        field_name = self.cmb_filter_field.currentField()
+        filter_type = self.cmb_filter_type.currentData()
+        filter_name = self.edit_filter_title.text().strip()
+
+        if not isinstance(layer, QgsVectorLayer) or not layer.isValid():
+            return
+        if not field_name:
+            return
+        if not filter_name:
+            return
+
+        self.filters_model.replace_filter(
+            current.row(),
+            FieldFilter(
+                layer=layer,
+                field_name=field_name,
+                filter_type=filter_type,
+                filter_name=filter_name,
+            ),
+        )
 
     def on_filter_layer_fields_changed(self) -> None:
         """
