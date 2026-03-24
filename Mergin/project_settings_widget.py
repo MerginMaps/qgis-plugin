@@ -4,11 +4,12 @@
 import json
 import os
 import typing
+from functools import partial
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import Qt, QModelIndex
-from qgis.PyQt.QtWidgets import QFileDialog, QMessageBox, QGroupBox, QComboBox
+from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMenu, QMessageBox, QGroupBox, QComboBox
 from qgis.core import (
     QgsProject,
     QgsExpressionContext,
@@ -146,6 +147,13 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.btn_remove_filter.clicked.connect(self.on_remove_filter_clicked)
         self.btn_move_filter_up.clicked.connect(self.on_move_filter_up_clicked)
         self.btn_move_filter_down.clicked.connect(self.on_move_filter_down_clicked)
+
+        add_filter_menu = QMenu(self)
+        for filter_type in FieldFilterType:
+            action = QAction(filter_type.value, self)
+            action.triggered.connect(partial(self.add_unnamed_filter, filter_type))
+            add_filter_menu.addAction(action)
+        self.btn_add_filter.setMenu(add_filter_menu)
 
         self.lst_filters = DeselectableListView(self)
         self.groupBox_filters_list.layout().insertWidget(0, self.lst_filters)
@@ -531,3 +539,10 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             self.cmb_filter_field.setFilters(
                 QgsFieldProxyModel.Filter(QgsFieldProxyModel.Filter.Numeric | QgsFieldProxyModel.Filter.String)
             )
+
+    def add_unnamed_filter(self, field_filter_type: FieldFilterType) -> None:
+        """Create a default field filter with specific type and then select it in the list view to allow user to edit it right away."""
+        self.filters_model.add_filter(
+            FieldFilter(layer=None, field_name="", filter_type=field_filter_type, filter_name="Unnamed Filter")
+        )
+        self.lst_filters.setCurrentIndex(self.filters_model.index(self.filters_model.rowCount() - 1))
