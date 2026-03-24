@@ -150,7 +150,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.lst_filters = DeselectableListView(self)
         self.groupBox_filters_list.layout().insertWidget(0, self.lst_filters)
         self.lst_filters.setModel(self.filters_model)
-        self.lst_filters.selectionCleared.connect(self.on_filter_selection_changed)
+        self.lst_filters.selectionCleared.connect(self.on_filter_selection_removed)
         self.lst_filters.selectionModel().selectionChanged.connect(self._update_filter_buttons)
         self.lst_filters.selectionModel().currentChanged.connect(self.on_filter_selection_changed)
 
@@ -451,14 +451,23 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             )
         )
 
+    def _clear_filter_values(self) -> None:
+        self.cmb_filter_layer.setLayer(None)
+        self.cmb_filter_field.setLayer(None)
+        self.cmb_filter_type.setCurrentIndex(0)
+        self.edit_filter_title.clear()
+
+    def on_filter_selection_removed(self, selected: QModelIndex, previous: QModelIndex) -> None:
+        self.groupBox_filter_detail.setEnabled(False)
+        self._clear_filter_values()
+
     def on_filter_selection_changed(self, current: QModelIndex, previous: QModelIndex) -> None:
         field_filter: typing.Optional[FieldFilter] = self.filters_model.data(current, Qt.ItemDataRole.UserRole)
         if field_filter is None:
-            self.cmb_filter_layer.setLayer(None)
-            self.cmb_filter_field.setLayer(None)
-            self.cmb_filter_type.setCurrentIndex(0)
-            self.edit_filter_title.clear()
+            self._clear_filter_values()
             return
+
+        self.groupBox_filter_detail.setEnabled(True)
 
         layer = QgsProject.instance().mapLayer(field_filter.layer_id)
 
@@ -476,7 +485,10 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.cmb_filter_type.setCurrentIndex(idx)
         self.cmb_filter_type.blockSignals(False)
 
+        # block signals to avoid triggering modification of the field filter
+        self.edit_filter_title.blockSignals(True)
         self.edit_filter_title.setText(field_filter.filter_name)
+        self.edit_filter_title.blockSignals(False)
 
     def _update_filter_buttons(self) -> None:
         has_selection = self.lst_filters.selectionModel().hasSelection()
