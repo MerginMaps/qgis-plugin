@@ -15,12 +15,12 @@ SQL_PLACEHOLDER_VALUE_TO = "%%value_to%%"
 
 
 class FieldFilterType(str, Enum):
+    TEXT = "Text"
+    NUMBER = "Number"
+    DATE = "Date"
+    CHECKBOX = "Checkbox"
     SINGLE_SELECT = "Single select"
     MULTI_SELECT = "Multi select"
-    CHECKBOX = "Checkbox"
-    DATE = "Date"
-    NUMBER = "Number"
-    TEXT = "Text"
 
 
 def excluded_filtering_providers() -> List[str]:
