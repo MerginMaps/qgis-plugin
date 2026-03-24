@@ -89,6 +89,21 @@ class FieldFilter:
             "sql_expression": self.sql_expression,
         }
 
+    @property
+    def is_postgres(self) -> bool:
+        return self.provider == "postgres"
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, FieldFilter):
+            return NotImplemented
+        return (
+            self.layer_id == value.layer_id
+            and self.provider == value.provider
+            and self.field_name == value.field_name
+            and self.filter_type == value.filter_type
+            and self.filter_name == value.filter_name
+        )
+
 
 class FieldFilterModel(QAbstractListModel):
     """Model to manage a list of FieldFilter objects, providing methods to add, remove, and reorder filters."""
