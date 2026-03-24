@@ -174,6 +174,10 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self._update_filter_buttons()
         self.on_filter_layer_fields_changed()
 
+        # clear filter values and disable filter details until we load actual filter from list view
+        self._clear_filter_values()
+        self.groupBox_filter_detail.setEnabled(False)
+
         self.local_project_dir = mergin_project_local_path()
 
         if self.local_project_dir:
