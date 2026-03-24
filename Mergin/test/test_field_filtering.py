@@ -88,6 +88,18 @@ class TestFieldFilter(_LayerTestCase):
 
 class TestFieldFilterSqlExpression(_LayerTestCase):
 
+    def _postgres_filter(self, field_name: str, filter_type: FieldFilterType) -> FieldFilter:
+        """Create a FieldFilter with a postgres provider, bypassing layer validation."""
+        f = object.__new__(FieldFilter)
+        f.layer_id = self.layer.id()
+        f.provider = "postgres"
+        f.field_name = field_name
+        f.filter_type = filter_type
+        f.filter_name = "test"
+        f.sql_expression = ""
+        f._generate_sql_expression()
+        return f
+
     # -------------------------------------------------------------------------
     # ogr provider
     # -------------------------------------------------------------------------
@@ -129,27 +141,21 @@ class TestFieldFilterSqlExpression(_LayerTestCase):
     # -------------------------------------------------------------------------
 
     def test_text_postgres(self):
-        data = FieldFilter(self.layer, "attr_string", FieldFilterType.TEXT, "Text").to_dict()
-        data["provider"] = "postgres"
-        self.assertEqual(
-            FieldFilter.from_dict(data).sql_expression,
-            f'CAST("attr_string" AS text) ILIKE {SQL_PLACEHOLDER_VALUE}',
-        )
+        f = self._postgres_filter("attr_string", FieldFilterType.TEXT)
+        self.assertEqual(f.sql_expression, f'CAST("attr_string" AS text) ILIKE {SQL_PLACEHOLDER_VALUE}')
 
     def test_number_postgres(self):
-        data = FieldFilter(self.layer, "attr_double", FieldFilterType.NUMBER, "Number").to_dict()
-        data["provider"] = "postgres"
+        f = self._postgres_filter("attr_double", FieldFilterType.NUMBER)
         self.assertEqual(
-            FieldFilter.from_dict(data).sql_expression,
+            f.sql_expression,
             f'CAST("attr_double" AS numeric) >= {SQL_PLACEHOLDER_VALUE_FROM} '
             f'AND CAST("attr_double" AS numeric) <= {SQL_PLACEHOLDER_VALUE_TO}',
         )
 
     def test_date_postgres(self):
-        data = FieldFilter(self.layer, "attr_date", FieldFilterType.DATE, "Date").to_dict()
-        data["provider"] = "postgres"
+        f = self._postgres_filter("attr_date", FieldFilterType.DATE)
         self.assertEqual(
-            FieldFilter.from_dict(data).sql_expression,
+            f.sql_expression,
             f'CAST("attr_date" AS timestamp) >= {SQL_PLACEHOLDER_VALUE_FROM} '
             f'AND CAST("attr_date" AS timestamp) <= {SQL_PLACEHOLDER_VALUE_TO}',
         )
@@ -253,6 +259,24 @@ class TestFieldFilterModel(_LayerTestCase):
         model2.load_from_json(model.to_json())
 
         self.assertEqual(model2.filter_names(), ["Text", "Number"])
+
+    def test_replace_filter(self):
+        model = FieldFilterModel()
+        model.add_filter(FieldFilter(self.layer, "attr_string", FieldFilterType.TEXT, "Original"))
+        model.add_filter(FieldFilter(self.layer, "attr_string", FieldFilterType.TEXT, "Other"))
+
+        model.replace_filter(0, FieldFilter(self.layer, "attr_double", FieldFilterType.NUMBER, "Replaced"))
+
+        self.assertEqual(model.rowCount(), 2)
+        self.assertEqual(model.filter_names(), ["Replaced", "Other"])
+
+    def test_replace_filter_out_of_range(self):
+        model = FieldFilterModel()
+        model.add_filter(FieldFilter(self.layer, "attr_string", FieldFilterType.TEXT, "A"))
+
+        model.replace_filter(5, FieldFilter(self.layer, "attr_string", FieldFilterType.TEXT, "B"))  # no-op
+
+        self.assertEqual(model.filter_names(), ["A"])
 
     def test_load_from_json_replaces_existing(self):
         model = FieldFilterModel()
