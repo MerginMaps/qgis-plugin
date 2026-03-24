@@ -8,6 +8,12 @@ from qgis.PyQt.QtWidgets import QListView
 from qgis.PyQt.QtGui import QMouseEvent
 
 
+SQL_PLACEHOLDER_VALUE = "%%value%%"
+SQL_PLACEHOLDER_VALUES = "%%values%%"
+SQL_PLACEHOLDER_VALUE_FROM = "%%value_from%%"
+SQL_PLACEHOLDER_VALUE_TO = "%%value_to%%"
+
+
 class FieldFilterType(str, Enum):
     SINGLE_SELECT = "Single select"
     MULTI_SELECT = "Multi select"
@@ -103,6 +109,148 @@ class FieldFilter:
             and self.filter_type == value.filter_type
             and self.filter_name == value.filter_name
         )
+
+    def _generate_sql_expression(self) -> None:
+        """Generate a SQL WHERE clause template with named value placeholders.
+
+        Every placeholder is replaced entirely by the substituting code, which must
+        supply a complete, properly-quoted SQL literal for the target provider.
+
+        Placeholders:
+            SQL_PLACEHOLDER_VALUE
+                            — single value (TEXT, CHECKBOX, SINGLE_SELECT)
+                              e.g. '%hello%' for LIKE, 'text', 42, true
+                        SQL_PLACEHOLDER_VALUE_FROM
+                                                        — lower bound of a range (NUMBER, DATE)
+                              e.g. 10, '2024-01-01'
+                        SQL_PLACEHOLDER_VALUE_TO
+                                                        — upper bound of a range (NUMBER, DATE)
+                        SQL_PLACEHOLDER_VALUES
+                                                        — comma-separated literals for MULTI_SELECT
+                              e.g. 'a', 'b', 'c'  or  1, 2, 3
+        """
+        field = f'"{self.field_name}"'
+
+        if self.filter_type == FieldFilterType.TEXT:
+            op = "ILIKE" if self.is_postgres else "LIKE"
+            cast = self._cast_field(field)
+            expr = f"{cast} {op} {SQL_PLACEHOLDER_VALUE}"
+
+        elif self.filter_type == FieldFilterType.NUMBER:
+            cast = self._cast_field(field)
+            expr = f"{cast} >= {SQL_PLACEHOLDER_VALUE_FROM} AND {cast} <= {SQL_PLACEHOLDER_VALUE_TO}"
+
+        elif self.filter_type == FieldFilterType.DATE:
+            cast = self._cast_field(field)
+            expr = f"{cast} >= {SQL_PLACEHOLDER_VALUE_FROM} AND {cast} <= {SQL_PLACEHOLDER_VALUE_TO}"
+
+        elif self.filter_type == FieldFilterType.CHECKBOX:
+            expr = f"{field} = {SQL_PLACEHOLDER_VALUE}"
+
+        elif self.filter_type == FieldFilterType.SINGLE_SELECT:
+            expr = f"{field} = {SQL_PLACEHOLDER_VALUE}"
+
+        elif self.filter_type == FieldFilterType.MULTI_SELECT:
+            expr = f"{field} IN ({SQL_PLACEHOLDER_VALUES})"
+
+        else:
+            expr = ""
+
+        self.sql_expression = expr
+
+    def apply_values(
+        self,
+        value=None,
+        values=None,
+        value_from=None,
+        value_to=None,
+    ) -> str:
+        """Replace placeholders in sql_expression with properly quoted SQL literals. Raises ValueError if sql_expression is empty."""
+        if not self.sql_expression:
+            self._generate_sql_expression()
+
+        expr = self.sql_expression
+
+        uses_value = SQL_PLACEHOLDER_VALUE in expr
+        uses_values = SQL_PLACEHOLDER_VALUES in expr
+        uses_value_from = SQL_PLACEHOLDER_VALUE_FROM in expr
+        uses_value_to = SQL_PLACEHOLDER_VALUE_TO in expr
+
+        if uses_value and value is None:
+            raise ValueError("sql_expression requires 'value' but it was not provided")
+        if uses_values and values is None:
+            raise ValueError("sql_expression requires 'values' but it was not provided")
+        if uses_value_from and value_from is None:
+            raise ValueError("sql_expression requires 'value_from' but it was not provided")
+        if uses_value_to and value_to is None:
+            raise ValueError("sql_expression requires 'value_to' but it was not provided")
+
+        if value is not None and not uses_value:
+            raise ValueError(f"'value' was provided but sql_expression has no {SQL_PLACEHOLDER_VALUE} placeholder")
+        if values is not None and not uses_values:
+            raise ValueError(f"'values' was provided but sql_expression has no {SQL_PLACEHOLDER_VALUES} placeholder")
+        if value_from is not None and not uses_value_from:
+            raise ValueError(
+                f"'value_from' was provided but sql_expression has no {SQL_PLACEHOLDER_VALUE_FROM} placeholder"
+            )
+        if value_to is not None and not uses_value_to:
+            raise ValueError(
+                f"'value_to' was provided but sql_expression has no {SQL_PLACEHOLDER_VALUE_TO} placeholder"
+            )
+
+        if value is not None:
+            if self.filter_type == FieldFilterType.TEXT:
+                escaped = str(value).replace("'", "''")
+                literal = f"'%{escaped}%'"
+                expr = expr.replace(SQL_PLACEHOLDER_VALUE, literal)
+
+            elif self.filter_type == FieldFilterType.CHECKBOX:
+                if self.is_postgres:
+                    literal = "TRUE" if value else "FALSE"
+                else:
+                    literal = "1" if value else "0"
+                expr = expr.replace(SQL_PLACEHOLDER_VALUE, literal)
+
+            elif self.filter_type == FieldFilterType.SINGLE_SELECT:
+                escaped = str(value).replace("'", "''")
+                expr = expr.replace(SQL_PLACEHOLDER_VALUE, f"'{escaped}'")
+
+        if values is not None:
+            items = [f"'{str(v).replace(chr(39), chr(39) * 2)}'" for v in values]
+            expr = expr.replace(SQL_PLACEHOLDER_VALUES, ", ".join(items))
+
+        if value_from is not None:
+            if self.filter_type == FieldFilterType.DATE:
+                expr = expr.replace(SQL_PLACEHOLDER_VALUE_FROM, f"'{value_from}'")
+            else:
+                expr = expr.replace(SQL_PLACEHOLDER_VALUE_FROM, str(value_from))
+
+        if value_to is not None:
+            if self.filter_type == FieldFilterType.DATE:
+                expr = expr.replace(SQL_PLACEHOLDER_VALUE_TO, f"'{value_to}'")
+            else:
+                expr = expr.replace(SQL_PLACEHOLDER_VALUE_TO, str(value_to))
+
+        return expr
+
+    def _cast_field(self, field: str) -> str:
+        """Wrap field in a CAST expression matching the filter type and provider.
+
+        Cast types:
+            TEXT    — CHARACTER (OGR) / text (PostgreSQL)
+            NUMBER  — FLOAT (OGR) / numeric (PostgreSQL)
+            DATE    — DATE  (OGR) / timestamp (PostgreSQL)
+        """
+        if self.filter_type == FieldFilterType.TEXT:
+            cast_type = "text" if self.is_postgres else "CHARACTER"
+        elif self.filter_type == FieldFilterType.NUMBER:
+            cast_type = "numeric" if self.is_postgres else "FLOAT"
+        elif self.filter_type == FieldFilterType.DATE:
+            cast_type = "timestamp" if self.is_postgres else "DATE"
+        else:
+            return field
+
+        return f"CAST({field} AS {cast_type})"
 
 
 class FieldFilterModel(QAbstractListModel):
