@@ -39,24 +39,32 @@ class FieldFilter:
 
     def __init__(
         self,
-        layer: QgsVectorLayer,
+        layer: Optional[QgsVectorLayer],
         field_name: str,
         filter_type: FieldFilterType,
         filter_name: str,
     ):
-        if not isinstance(layer, QgsVectorLayer):
+        if layer is not None and not isinstance(layer, QgsVectorLayer):
             raise ValueError("layer must be a QgsVectorLayer")
 
-        if field_name not in layer.fields().names():
+        if layer is not None and field_name not in layer.fields().names():
             raise ValueError(f"Field '{field_name}' does not exist in layer '{layer.name()}'")
 
-        provider = layer.dataProvider()
-        self.provider = provider.name() if provider else ""
-        self.layer_id = layer.id()
+        self.provider = ""
+        self.layer_id = ""
+
+        if layer is not None:
+            provider = layer.dataProvider()
+            self.provider = provider.name() if provider else ""
+            self.layer_id = layer.id()
+
         self.field_name = field_name
         self.filter_type = filter_type
         self.filter_name = filter_name
         self.sql_expression = ""
+
+        if layer is not None:
+            self._generate_sql_expression()
 
     @classmethod
     def from_dict(cls, data: dict) -> "FieldFilter":
