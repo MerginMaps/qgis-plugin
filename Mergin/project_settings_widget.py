@@ -180,7 +180,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             self.cmb_filter_type.addItem(f.value, f)
         self.cmb_filter_type.currentIndexChanged.connect(self.on_filter_layer_fields_changed)
 
-        # update existing FileFilter on edits
+        # update existing FieldFilter on edits
         self.cmb_filter_layer.layerChanged.connect(self.on_filter_detail_changed)
         self.cmb_filter_type.currentIndexChanged.connect(self.on_filter_detail_changed)
         self.cmb_filter_field.fieldChanged.connect(self.on_filter_detail_changed)
