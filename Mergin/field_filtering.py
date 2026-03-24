@@ -115,6 +115,13 @@ class FieldFilterModel(QAbstractListModel):
             self._filters.pop(row)
             self.endRemoveRows()
 
+    def replace_filter(self, row: int, field_filter: FieldFilter) -> None:
+        """Replace filter at the specified row, notifying views of the change."""
+        if 0 <= row < len(self._filters):
+            self._filters[row] = field_filter
+            index = self.index(row)
+            self.dataChanged.emit(index, index)
+
     def move_filter(self, row: int, offset: int) -> None:
         """Move filter at the specified row by the given offset, notifying views of the change."""
         target = row + offset
