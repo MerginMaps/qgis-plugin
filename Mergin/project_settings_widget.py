@@ -444,20 +444,12 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
         # no grid required according to PROJ
         if grid_status["ballpark"]:
-            if multi_op_warning:
-                self.label_vcrs_warning.setText(multi_op_warning.strip())
-                self.label_vcrs_warning.setVisible(True)
-            else:
-                self.label_vcrs_warning.setVisible(False)
+            self.label_vcrs_warning.setVisible(False)
             return
 
         missing = grid_status["missing"]
         if not missing:
-            if multi_op_warning:
-                self.label_vcrs_warning.setText(multi_op_warning.strip())
-                self.label_vcrs_warning.setVisible(True)
-            else:
-                self.label_vcrs_warning.setVisible(False)
+            self.label_vcrs_warning.setVisible(False)
             return
 
         self._pending_grids = missing
@@ -466,7 +458,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             f'<font color="red">The selected vertical CRS requires the following geoid grid(s) '
             f"in order to work properly \u2013 {names}. "
             f'<a href="download"><font color="red">Click here</font></a> to automatically '
-            f"download it and add to your project.</font>" + multi_op_warning
+            f"download it and add to your project.</font>"
         )
         self.label_vcrs_warning.setVisible(True)
 
