@@ -85,6 +85,10 @@ jobs:
       - name: Copy client files to plugin directory
         run: cp -r client/mergin plugin/${{ env.PLUGIN_NAME }}
 
+      - name: List plugin directory contents
+        run: |
+          ls -R plugin/${{ env.PLUGIN_NAME }}
+
       - name: Run tests
         run: conda run -n qgis_env pytest plugin/${{ env.PLUGIN_NAME }}/test -v
         env:
