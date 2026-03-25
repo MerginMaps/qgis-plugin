@@ -435,12 +435,6 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
         if existing_grids:
             text = f'<font color="green">Using grid {existing_grids[0]} \u2713.</font>'
-            if len(existing_grids) > 1:
-                text += (
-                    f'<font color="red"> Also found other relevant grids: '
-                    f'{", ".join(existing_grids[1:])}. '
-                    f"You should only have one relevant grid for conversion.</font>"
-                )
             self.label_vcrs_warning.setText(text)
             self.label_vcrs_warning.setVisible(True)
             return
