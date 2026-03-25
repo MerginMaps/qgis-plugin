@@ -4,7 +4,7 @@
 import shutil
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Callable, Union, Optional, Tuple
+from typing import Any, Dict, List, Callable, Union, Optional, Tuple, Set
 from urllib.error import URLError, HTTPError
 import configparser
 import os
@@ -1971,3 +1971,15 @@ def download_grids_task(
     QgsApplication.taskManager().addTask(task)
 
     return task
+
+
+def grid_details_for_names(names: Set[str], crs) -> List[QgsDatumTransform.GridDetails]:
+    """Return GridDetails objects matching the given short names, searched across all operations."""
+    result = []
+    seen = set()
+    for op in _get_operations(crs):
+        for gd in op.grids:
+            if gd.shortName in names and gd.shortName not in seen:
+                result.append(gd)
+                seen.add(gd.shortName)
+    return result
