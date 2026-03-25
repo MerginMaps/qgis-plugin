@@ -65,7 +65,7 @@ jobs:
       - name: Create environment and install QGIS
         run: |
           conda create -n qgis_env --no-default-packages --yes
-          conda install -n qgis_env qgis=${{ matrix.qgis-version }} pytest pytest-qt --yes
+          conda install -n qgis_env qgis=${{ matrix.qgis-version }} pytest pytest-qt pytest-cov --yes
           conda run -n qgis_env pip install --no-cache-dir pytest-qgis
           # mergin cilent dependencies
           conda run -n qgis_env pip install python-dateutil pytz wheel
