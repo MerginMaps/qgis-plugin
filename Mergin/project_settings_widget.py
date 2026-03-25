@@ -416,16 +416,20 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 return
 
         # No project-defined transformation – use the standard process.
-        # Warn when multiple operations are available so the user knows to pick one.
         operations = _get_operations(crs)
+
+        # Warn when multiple operations are available so the user knows to pick one in transformations
         multi_op_warning = ""
         if len(operations) > 1:
             multi_op_warning = (
-                ' <font color="orange">Multiple coordinate operations are available for this CRS. '
+                '<font color="orange">Multiple coordinate operations are available for this CRS. '
                 "Please configure the datum transformation on the project level "
                 "(Project \u2192 Properties \u2192 Transformations) "
                 "to ensure the correct operation is used.</font>"
             )
+            self.label_vcrs_warning.setText(multi_op_warning)
+            self.label_vcrs_warning.setVisible(True)
+            return
 
         existing_grids = existing_grid_files_for_crs(self.local_project_dir, crs)
 
