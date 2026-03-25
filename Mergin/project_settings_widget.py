@@ -405,7 +405,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 return
 
             else:
-                self._pending_grids = grid_details_for_names(set(g.shortName for g in grids), crs)
+                self._pending_grids = grid_details_for_names(set(g.shortName for g in grids), crs) or grids
                 names = ", ".join(g.shortName for g in grids)
                 self.label_vcrs_warning.setText(
                     f'<font color="red">The selected vertical CRS requires the following geoid grid '
