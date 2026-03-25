@@ -1,80 +1,90 @@
 name: Run Mergin Plugin Tests
 
-on: 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
   push:
   workflow_dispatch:
     inputs:
       PYTHON_API_CLIENT_VER:
-        description: 'python-api-client version: either a tag, release, or a branch'
+        description: "python-api-client version: either a tag, release, or a branch"
         required: true
-        default: 'master'
+        default: "master"
         type: string
 
 env:
+  CONDA_PKGS_DIRS: ~/conda_pkgs_dir
+  DEBIAN_FRONTEND: noninteractive
+  QT_QPA_PLATFORM: offscreen
+  XDG_RUNTIME_DIR: /tmp
+  QT_SCALE_FACTOR: 1
+  QT_AUTO_SCREEN_SCALE_FACTOR: 0
+  QT_FONT_DPI: 96
   # Assign the version provided by 'workflow_dispatch' if available; otherwise, use the default.
   PYTHON_API_CLIENT_VER: ${{ inputs.PYTHON_API_CLIENT_VER != '' && inputs.PYTHON_API_CLIENT_VER || 'master' }}
   PLUGIN_NAME: Mergin
-  TEST_FUNCTION: suite.test_all
-  DOCKER_IMAGE: qgis/qgis
 
-concurrency:
-  group: ci-${{github.ref}}-autotests
-  cancel-in-progress: true
-  
 jobs:
   run-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     strategy:
+      fail-fast: false
       matrix:
-        docker_tags: [release-3_22, release-3_34]
+        qgis-version:
+          ["3.22", "3.28", "3.30", "3.32", "3.34", "3.40", "3.42", "3.44"]
 
     steps:
+      - name: Checkout plugin code
+        uses: actions/checkout@v6
+        with:
+          path: plugin
 
-      - name: Checkout client code
-        uses: actions/checkout@v3
+      - name: Checkout python-client
+        uses: actions/checkout@v6
         with:
           repository: MerginMaps/python-api-client
           ref: ${{ env.PYTHON_API_CLIENT_VER }}
           path: client
 
+      - name: Cache conda packages
+        uses: actions/cache@v4
+        with:
+          path: ~/conda_pkgs_dir
+          key: conda-pkgs-${{ runner.os }}-${{ matrix.qgis-version }}
+
+      - name: Setup conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          use-mamba: true
+          channels: conda-forge,defaults
+
+      - name: Create environment and install QGIS
+        run: |
+          conda create -n qgis_env --no-default-packages --yes
+          conda install -n qgis_env qgis=${{ matrix.qgis-version }} pytest pytest-qt --yes
+          conda run -n qgis_env pip install --no-cache-dir pytest-qgis
+          # mergin cilent dependencies
+          conda run -n qgis_env pip install python-dateutil pytz wheel
+
       - name: Install python-api-client dependencies
         run: |
-          pip3 install python-dateutil pytz wheel
           cd client
           mkdir -p mergin/deps
-          pip3 install pygeodiff --target=mergin/deps
-          python3 setup.py sdist bdist_wheel
+          conda run -n qgis_env pip install pygeodiff --target=mergin/deps
+          conda run -n qgis_env python setup.py sdist bdist_wheel
           # without __init__.py the deps dir may get recognized as "namespace package" in python
           # and it can break qgis plugin unloading mechanism - see #126
           touch mergin/deps/__init__.py
-          pip3 wheel -r mergin_client.egg-info/requires.txt -w mergin/deps
+          conda run -n qgis_env pip wheel -r mergin_client.egg-info/requires.txt -w mergin/deps
           unzip -o mergin/deps/pygeodiff-*.whl -d mergin/deps
 
-      - name: Checkout plugin code
-        uses: actions/checkout@v3
-        with:
-          path: plugin
+      - name: Copy client files to plugin directory
+        run: cp -r client/mergin plugin/${{ env.PLUGIN_NAME }}
 
-      - name: Copy client files to the plugin directory
-        run: |
-          cp -r client/mergin plugin/Mergin
-
-      - name: Docker pull and create qgis-testing-environment
-        run: |
-          docker pull "$DOCKER_IMAGE":${{ matrix.docker_tags }}
-          docker run -d --name qgis-testing-environment -v "$GITHUB_WORKSPACE"/plugin:/tests_directory -e DISPLAY=:99 "$DOCKER_IMAGE":${{ matrix.docker_tags }}
-          # Wait for xvfb to finish starting
-          printf "Waiting for the docker...🐳..."
-          sleep 10
-          echo " done 🥩"
-
-      - name: Docker set up QGIS
-        run: |
-          docker exec qgis-testing-environment sh -c "qgis_setup.sh $PLUGIN_NAME"
-          docker exec qgis-testing-environment sh -c "rm -f /root/.local/share/QGIS/QGIS3/profiles/default/python/plugins/$PLUGIN_NAME"
-          docker exec qgis-testing-environment sh -c "ln -s /tests_directory/$PLUGIN_NAME /root/.local/share/QGIS/QGIS3/profiles/default/python/plugins/$PLUGIN_NAME"
-
-      - name: Docker run plugin tests
-        run: |
-          docker exec qgis-testing-environment sh -c "cd /tests_directory/$PLUGIN_NAME/test && qgis_testrunner.sh $TEST_FUNCTION"
+      - name: Run tests
+        run: conda run -n qgis_env pytest plugin/${{ env.PLUGIN_NAME }}/test -v
+        env:
+          PYTHONPATH: ${{ github.workspace }}/plugin
