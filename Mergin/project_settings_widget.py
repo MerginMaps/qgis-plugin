@@ -390,7 +390,6 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
             project_dir = self.local_project_dir or ""
             available = [g for g in grids if _grid_available_in_project(project_dir, g.shortName)]
-            missing = get_missing_geoid_grids(crs, self.local_project_dir)["missing"]
 
             if available:
                 text = f'<font color="green">Using grid {available[0].shortName} \u2713.</font>'
@@ -404,16 +403,17 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
                 self.label_vcrs_warning.setVisible(True)
                 return
 
-            self._pending_grids = missing
-            names = ", ".join(g.shortName for g in missing)
-            self.label_vcrs_warning.setText(
-                f'<font color="red">The selected vertical CRS requires the following geoid grid(s) '
-                f"in order to work properly \u2013 {names}. "
-                f'<a href="download"><font color="red">Click here</font></a> to automatically '
-                f"download it and add to your project.</font>"
-            )
-            self.label_vcrs_warning.setVisible(True)
-            return
+            else:
+                grids = _grids_from_proj_string(transform_str)
+                names = ", ".join(g.shortName for g in grids)
+                self.label_vcrs_warning.setText(
+                    f'<font color="red">The selected vertical CRS requires the following geoid grid '
+                    f"in order to work properly \u2013 {names}. "
+                    f'<a href="download"><font color="red">Click here</font></a> to automatically '
+                    f"download it and add to your project.</font>"
+                )
+                self.label_vcrs_warning.setVisible(True)
+                return
 
         # No project-defined transformation – use the standard process.
         # Warn when multiple operations are available so the user knows to pick one.
