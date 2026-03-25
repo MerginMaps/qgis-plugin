@@ -377,16 +377,6 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         if not crs.isValid() or not self.chk_use_vertical_crs.isChecked():
             return
 
-        wkt = crs.toWkt()
-        if not wkt.startswith(("VERT_CS[", "COMPD_CS[", "VERTCRS[", "COMPOUNDCRS[")):
-            self.label_vcrs_warning.setText(
-                '<font color="red">The selected CRS is not a vertical or compound CRS. '
-                "Please select a vertical CRS (e.g. EGM2008 height) or a compound CRS "
-                "(e.g. WGS 84 + EGM96 height).</font>"
-            )
-            self.label_vcrs_warning.setVisible(True)
-            return
-
         # Check if the project has an explicit datum transformation configured.
         has_transform, transform_str = project_defined_transformation(crs)
 
