@@ -155,6 +155,10 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.label_vcrs_warning.setOpenExternalLinks(False)
         self.label_vcrs_warning.linkActivated.connect(self._download_geoid_grid)
 
+        QgsProject.instance().transformContextChanged.connect(
+            lambda: self._check_geoid_grid(self.cmb_vertical_crs.crs())
+        )
+
         use_vcrs, ok = QgsProject.instance().readBoolEntry("Mergin", "ElevationTransformationEnabled", False)
         self.chk_use_vertical_crs.setChecked(use_vcrs)
         self.cmb_vertical_crs.setEnabled(use_vcrs)
