@@ -1,0 +1,15 @@
+name: qgis-test-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - qgis
+  - pytest
+  - pytest-qt
+  - pytest-cov
+  - pip
+  - pip:
+      - pytest-qgis
+      - python-dateutil
+      - pytz
+      - wheel
