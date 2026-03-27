@@ -8,8 +8,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from qgis.core import QgsRasterLayer, QgsVectorTileLayer, QgsProviderRegistry
-
+from qgis.core import QgsProviderRegistry, QgsRasterLayer, QgsVectorTileLayer
 
 from Mergin.utils import package_layer
 
@@ -39,32 +38,35 @@ def test_copy_raster(dem_tif_path: Path):
                 assert destination_raster_uri == expected_filepath.as_posix()
 
 
-def test_mbtiles_packaging(raster_tiles_path: Path, vector_tiles_path: Path):
+def test_mbtiles_packaging_raster_layer(raster_tiles_path: Path):
     """Test packaging of raster and vector tiles layers and updating data source."""
 
-    layer = QgsRasterLayer(f"url=file://{raster_tiles_path.as_posix()}&type=mbtiles", "test", "wms")
+    rlayer = QgsRasterLayer(f"url=file://{raster_tiles_path.as_posix()}&type=mbtiles", "test", "wms")
 
-    assert layer.isValid()
+    assert rlayer.isValid()
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        package_layer(layer, tmp_dir)
+        package_layer(rlayer, tmp_dir)
         expected_path = Path(tmp_dir) / "raster-tiles.mbtiles"
         assert expected_path.exists()
 
-        uri = QgsProviderRegistry.instance().decodeUri("wms", layer.source())
+        uri = QgsProviderRegistry.instance().decodeUri("wms", rlayer.source())
         assert str(uri)
         assert "path" in uri
         assert uri["path"] == expected_path.as_posix()
 
-    layer = QgsVectorTileLayer(f"url=file://{vector_tiles_path.as_posix()}&type=mbtiles", "test")
-    assert layer.isValid()
+
+def test_mbtiles_packaging_vector_tile_layer(vector_tiles_path: Path):
+
+    vlayer = QgsVectorTileLayer(f"url=file://{vector_tiles_path.as_posix()}&type=mbtiles", "test")
+    assert vlayer.isValid()
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        package_layer(layer, tmp_dir)
+        package_layer(vlayer, tmp_dir)
         expected_path = Path(tmp_dir) / "vector-tiles.mbtiles"
 
         assert expected_path.exists()
 
-        uri = QgsProviderRegistry.instance().decodeUri("vectortile", layer.source())
+        uri = QgsProviderRegistry.instance().decodeUri("vectortile", vlayer.source())
         assert "path" in uri
         assert uri["path"] == expected_path.as_posix()
