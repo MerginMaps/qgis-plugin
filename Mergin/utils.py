@@ -699,7 +699,7 @@ def package_layer(layer, project_dir):
             raise PackagingError(f"Couldn't properly save layer {layer.name()}: {err}")
     elif layer.type() == QgsMapLayerType.VectorTileLayer:
         uri = QgsProviderRegistry.instance().decodeUri("vectortile", layer.source())
-        uri_path = uri["path"] if "path" in uri else None
+        uri_path = uri.get("path", None)
         if uri_path:
             if uri_path.startswith("file://"):
                 uri_path = uri_path.replace("file://", "")
