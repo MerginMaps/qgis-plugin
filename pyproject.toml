@@ -1,0 +1,23 @@
+[project]
+name = "Mergin"
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-cov", "pytest-qgis"]
+
+[tool.pytest.ini_options]
+addopts = "-rP -vv -s"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.flake8]
+max-line-length = 120
+ignore = ["E501", "W503"]
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+atomic = true
+profile = "black"
+line_length = 120

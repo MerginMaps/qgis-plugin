@@ -19,7 +19,7 @@ jobs:
         run: |
           # Upgrade pip and install security/linting tools
           python -m pip install --upgrade pip
-          pip install bandit detect-secrets flake8 flake8-json
+          pip install bandit detect-secrets flake8 flake8-json flake8-pyproject
 
       - name: Run Bandit (Security Scan)
         # Scan the Mergin folder for vulnerabilities, excluding the test directory
@@ -30,7 +30,4 @@ jobs:
         run: detect-secrets scan ./Mergin/ --all-files
 
       - name: Run Flake8 (Style Check)
-        # Style enforcement using MerginMaps standards
-        # Ignoring E501 (line length) and W503 (operator line breaks)
-        run: |
-          flake8 ./Mergin/ --max-line-length=120 --ignore=E501,W503 --exclude=test
+        run: flake8 ./Mergin/
