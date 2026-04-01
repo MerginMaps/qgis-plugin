@@ -10,6 +10,10 @@ addopts = "-rP -vv -s"
 testpaths = ["tests"]
 pythonpath = ["."]
 
+[tool.flake8]
+max-line-length = 120
+ignore = ["E501", "W503"]
+
 [tool.black]
 line-length = 120
 
