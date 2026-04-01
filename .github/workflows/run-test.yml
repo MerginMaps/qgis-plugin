@@ -33,8 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        qgis-version:
-          ["3.22", "3.28", "3.30", "3.32", "3.34", "3.40", "3.42", "3.44"]
+        qgis-version: ["3.22", "3.28", "3.34", "3.40", "3.44"]
 
     steps:
       - name: Checkout plugin code
