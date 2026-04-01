@@ -162,6 +162,7 @@ QGIS_FILE_BASED_PROVIDERS = (
     "grassraster",
     "wms",
     "vectortile",
+    "mbtilesvectortiles",
 )
 PACKABLE_PROVIDERS = ("ogr", "gdal", "delimitedtext", "gpx", "postgres", "memory")
 
@@ -623,9 +624,11 @@ def datasource_filepath(layer):
             ds_uri = dp.dataSourceUri().split("?")[0].replace("file://", "")
         else:
             ds_uri = dp.dataSourceUri()
-    elif dp.name() == "vectortile":
+    elif dp.name() in ("vectortile", "mbtilesvectortiles"):
         uri = QgsProviderRegistry.instance().decodeUri("vectortile", layer.source())
         ds_uri = uri["path"] if "path" in uri else None
+        if ds_uri and ds_uri.startswith("file://"):
+            ds_uri = ds_uri.replace("file://", "")
     else:
         ds_uri = None
     return ds_uri if os.path.isfile(ds_uri) else None
@@ -696,9 +699,13 @@ def package_layer(layer, project_dir):
             raise PackagingError(f"Couldn't properly save layer {layer.name()}: {err}")
     elif layer.type() == QgsMapLayerType.VectorTileLayer:
         uri = QgsProviderRegistry.instance().decodeUri("vectortile", layer.source())
-        is_local = os.path.isfile(uri["path"]) if "path" in uri else False
-        if is_local:
-            copy_layer_files(layer, uri["path"], project_dir)
+        uri_path = uri.get("path", None)
+        if uri_path:
+            if uri_path.startswith("file://"):
+                uri_path = uri_path.replace("file://", "")
+            is_local = os.path.isfile(uri_path) if uri_path else False
+            if is_local:
+                copy_layer_files(layer, uri_path, project_dir)
     elif layer.type() == QgsMapLayerType.RasterLayer:
         save_raster_layer(layer, project_dir)
     else:
