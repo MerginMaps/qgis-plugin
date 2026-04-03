@@ -6,7 +6,7 @@ import os
 import typing
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QColor
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import Qt, QTimer
 from qgis.PyQt.QtWidgets import QFileDialog, QMessageBox
 from qgis.core import (
     QgsProject,
@@ -16,8 +16,15 @@ from qgis.core import (
     QgsFeatureRequest,
     QgsExpression,
     QgsMapLayer,
+    QgsCoordinateReferenceSystem,
 )
-from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget, QgsColorButton
+from qgis.gui import (
+    QgsOptionsWidgetFactory,
+    QgsOptionsPageWidget,
+    QgsColorButton,
+    QgsProjectionSelectionWidget,
+    QgsCoordinateReferenceSystemProxyModel,
+)
 from .attachment_fields_model import AttachmentFieldsModel
 from .utils import (
     mm_symbol_path,
@@ -32,6 +39,14 @@ from .utils import (
     qvariant_to_string,
     escape_html_minimal,
     sanitize_path,
+    get_missing_geoid_grids,
+    download_grids_task,
+    existing_grid_files_for_crs,
+    project_defined_transformation,
+    _grids_from_proj_string,
+    _grid_available_in_project,
+    _get_operations,
+    grid_details_for_names,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -132,6 +147,36 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.attachment_fields.setModel(self.attachments_model)
         self.attachment_fields.selectionModel().currentChanged.connect(self.update_expression_edit)
         self.edit_photo_expression.expressionChanged.connect(self.expression_changed)
+
+        # Vertical CRS
+        self.cmb_vertical_crs.setFilters(QgsCoordinateReferenceSystemProxyModel.FilterVertical)
+        self.cmb_vertical_crs.setOptionVisible(QgsProjectionSelectionWidget.CurrentCrs, False)
+        self.cmb_vertical_crs.setDialogTitle("Target Vertical CRS")
+        self.label_vcrs_warning.setVisible(False)
+        self.label_vcrs_warning.setOpenExternalLinks(False)
+        self.label_vcrs_warning.linkActivated.connect(self._download_geoid_grid)
+
+        QgsProject.instance().transformContextChanged.connect(
+            lambda: self._check_geoid_grid(self.cmb_vertical_crs.crs())
+        )
+
+        use_vcrs, ok = QgsProject.instance().readBoolEntry("Mergin", "ElevationTransformationEnabled", False)
+        self.chk_use_vertical_crs.setChecked(use_vcrs)
+        self.cmb_vertical_crs.setEnabled(use_vcrs)
+
+        vcrs_wkt, ok = QgsProject.instance().readEntry("Mergin", "TargetVerticalCRS")
+        if ok and vcrs_wkt:
+            crs = QgsCoordinateReferenceSystem.fromWkt(vcrs_wkt)
+            if crs.isValid():
+                self.cmb_vertical_crs.setCrs(crs)
+
+        self._pending_grids = []
+        self.chk_use_vertical_crs.stateChanged.connect(self._vcrs_checkbox_changed)
+        self.cmb_vertical_crs.crsChanged.connect(self._check_geoid_grid)
+
+        # run initial grid check if already enabled
+        if use_vcrs and vcrs_wkt:
+            self._check_geoid_grid(self.cmb_vertical_crs.crs())
 
     def get_sync_dir(self):
         abs_path = QFileDialog.getExistingDirectory(
@@ -310,6 +355,178 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             # create a new layer and add it as a map sketches layer
             create_map_sketches_layer(QgsProject.instance().absolutePath())
 
+    def _vcrs_checkbox_changed(self, state):
+        enabled = self.chk_use_vertical_crs.isChecked()
+        self.cmb_vertical_crs.setEnabled(enabled)
+        if enabled:
+            self._check_geoid_grid(self.cmb_vertical_crs.crs())
+        else:
+            self.label_vcrs_warning.setVisible(False)
+
+    def _check_geoid_grid(self, crs: QgsCoordinateReferenceSystem):
+        """
+        Evaluates the selected vertical CRS to determine if a PROJ transformation grid
+        is required for accurate elevation calculation in the mobile app.
+
+        If the project has a datum transformation defined between EPSG:4979 and the CRS,
+        that specific transform is used to determine grid requirements. Otherwise the
+        standard PROJ operation list is consulted. When multiple operations exist and no
+        project-level transform is configured the user is warned to set one up.
+        """
+        self.label_vcrs_warning.setVisible(False)
+        self._pending_grids = []
+        if not crs.isValid() or not self.chk_use_vertical_crs.isChecked():
+            return
+
+        # Check if the project has an explicit datum transformation configured.
+        has_transform, transform_str = project_defined_transformation(crs)
+
+        if has_transform:
+            # Derive grid requirements solely from the project-defined transform string.
+            grids = _grids_from_proj_string(transform_str)
+            if not grids:
+                # Transform does not require any grid file.
+                self.label_vcrs_warning.setVisible(False)
+                return
+
+            project_dir = self.local_project_dir or ""
+            available = [g for g in grids if _grid_available_in_project(project_dir, g.shortName)]
+
+            if available:
+                text = f'<font color="green">Using grid {available[0].shortName} \u2713.</font>'
+                if len(available) > 1:
+                    text += (
+                        f'<font color="red"> Also found other relevant grids: '
+                        f'{", ".join(g.shortName for g in available[1:])}. '
+                        f"You should only have one relevant grid for conversion.</font>"
+                    )
+                self.label_vcrs_warning.setText(text)
+                self.label_vcrs_warning.setVisible(True)
+                return
+
+            else:
+                self._pending_grids = grid_details_for_names(set(g.shortName for g in grids), crs) or grids
+                names = ", ".join(g.shortName for g in grids)
+                self.label_vcrs_warning.setText(
+                    f'<font color="red">The selected vertical CRS requires the following geoid grid '
+                    f"in order to work properly \u2013 {names}. "
+                    f'<a href="download"><font color="red">Click here</font></a> to automatically '
+                    f"download it and add to your project.</font>"
+                )
+                self.label_vcrs_warning.setVisible(True)
+                return
+
+        # No project-defined transformation – use the standard process.
+        operations = _get_operations(crs)
+
+        # Warn when multiple operations are available so the user knows to pick one in transformations
+        multi_op_warning = ""
+        if len(operations) > 1:
+            multi_op_warning = (
+                '<font color="orange">Multiple coordinate operations are available for this CRS. '
+                "Please configure the datum transformation on the project level "
+                "(Project \u2192 Properties \u2192 Transformations) "
+                "to ensure the correct operation is used.</font>"
+            )
+            self.label_vcrs_warning.setText(multi_op_warning)
+            self.label_vcrs_warning.setVisible(True)
+            return
+
+        existing_grids = existing_grid_files_for_crs(self.local_project_dir, crs)
+
+        if existing_grids:
+            text = f'<font color="green">Using grid {existing_grids[0]} \u2713.</font>'
+            self.label_vcrs_warning.setText(text)
+            self.label_vcrs_warning.setVisible(True)
+            return
+
+        grid_status = get_missing_geoid_grids(crs, self.local_project_dir)
+
+        # no grid required according to PROJ
+        if grid_status["ballpark"]:
+            self.label_vcrs_warning.setVisible(False)
+            return
+
+        missing = grid_status["missing"]
+        if not missing:
+            self.label_vcrs_warning.setVisible(False)
+            return
+
+        self._pending_grids = missing
+        names = ", ".join(g.shortName for g in missing)
+        self.label_vcrs_warning.setText(
+            f'<font color="red">The selected vertical CRS requires the following geoid grid(s) '
+            f"in order to work properly \u2013 {names}. "
+            f'<a href="download"><font color="red">Click here</font></a> to automatically '
+            f"download it and add to your project.</font>"
+        )
+        self.label_vcrs_warning.setVisible(True)
+
+    def _download_geoid_grid(self, link: str):
+        """
+        Triggered when the user clicks the download link in the missing grid warning label.
+
+        Initiates a background QgsTask to download the required PROJ grids
+        from the official CDN directly into the project's 'proj/' directory.
+
+        :param link: The href string of the clicked HTML link.
+        """
+        if not self._pending_grids:
+            return
+
+        no_url = [g.shortName for g in self._pending_grids if not g.url]
+        downloadable = [g for g in self._pending_grids if g.url]
+
+        if no_url:
+            QMessageBox.warning(
+                self,
+                "Cannot download automatically",
+                "The following grid(s) have no download URL and must be installed manually "
+                "via the QGIS Resource Manager or by installing a PROJ data package:\n\n" + ", ".join(no_url),
+            )
+            if not downloadable:
+                return
+
+        if not self.local_project_dir:
+            urls = "\n".join(g.url for g in downloadable)
+            QMessageBox.information(
+                self,
+                "Download geoid grid",
+                f"Please download the geoid grid(s) manually and place them in your project's 'proj/' folder:\n{urls}",
+            )
+            return
+
+        # start UI animation
+        self._download_dot_count = 0
+
+        def _tick():
+            self._download_dot_count = (self._download_dot_count + 1) % 4
+            dots = "." * self._download_dot_count
+            self.label_vcrs_warning.setText(f'<font color="gray">Downloading geoid grid(s){dots}</font>')
+
+        self._download_timer = QTimer(self)
+        self._download_timer.timeout.connect(_tick)
+        _tick()
+        self._download_timer.start(400)
+
+        # callbacks
+        def on_success():
+            self._download_timer.stop()
+            self.label_vcrs_warning.setVisible(False)
+            QMessageBox.information(self, "Download complete", "Geoid grid(s) downloaded and added to your project.")
+            # re-trigger the check to update the UI state
+            self._check_geoid_grid(self.cmb_vertical_crs.crs())
+
+        def on_error(errors):
+            self._download_timer.stop()
+            QMessageBox.warning(self, "Download failed", "Could not download:\n" + "\n".join(errors))
+            # re-trigger the check to reset the label text back
+            self._check_geoid_grid(self.cmb_vertical_crs.crs())
+
+        # fire the task
+        dest_dir = os.path.join(self.local_project_dir, "proj")
+        self._download_task = download_grids_task(downloadable, dest_dir, on_success, on_error)
+
     def apply(self):
         QgsProject.instance().writeEntry("Mergin", "PhotoQuality", self.cmb_photo_quality.currentData())
         QgsProject.instance().writeEntry("Mergin", "Snapping", self.cmb_snapping_mode.currentData())
@@ -350,6 +567,14 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.save_config_file()
         self.setup_tracking()
         self.setup_map_sketches()
+
+        use_vcrs = self.chk_use_vertical_crs.isChecked()
+        QgsProject.instance().writeEntry("Mergin", "ElevationTransformationEnabled", use_vcrs)
+        if use_vcrs:
+            crs = self.cmb_vertical_crs.crs()
+            QgsProject.instance().writeEntry("Mergin", "TargetVerticalCRS", crs.toWkt() if crs.isValid() else "")
+        else:
+            QgsProject.instance().writeEntry("Mergin", "TargetVerticalCRS", "")
 
     def colors_change_state(self) -> None:
         """

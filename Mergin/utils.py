@@ -4,7 +4,7 @@
 import shutil
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Callable, Union, Optional, Tuple, Set
 from urllib.error import URLError, HTTPError
 import configparser
 import os
@@ -68,6 +68,7 @@ from qgis.core import (
     QgsProperty,
     QgsSymbolLayer,
     QgsGeometry,
+    QgsTask,
 )
 from qgis.gui import QgsFileWidget
 
@@ -169,6 +170,12 @@ PACKABLE_PROVIDERS = ("ogr", "gdal", "delimitedtext", "gpx", "postgres", "memory
 PROJS_PER_PAGE = 50
 
 TILES_URL = "https://tiles.merginmaps.com"
+
+# Matches both PROJ4-style (+geoidgrids=file.tif) and pipeline-style (+grids=file.tif).
+_PROJ_GRIDS_RE = re.compile(r"\b(?:geoidgrids|grids)=([\w./@,-]+)")
+_SKIP_GRID_NAMES = {"@null", "null", "@none", "none"}
+
+DEFAULT_VERTICAL_CRS = QgsCoordinateReferenceSystem("EPSG:4979")
 
 
 class PackagingError(Exception):
@@ -1782,3 +1789,204 @@ def push_error_message(dlg, project_name, plugin, mc):
             f"Something went wrong while synchronising your project {project_name}.",
             mc,
         )
+
+
+class _GridRef:
+    """Minimal grid reference parsed from a PROJ string."""
+
+    __slots__ = ("shortName", "url")
+
+    def __init__(self, name, url=""):
+        self.shortName = name
+        self.url = url
+
+
+def _grids_from_proj_string(proj_str):
+    """Extract grid references from a PROJ string."""
+    result = []
+    for m in _PROJ_GRIDS_RE.finditer(proj_str or ""):
+        for name in m.group(1).split(","):
+            name = name.strip()
+            if name and name not in _SKIP_GRID_NAMES:
+                result.append(_GridRef(name))
+    return result
+
+
+def _get_operations(
+    crs: QgsCoordinateReferenceSystem,
+) -> List[QgsDatumTransform.TransformDetails]:
+    return QgsDatumTransform.operations(DEFAULT_VERTICAL_CRS, crs)
+
+
+def project_defined_transformation(crs: QgsCoordinateReferenceSystem) -> Tuple[bool, str]:
+    """If extracting conversion from project's transform context we need to manually search
+    because the project specify compound CRS to compound CRS transformation, but MM provides
+    vertical CRS only. So we need to check if any operation fits with the given vertical CRS."""
+    context = QgsProject.instance().transformContext()
+    has_transform = False
+    transform = ""
+    operations = context.coordinateOperations()
+    for src, dst in operations.keys():
+        crs_src = QgsCoordinateReferenceSystem(src)
+        crs_dst = QgsCoordinateReferenceSystem(dst)
+        if crs_src == DEFAULT_VERTICAL_CRS and crs_dst.verticalCrs() == crs:
+            transform = operations[(src, dst)]
+            has_transform = True
+            break
+    return has_transform, transform
+
+
+def _operations_with_grids(
+    operations: List[QgsDatumTransform.TransformDetails],
+) -> List[Tuple[QgsDatumTransform.TransformDetails, List[QgsDatumTransform.GridDetails]]]:
+    return [(op, list(op.grids)) for op in operations if op.grids]
+
+
+def _grid_names(operations: List[QgsDatumTransform.TransformDetails]) -> List[str]:
+    operations_grids = _operations_with_grids(operations)
+    names = set()
+    for _, grids in operations_grids:
+        for grid in grids:
+            names.add(grid.shortName)
+    return list(names)
+
+
+def _grid_available_in_project(local_project_dir: str, grid_name: str) -> bool:
+    if local_project_dir:
+        return os.path.exists(os.path.join(local_project_dir, "proj", grid_name))
+    return False
+
+
+def existing_grid_files_for_crs(local_project_dir: str, crs: QgsCoordinateReferenceSystem) -> List[str]:
+    existing_grids = []
+    for grid_name in _grid_names(_get_operations(crs)):
+        if _grid_available_in_project(local_project_dir, grid_name):
+            existing_grids.append(grid_name)
+    return existing_grids
+
+
+def get_missing_geoid_grids(crs: QgsCoordinateReferenceSystem, local_project_dir: str) -> Dict[str, Any]:
+    """
+    Checks if the given vertical CRS requires grid files that are missing
+    from the project's 'proj/' folder.
+    Returns a dict: {"missing": list of _GridRef, "ballpark": bool}
+    """
+    result = {"missing": [], "ballpark": False}
+
+    if not crs or not crs.isValid():
+        return result
+
+    operations = _get_operations(crs)
+
+    ops_with_grids = _operations_with_grids(operations)
+
+    if not ops_with_grids:
+        for op in operations:
+            parsed = _grids_from_proj_string(getattr(op, "proj", "") or "")
+            if parsed:
+                ops_with_grids.append((op, parsed))
+
+    if not ops_with_grids:
+        parsed = _grids_from_proj_string(crs.toProj())
+        if parsed:
+            ops_with_grids = [(None, parsed)]
+
+    if not ops_with_grids:
+        result["ballpark"] = True
+        return result
+
+    for _op, grids in ops_with_grids:
+        if all(_grid_available_in_project(local_project_dir, g.shortName) for g in grids):
+            return result
+
+    def op_score(item):
+        _, grids = item
+        missing = [g for g in grids if not _grid_available_in_project(local_project_dir, g.shortName)]
+        return (not all(g.url for g in missing), len(missing))
+
+    _, best_grids = min(ops_with_grids, key=op_score)
+    result["missing"] = [g for g in best_grids if not _grid_available_in_project(local_project_dir, g.shortName)]
+
+    return result
+
+
+def download_grids_task(
+    grids: List[QgsDatumTransform.GridDetails],
+    dest_dir: str,
+    on_success_callback: Callable[[], None],
+    on_error_callback: Optional[Callable[[Union[str, List[str]]], None]] = None,
+):
+    """
+    Starts a background QgsTask to download PROJ grids without freezing the QGIS UI.
+
+    :param grids: List of _GridRef objects or (name, url) tuples.
+    :param dest_dir: String path to the target 'proj' directory.
+    :param on_success_callback: Callable with no arguments triggered on complete success.
+    :param on_error_callback: Callable accepting a list of error strings.
+    """
+    # normalize the grids input so it safely accepts objects or tuples
+    grids_snapshot = []
+    for g in grids:
+        if hasattr(g, "shortName") and hasattr(g, "url"):
+            grids_snapshot.append((g.shortName, g.url))
+        elif isinstance(g, tuple) and len(g) == 2:
+            grids_snapshot.append(g)
+
+    if not grids_snapshot:
+        if on_success_callback:
+            on_success_callback()
+        return None
+
+    # Background Worker
+    def run_download(task):
+        os.makedirs(dest_dir, exist_ok=True)
+        failed = []
+
+        for i, (name, url) in enumerate(grids_snapshot):
+            if task.isCanceled():
+                failed.append(f"{name}: Download canceled by user.")
+                break
+
+            try:
+                parsed = urllib.parse.urlparse(url)
+                if parsed.scheme in ("http", "https"):
+                    # scheme is validated, bandit error can be suppressed on next line
+                    urllib.request.urlretrieve(url, os.path.join(dest_dir, name))  # nosec B310
+                else:
+                    failed.append(f"{name}: Unsupported URL scheme '{parsed.scheme}'.")
+            except Exception as e:
+                failed.append(f"{name}: {str(e)}")
+
+            # Report progress back to the QGIS task manager (0 to 100%)
+            task.setProgress((i + 1) / len(grids_snapshot) * 100)
+
+        return {"failed": failed}
+
+    # Completion Handler (runs back on the main UI thread)
+    def on_finished(exception, result):
+        if exception:
+            if on_error_callback:
+                on_error_callback([f"Critical Task Exception: {exception}"])
+        elif result and result.get("failed"):
+            if on_error_callback:
+                on_error_callback(result["failed"])
+        else:
+            if on_success_callback:
+                on_success_callback()
+
+    task = QgsTask.fromFunction("Downloading geoid grid(s)", run_download, on_finished=on_finished)
+    QgsApplication.taskManager().addTask(task)
+
+    return task
+
+
+def grid_details_for_names(names: Set[str], crs) -> List[QgsDatumTransform.GridDetails]:
+    """Return GridDetails objects matching the given short names, searched across all operations."""
+    result = []
+    seen = set()
+    for op in _get_operations(crs):
+        for gd in op.grids:
+            if gd.shortName in names and gd.shortName not in seen:
+                result.append(gd)
+                seen.add(gd.shortName)
+    return result
