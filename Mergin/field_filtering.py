@@ -324,7 +324,7 @@ class DeselectableListView(QListView):
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         if event:
             index = self.indexAt(event.pos())
-            if not index.isValid() or index == self.currentIndex():
+            if not index.isValid():
                 self.blockSignals(True)
                 self.clearSelection()
                 self.setCurrentIndex(QModelIndex())
