@@ -166,7 +166,6 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         enabled, _ = QgsProject.instance().readBoolEntry("Mergin", "Filtering/Enabled", False)
         self.chk_filtering_enabled.setChecked(enabled)
         self.groupBox_filters_list.setEnabled(enabled)
-        self.groupBox_filter_detail.setEnabled(enabled)
         self.chk_filtering_enabled.stateChanged.connect(self.on_filtering_state_changed)
 
         filters_json, _ = QgsProject.instance().readEntry("Mergin", "Filtering/Filters", "[]")
@@ -444,6 +443,13 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         if state == Qt.CheckState.Checked:
             self.groupBox_filters_list.setEnabled(True)
             self.groupBox_filter_detail.setEnabled(True)
+            fields_enabled = False
+            if self.lst_filters.selectedIndexes():
+                fields_enabled = self.lst_filters.selectedIndexes()[0].isValid()
+            self.cmb_filter_type.setEnabled(fields_enabled)
+            self.cmb_filter_layer.setEnabled(fields_enabled)
+            self.cmb_filter_field.setEnabled(fields_enabled)
+            self.edit_filter_title.setEnabled(fields_enabled)
         else:
             self.groupBox_filters_list.setEnabled(False)
             self.groupBox_filter_detail.setEnabled(False)
@@ -485,6 +491,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         if field_filter is None:
             self._clear_filter_values()
             return
+
+        self.cmb_filter_type.setEnabled(True)
+        self.cmb_filter_layer.setEnabled(True)
+        self.cmb_filter_field.setEnabled(True)
+        self.edit_filter_title.setEnabled(True)
 
         self.groupBox_filter_detail.setEnabled(True)
 
