@@ -501,19 +501,19 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
 
         layer = QgsProject.instance().mapLayer(field_filter.layer_id)
 
+        idx = self.cmb_filter_type.findData(field_filter.filter_type)
+        self.cmb_filter_type.blockSignals(True)
+        self.cmb_filter_type.setCurrentIndex(idx)
+        self.cmb_filter_type.blockSignals(False)
+
         self.cmb_filter_layer.blockSignals(True)
         self.cmb_filter_layer.setLayer(layer)
         self.cmb_filter_layer.blockSignals(False)
 
         self.cmb_filter_field.blockSignals(True)
-        self.cmb_filter_field.setLayer(layer)
+        self.on_filter_layer_fields_changed()  # update available fields based on the selected layer and filter type before setting the field to avoid issues with invalid field selection
         self.cmb_filter_field.setField(field_filter.field_name)
         self.cmb_filter_field.blockSignals(False)
-
-        idx = self.cmb_filter_type.findData(field_filter.filter_type)
-        self.cmb_filter_type.blockSignals(True)
-        self.cmb_filter_type.setCurrentIndex(idx)
-        self.cmb_filter_type.blockSignals(False)
 
         # block signals to avoid triggering modification of the field filter
         self.edit_filter_title.blockSignals(True)
