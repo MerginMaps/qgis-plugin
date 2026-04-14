@@ -63,3 +63,11 @@ def project_dir(mem_layer: QgsVectorLayer, tmp_path: Path) -> Path:
     proj.setFileName(str(tmp_path / "test_project.qgz"))
     yield tmp_path
     proj.removeMapLayer(mem_layer.id())
+
+
+@pytest.fixture
+def layer_field_filter(test_data_path: Path) -> QgsVectorLayer:
+    """Fixture for the field filter test layer."""
+    layer = QgsVectorLayer(str(test_data_path / "data_field_filter.gpkg"), "field filter layer", "ogr")
+    assert layer.isValid()
+    return layer
