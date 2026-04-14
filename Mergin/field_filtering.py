@@ -8,10 +8,10 @@ from qgis.PyQt.QtWidgets import QListView
 from qgis.PyQt.QtGui import QMouseEvent
 
 
-SQL_PLACEHOLDER_VALUE = "%%value%%"
-SQL_PLACEHOLDER_VALUES = "%%values%%"
-SQL_PLACEHOLDER_VALUE_FROM = "%%value_from%%"
-SQL_PLACEHOLDER_VALUE_TO = "%%value_to%%"
+SQL_PLACEHOLDER_VALUE = "@@value@@"
+SQL_PLACEHOLDER_VALUES = "@@values@@"
+SQL_PLACEHOLDER_VALUE_FROM = "@@value_from@@"
+SQL_PLACEHOLDER_VALUE_TO = "@@value_to@@"
 
 
 class FieldFilterType(str, Enum):
