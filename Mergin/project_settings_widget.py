@@ -49,6 +49,7 @@ from .field_filtering import (
     FieldFilterModel,
     DeselectableListView,
     excluded_filtering_providers,
+    get_fields_for_checkbox,
 )
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
@@ -575,12 +576,19 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         layer = self.cmb_filter_layer.currentLayer()
         self.cmb_filter_field.setLayer(layer)
         filter_type = self.cmb_filter_type.currentData()
+
         if filter_type in (FieldFilterType.SINGLE_SELECT, FieldFilterType.MULTI_SELECT):
             self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.AllTypes)
+
+        # for checkbox it is a bit more complicated
+        # we need to extract fields based on both field type and editor widget type
         elif filter_type == FieldFilterType.CHECKBOX:
-            self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.Boolean)
+            self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.AllTypes)
+            self.cmb_filter_field.setFields(get_fields_for_checkbox(layer))
+
         elif filter_type == FieldFilterType.DATE:
             self.cmb_filter_field.setFilters(QgsFieldProxyModel.Filter.Date)
+
         elif filter_type in (FieldFilterType.NUMBER, FieldFilterType.TEXT):
             self.cmb_filter_field.setFilters(
                 QgsFieldProxyModel.Filter(QgsFieldProxyModel.Filter.Numeric | QgsFieldProxyModel.Filter.String)
