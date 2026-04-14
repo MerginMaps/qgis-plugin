@@ -2,8 +2,8 @@ import json
 from enum import Enum
 from typing import Optional, Union, List
 
-from qgis.core import QgsProviderRegistry, QgsVectorLayer
-from qgis.PyQt.QtCore import Qt, QAbstractListModel, QModelIndex, pyqtSignal
+from qgis.core import QgsProviderRegistry, QgsVectorLayer, QgsFields
+from qgis.PyQt.QtCore import Qt, QAbstractListModel, QModelIndex, pyqtSignal, QMetaType
 from qgis.PyQt.QtWidgets import QListView
 from qgis.PyQt.QtGui import QMouseEvent
 
@@ -335,3 +335,13 @@ class DeselectableListView(QListView):
                 return
 
         super().mousePressEvent(event)
+
+
+def get_fields_for_checkbox(layer: QgsVectorLayer) -> QgsFields:
+    """Get fields of type boolean or with checkbox editor widget from the given layer."""
+    fields = QgsFields()
+    if layer and layer.isValid() and isinstance(layer, QgsVectorLayer):
+        for field in layer.fields():
+            if field.type() == QMetaType.Type.Bool or field.editorWidgetSetup().type() == "CheckBox":
+                fields.append(field)
+    return fields
