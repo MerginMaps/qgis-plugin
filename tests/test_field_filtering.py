@@ -101,7 +101,7 @@ def test_from_dict_roundtrip(layer_field_filter: QgsVectorLayer):
 
 def test_text_ogr(layer_field_filter: QgsVectorLayer):
     f = FieldFilter(layer_field_filter, "attr_string", FieldFilterType.TEXT, "Text")
-    assert f.sql_expression == f'CAST("attr_string" AS CHARACTER) LIKE {SQL_PLACEHOLDER_VALUE}'
+    assert f.sql_expression == f"CAST(\"attr_string\" AS CHARACTER) LIKE '%{SQL_PLACEHOLDER_VALUE}%'"
 
 
 def test_number_ogr(layer_field_filter: QgsVectorLayer):
@@ -115,8 +115,8 @@ def test_number_ogr(layer_field_filter: QgsVectorLayer):
 def test_date_ogr(layer_field_filter: QgsVectorLayer):
     f = FieldFilter(layer_field_filter, "attr_date", FieldFilterType.DATE, "Date")
     assert f.sql_expression == (
-        f'CAST("attr_date" AS CHARACTER) >= {SQL_PLACEHOLDER_VALUE_FROM} '
-        f'AND CAST("attr_date" AS CHARACTER) <= {SQL_PLACEHOLDER_VALUE_TO}'
+        f"CAST(\"attr_date\" AS CHARACTER) >= '{SQL_PLACEHOLDER_VALUE_FROM}' "
+        f"AND CAST(\"attr_date\" AS CHARACTER) <= '{SQL_PLACEHOLDER_VALUE_TO}'"
     )
 
 
@@ -142,7 +142,7 @@ def test_multi_select_ogr(layer_field_filter: QgsVectorLayer):
 
 def test_text_postgres(layer_field_filter: QgsVectorLayer):
     f = _make_postgres_filter(layer_field_filter, "attr_string", FieldFilterType.TEXT)
-    assert f.sql_expression == f'CAST("attr_string" AS text) ILIKE {SQL_PLACEHOLDER_VALUE}'
+    assert f.sql_expression == f"CAST(\"attr_string\" AS text) ILIKE '%{SQL_PLACEHOLDER_VALUE}%'"
 
 
 def test_number_postgres(layer_field_filter: QgsVectorLayer):
@@ -156,8 +156,8 @@ def test_number_postgres(layer_field_filter: QgsVectorLayer):
 def test_date_postgres(layer_field_filter: QgsVectorLayer):
     f = _make_postgres_filter(layer_field_filter, "attr_date", FieldFilterType.DATE)
     assert f.sql_expression == (
-        f'CAST("attr_date" AS timestamp) >= {SQL_PLACEHOLDER_VALUE_FROM} '
-        f'AND CAST("attr_date" AS timestamp) <= {SQL_PLACEHOLDER_VALUE_TO}'
+        f"CAST(\"attr_date\" AS timestamp) >= '{SQL_PLACEHOLDER_VALUE_FROM}' "
+        f"AND CAST(\"attr_date\" AS timestamp) <= '{SQL_PLACEHOLDER_VALUE_TO}'"
     )
 
 
