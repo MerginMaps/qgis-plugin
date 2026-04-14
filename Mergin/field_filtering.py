@@ -82,6 +82,8 @@ class FieldFilter:
         f.filter_type = FieldFilterType(data["filter_type"])
         f.filter_name = data["filter_name"]
         f.sql_expression = data.get("sql_expression", "")
+        if not f.sql_expression:
+            f._generate_sql_expression()
         return f
 
     def to_dict(self) -> dict:
@@ -142,7 +144,7 @@ class FieldFilter:
 
         elif self.filter_type == FieldFilterType.DATE:
             cast = self._cast_field(field)
-            expr = f"{cast} >= {SQL_PLACEHOLDER_VALUE_FROM} AND {cast} <= {SQL_PLACEHOLDER_VALUE_TO}"
+            expr = f"{cast} >= '{SQL_PLACEHOLDER_VALUE_FROM}' AND {cast} <= '{SQL_PLACEHOLDER_VALUE_TO}'"
 
         elif self.filter_type == FieldFilterType.CHECKBOX:
             expr = f"{field} = {SQL_PLACEHOLDER_VALUE}"
