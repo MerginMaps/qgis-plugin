@@ -239,14 +239,14 @@ class FieldFilter:
         Cast types:
             TEXT    — CHARACTER (OGR) / text (PostgreSQL)
             NUMBER  — FLOAT (OGR) / numeric (PostgreSQL)
-            DATE    — DATE  (OGR) / timestamp (PostgreSQL)
+            DATE    — CHARACTER  (OGR) / timestamp (PostgreSQL)
         """
         if self.filter_type == FieldFilterType.TEXT:
             cast_type = "text" if self.is_postgres else "CHARACTER"
         elif self.filter_type == FieldFilterType.NUMBER:
             cast_type = "numeric" if self.is_postgres else "FLOAT"
         elif self.filter_type == FieldFilterType.DATE:
-            cast_type = "timestamp" if self.is_postgres else "DATE"
+            cast_type = "timestamp" if self.is_postgres else "CHARACTER"
         else:
             return field
 
