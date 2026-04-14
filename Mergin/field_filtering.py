@@ -134,7 +134,7 @@ class FieldFilter:
         if self.filter_type == FieldFilterType.TEXT:
             op = "ILIKE" if self.is_postgres else "LIKE"
             cast = self._cast_field(field)
-            expr = f"{cast} {op} {SQL_PLACEHOLDER_VALUE}"
+            expr = f"{cast} {op} '%{SQL_PLACEHOLDER_VALUE}%'"
 
         elif self.filter_type == FieldFilterType.NUMBER:
             cast = self._cast_field(field)
