@@ -14,7 +14,6 @@ from Mergin.field_filtering import (
     FieldFilterModel,
     FieldFilterType,
     SQL_PLACEHOLDER_VALUE,
-    SQL_PLACEHOLDER_VALUES,
     SQL_PLACEHOLDER_VALUE_FROM,
     SQL_PLACEHOLDER_VALUE_TO,
     field_filters_from_json,
@@ -127,12 +126,12 @@ def test_checkbox_ogr(layer_field_filter: QgsVectorLayer):
 
 def test_single_select_ogr(layer_field_filter: QgsVectorLayer):
     f = FieldFilter(layer_field_filter, "attr_string", FieldFilterType.SINGLE_SELECT, "Single")
-    assert f.sql_expression == f'"attr_string" = {SQL_PLACEHOLDER_VALUE}'
+    assert f.sql_expression == f'"attr_string" IS {SQL_PLACEHOLDER_VALUE}'
 
 
 def test_multi_select_ogr(layer_field_filter: QgsVectorLayer):
     f = FieldFilter(layer_field_filter, "attr_string", FieldFilterType.MULTI_SELECT, "Multi")
-    assert f.sql_expression == f'"attr_string" IN ({SQL_PLACEHOLDER_VALUES})'
+    assert f.sql_expression == f'"attr_string" IS {SQL_PLACEHOLDER_VALUE}'
 
 
 # -----------------------------------------------------------------------------
