@@ -149,11 +149,8 @@ class FieldFilter:
         elif self.filter_type == FieldFilterType.CHECKBOX:
             expr = f"{field} = {SQL_PLACEHOLDER_VALUE}"
 
-        elif self.filter_type == FieldFilterType.SINGLE_SELECT:
-            expr = f"{field} = {SQL_PLACEHOLDER_VALUE}"
-
-        elif self.filter_type == FieldFilterType.MULTI_SELECT:
-            expr = f"{field} IN ({SQL_PLACEHOLDER_VALUES})"
+        elif self.filter_type in (FieldFilterType.SINGLE_SELECT, FieldFilterType.MULTI_SELECT):
+            expr = f"{field} IS {SQL_PLACEHOLDER_VALUE}"
 
         else:
             expr = ""
