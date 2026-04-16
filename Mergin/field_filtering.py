@@ -9,7 +9,6 @@ from qgis.PyQt.QtGui import QMouseEvent
 
 
 SQL_PLACEHOLDER_VALUE = "@@value@@"
-SQL_PLACEHOLDER_VALUES = "@@values@@"
 SQL_PLACEHOLDER_VALUE_FROM = "@@value_from@@"
 SQL_PLACEHOLDER_VALUE_TO = "@@value_to@@"
 
@@ -127,9 +126,6 @@ class FieldFilter:
                               e.g. 10, '2024-01-01'
                         SQL_PLACEHOLDER_VALUE_TO
                                                         — upper bound of a range (NUMBER, DATE)
-                        SQL_PLACEHOLDER_VALUES
-                                                        — comma-separated literals for MULTI_SELECT
-                              e.g. 'a', 'b', 'c'  or  1, 2, 3
         """
         field = f'"{self.field_name}"'
 
@@ -160,7 +156,6 @@ class FieldFilter:
     def apply_values(
         self,
         value=None,
-        values=None,
         value_from=None,
         value_to=None,
     ) -> str:
@@ -171,14 +166,11 @@ class FieldFilter:
         expr = self.sql_expression
 
         uses_value = SQL_PLACEHOLDER_VALUE in expr
-        uses_values = SQL_PLACEHOLDER_VALUES in expr
         uses_value_from = SQL_PLACEHOLDER_VALUE_FROM in expr
         uses_value_to = SQL_PLACEHOLDER_VALUE_TO in expr
 
         if uses_value and value is None:
             raise ValueError("sql_expression requires 'value' but it was not provided")
-        if uses_values and values is None:
-            raise ValueError("sql_expression requires 'values' but it was not provided")
         if uses_value_from and value_from is None:
             raise ValueError("sql_expression requires 'value_from' but it was not provided")
         if uses_value_to and value_to is None:
@@ -186,8 +178,6 @@ class FieldFilter:
 
         if value is not None and not uses_value:
             raise ValueError(f"'value' was provided but sql_expression has no {SQL_PLACEHOLDER_VALUE} placeholder")
-        if values is not None and not uses_values:
-            raise ValueError(f"'values' was provided but sql_expression has no {SQL_PLACEHOLDER_VALUES} placeholder")
         if value_from is not None and not uses_value_from:
             raise ValueError(
                 f"'value_from' was provided but sql_expression has no {SQL_PLACEHOLDER_VALUE_FROM} placeholder"
@@ -213,10 +203,6 @@ class FieldFilter:
             elif self.filter_type == FieldFilterType.SINGLE_SELECT:
                 escaped = str(value).replace("'", "''")
                 expr = expr.replace(SQL_PLACEHOLDER_VALUE, f"'{escaped}'")
-
-        if values is not None:
-            items = [f"'{str(v).replace(chr(39), chr(39) * 2)}'" for v in values]
-            expr = expr.replace(SQL_PLACEHOLDER_VALUES, ", ".join(items))
 
         if value_from is not None:
             if self.filter_type == FieldFilterType.DATE:
