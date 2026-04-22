@@ -552,11 +552,12 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         filter_type = self.cmb_filter_type.currentData()
         filter_name = self.edit_filter_title.text().strip()
 
+        if not filter_name or filter_name == "":
+            filter_name = "[Filter without title]"
+
         if not isinstance(layer, QgsVectorLayer) or not layer.isValid():
             return
         if not field_name:
-            return
-        if not filter_name:
             return
 
         self.filters_model.replace_filter(
