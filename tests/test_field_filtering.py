@@ -5,10 +5,10 @@
 
 
 import json
+from pathlib import Path
 
 import pytest
-from qgis.core import QgsVectorLayer
-
+from qgis.core import QgsVectorLayer, QgsProject, QgsVectorFileWriter
 from Mergin.field_filtering import (
     FieldFilter,
     FieldFilterModel,
@@ -18,6 +18,7 @@ from Mergin.field_filtering import (
     SQL_PLACEHOLDER_VALUE_TO,
     field_filters_from_json,
     field_filters_to_json,
+    excluded_layers_list,
 )
 
 
@@ -286,3 +287,58 @@ def test_model_load_from_json_replaces_existing(layer_field_filter: QgsVectorLay
     model.load_from_json(field_filters_to_json(new_filters))
 
     assert model.filter_names() == ["New"]
+
+
+def test_excluded_layers_list(layer_field_filter: QgsVectorLayer, mem_layer: QgsVectorLayer, tmp_path: Path):
+
+    # create geojson and shp layers for test
+    options = QgsVectorFileWriter.SaveVectorOptions()
+    options.driverName = "GeoJSON"
+
+    path_geojson_ = tmp_path / "layer.geojson"
+
+    error, _, _, _ = QgsVectorFileWriter.writeAsVectorFormatV3(
+        mem_layer,
+        path_geojson_.as_posix(),
+        QgsProject.instance().transformContext(),
+        options,
+    )
+
+    assert error == QgsVectorFileWriter.WriterError.NoError
+
+    layer_geojson = QgsVectorLayer(path_geojson_.as_posix(), "geojson", "ogr")
+    assert layer_geojson.isValid()
+
+    options = QgsVectorFileWriter.SaveVectorOptions()
+    options.driverName = "ESRI Shapefile"
+
+    path_shp = tmp_path / "layer.shp"
+
+    error, _, _, _ = QgsVectorFileWriter.writeAsVectorFormatV3(
+        mem_layer,
+        path_shp.as_posix(),
+        QgsProject.instance().transformContext(),
+        options,
+    )
+
+    assert error == QgsVectorFileWriter.WriterError.NoError
+
+    layer_shp = QgsVectorLayer(path_shp.as_posix(), "shapefile", "ogr")
+    assert layer_shp.isValid()
+
+    # test that GPKG layer is not excluded
+    QgsProject.instance().addMapLayer(layer_field_filter)
+    excluded_layers = excluded_layers_list()
+    assert len(excluded_layers) == 0
+    assert layer_field_filter not in excluded_layers
+
+    # add layers to project
+    QgsProject.instance().addMapLayer(layer_geojson)
+    QgsProject.instance().addMapLayer(layer_shp)
+
+    # test that non-GPKG layers are excluded
+    excluded_layers = excluded_layers_list()
+    assert len(excluded_layers) == 2
+    assert layer_geojson in excluded_layers
+    assert layer_shp in excluded_layers
+    assert layer_field_filter not in excluded_layers

@@ -48,7 +48,7 @@ from .field_filtering import (
     FieldFilter,
     FieldFilterModel,
     DeselectableListView,
-    excluded_filtering_providers,
+    excluded_layers_list,
     get_fields_for_checkbox,
 )
 
@@ -173,7 +173,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.filters_model.load_from_json(filters_json)
 
         self.cmb_filter_layer.setAllowEmptyLayer(True)
-        self.cmb_filter_layer.setExcludedProviders(excluded_filtering_providers())
+        self.cmb_filter_layer.setExceptedLayerList(excluded_layers_list())
         self.cmb_filter_layer.layerChanged.connect(self.on_filter_layer_fields_changed)
 
         for f in FieldFilterType:

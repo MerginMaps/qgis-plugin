@@ -2,7 +2,7 @@ import json
 from enum import Enum
 from typing import Optional, Union, List
 
-from qgis.core import QgsProviderRegistry, QgsVectorLayer, QgsFields
+from qgis.core import QgsProviderRegistry, QgsVectorLayer, QgsFields, QgsProject, QgsMapLayer, Qgis
 from qgis.PyQt.QtCore import Qt, QAbstractListModel, QModelIndex, pyqtSignal, QMetaType
 from qgis.PyQt.QtWidgets import QListView
 from qgis.PyQt.QtGui import QMouseEvent
@@ -28,6 +28,31 @@ def excluded_filtering_providers() -> List[str]:
     excluded_providers.remove("ogr")
     excluded_providers.remove("postgres")
     return excluded_providers
+
+
+def excluded_layers_list() -> List[QgsMapLayer]:
+    excluded_layers: List[QgsMapLayer] = []
+
+    project_layers = QgsProject.instance().mapLayers()
+
+    layer: QgsMapLayer
+    for _, layer in project_layers.items():
+        if layer.type() != Qgis.LayerType.Vector:
+            excluded_layers.append(layer)
+            continue
+
+        dp = layer.dataProvider()
+
+        if dp.name() != "ogr":
+            excluded_layers.append(layer)
+            continue
+
+        # storage type in OGR should return driver name of the datasource
+        if not hasattr(dp, "storageType") or dp.storageType() != "GPKG":
+            excluded_layers.append(layer)
+            continue
+
+    return excluded_layers
 
 
 def field_filters_to_json(filters: List["FieldFilter"]) -> str:
