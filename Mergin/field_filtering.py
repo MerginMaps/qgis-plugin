@@ -37,7 +37,15 @@ def excluded_layers_list() -> List[QgsMapLayer]:
 
     layer: QgsMapLayer
     for _, layer in project_layers.items():
-        if layer.type() != Qgis.LayerType.Vector:
+
+        is_vector = False
+
+        if Qgis.versionInt() >= 33000:
+            is_vector = layer.type() == Qgis.LayerType.Vector
+        else:
+            is_vector = layer.type() == QgsMapLayer.VectorLayer
+
+        if not is_vector:
             excluded_layers.append(layer)
             continue
 
