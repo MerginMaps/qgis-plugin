@@ -1,3 +1,6 @@
+# GPLv3 license
+# Copyright Lutra Consulting Limited
+
 import json
 from enum import Enum
 from typing import Optional, Union, List
