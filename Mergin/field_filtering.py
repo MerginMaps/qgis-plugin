@@ -121,10 +121,6 @@ class FieldFilter:
             "sql_expression": self.sql_expression,
         }
 
-    @property
-    def is_postgres(self) -> bool:
-        return self.provider == "postgres"
-
     def __eq__(self, value: object) -> bool:
         if not isinstance(value, FieldFilter):
             return NotImplemented
@@ -155,9 +151,8 @@ class FieldFilter:
         field = f'"{self.field_name}"'
 
         if self.filter_type == FieldFilterType.TEXT:
-            op = "ILIKE" if self.is_postgres else "LIKE"
             cast = self._cast_field(field)
-            expr = f"{cast} {op} '%{SQL_PLACEHOLDER_VALUE}%'"
+            expr = f"{cast} LIKE '%{SQL_PLACEHOLDER_VALUE}%'"
 
         elif self.filter_type == FieldFilterType.NUMBER:
             cast = self._cast_field(field)
@@ -219,10 +214,7 @@ class FieldFilter:
                 expr = expr.replace(SQL_PLACEHOLDER_VALUE, literal)
 
             elif self.filter_type == FieldFilterType.CHECKBOX:
-                if self.is_postgres:
-                    literal = "TRUE" if value else "FALSE"
-                else:
-                    literal = "1" if value else "0"
+                literal = "1" if value else "0"
                 expr = expr.replace(SQL_PLACEHOLDER_VALUE, literal)
 
             elif self.filter_type == FieldFilterType.SINGLE_SELECT:
@@ -244,19 +236,12 @@ class FieldFilter:
         return expr
 
     def _cast_field(self, field: str) -> str:
-        """Wrap field in a CAST expression matching the filter type and provider.
-
-        Cast types:
-            TEXT    — CHARACTER (OGR) / text (PostgreSQL)
-            NUMBER  — FLOAT (OGR) / numeric (PostgreSQL)
-            DATE    — CHARACTER  (OGR) / timestamp (PostgreSQL)
-        """
         if self.filter_type == FieldFilterType.TEXT:
-            cast_type = "text" if self.is_postgres else "CHARACTER"
+            cast_type = "CHARACTER"
         elif self.filter_type == FieldFilterType.NUMBER:
-            cast_type = "numeric" if self.is_postgres else "FLOAT"
+            cast_type = "FLOAT"
         elif self.filter_type == FieldFilterType.DATE:
-            cast_type = "timestamp" if self.is_postgres else "CHARACTER"
+            cast_type = "CHARACTER"
         else:
             return field
 

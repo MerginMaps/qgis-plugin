@@ -22,21 +22,6 @@ from Mergin.field_filtering import (
 )
 
 
-def _make_postgres_filter(
-    layer_field_filter: QgsVectorLayer, field_name: str, filter_type: FieldFilterType
-) -> FieldFilter:  # noqa: E501
-    """Create a FieldFilter with a postgres provider, bypassing layer validation."""
-    f = object.__new__(FieldFilter)
-    f.layer_id = layer_field_filter.id()
-    f.provider = "postgres"
-    f.field_name = field_name
-    f.filter_type = filter_type
-    f.filter_name = "test"
-    f.sql_expression = ""
-    f._generate_sql_expression()
-    return f
-
-
 # -----------------------------------------------------------------------------
 # TestFieldFilter
 # -----------------------------------------------------------------------------
@@ -133,32 +118,6 @@ def test_single_select_ogr(layer_field_filter: QgsVectorLayer):
 def test_multi_select_ogr(layer_field_filter: QgsVectorLayer):
     f = FieldFilter(layer_field_filter, "attr_string", FieldFilterType.MULTI_SELECT, "Multi")
     assert f.sql_expression == f'"attr_string" IS {SQL_PLACEHOLDER_VALUE}'
-
-
-# -----------------------------------------------------------------------------
-# SQL expression — PostgreSQL provider
-# -----------------------------------------------------------------------------
-
-
-def test_text_postgres(layer_field_filter: QgsVectorLayer):
-    f = _make_postgres_filter(layer_field_filter, "attr_string", FieldFilterType.TEXT)
-    assert f.sql_expression == f"CAST(\"attr_string\" AS text) ILIKE '%{SQL_PLACEHOLDER_VALUE}%'"
-
-
-def test_number_postgres(layer_field_filter: QgsVectorLayer):
-    f = _make_postgres_filter(layer_field_filter, "attr_double", FieldFilterType.NUMBER)
-    assert f.sql_expression == (
-        f'CAST("attr_double" AS numeric) >= {SQL_PLACEHOLDER_VALUE_FROM} '
-        f'AND CAST("attr_double" AS numeric) <= {SQL_PLACEHOLDER_VALUE_TO}'
-    )
-
-
-def test_date_postgres(layer_field_filter: QgsVectorLayer):
-    f = _make_postgres_filter(layer_field_filter, "attr_date", FieldFilterType.DATE)
-    assert f.sql_expression == (
-        f"CAST(\"attr_date\" AS timestamp) >= '{SQL_PLACEHOLDER_VALUE_FROM}' "
-        f"AND CAST(\"attr_date\" AS timestamp) <= '{SQL_PLACEHOLDER_VALUE_TO}'"
-    )
 
 
 # -----------------------------------------------------------------------------
