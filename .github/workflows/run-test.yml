@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        qgis-version: ["3.22", "3.28", "3.34", "3.40", "3.44"]
+        qgis-version: [ "3.22", "3.28", "3.34", "3.40", "3.44" ]
 
     steps:
       - name: Checkout plugin code
@@ -84,6 +84,6 @@ jobs:
         run: cp -r client/mergin plugin/${{ env.PLUGIN_NAME }}
 
       - name: Run tests
-        run: conda run -n qgis_env pytest  ${{ github.workspace }}/plugin/tests --cov=Mergin --cov-report=term-missing:skip-covered -rP -vv -s
+        run: conda run -n qgis_env pytest  ${{ github.workspace }}/plugin/tests --cov=Mergin --cov-report=term-missing:skip-covered --no-cov-on-fail -rP -vv -s
         env:
           PYTHONPATH: ${{ github.workspace }}/plugin
