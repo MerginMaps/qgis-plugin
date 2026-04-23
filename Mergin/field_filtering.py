@@ -2,7 +2,7 @@ import json
 from enum import Enum
 from typing import Optional, Union, List
 
-from qgis.core import QgsProviderRegistry, QgsVectorLayer, QgsFields, QgsProject, QgsMapLayer, Qgis
+from qgis.core import QgsVectorLayer, QgsFields, QgsProject, QgsMapLayer, Qgis
 from qgis.PyQt.QtCore import Qt, QAbstractListModel, QModelIndex, pyqtSignal, QMetaType
 from qgis.PyQt.QtWidgets import QListView
 from qgis.PyQt.QtGui import QMouseEvent
@@ -20,14 +20,6 @@ class FieldFilterType(str, Enum):
     CHECKBOX = "Checkbox"
     SINGLE_SELECT = "Single select"
     MULTI_SELECT = "Multi select"
-
-
-def excluded_filtering_providers() -> List[str]:
-    """Get list of providers to exclude from layer selection in field filter settings."""
-    excluded_providers = QgsProviderRegistry.instance().providerList()
-    excluded_providers.remove("ogr")
-    excluded_providers.remove("postgres")
-    return excluded_providers
 
 
 def excluded_layers_list() -> List[QgsMapLayer]:
