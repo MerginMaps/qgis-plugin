@@ -1,9 +1,10 @@
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
+from xml.etree.ElementTree import Element
 from typing import Dict
 import zipfile
 
 
-def read_xml_tree_from_qgz(qgz_path: str) -> ET.Element:
+def read_xml_tree_from_qgz(qgz_path: str) -> Element:
     qgs_filename = next(
         (name for name in zipfile.ZipFile(qgz_path).namelist() if name.endswith(".qgs")),
         None,
