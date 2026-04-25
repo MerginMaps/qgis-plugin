@@ -71,3 +71,9 @@ def layer_field_filter(test_data_path: Path) -> QgsVectorLayer:
     layer = QgsVectorLayer(str(test_data_path / "data_field_filter.gpkg"), "field filter layer", "ogr")
     assert layer.isValid()
     return layer
+
+
+@pytest.fixture
+def qgis_project_4_path(test_data_path: Path) -> Path:
+    """Fixture for a QGIS project file created with QGIS 4.x."""
+    return test_data_path / "test_variables_4.0.qgz"
