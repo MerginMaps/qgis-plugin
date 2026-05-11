@@ -75,22 +75,22 @@ def get_row_from_db(db_conn, schema_table, entry_changes):
     Fetches a single row from DB's table based on the values of pkeys
     in changeset entry
     """
-    with db_conn.cursor() as c:
-        where_clauses = []
-        query_params = []
+    c = db_conn.cursor()
+    where_clauses = []
+    query_params = []
 
-        for i, col in enumerate(schema_table.columns):
-            if col.pkey:
-                where_clauses.append('"{}" = %s'.format(col.name))
-                val = old_value_for_column_by_index(entry_changes, i)
-                query_params.append(val)
+    for i, col in enumerate(schema_table.columns):
+        if col.pkey:
+            where_clauses.append('"{}" = ?'.format(col.name))
+            val = old_value_for_column_by_index(entry_changes, i)
+            query_params.append(val)
 
-        # We parameterize values securely; table/column names are trusted internal schema objects.
-        query = 'SELECT * FROM "{}" WHERE {}'.format(schema_table.name, " AND ".join(where_clauses))  # nosec B608
+    # We parameterize values securely; table/column names are trusted internal schema objects.
+    query = 'SELECT * FROM "{}" WHERE {}'.format(schema_table.name, " AND ".join(where_clauses))  # nosec B608
 
-        c.execute(query, tuple(query_params))
+    c.execute(query, tuple(query_params))
 
-        return c.fetchone()
+    return c.fetchone()
 
 
 def parse_gpkg_geom_encoding(wkb_with_gpkg_hdr):
