@@ -156,9 +156,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
         self.label_vcrs_warning.setOpenExternalLinks(False)
         self.label_vcrs_warning.linkActivated.connect(self._download_geoid_grid)
 
-        QgsProject.instance().transformContextChanged.connect(
-            lambda: self._check_geoid_grid(self.cmb_vertical_crs.crs())
-        )
+        QgsProject.instance().transformContextChanged.connect(self._on_transformation_modified)
 
         use_vcrs, ok = QgsProject.instance().readBoolEntry("Mergin", "ElevationTransformationEnabled", False)
         self.chk_use_vertical_crs.setChecked(use_vcrs)
@@ -584,3 +582,7 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
             item = self.mColorsHorizontalLayout.itemAt(i).widget()
             if isinstance(item, QgsColorButton):
                 item.setEnabled(self.chk_map_sketches_enabled.isChecked())
+
+    def _on_transformation_modified(self):
+        if self.cmb_vertical_crs:
+            self._check_geoid_grid(self.cmb_vertical_crs.crs())
