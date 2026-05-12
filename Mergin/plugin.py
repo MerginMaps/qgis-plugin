@@ -259,6 +259,7 @@ class MerginPlugin:
             self.manager = None
         if self.has_browser_item():
             self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager, err=error)
+        self.enable_toolbar_actions()
 
     def has_browser_item(self):
         """Check if the Mergin Maps provider Browser item exists and has the root item defined."""
