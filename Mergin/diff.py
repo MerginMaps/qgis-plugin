@@ -348,10 +348,11 @@ def make_local_changes_layer(mp, layer):
 
     fields, cols_to_fields = create_field_list(db_schema[table_name])
 
-    db_conn = None  # no ref. db
     db_conn = sqlite3.connect(base_file)
-
-    features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn)
+    try:
+        features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn)
+    finally:
+        db_conn.close()
 
     # create diff layer
     vl = QgsVectorLayer(
@@ -400,10 +401,13 @@ def make_version_changes_layers(project_path, version):
             fields, cols_to_fields = create_field_list(db_schema[table_name])
             geom_type, geom_crs = get_layer_geometry_info(schema_json, table_name)
 
-            db_conn = None  # no ref. db
             db_conn = sqlite3.connect(gpkg_file)
-
-            features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn)
+            try:
+                features = diff_table_to_features(
+                    diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn
+                )
+            finally:
+                db_conn.close()
 
             # create diff layer
             if geom_type is None:

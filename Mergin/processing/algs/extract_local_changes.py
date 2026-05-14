@@ -115,9 +115,13 @@ class ExtractLocalChanges(QgsProcessingAlgorithm):
         feedback.setProgress(15)
 
         if diff and table_name in diff.keys():
-            db_conn = None  # no ref. db
             db_conn = sqlite3.connect(layer_path)
-            features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, fields_mapping, db_conn)
+            try:
+                features = diff_table_to_features(
+                    diff[table_name], db_schema[table_name], fields, fields_mapping, db_conn
+                )
+            finally:
+                db_conn.close()
             feedback.setProgress(20)
 
             step = 80.0 / len(features) if features else 0
