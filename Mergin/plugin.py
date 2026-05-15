@@ -482,6 +482,8 @@ class MerginPlugin:
 
     def current_project_sync(self):
         """Synchronise current Mergin Maps project."""
+        if not self.manager.check_project_server(self.mergin_proj_dir):
+            return
         AuthSync().export_auth(self.mc)
         self.manager.project_status(self.mergin_proj_dir)
 
