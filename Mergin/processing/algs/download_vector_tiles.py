@@ -56,8 +56,7 @@ class MBTilesWriter:
             "CREATE UNIQUE INDEX tile_index on tiles (zoom_level, tile_column, tile_row);"
             "COMMIT;"
         )
-        cur = self.conn.cursor()
-        cur.executescript(sql)
+        self.conn.executescript(sql)
         return True
 
     def set_metadata_value(self, key, value):
@@ -65,8 +64,7 @@ class MBTilesWriter:
             return
 
         params = (key, value)
-        cur = self.conn.cursor()
-        cur.execute("insert into metadata values (?, ?)", params)
+        self.conn.execute("insert into metadata values (?, ?)", params)
         self.conn.commit()
 
     def set_tile_data(self, z, x, y, data):
@@ -74,8 +72,7 @@ class MBTilesWriter:
             return
 
         params = (z, x, y, data)
-        cur = self.conn.cursor()
-        cur.execute("insert into tiles values (?, ?, ?, ?)", params)
+        self.conn.execute("insert into tiles values (?, ?, ?, ?)", params)
         self.conn.commit()
 
     def close(self):
