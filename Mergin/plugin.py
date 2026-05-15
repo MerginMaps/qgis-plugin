@@ -54,7 +54,6 @@ from .utils_auth import (
     AuthTokenExpiredError,
     set_qgsexpressionscontext,
     get_authcfg,
-    AuthSync,
 )
 
 from .mergin.merginproject import MerginProject
@@ -482,9 +481,6 @@ class MerginPlugin:
 
     def current_project_sync(self):
         """Synchronise current Mergin Maps project."""
-        if not self.manager.check_project_server(self.mergin_proj_dir):
-            return
-        AuthSync().export_auth(self.mc)
         self.manager.project_status(self.mergin_proj_dir)
 
     def find_project(self):
