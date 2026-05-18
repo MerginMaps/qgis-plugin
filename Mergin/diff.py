@@ -75,22 +75,19 @@ def get_row_from_db(db_conn, schema_table, entry_changes):
     Fetches a single row from DB's table based on the values of pkeys
     in changeset entry
     """
-    with db_conn.cursor() as c:
-        where_clauses = []
-        query_params = []
+    where_clauses = []
+    query_params = []
 
-        for i, col in enumerate(schema_table.columns):
-            if col.pkey:
-                where_clauses.append('"{}" = %s'.format(col.name))
-                val = old_value_for_column_by_index(entry_changes, i)
-                query_params.append(val)
+    for i, col in enumerate(schema_table.columns):
+        if col.pkey:
+            where_clauses.append('"{}" = ?'.format(col.name))
+            val = old_value_for_column_by_index(entry_changes, i)
+            query_params.append(val)
 
-        # We parameterize values securely; table/column names are trusted internal schema objects.
-        query = 'SELECT * FROM "{}" WHERE {}'.format(schema_table.name, " AND ".join(where_clauses))  # nosec B608
+    # We parameterize values securely; table/column names are trusted internal schema objects.
+    query = 'SELECT * FROM "{}" WHERE {}'.format(schema_table.name, " AND ".join(where_clauses))  # nosec B608
 
-        c.execute(query, tuple(query_params))
-
-        return c.fetchone()
+    return db_conn.execute(query, tuple(query_params)).fetchone()
 
 
 def parse_gpkg_geom_encoding(wkb_with_gpkg_hdr):
@@ -348,10 +345,11 @@ def make_local_changes_layer(mp, layer):
 
     fields, cols_to_fields = create_field_list(db_schema[table_name])
 
-    db_conn = None  # no ref. db
     db_conn = sqlite3.connect(base_file)
-
-    features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn)
+    try:
+        features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn)
+    finally:
+        db_conn.close()
 
     # create diff layer
     vl = QgsVectorLayer(
@@ -400,10 +398,13 @@ def make_version_changes_layers(project_path, version):
             fields, cols_to_fields = create_field_list(db_schema[table_name])
             geom_type, geom_crs = get_layer_geometry_info(schema_json, table_name)
 
-            db_conn = None  # no ref. db
             db_conn = sqlite3.connect(gpkg_file)
-
-            features = diff_table_to_features(diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn)
+            try:
+                features = diff_table_to_features(
+                    diff[table_name], db_schema[table_name], fields, cols_to_fields, db_conn
+                )
+            finally:
+                db_conn.close()
 
             # create diff layer
             if geom_type is None:
