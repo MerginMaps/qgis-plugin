@@ -249,6 +249,7 @@ class MerginProjectsManager(object):
         if not self.check_project_server(project_dir):
             return
         try:
+            AuthSync().export_auth(self.mc)
             pull_changes, push_changes, push_changes_summary = self.mc.project_status(project_dir)
             dlg = ProjectStatusDialog(
                 pull_changes,
