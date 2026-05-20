@@ -66,7 +66,7 @@ jobs:
           conda install -n qgis_env qgis=${{ matrix.qgis-version }} pytest pytest-qt pytest-cov --yes
           conda run -n qgis_env pip install --no-cache-dir pytest-qgis
           # mergin cilent dependencies
-          conda run -n qgis_env pip install python-dateutil pytz wheel
+          conda run -n qgis_env pip install python-dateutil pytz wheel setuptools
 
       - name: Install python-api-client dependencies
         run: |
