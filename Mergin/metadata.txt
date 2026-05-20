@@ -4,14 +4,17 @@ name=Mergin
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 description=Handle Mergin Maps projects
-version=2026.4.0
+version=2026.4.1
 author=Lutra Consulting
 email=info@merginmaps.com
 about=Mergin Maps is a repository for storing and tracking changes to QGIS projects/data and has its mobile app for field geo-surveys. With this plugin, users can upload and sync their data to Mergin Maps service.
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2026.4.0
+changelog=2026.4.1
+  - Fixed issues in the changes viewer
+  - Fixed an exception when syncing to a different server
+  <p>2026.4.0
   - Integrated V2 pull mechanism
   <p>2026.3.0
   - Added support to create filters
