@@ -181,7 +181,7 @@ class FieldFilter:
             self.filter_type in (FieldFilterType.SINGLE_SELECT, FieldFilterType.MULTI_SELECT)
             and self.field_has_multi_selection is True
         ):
-            expr = f"(',' || TRIM(\"NAME_OF_FIELD\", '{{}}') || ',' ) LIKE '%,' || {SQL_PLACEHOLDER_VALUE} || ',%'"
+            expr = f"(',' || TRIM(\"{field}\", '{{}}') || ',' ) LIKE '%,' || {SQL_PLACEHOLDER_VALUE} || ',%'"
 
         else:
             expr = ""
