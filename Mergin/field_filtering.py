@@ -85,10 +85,14 @@ class FieldFilter:
         self.provider = ""
         self.layer_id = ""
 
+        allow_multi = None
         if layer is not None:
             provider = layer.dataProvider()
             self.provider = provider.name() if provider else ""
             self.layer_id = layer.id()
+            allow_multi = layer.fields().field(field_name).editorWidgetSetup().config().get("AllowMulti", None)
+
+        self.field_has_multi_selection = allow_multi == True
 
         self.field_name = field_name
         self.filter_type = filter_type
@@ -167,10 +171,16 @@ class FieldFilter:
         elif self.filter_type == FieldFilterType.CHECKBOX:
             expr = f"{field} = {SQL_PLACEHOLDER_VALUE}"
 
-        elif self.filter_type == FieldFilterType.SINGLE_SELECT:
+        elif (
+            self.filter_type in (FieldFilterType.SINGLE_SELECT, FieldFilterType.MULTI_SELECT)
+            and self.field_has_multi_selection is False
+        ):
             expr = f"{field} IS {SQL_PLACEHOLDER_VALUE}"
 
-        elif self.filter_type == FieldFilterType.MULTI_SELECT:
+        elif (
+            self.filter_type in (FieldFilterType.SINGLE_SELECT, FieldFilterType.MULTI_SELECT)
+            and self.field_has_multi_selection is True
+        ):
             expr = f"(',' || TRIM(\"NAME_OF_FIELD\", '{{}}') || ',' ) LIKE '%,' || {SQL_PLACEHOLDER_VALUE} || ',%'"
 
         else:
