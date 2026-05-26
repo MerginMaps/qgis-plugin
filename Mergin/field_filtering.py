@@ -10,7 +10,6 @@ from qgis.PyQt.QtCore import Qt, QAbstractListModel, QModelIndex, pyqtSignal, QM
 from qgis.PyQt.QtWidgets import QListView
 from qgis.PyQt.QtGui import QMouseEvent
 
-
 SQL_PLACEHOLDER_VALUE = "@@value@@"
 SQL_PLACEHOLDER_VALUE_FROM = "@@value_from@@"
 SQL_PLACEHOLDER_VALUE_TO = "@@value_to@@"
@@ -168,8 +167,11 @@ class FieldFilter:
         elif self.filter_type == FieldFilterType.CHECKBOX:
             expr = f"{field} = {SQL_PLACEHOLDER_VALUE}"
 
-        elif self.filter_type in (FieldFilterType.SINGLE_SELECT, FieldFilterType.MULTI_SELECT):
+        elif self.filter_type == FieldFilterType.SINGLE_SELECT:
             expr = f"{field} IS {SQL_PLACEHOLDER_VALUE}"
+
+        elif self.filter_type == FieldFilterType.MULTI_SELECT:
+            expr = f"(',' || TRIM(\"NAME_OF_FIELD\", '{{}}') || ',' ) LIKE '%,' || {SQL_PLACEHOLDER_VALUE} || ',%'"
 
         else:
             expr = ""
