@@ -92,7 +92,7 @@ class FieldFilter:
             self.layer_id = layer.id()
             allow_multi = layer.fields().field(field_name).editorWidgetSetup().config().get("AllowMulti", None)
 
-        self.field_has_multi_selection = allow_multi == True
+        self.field_has_multi_selection = allow_multi is True
 
         self.field_name = field_name
         self.filter_type = filter_type
