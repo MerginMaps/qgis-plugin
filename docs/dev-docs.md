@@ -27,6 +27,21 @@ Now link the plugin to your QGIS profile python:
     mklink /J <path-to-QGIS-user-folder>\QGIS3\profiles\default\python\plugins\Mergin <path-to-mergin-qgis-plugin>\Mergin
 ```
 
+### Running tests
+
+Tests live in [`tests/`](../tests) and run via `pytest`. Because the suite depends on QGIS alongside Python testing tooling, conda is the most reliable way to assemble the whole stack. It also enables pinning a specific QGIS version, which is how CI tests across multiple releases. The repo ships an [`environment.yml`](../environment.yml) for it.
+
+1. Install [Miniconda](https://docs.anaconda.com/miniconda/) if you don't have it yet.
+2. Create the test environment :
+   ```
+   conda env create -f environment.yml
+   ```
+3. Activate it and run the suite from the repo root:
+   ```
+   conda activate qgis-test-env
+   pytest ./tests --cov=Mergin
+   ```
+
 ## Debugging (VS Code)
 
 1. Install the `python3-debugpy` package. QGIS DevTools relies on `debugpy` being available in QGIS's bundled Python.
