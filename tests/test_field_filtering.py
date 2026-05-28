@@ -56,7 +56,8 @@ def test_to_dict(layer_field_filter: QgsVectorLayer):
         "filter_type",
         "filter_name",
         "sql_expression",
-    }  # noqa: E501
+        "field_has_multi_selection",
+    }
     assert data["field_name"] == "attr_string"
     assert data["filter_type"] == "Text"
     assert data["filter_name"] == "My Filter"
