@@ -106,11 +106,11 @@ class FieldFilter:
     def from_dict(cls, data: dict) -> "FieldFilter":
         """Create a FieldFilter instance from a dictionary"""
         f = object.__new__(cls)
-        f.layer_id = data["layer_id"]
+        f.layer_id = data.get("layer_id", "")
         f.provider = data.get("provider", "")
-        f.field_name = data["field_name"]
-        f.filter_type = FieldFilterType(data["filter_type"])
-        f.filter_name = data["filter_name"]
+        f.field_name = data.get("field_name", "")
+        f.filter_type = FieldFilterType(data.get("filter_type", ""))
+        f.filter_name = data.get("filter_name", "")
         f.sql_expression = data.get("sql_expression", "")
         f.field_has_multi_selection = data.get("field_has_multi_selection", False)
         if not f.sql_expression:
@@ -138,6 +138,7 @@ class FieldFilter:
             and self.field_name == value.field_name
             and self.filter_type == value.filter_type
             and self.filter_name == value.filter_name
+            and self.field_has_multi_selection == value.field_has_multi_selection
         )
 
     def _generate_sql_expression(self) -> None:
