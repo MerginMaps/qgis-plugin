@@ -184,7 +184,7 @@ class FieldFilter:
             expr = (
                 f"((',' || TRIM({field}, '{{}}') || ',' ) LIKE '%,' || {SQL_PLACEHOLDER_VALUE} || ',%')"
                 "OR"
-                f"((',' || TRIM({field}, '{{}}') || ',' ) LIKE '%,\"' || {SQL_PLACEHOLDER_VALUE} || '\" ,%')"
+                f"((',' || TRIM({field}, '{{}}') || ',' ) LIKE '%,\"' || {SQL_PLACEHOLDER_VALUE} || '\",%')"
             )
 
         else:
