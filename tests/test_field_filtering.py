@@ -56,7 +56,8 @@ def test_to_dict(layer_field_filter: QgsVectorLayer):
         "filter_type",
         "filter_name",
         "sql_expression",
-    }  # noqa: E501
+        "field_has_multi_selection",
+    }
     assert data["field_name"] == "attr_string"
     assert data["filter_type"] == "Text"
     assert data["filter_name"] == "My Filter"
@@ -118,6 +119,22 @@ def test_single_select_ogr(layer_field_filter: QgsVectorLayer):
 def test_multi_select_ogr(layer_field_filter: QgsVectorLayer):
     f = FieldFilter(layer_field_filter, "attr_string", FieldFilterType.MULTI_SELECT, "Multi")
     assert f.sql_expression == f'"attr_string" IS {SQL_PLACEHOLDER_VALUE}'
+
+
+def test_multi_select_with_allow_multi_ogr(layer_field_filter: QgsVectorLayer):
+    """Test MULTI_SELECT SQL expression when the field has AllowMulti enabled."""
+    data = FieldFilter(layer_field_filter, "attr_string", FieldFilterType.MULTI_SELECT, "Multi").to_dict()
+    data["field_has_multi_selection"] = True
+    data["sql_expression"] = ""
+    f = FieldFilter.from_dict(data)
+
+    assert f.field_has_multi_selection is True
+    expected = (
+        f"((',' || TRIM(\"attr_string\", '{{}}') || ',' ) LIKE '%,' || {SQL_PLACEHOLDER_VALUE} || ',%')"
+        "OR"
+        f"((',' || TRIM(\"attr_string\", '{{}}') || ',' ) LIKE '%,\"' || {SQL_PLACEHOLDER_VALUE} || '\",%')"
+    )
+    assert f.sql_expression == expected
 
 
 # -----------------------------------------------------------------------------

@@ -10,7 +10,6 @@ from qgis.PyQt.QtCore import Qt, QAbstractListModel, QModelIndex, pyqtSignal, QM
 from qgis.PyQt.QtWidgets import QListView
 from qgis.PyQt.QtGui import QMouseEvent
 
-
 SQL_PLACEHOLDER_VALUE = "@@value@@"
 SQL_PLACEHOLDER_VALUE_FROM = "@@value_from@@"
 SQL_PLACEHOLDER_VALUE_TO = "@@value_to@@"
@@ -86,10 +85,14 @@ class FieldFilter:
         self.provider = ""
         self.layer_id = ""
 
+        allow_multi = None
         if layer is not None:
             provider = layer.dataProvider()
             self.provider = provider.name() if provider else ""
             self.layer_id = layer.id()
+            allow_multi = layer.fields().field(field_name).editorWidgetSetup().config().get("AllowMulti", None)
+
+        self.field_has_multi_selection = allow_multi is True
 
         self.field_name = field_name
         self.filter_type = filter_type
@@ -103,12 +106,13 @@ class FieldFilter:
     def from_dict(cls, data: dict) -> "FieldFilter":
         """Create a FieldFilter instance from a dictionary"""
         f = object.__new__(cls)
-        f.layer_id = data["layer_id"]
+        f.layer_id = data.get("layer_id", "")
         f.provider = data.get("provider", "")
-        f.field_name = data["field_name"]
-        f.filter_type = FieldFilterType(data["filter_type"])
-        f.filter_name = data["filter_name"]
+        f.field_name = data.get("field_name", "")
+        f.filter_type = FieldFilterType(data.get("filter_type", ""))
+        f.filter_name = data.get("filter_name", "")
         f.sql_expression = data.get("sql_expression", "")
+        f.field_has_multi_selection = data.get("field_has_multi_selection", False)
         if not f.sql_expression:
             f._generate_sql_expression()
         return f
@@ -122,6 +126,7 @@ class FieldFilter:
             "filter_type": self.filter_type.value,
             "filter_name": self.filter_name,
             "sql_expression": self.sql_expression,
+            "field_has_multi_selection": self.field_has_multi_selection,
         }
 
     def __eq__(self, value: object) -> bool:
@@ -133,6 +138,7 @@ class FieldFilter:
             and self.field_name == value.field_name
             and self.filter_type == value.filter_type
             and self.filter_name == value.filter_name
+            and self.field_has_multi_selection == value.field_has_multi_selection
         )
 
     def _generate_sql_expression(self) -> None:
@@ -168,8 +174,21 @@ class FieldFilter:
         elif self.filter_type == FieldFilterType.CHECKBOX:
             expr = f"{field} = {SQL_PLACEHOLDER_VALUE}"
 
-        elif self.filter_type in (FieldFilterType.SINGLE_SELECT, FieldFilterType.MULTI_SELECT):
+        elif (
+            self.filter_type in (FieldFilterType.SINGLE_SELECT, FieldFilterType.MULTI_SELECT)
+            and self.field_has_multi_selection is False
+        ):
             expr = f"{field} IS {SQL_PLACEHOLDER_VALUE}"
+
+        elif (
+            self.filter_type in (FieldFilterType.SINGLE_SELECT, FieldFilterType.MULTI_SELECT)
+            and self.field_has_multi_selection is True
+        ):
+            expr = (
+                f"((',' || TRIM({field}, '{{}}') || ',' ) LIKE '%,' || {SQL_PLACEHOLDER_VALUE} || ',%')"
+                "OR"
+                f"((',' || TRIM({field}, '{{}}') || ',' ) LIKE '%,\"' || {SQL_PLACEHOLDER_VALUE} || '\",%')"
+            )
 
         else:
             expr = ""
