@@ -112,6 +112,7 @@ class FieldFilter:
         f.filter_type = FieldFilterType(data["filter_type"])
         f.filter_name = data["filter_name"]
         f.sql_expression = data.get("sql_expression", "")
+        f.field_has_multi_selection = data.get("field_has_multi_selection", False)
         if not f.sql_expression:
             f._generate_sql_expression()
         return f
@@ -125,6 +126,7 @@ class FieldFilter:
             "filter_type": self.filter_type.value,
             "filter_name": self.filter_name,
             "sql_expression": self.sql_expression,
+            "field_has_multi_selection": self.field_has_multi_selection,
         }
 
     def __eq__(self, value: object) -> bool:
