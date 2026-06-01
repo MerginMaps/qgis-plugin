@@ -249,7 +249,10 @@ class MerginProjectsManager(object):
         if not self.check_project_server(project_dir):
             return
         try:
-            AuthSync().export_auth(self.mc)
+            # Skip when the synced project isn't open in QGIS: AuthSync init would fail.
+            qgis_proj_filename = os.path.normpath(QgsProject.instance().fileName())
+            if qgis_proj_filename in find_qgis_files(project_dir):
+                AuthSync().export_auth(self.mc)
             pull_changes, push_changes, push_changes_summary = self.mc.project_status(project_dir)
             dlg = ProjectStatusDialog(
                 pull_changes,
