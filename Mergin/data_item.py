@@ -141,14 +141,37 @@ class MerginLocalProjectItem(QgsDirectoryItem):
         self.project_name = posixpath.join(project["namespace"], project["name"])  # posix path for server API calls
         self.path = mergin_project_local_path(self.project_name)
         display_name = project["name"]
+        open_project_path = mergin_project_local_path()
+        self.is_open = (
+            self.path is not None and open_project_path is not None and same_dir(self.path, open_project_path)
+        )
+        if self.is_open:
+            display_name = f"{project['name']} • open"
         QgsDirectoryItem.__init__(self, parent, display_name, self.path, "/Mergin/" + self.project_name)
-        self.setSortKey(f"0 {self.name()}")
+        # put the opened project at the beginning of local entries.
+        self.setSortKey(f" 0 {project['name']}" if self.is_open else f"0 {self.name()}")
+        # QgsDirectoryItem.icon() ignores setIcon(), so cache the override and serve it from icon() instead.
+        self._open_icon = (
+            QIcon(os.path.join(os.path.dirname(__file__), "images", "folder-open.svg")) if self.is_open else None
+        )
         self.project = project
         self.project_manager = project_manager
         if self.project_manager is not None:
             self.mc = self.project_manager.mc
         else:
             self.mc = None
+
+    def icon(self):
+        """Provide the custom icon for the currently-open project; fall back to the default folder otherwise."""
+        if self.is_open and self._open_icon is not None:
+            return self._open_icon
+        return super().icon()
+
+    def equal(self, other):
+        """Called when the browser tree refreshes; also compare is_open so the diff detects open/close transitions."""
+        if not super().equal(other):
+            return False
+        return getattr(other, "is_open", False) == self.is_open
 
     def open_project(self):
         self.project_manager.open_project(self.path)
@@ -505,6 +528,11 @@ class MerginRootItem(QgsDataCollectionItem):
             return
         page_to_get = floor(len(self.projects) / PROJS_PER_PAGE) + 1
         self.fetch_projects(page=page_to_get)
+        self.refresh()
+
+    def reload_local(self):
+        """Re-read local projects from settings and refresh the tree."""
+        self.local_projects = []
         self.refresh()
 
     def reload(self):

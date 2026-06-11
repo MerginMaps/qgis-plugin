@@ -540,6 +540,10 @@ class MerginPlugin:
         if self.mergin_proj_dir is not None:
             self.enable_toolbar_actions()
             set_qgis_project_mergin_variables(self.mergin_proj_dir)
+        # re-render Browser items so the opened-project indicator follows the active QGIS project.
+        # reload_local() invalidates the local-projects cache
+        if self.has_browser_item():
+            self.data_item_provider.root_item.reload_local()
 
     def add_context_menu_actions(self, layers):
         provider_names = "vectortile"
