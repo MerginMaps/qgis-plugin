@@ -92,8 +92,13 @@ class _ProjectNameWidget(QWidget):
             text_w = metrics.horizontalAdvance(self._full_text) + margins.left() + margins.right()
             sub_w = 0
             if self._sub_label:
-                sub_w = self._sub_label.fontMetrics().horizontalAdvance(self._sub_label.text()) + margins.left() + margins.right()
+                sub_w = (
+                    self._sub_label.fontMetrics().horizontalAdvance(self._sub_label.text())
+                    + margins.left()
+                    + margins.right()
+                )
             from qgis.PyQt.QtCore import QSize
+
             return QSize(max(text_w, sub_w), super().sizeHint().height())
         return super().sizeHint()
 
@@ -228,7 +233,9 @@ class MerginPlugin:
             layout.setContentsMargins(12, 2, 12, 2)
             layout.setSpacing(0)
             self.project_name_label = QLabel()
-            self.project_name_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #000000; background: transparent;")
+            self.project_name_label.setStyleSheet(
+                "font-weight: bold; font-size: 12px; color: #000000; background: transparent;"
+            )
             self.project_name_sub = QLabel("Open on Mergin Maps ↗")
             self.project_name_sub.setStyleSheet("font-size: 8px; color: #1a6b44; background: transparent;")
             layout.addWidget(self.project_name_label)
