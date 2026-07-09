@@ -18,7 +18,7 @@ from qgis.core import (
     Qgis,
 )
 from qgis.utils import iface
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QDockWidget
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QDockWidget, QWidget, QVBoxLayout, QLabel, QSizePolicy
 from urllib.error import URLError
 
 from .configuration_dialog import ConfigurationDialog
@@ -64,6 +64,59 @@ MERGIN_CLIENT_LOG = os.path.join(QgsApplication.qgisSettingsDirPath(), "mergin-c
 os.environ["MERGIN_CLIENT_LOG"] = MERGIN_CLIENT_LOG
 
 
+class _ProjectNameWidget(QWidget):
+    """Toolbar widget that elides the project name only when constrained."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self._full_text = ""
+        self._label = None
+        self._sub_label = None
+
+    def set_label(self, label):
+        self._label = label
+
+    def set_sub_label(self, label):
+        self._sub_label = label
+
+    def set_full_text(self, text):
+        self._full_text = text
+        if self._label:
+            self._label.setText(text)
+
+    def sizeHint(self):
+        if self._label and self._full_text:
+            margins = self.layout().contentsMargins()
+            metrics = self._label.fontMetrics()
+            text_w = metrics.horizontalAdvance(self._full_text) + margins.left() + margins.right()
+            sub_w = 0
+            if self._sub_label:
+                sub_w = self._sub_label.fontMetrics().horizontalAdvance(self._sub_label.text()) + margins.left() + margins.right()
+            from qgis.PyQt.QtCore import QSize
+            return QSize(max(text_w, sub_w), super().sizeHint().height())
+        return super().sizeHint()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._elide()
+
+    def _elide(self):
+        if not self._full_text or not self._label:
+            return
+        margins = self.layout().contentsMargins()
+        available = self.width() - margins.left() - margins.right()
+        if available <= 0:
+            return
+        metrics = self._label.fontMetrics()
+        text_width = metrics.horizontalAdvance(self._full_text)
+        if text_width > available:
+            elided = metrics.elidedText(self._full_text, Qt.ElideRight, available)
+            self._label.setText(elided)
+        else:
+            self._label.setText(self._full_text)
+
+
 class MerginPlugin:
     def __init__(self, iface):
         self.iface = iface
@@ -78,6 +131,7 @@ class MerginPlugin:
         # current_workspace is a dict with "name" and "id" keys, empty dict() if the server does not support workspaces
         self.current_workspace = dict()
         self.provider = MerginProvider()
+        self.project_name_action = None
 
         if self.iface is not None:
             self.toolbar = self.iface.addToolBar("Mergin Maps Toolbar")
@@ -161,6 +215,30 @@ class MerginPlugin:
                 enabled=False,
                 always_on=False,
             )
+
+            self.project_name_widget = _ProjectNameWidget()
+            self.project_name_widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+            self.project_name_widget.setMinimumWidth(60)
+            self.project_name_widget.setCursor(Qt.PointingHandCursor)
+            self.project_name_widget.setStyleSheet(
+                "QWidget#mmProjectButton { background-color: #73D19C; border-radius: 4px; }"
+            )
+            self.project_name_widget.setObjectName("mmProjectButton")
+            layout = QVBoxLayout()
+            layout.setContentsMargins(12, 2, 12, 2)
+            layout.setSpacing(0)
+            self.project_name_label = QLabel()
+            self.project_name_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #000000; background: transparent;")
+            self.project_name_sub = QLabel("Open on Mergin Maps ↗")
+            self.project_name_sub.setStyleSheet("font-size: 8px; color: #1a6b44; background: transparent;")
+            layout.addWidget(self.project_name_label)
+            layout.addWidget(self.project_name_sub)
+            self.project_name_widget.setLayout(layout)
+            self.project_name_widget.set_label(self.project_name_label)
+            self.project_name_widget.set_sub_label(self.project_name_sub)
+            self.project_name_widget.mousePressEvent = lambda e: self.open_project_page()
+            self.project_name_action = self.toolbar.addWidget(self.project_name_widget)
+            self.project_name_action.setVisible(False)
 
             self.enable_toolbar_actions()
 
@@ -259,6 +337,7 @@ class MerginPlugin:
         if self.has_browser_item():
             self.data_item_provider.root_item.update_client_and_manager(mc=self.mc, manager=self.manager, err=error)
         self.enable_toolbar_actions()
+        self.update_project_name_button()
 
     def has_browser_item(self):
         """Check if the Mergin Maps provider Browser item exists and has the root item defined."""
@@ -287,6 +366,36 @@ class MerginPlugin:
                 url_path = url_path[:-1]
             url.setPath(f"{url_path}{path}")
         QDesktopServices.openUrl(url)
+
+    def open_project_page(self):
+        """Open the current Mergin Maps project page in the default browser."""
+        if self.mergin_proj_dir is None:
+            return
+        if not check_mergin_subdirs(self.mergin_proj_dir):
+            return
+        try:
+            mp = MerginProject(self.mergin_proj_dir)
+            full_name = mp.project_full_name()  # "workspace/project_name"
+        except InvalidProject:
+            return
+        server_url = QSettings().value("Mergin/server", "https://app.merginmaps.com").rstrip("/")
+        url = f"{server_url}/projects/{full_name}/tree"
+        QDesktopServices.openUrl(QUrl(url))
+
+    def update_project_name_button(self):
+        """Show or hide the project name button based on the current project."""
+        if self.project_name_action is None:
+            return
+        if self.mergin_proj_dir is not None and check_mergin_subdirs(self.mergin_proj_dir):
+            try:
+                mp = MerginProject(self.mergin_proj_dir)
+                self.project_name_widget.set_full_text(mp.project_name())
+                self.project_name_widget.setToolTip(f"Open {mp.project_full_name()} on Mergin Maps")
+                self.project_name_action.setVisible(True)
+                return
+            except InvalidProject:
+                pass
+        self.project_name_action.setVisible(False)
 
     def enable_toolbar_actions(self, enable=None):
         """Check current project and set Mergin Maps Toolbar icons enabled accordingly."""
@@ -540,6 +649,7 @@ class MerginPlugin:
         if self.mergin_proj_dir is not None:
             self.enable_toolbar_actions()
             set_qgis_project_mergin_variables(self.mergin_proj_dir)
+        self.update_project_name_button()
         # re-render Browser items so the opened-project indicator follows the active QGIS project.
         if self.has_browser_item():
             self.data_item_provider.root_item.reload_local()
