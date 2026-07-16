@@ -11,7 +11,7 @@ about=Mergin Maps is a repository for storing and tracking changes to QGIS proje
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2026.4.4
+changelog=2026.5.0
   - Update minimum QGIS version to 3.40
   - Fix issue with SSL certificates 
   <p>2026.4.3
