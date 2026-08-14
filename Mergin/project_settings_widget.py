@@ -20,6 +20,7 @@ from qgis.core import (
     QgsMapLayer,
     QgsVectorLayer,
     QgsFieldProxyModel,
+    Qgis,
 )
 from qgis.gui import (
     QgsOptionsWidgetFactory,
@@ -51,6 +52,7 @@ from .field_filtering import (
     excluded_layers_list,
     get_fields_for_checkbox,
 )
+from .qgis_properties_version_4 import read_mergin_properties, is_qgis_version_4
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_project_config.ui")
 ProjectConfigUiWidget, _ = uic.loadUiType(ui_file)
@@ -81,6 +83,11 @@ class ProjectConfigWidget(ProjectConfigUiWidget, QgsOptionsPageWidget):
     def __init__(self, parent=None):
         QgsOptionsPageWidget.__init__(self, parent)
         self.setupUi(self)
+
+        if Qgis.versionInt() < 40000 and is_qgis_version_4(QgsProject.instance().fileName()):
+            props = read_mergin_properties(QgsProject.instance().fileName())
+            for key, value in props.items():
+                QgsProject.instance().writeEntry("Mergin", key, value)
 
         self.cmb_photo_quality.addItem("Original", 0)
         self.cmb_photo_quality.addItem("High (approx. 2-4 Mb)", 1)
