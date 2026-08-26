@@ -244,15 +244,33 @@ def get_qgis_proxy_config(url=None):
     """Check if a proxy is enabled and needed for the given url. Return the settings and additional info."""
     proxy_config = None
     s = QSettings()
-    proxy_enabled = s.value("proxy/proxyEnabled", False, type=bool)
-    if proxy_enabled:
+
+    # QGIS 4.0+ renamed the proxy settings keys to kebab-case
+    if Qgis.versionInt() >= 40000:
+        proxy_enabled = s.value("proxy/proxy-enabled", False, type=bool)
+        proxy_type = s.value("proxy/proxy-type")
+        excluded_url_list = s.value("proxy/proxy-excluded-urls", "")
+        proxy_host = s.value("proxy/proxy-host", None)
+        proxy_port = s.value("proxy/proxy-port", 3128)
+        auth_conf_id = s.value("proxy/auth-cfg", None)
+        proxy_user = s.value("proxy/proxy-user", None)
+        proxy_password = s.value("proxy/proxy-password", None)
+    else:
+        proxy_enabled = s.value("proxy/proxyEnabled", False, type=bool)
         proxy_type = s.value("proxy/proxyType")
+        excluded_url_list = s.value("proxy/proxyExcludedUrls", "")
+        proxy_host = s.value("proxy/proxyHost", None)
+        proxy_port = s.value("proxy/proxyPort", 3128)
+        auth_conf_id = s.value("proxy/authcfg", None)
+        proxy_user = s.value("proxy/proxyUser", None)
+        proxy_password = s.value("proxy/proxyPassword", None)
+
+    if proxy_enabled:
         if proxy_type not in ("DefaultProxy", "HttpProxy", "HttpCachingProxy"):
             raise ClientError(f"Not supported proxy server type ({proxy_type})")
-        excludedUrlList = s.value("proxy/proxyExcludedUrls", "")
         excluded = []
-        if excludedUrlList:
-            excluded = [e.rstrip("/") for e in excludedUrlList.split("|")]
+        if excluded_url_list:
+            excluded = [e.rstrip("/") for e in excluded_url_list.split("|")]
         if url is not None and url.rstrip("/") in excluded:
             return proxy_config
         proxy_config = dict()
@@ -267,11 +285,10 @@ def get_qgis_proxy_config(url=None):
             else:
                 raise ClientError("Failed to detect default proxy.")
         # otherwise look for QGIS proxy settings
-        proxy_config["url"] = s.value("proxy/proxyHost", None)
+        proxy_config["url"] = proxy_host
         if proxy_config["url"] is None:
             raise ClientError("No URL given for proxy server")
-        proxy_config["port"] = s.value("proxy/proxyPort", 3128)
-        auth_conf_id = s.value("proxy/authcfg", None)
+        proxy_config["port"] = proxy_port
         if auth_conf_id:
             auth_manager = QgsApplication.authManager()
             auth_conf = QgsAuthMethodConfig()
@@ -279,8 +296,8 @@ def get_qgis_proxy_config(url=None):
             proxy_config["user"] = auth_conf.configMap()["username"]
             proxy_config["password"] = auth_conf.configMap()["password"]
         else:
-            proxy_config["user"] = s.value("proxy/proxyUser", None)
-            proxy_config["password"] = s.value("proxy/proxyPassword", None)
+            proxy_config["user"] = proxy_user
+            proxy_config["password"] = proxy_password
     return proxy_config
 
 
