@@ -13,6 +13,7 @@ from qgis.core import (
     QgsExpression,
     QgsRenderContext,
     QgsFeatureRequest,
+    QgsValueRelationFieldFormatter,
 )
 from qgis.gui import QgsFileWidget
 
@@ -347,9 +348,11 @@ class MerginProjectValidator(object):
                         self.issues.append(SingleLayerWarning(lid, Warning.BROKEN_VALUE_RELATION_CONFIG))
                         continue
 
-                    child_layer = next((v for k, v in self.layers.items() if k == cfg["Layer"]), None)
+                    # follow QGIS relation layer resolving - by id first, then by name + source
+                    child_layer = QgsValueRelationFieldFormatter.resolveLayer(cfg, self.qgis_proj)
                     if child_layer is None:
-                        self.issues.append(SingleLayerWarning(lid, Warning.VALUE_RELATION_LAYER_MISSED))
+                        layer_name = cfg.get("LayerName") or cfg["Layer"]
+                        self.issues.append(SingleLayerWarning(lid, Warning.VALUE_RELATION_LAYER_MISSED, layer_name))
                         continue
 
                     # check that "key" field does not have duplicated values
@@ -566,7 +569,7 @@ def warning_display_string(warning_id, details=None):
     elif warning_id == Warning.FIELD_IS_PRIMARY_KEY:
         return "Relation uses primary key field"
     elif warning_id == Warning.VALUE_RELATION_LAYER_MISSED:
-        return "Referenced table is missed from the project"
+        return f"Referenced table '{details}' is missing from the project"
     elif warning_id == Warning.INCORRECT_FIELD_NAME:
         return "Field names contain line-break characters"
     elif warning_id == Warning.BROKEN_VALUE_RELATION_CONFIG:
