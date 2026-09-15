@@ -3,13 +3,11 @@
 
 """Mirror the security and style scan that plugins.qgis.org runs on every upload.
 
-The QGIS plugin repository extracts the uploaded zip and runs bandit, detect-secrets
-and flake8 over it, restricted to a rule set its administrators maintain.  Bandit and
-detect-secrets are blocking: a single finding from an enabled rule marks the version
-as "blocked" and it has to be re-uploaded.  Flake8 and the file-level checks are
-informational only.  Rules flagged as skippable can be waived at upload time by
-ticking them on the upload form; mandatory rules cannot.
-For live version, check: https://github.com/qgis/QGIS-Plugins-Website/tree/master/qgis-app/plugins/management/commands/data
+Exit status is 0 when nothing blocks, 1 when something does, 2 on a usage error.
+
+The scan covers the plugin and the python-api-client bundled into it as Mergin/mergin.
+That rule set (qgis_plugin_repo_rules.json) is a pinned snapshot -- refresh it from
+https://github.com/qgis/QGIS-Plugins-Website/tree/master/qgis-app/plugins/management/commands/data
 """
 
 import argparse
@@ -21,8 +19,12 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 RULES_FILE = os.path.join(HERE, "qgis_plugin_repo_rules.json")
 
-# Mirrors the rsync filter in packages.yml, so we scan what actually ships.
-EXCLUDED_DIRS = ["test", "__pycache__", ".ruff_cache"]
+# Mirrors the rsync filter in the plugin's packages.yml, so we scan what actually
+# ships. deps/ holds third-party wheels pulled at build time and is never in git.
+EXCLUDED_DIRS = ["test", "__pycache__", ".ruff_cache", "deps"]
+
+# Package directory to scan when none is given, by repository.
+DEFAULT_ROOTS = ["Mergin", "mergin"]
 
 # Extensions the repository's file analysis flags as suspicious.
 SUSPICIOUS_EXTENSIONS = (".exe", ".dll", ".so", ".dylib", ".bat", ".sh", ".ps1", ".cmd")
@@ -177,34 +179,42 @@ def annotate(level, finding):
     )
 
 
-def report(title, findings, rules, category, blocking, strict):
+def report(title, findings, rules, category, blocking):
+    """Print one check's findings and return how many of them block the upload.
+
+    Skippable findings count too: they only stop blocking if the uploader ticks that
+    rule on the upload form, so treating them as passing would make a green run mean
+    less than it appears to. The tag says which kind each one is, because that decides
+    the fix -- a skippable finding can be accepted in place with `# nosec <code>` or
+    `# pragma: allowlist secret`, both of which plugins.qgis.org honours.
+    """
     if not findings:
         print("  %-16s no findings" % title)
         return 0
     mandatory = [f for f in findings if is_mandatory(rules, category, f.code)]
-    waivable = [f for f in findings if f not in mandatory]
-    print("  %-16s %d finding(s): %d mandatory, %d skippable" % (title, len(findings), len(mandatory), len(waivable)))
+    print(
+        "  %-16s %d finding(s): %d mandatory, %d skippable"
+        % (title, len(findings), len(mandatory), len(findings) - len(mandatory))
+    )
     for finding in findings:
         tag = "MANDATORY" if finding in mandatory else "skippable"
         print("    [%s] %s %s:%s %s" % (tag, finding.code, finding.path, finding.line or "-", finding.message))
         if blocking:
             annotate("error" if finding in mandatory else "warning", finding)
-    if not blocking:
-        return 0
-    return len(mandatory) + (len(waivable) if strict else 0)
+    return len(findings) if blocking else 0
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("root", nargs="?", default="Mergin", help="directory to scan (default: Mergin)")
     parser.add_argument(
-        "--strict",
-        action="store_true",
-        help="also fail on skippable blocking rules, which have to be waived by hand on the upload form",
+        "root", nargs="?", help="directory to scan (default: whichever of %s exists)" % "/".join(DEFAULT_ROOTS)
     )
     args = parser.parse_args()
 
-    root = args.root.rstrip("/")
+    root = args.root or next((d for d in DEFAULT_ROOTS if os.path.isdir(d)), None)
+    if not root:
+        parser.error("no package directory given and none of %s found" % "/".join(DEFAULT_ROOTS))
+    root = root.rstrip("/")
     if not os.path.isdir(root):
         parser.error("%s is not a directory" % root)
 
@@ -214,15 +224,17 @@ def main():
     print("Scanning %s as packaged (excluding %s)\n" % (root, ", ".join(EXCLUDED_DIRS)))
 
     print("Blocking checks (a single finding blocks the upload):")
-    blockers = report("bandit", check_bandit(root, rules), rules, "bandit", True, args.strict)
-    blockers += report("detect-secrets", check_secrets(root, rules), rules, "secrets", True, args.strict)
+    blockers = report("bandit", check_bandit(root, rules), rules, "bandit", True)
+    blockers += report("detect-secrets", check_secrets(root, rules), rules, "secrets", True)
 
     print("\nInformational checks (reported on the plugin page, never block):")
-    report("flake8", check_flake8(root, rules), rules, "flake8", False, args.strict)
-    report("file analysis", check_files(root, rules), rules, "file_analysis", False, args.strict)
+    report("flake8", check_flake8(root, rules), rules, "flake8", False)
+    report("file analysis", check_files(root, rules), rules, "file_analysis", False)
 
     if blockers:
         print("\n%d blocking finding(s) -- plugins.qgis.org would reject this upload." % blockers)
+        print("Mandatory rules need a code change. Skippable ones can be accepted in place with")
+        print("`# nosec <code>` or `# pragma: allowlist secret`, which the repository honours.")
         return 1
     print("\nNo blocking findings.")
     return 0

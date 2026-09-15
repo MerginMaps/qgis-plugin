@@ -9,13 +9,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/qgis-repo-checks
         with:
-          # Matches the interpreter plugins.qgis.org runs the scan under
-          python-version: '3.13'
-
-      - name: Install scan tools
-        run: pip install bandit==1.9.4 detect-secrets==1.5.0 flake8==7.3.0
-
-      - name: Run checks
-        run: python scripts/qgis_plugin_repo_checks.py Mergin
+          root: Mergin
