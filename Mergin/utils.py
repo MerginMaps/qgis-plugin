@@ -1019,6 +1019,21 @@ def get_local_mergin_projects_info(workspace=None):
     return local_projects_info
 
 
+def refresh_project_role(mc, project_dir):
+    """Ask the server for the user's current role on the project and store it in the project metadata."""
+    try:
+        mp = MerginProject(project_dir)
+        try:
+            role = mc.project_info_v2(mp.project_id()).role
+        except (NotImplementedError, ClientError):
+            # servers below 2025.8.2 have no v2 project info, and old projects have no id in their metadata
+            role = mc.project_info(mp.project_full_name())["role"]
+        mp.update_project_role(role)
+    except (InvalidProject, ClientError, URLError):
+        # keep whatever the metadata holds, the variable has to stay usable offline
+        pass
+
+
 def set_qgis_project_mergin_variables(project_dir):
     """Check if QGIS project project_dir is a local Mergin Maps project and set QGIS project variables for Mergin Maps."""
 

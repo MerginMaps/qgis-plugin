@@ -43,6 +43,7 @@ from .utils import (
     icon_path,
     mm_symbol_path,
     mergin_project_local_path,
+    refresh_project_role,
     remove_project_variables,
     set_qgis_project_mergin_variables,
     unsaved_project_check,
@@ -247,6 +248,9 @@ class MerginPlugin:
             if self.mc is not None:
                 self.choose_active_workspace()
                 self.manager = MerginProjectsManager(self)
+                if self.mergin_proj_dir is not None:
+                    refresh_project_role(self.mc, self.mergin_proj_dir)
+                    set_qgis_project_mergin_variables(self.mergin_proj_dir)
             else:
                 error = "Configure the Mergin Maps plugin \nto access your projects"
         except (URLError, ClientError, LoginError):
