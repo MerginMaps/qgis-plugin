@@ -5,6 +5,7 @@
 
 
 import copy
+import json
 import tempfile
 from pathlib import Path
 from typing import Dict
@@ -13,6 +14,7 @@ from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransformContext,
     QgsDatumTransform,
+    QgsExpressionContextUtils,
     QgsProject,
     QgsSymbolLayer,
     QgsVectorLayer,
@@ -25,7 +27,9 @@ from Mergin.utils import (
     create_tracking_layer,
     get_datum_shift_grids,
     is_valid_name,
+    remove_project_variables,
     same_schema,
+    set_qgis_project_mergin_variables,
 )
 
 
@@ -229,3 +233,29 @@ def test_create_map_sketches_layer():
         sl = layer.renderer().symbol().symbolLayer(0)
         assert sl.dataDefinedProperties().property(QgsSymbolLayer.PropertyStrokeColor).expressionString() == '"color"'
         assert sl.dataDefinedProperties().property(QgsSymbolLayer.PropertyStrokeWidth).expressionString() == '"width"'
+
+
+def project_variable(name: str):
+    return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable(name)
+
+
+def test_project_role_variable(mergin_project_dir: Path):
+    set_qgis_project_mergin_variables(str(mergin_project_dir))
+    assert project_variable("mm_project_full_name") == "acme/survey"
+    assert project_variable("mm_project_role") == "editor"
+
+    remove_project_variables()
+    assert project_variable("mm_project_role") is None
+
+
+def test_project_role_variable_missing_in_metadata(mergin_project_dir: Path):
+    metadata_path = mergin_project_dir / ".mergin" / "mergin.json"
+    with open(metadata_path) as f:
+        metadata = json.load(f)
+    del metadata["role"]
+    with open(metadata_path, "w") as f:
+        json.dump(metadata, f)
+
+    set_qgis_project_mergin_variables(str(mergin_project_dir))
+    assert project_variable("mm_project_role") == ""
+    remove_project_variables()

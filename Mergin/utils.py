@@ -943,13 +943,15 @@ def unhandled_exception_message(error_details, dialog_title, error_text, mm_clie
     box.exec()
 
 
-def write_project_variables(project_name, project_full_name, version):
+def write_project_variables(project_name, project_full_name, version, role=""):
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_name", project_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_full_name", project_full_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_version", int_version(version))
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_name", project_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_full_name", project_full_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_version", int_version(version))
+    # projects downloaded with an older client have no role in their metadata
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_role", role or "")
 
 
 def remove_project_variables():
@@ -959,6 +961,7 @@ def remove_project_variables():
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_full_name")
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_version")
+    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_role")
 
 
 def pretty_summary(summary):
@@ -1022,7 +1025,7 @@ def set_qgis_project_mergin_variables(project_dir):
     try:
         mp = MerginProject(project_dir)
 
-        write_project_variables(mp.project_name(), mp.project_full_name(), mp.version())
+        write_project_variables(mp.project_name(), mp.project_full_name(), mp.version(), mp.project_role())
     except InvalidProject:
         remove_project_variables()
 
