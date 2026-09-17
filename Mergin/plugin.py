@@ -543,6 +543,8 @@ class MerginPlugin:
         self.mergin_proj_dir = mergin_project_local_path()
         if self.mergin_proj_dir is not None:
             self.enable_toolbar_actions()
+            if self.mc is not None:
+                refresh_project_role(self.mc, self.mergin_proj_dir)
             set_qgis_project_mergin_variables(self.mergin_proj_dir)
         # re-render Browser items so the opened-project indicator follows the active QGIS project.
         if self.has_browser_item():
