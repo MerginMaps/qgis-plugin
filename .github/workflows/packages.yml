@@ -10,11 +10,11 @@ on:
         type: string
       REQUESTED_GEODIFF_VER:
         description: 'Geodiff version'
-        default: '2.3.0'
+        default: '2.3.1'
         type: string
 env:
   PYTHON_API_CLIENT_VER: ${{ inputs.REQUESTED_PYTHON_API_CLIENT_VER || '0.14.2' }}
-  GEODIFF_VER:  ${{ inputs.REQUESTED_GEODIFF_VER || '2.3.0' }}
+  GEODIFF_VER:  ${{ inputs.REQUESTED_GEODIFF_VER || '2.3.1' }}
   PYTHON_VER: "310"
 jobs:
   build_linux_binary:
