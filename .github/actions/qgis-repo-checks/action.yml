@@ -1,0 +1,27 @@
+name: QGIS plugin repository checks
+description: >
+  Mirror the security and style scan that plugins.qgis.org runs on plugin upload.
+  Shared by the QGIS plugin and the python-api-client bundled into it.
+
+inputs:
+  root:
+    description: Package directory to scan. Defaults to whichever of Mergin/mergin exists.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Install scan tools
+      shell: bash
+      run: pip install bandit==1.9.4 detect-secrets==1.5.0 flake8==7.3.0
+
+    - name: Run checks
+      shell: bash
+      env:
+        ROOT: ${{ inputs.root }}
+      run: python "$GITHUB_ACTION_PATH/qgis_plugin_repo_checks.py" $ROOT

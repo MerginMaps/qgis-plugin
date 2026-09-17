@@ -1,33 +1,14 @@
-name: QGIS Plugin QA (Security & Style)
+name: QGIS Plugin Repository Checks
 
-# Trigger the workflow on every push
 on: [push]
 
 jobs:
-  quality-assurance:
+  qgis_repo_checks:
+    name: Mirror plugins.qgis.org upload scan
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: ./.github/actions/qgis-repo-checks
         with:
-          python-version: '3.9'
-
-      - name: Install dependencies
-        run: |
-          # Upgrade pip and install security/linting tools
-          python -m pip install --upgrade pip
-          pip install bandit detect-secrets flake8 flake8-json flake8-pyproject
-
-      - name: Run Bandit (Security Scan)
-        # Scan the Mergin folder for vulnerabilities, excluding the test directory
-        run: bandit -r ./Mergin/ -ll --exclude ./Mergin/test
-
-      - name: Run Detect Secrets
-        # Scan the plugin directory for hardcoded secrets/credentials
-        run: detect-secrets scan ./Mergin/ --all-files
-
-      - name: Run Flake8 (Style Check)
-        run: flake8 ./Mergin/
+          root: Mergin

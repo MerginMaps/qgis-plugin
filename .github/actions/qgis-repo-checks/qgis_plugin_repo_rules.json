@@ -1,0 +1,1272 @@
+{
+  "_source": "https://github.com/qgis/QGIS-Plugins-Website -- qgis-app/plugins/management/commands/data/*.json",
+  "_snapshot_of": "qgis/QGIS-Plugins-Website PR #316 (merged)",
+  "rules": {
+    "bandit": {
+      "B101": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Assert used"
+      },
+      "B102": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Exec used"
+      },
+      "B103": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Set bad file permissions"
+      },
+      "B104": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Hardcoded bind all interfaces"
+      },
+      "B105": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Hardcoded password string"
+      },
+      "B106": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Hardcoded password function argument"
+      },
+      "B107": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Hardcoded password default"
+      },
+      "B108": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Hardcoded temp directory"
+      },
+      "B109": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Password config option not marked secret"
+      },
+      "B110": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Try/except/pass"
+      },
+      "B111": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Execute with run_as_root=True"
+      },
+      "B112": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Try/except/continue"
+      },
+      "B113": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Request without timeout"
+      },
+      "B201": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Flask debug=True"
+      },
+      "B202": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Tarfile unsafe members"
+      },
+      "B301": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Pickle usage"
+      },
+      "B302": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Marshal usage"
+      },
+      "B303": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "MD5/SHA1 hash function"
+      },
+      "B304": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Insecure cipher"
+      },
+      "B305": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Insecure cipher mode"
+      },
+      "B306": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Insecure mktemp"
+      },
+      "B307": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Eval used"
+      },
+      "B308": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Mark_safe used"
+      },
+      "B310": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "urllib urlopen"
+      },
+      "B311": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Random module used"
+      },
+      "B312": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Telnetlib usage"
+      },
+      "B313": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "XML bad cElementTree"
+      },
+      "B314": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "XML bad ElementTree"
+      },
+      "B315": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "XML bad expatreader"
+      },
+      "B316": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "XML bad expatbuilder"
+      },
+      "B317": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "XML bad sax"
+      },
+      "B318": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "XML bad minidom"
+      },
+      "B319": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "XML bad pulldom"
+      },
+      "B320": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "XML bad etree"
+      },
+      "B321": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "FTP usage"
+      },
+      "B323": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Unverified SSL context"
+      },
+      "B324": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Insecure hash function (hashlib)"
+      },
+      "B401": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Import telnetlib"
+      },
+      "B402": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Import ftplib"
+      },
+      "B403": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Import pickle"
+      },
+      "B404": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Import subprocess"
+      },
+      "B405": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Import xml.etree"
+      },
+      "B406": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Import xml.sax"
+      },
+      "B407": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Import xml.dom.expatbuilder"
+      },
+      "B408": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Import xml.dom.minidom"
+      },
+      "B409": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Import xml.dom.pulldom"
+      },
+      "B410": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Import lxml"
+      },
+      "B411": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Import xmlrpclib"
+      },
+      "B412": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Import httpoxy vulnerable module"
+      },
+      "B413": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Import pycrypto"
+      },
+      "B501": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Request with no cert validation"
+      },
+      "B502": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "SSL with bad version"
+      },
+      "B503": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "SSL with bad defaults"
+      },
+      "B504": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "SSL with no version"
+      },
+      "B505": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Weak cryptographic key"
+      },
+      "B506": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "yaml.load() used"
+      },
+      "B507": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "SSH no host key verification"
+      },
+      "B508": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "SNMP insecure version"
+      },
+      "B509": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "SNMP weak cryptography"
+      },
+      "B601": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Paramiko shell=True"
+      },
+      "B602": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "subprocess.Popen with shell=True"
+      },
+      "B603": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "subprocess without shell=True"
+      },
+      "B604": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Function call with shell=True"
+      },
+      "B605": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Start process with a shell"
+      },
+      "B606": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Start process with no shell"
+      },
+      "B607": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Start process with partial path"
+      },
+      "B608": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Hardcoded SQL expression"
+      },
+      "B609": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Linux wildcard injection"
+      },
+      "B610": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Django extra() used"
+      },
+      "B611": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Django RawSQL used"
+      },
+      "B612": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Logging config insecure listen"
+      },
+      "B613": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Trojan Source"
+      },
+      "B614": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "PyTorch unsafe load"
+      },
+      "B615": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "HuggingFace unsafe download"
+      },
+      "B701": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Jinja2 autoescape=False"
+      },
+      "B702": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Mako templates used"
+      },
+      "B703": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Django mark_safe"
+      },
+      "B704": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "MarkupSafe Markup XSS"
+      }
+    },
+    "secrets": {
+      "AWSKeyDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "AWS access key",
+        "secret_type": "AWS Access Key"
+      },
+      "ArtifactoryDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Artifactory API token",
+        "secret_type": "Artifactory Credentials"
+      },
+      "AzureStorageKeyDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Azure Storage account key",
+        "secret_type": "Azure Storage Account access key"
+      },
+      "Base64HighEntropyString": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "High-entropy Base64 string",
+        "secret_type": "Base64 High Entropy String"
+      },
+      "BasicAuthDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "HTTP Basic Auth credentials",
+        "secret_type": "Basic Auth Credentials"
+      },
+      "CloudantDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "IBM Cloudant credentials",
+        "secret_type": "Cloudant Credentials"
+      },
+      "DiscordBotTokenDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Discord bot token",
+        "secret_type": "Discord Bot Token"
+      },
+      "GitHubTokenDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "GitHub personal access token",
+        "secret_type": "GitHub Token"
+      },
+      "GitLabTokenDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "GitLab personal access token",
+        "secret_type": "GitLab Token"
+      },
+      "HexHighEntropyString": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "High-entropy hex string",
+        "secret_type": "Hex High Entropy String"
+      },
+      "IPPublicDetector": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Public IP address",
+        "secret_type": "Public IP (ipv4)"
+      },
+      "IbmCloudIamDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "IBM Cloud IAM API key",
+        "secret_type": "IBM Cloud IAM Key"
+      },
+      "IbmCosHmacDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "IBM Cloud Object Storage HMAC credentials",
+        "secret_type": "IBM COS HMAC Credentials"
+      },
+      "JwtTokenDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "JWT token",
+        "secret_type": "JSON Web Token"
+      },
+      "KeywordDetector": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Secret keyword",
+        "secret_type": "Secret Keyword"
+      },
+      "MailchimpDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Mailchimp API key",
+        "secret_type": "Mailchimp Access Key"
+      },
+      "NpmDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "NPM access token",
+        "secret_type": "NPM tokens"
+      },
+      "OpenAIDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "OpenAI API key",
+        "secret_type": "OpenAI Token"
+      },
+      "PrivateKeyDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Private key",
+        "secret_type": "Private Key"
+      },
+      "PypiTokenDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "PyPI API token",
+        "secret_type": "PyPI Token"
+      },
+      "SendGridDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "SendGrid API key",
+        "secret_type": "SendGrid API Key"
+      },
+      "SlackDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Slack token",
+        "secret_type": "Slack Token"
+      },
+      "SoftlayerDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "SoftLayer (IBM Cloud) credentials",
+        "secret_type": "SoftLayer Credentials"
+      },
+      "SquareOAuthDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Square OAuth token",
+        "secret_type": "Square OAuth Secret"
+      },
+      "StripeDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Stripe API key",
+        "secret_type": "Stripe Access Key"
+      },
+      "TelegramBotTokenDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Telegram bot token",
+        "secret_type": "Telegram Bot Token"
+      },
+      "TwilioKeyDetector": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Twilio API key",
+        "secret_type": "Twilio API Key"
+      }
+    },
+    "flake8": {
+      "C901": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Function too complex"
+      },
+      "E101": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Indentation contains mixed spaces and tabs"
+      },
+      "E111": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Indentation not a multiple of four"
+      },
+      "E112": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Expected an indented block"
+      },
+      "E113": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Unexpected indentation"
+      },
+      "E114": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Indentation not a multiple of four (comment)"
+      },
+      "E115": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Expected an indented block (comment)"
+      },
+      "E116": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Unexpected indentation (comment)"
+      },
+      "E117": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Over-indented"
+      },
+      "E121": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Continuation line under-indented (hanging indent)"
+      },
+      "E122": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Continuation line missing indentation"
+      },
+      "E123": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Closing bracket does not match indentation"
+      },
+      "E124": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Closing bracket does not match visual indentation"
+      },
+      "E125": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Continuation line with same indent as next logical line"
+      },
+      "E126": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Continuation line over-indented (hanging indent)"
+      },
+      "E127": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Continuation line over-indented (visual indent)"
+      },
+      "E128": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Continuation line under-indented (visual indent)"
+      },
+      "E129": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Visually indented line with same indent as next logical line"
+      },
+      "E131": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Continuation line unaligned (hanging indent)"
+      },
+      "E133": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Closing bracket is missing indentation"
+      },
+      "E201": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Whitespace after opening bracket"
+      },
+      "E202": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Whitespace before closing bracket"
+      },
+      "E203": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Whitespace before punctuation"
+      },
+      "E211": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Whitespace before bracket"
+      },
+      "E221": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Multiple spaces before operator"
+      },
+      "E222": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Multiple spaces after operator"
+      },
+      "E223": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Whitespace (tab) before operator"
+      },
+      "E224": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Whitespace (tab) after operator"
+      },
+      "E225": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Missing whitespace around operator"
+      },
+      "E226": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Missing whitespace around arithmetic operator"
+      },
+      "E227": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Missing whitespace around bitwise/shift operator"
+      },
+      "E228": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Missing whitespace around modulo operator"
+      },
+      "E231": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Missing whitespace after punctuation"
+      },
+      "E241": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Multiple spaces after comma"
+      },
+      "E242": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Tab after comma"
+      },
+      "E251": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Unexpected spaces around keyword / parameter equals"
+      },
+      "E261": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "At least two spaces before inline comment"
+      },
+      "E262": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Inline comment should start with '# '"
+      },
+      "E265": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Block comment should start with '# '"
+      },
+      "E266": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Too many leading '#' for block comment"
+      },
+      "E271": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Multiple spaces after keyword"
+      },
+      "E272": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Multiple spaces before keyword"
+      },
+      "E273": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Whitespace (tab) after keyword"
+      },
+      "E274": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Whitespace (tab) before keyword"
+      },
+      "E275": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Missing whitespace after keyword"
+      },
+      "E301": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Expected 1 blank line"
+      },
+      "E302": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Expected 2 blank lines"
+      },
+      "E303": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Too many blank lines"
+      },
+      "E304": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Blank lines found after function decorator"
+      },
+      "E305": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Expected 2 blank lines after end of function"
+      },
+      "E306": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Expected 1 blank line before nested definition"
+      },
+      "E401": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Multiple imports on one line"
+      },
+      "E402": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Module level import not at top of file"
+      },
+      "E501": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Line too long"
+      },
+      "E502": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Backslash is redundant between brackets"
+      },
+      "E701": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Multiple statements on one line (colon)"
+      },
+      "E702": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Multiple statements on one line (semicolon)"
+      },
+      "E703": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Statement ends with a semicolon"
+      },
+      "E704": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Statement on same line as def"
+      },
+      "E711": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Comparison to None using =="
+      },
+      "E712": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Comparison to True/False using =="
+      },
+      "E713": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Test for membership should use 'not in'"
+      },
+      "E714": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Test for identity should use 'is not'"
+      },
+      "E721": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Type comparison using =="
+      },
+      "E722": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Bare except clause"
+      },
+      "E731": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Lambda assignment"
+      },
+      "E741": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Ambiguous variable name"
+      },
+      "E742": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Ambiguous class name"
+      },
+      "E743": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Ambiguous function name"
+      },
+      "E901": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "SyntaxError or IndentationError"
+      },
+      "E902": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "IOError"
+      },
+      "E999": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "SyntaxError"
+      },
+      "F401": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Module imported but unused"
+      },
+      "F402": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Import shadowed by loop variable"
+      },
+      "F403": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Star import used"
+      },
+      "F404": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Future import after other statements"
+      },
+      "F405": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Name may be from star import"
+      },
+      "F811": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Redefinition of unused name"
+      },
+      "F821": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Undefined name"
+      },
+      "F822": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Undefined name in __all__"
+      },
+      "F823": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Local variable referenced before assignment"
+      },
+      "F831": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Duplicate argument in function definition"
+      },
+      "F841": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Local variable assigned but never used"
+      },
+      "F901": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "'raise NotImplemented' should be 'raise NotImplementedError'"
+      },
+      "W191": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Indentation contains tabs"
+      },
+      "W291": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Trailing whitespace"
+      },
+      "W292": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "No newline at end of file"
+      },
+      "W293": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Whitespace on blank line"
+      },
+      "W391": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Blank line at end of file"
+      },
+      "W503": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Line break before binary operator"
+      },
+      "W504": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Line break after binary operator"
+      },
+      "W601": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": ".has_key() deprecated"
+      },
+      "W602": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Deprecated raise with two arguments"
+      },
+      "W603": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "'<>' is deprecated"
+      },
+      "W604": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Backtick repr is deprecated"
+      },
+      "W605": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Invalid escape sequence"
+      }
+    },
+    "file_analysis": {
+      "FILE_BINARY": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Binary file"
+      },
+      "FILE_EXECUTABLE": {
+        "enabled": true,
+        "can_be_skipped": true,
+        "severity": "warning",
+        "name": "Executable file"
+      },
+      "FILE_HIDDEN": {
+        "enabled": false,
+        "can_be_skipped": true,
+        "severity": "info",
+        "name": "Hidden file"
+      },
+      "FILE_SUSPICIOUS": {
+        "enabled": true,
+        "can_be_skipped": false,
+        "severity": "critical",
+        "name": "Suspicious file type"
+      }
+    }
+  },
+  "_note": "secret_type is how detect-secrets labels a finding; the key is the plugin class name the QGIS repository stores. Kept here so findings can be mapped back to a rule."
+}
