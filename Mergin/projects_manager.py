@@ -28,8 +28,10 @@ from .utils import (
     LoginError,
     find_qgis_files,
     login_error_message,
+    mergin_project_local_path,
     same_dir,
     send_logs,
+    set_qgis_project_mergin_variables,
     storage_limit_fail,
     unhandled_exception_message,
     unsaved_project_check,
@@ -220,7 +222,7 @@ class MerginProjectsManager(object):
             project_dir == QgsProject.instance().absolutePath()
             or project_dir + "/" in QgsProject.instance().absolutePath()
         ):
-            write_project_variables(project_name, full_project_name, "v1")
+            write_project_variables(project_name, full_project_name, "v1", mp.project_role())
 
         QMessageBox.information(
             None,
@@ -230,6 +232,11 @@ class MerginProjectsManager(object):
         )
 
         return True
+
+    def refresh_project_variables(self, project_dir):
+        """Re-read the Mergin Maps variables from the project metadata, if that project is the open one."""
+        if same_dir(project_dir, mergin_project_local_path()):
+            set_qgis_project_mergin_variables(project_dir)
 
     def project_status(self, project_dir):
         if project_dir is None:
@@ -254,6 +261,7 @@ class MerginProjectsManager(object):
             if qgis_proj_filename in find_qgis_files(project_dir):
                 AuthSync().export_auth(self.mc)
             pull_changes, push_changes, push_changes_summary = self.mc.project_status(project_dir)
+            self.refresh_project_variables(project_dir)
             dlg = ProjectStatusDialog(
                 pull_changes,
                 push_changes,
@@ -399,6 +407,9 @@ class MerginProjectsManager(object):
             QMessageBox.critical(None, "Project syncing", msg, QMessageBox.StandardButton.Close)
             return
 
+        # a role change creates no project version, so it only arrives with the status we just fetched
+        self.refresh_project_variables(project_dir)
+
         if not sum(len(v) for v in list(pull_changes.values()) + list(push_changes.values())):
             QMessageBox.information(
                 None,
@@ -510,6 +521,7 @@ class MerginProjectsManager(object):
             _, has_push_changes = get_push_changes_batch(self.mc, project_dir)
             error_retries_attempts = 0
             if not has_push_changes:
+                self.refresh_project_variables(project_dir)
                 # TODO: report success only when we have actually done anything
                 msg = "Mergin Maps project {} synchronised successfully".format(project_name)
                 QMessageBox.information(None, "Project sync", msg, QMessageBox.StandardButton.Close)
