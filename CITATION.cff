@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Mergin Maps QGIS Plugin"
+type: software
+authors:
+  - name: "Lutra Consulting Ltd."
+url: "https://plugins.qgis.org/plugins/Mergin/"
+repository-code: "https://github.com/MerginMaps/qgis-plugin"
+license: GPL-3.0
