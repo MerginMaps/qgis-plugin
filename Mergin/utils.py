@@ -944,24 +944,31 @@ def unhandled_exception_message(error_details, dialog_title, error_text, mm_clie
 
 
 def write_project_variables(project_name, project_full_name, version, role=""):
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_name", project_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_full_name", project_full_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_version", int_version(version))
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_name", project_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_full_name", project_full_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_version", int_version(version))
+    project = QgsProject.instance()
+    # these variables are stored in the project file, so writing them marks the project as modified;
+    was_dirty = project.isDirty()
+    QgsExpressionContextUtils.setProjectVariable(project, "mergin_project_name", project_name)
+    QgsExpressionContextUtils.setProjectVariable(project, "mergin_project_full_name", project_full_name)
+    QgsExpressionContextUtils.setProjectVariable(project, "mergin_project_version", int_version(version))
+    QgsExpressionContextUtils.setProjectVariable(project, "mm_project_name", project_name)
+    QgsExpressionContextUtils.setProjectVariable(project, "mm_project_full_name", project_full_name)
+    QgsExpressionContextUtils.setProjectVariable(project, "mm_project_version", int_version(version))
     # projects downloaded with an older client have no role in their metadata
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_role", role or "")
+    QgsExpressionContextUtils.setProjectVariable(project, "mm_project_role", role or "")
+    project.setDirty(was_dirty)
 
 
 def remove_project_variables():
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_name")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_full_name")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mergin_project_version")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_name")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_full_name")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_version")
-    QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_role")
+    project = QgsProject.instance()
+    was_dirty = project.isDirty()
+    QgsExpressionContextUtils.removeProjectVariable(project, "mergin_project_name")
+    QgsExpressionContextUtils.removeProjectVariable(project, "mergin_project_full_name")
+    QgsExpressionContextUtils.removeProjectVariable(project, "mergin_project_version")
+    QgsExpressionContextUtils.removeProjectVariable(project, "mm_project_name")
+    QgsExpressionContextUtils.removeProjectVariable(project, "mm_project_full_name")
+    QgsExpressionContextUtils.removeProjectVariable(project, "mm_project_version")
+    QgsExpressionContextUtils.removeProjectVariable(project, "mm_project_role")
+    project.setDirty(was_dirty)
 
 
 def pretty_summary(summary):
