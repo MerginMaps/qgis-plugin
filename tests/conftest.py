@@ -71,3 +71,21 @@ def layer_field_filter(test_data_path: Path) -> QgsVectorLayer:
     layer = QgsVectorLayer(str(test_data_path / "data_field_filter.gpkg"), "field filter layer", "ogr")
     assert layer.isValid()
     return layer
+
+
+@pytest.fixture
+def mergin_project_dir(tmp_path: Path) -> Path:
+    """Fixture for a downloaded Mergin Maps project directory with its metadata."""
+    metadata = {
+        "id": "b2e0b0b0-0000-4000-8000-000000000000",
+        "name": "survey",
+        "workspace": {"id": 1, "name": "Lutra Consulting"},
+        "version": "v3",
+        "role": "editor",
+        "files": [],
+    }
+    meta_dir = tmp_path / ".mergin"
+    meta_dir.mkdir()
+    with open(meta_dir / "mergin.json", "w") as f:
+        json.dump(metadata, f)
+    return tmp_path

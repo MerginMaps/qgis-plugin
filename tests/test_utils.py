@@ -5,6 +5,7 @@
 
 
 import copy
+import json
 import tempfile
 from pathlib import Path
 from typing import Dict
@@ -13,6 +14,7 @@ from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransformContext,
     QgsDatumTransform,
+    QgsExpressionContextUtils,
     QgsProject,
     QgsSymbolLayer,
     QgsVectorLayer,
@@ -25,7 +27,10 @@ from Mergin.utils import (
     create_tracking_layer,
     get_datum_shift_grids,
     is_valid_name,
+    remove_project_variables,
     same_schema,
+    set_qgis_project_mergin_variables,
+    write_project_variables,
 )
 
 
@@ -229,3 +234,66 @@ def test_create_map_sketches_layer():
         sl = layer.renderer().symbol().symbolLayer(0)
         assert sl.dataDefinedProperties().property(QgsSymbolLayer.PropertyStrokeColor).expressionString() == '"color"'
         assert sl.dataDefinedProperties().property(QgsSymbolLayer.PropertyStrokeWidth).expressionString() == '"width"'
+
+
+def test_writing_variables_keeps_a_clean_project_clean(project_dir: Path):
+    """Variables live in the project file, so writing them must not leave the user unsaved changes."""
+    proj = QgsProject.instance()
+    proj.setDirty(False)
+
+    write_project_variables("survey", "Lutra Consulting/survey", "v3", "editor")
+
+    assert not proj.isDirty()
+    scope = QgsExpressionContextUtils.projectScope(proj)
+    assert scope.variable("mm_project_version") == 3
+    assert scope.variable("mm_project_role") == "editor"
+
+    # a later version really does reach expressions, it is only the dirty flag we suppress
+    write_project_variables("survey", "Lutra Consulting/survey", "v4", "editor")
+    assert QgsExpressionContextUtils.projectScope(proj).variable("mm_project_version") == 4
+    assert not proj.isDirty()
+
+    remove_project_variables()
+    assert not proj.isDirty()
+
+
+def test_writing_variables_keeps_unsaved_user_changes_flagged(project_dir: Path):
+    """The user's own unsaved work must still prompt them to save."""
+    proj = QgsProject.instance()
+    proj.setDirty(False)
+    proj.setTitle("edited by the user")
+    assert proj.isDirty()
+
+    write_project_variables("survey", "Lutra Consulting/survey", "v3", "editor")
+
+    assert proj.isDirty()
+    assert proj.title() == "edited by the user"
+
+    remove_project_variables()
+    assert proj.isDirty()
+
+
+def project_variable(name: str):
+    return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable(name)
+
+
+def test_project_role_variable(mergin_project_dir: Path):
+    set_qgis_project_mergin_variables(str(mergin_project_dir))
+    assert project_variable("mm_project_full_name") == "Lutra Consulting/survey"
+    assert project_variable("mm_project_role") == "editor"
+
+    remove_project_variables()
+    assert project_variable("mm_project_role") is None
+
+
+def test_project_role_variable_missing_in_metadata(mergin_project_dir: Path):
+    metadata_path = mergin_project_dir / ".mergin" / "mergin.json"
+    with open(metadata_path) as f:
+        metadata = json.load(f)
+    del metadata["role"]
+    with open(metadata_path, "w") as f:
+        json.dump(metadata, f)
+
+    set_qgis_project_mergin_variables(str(mergin_project_dir))
+    assert project_variable("mm_project_role") == ""
+    remove_project_variables()
