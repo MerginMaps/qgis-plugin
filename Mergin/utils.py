@@ -961,6 +961,14 @@ def remove_project_variables():
     QgsExpressionContextUtils.removeProjectVariable(QgsProject.instance(), "mm_project_version")
 
 
+def write_project_role_variable(role):
+    QgsExpressionContextUtils.setGlobalVariable("mm_project_role", role or "")
+
+
+def remove_project_role_variable():
+    QgsExpressionContextUtils.removeGlobalVariable("mm_project_role")
+
+
 def pretty_summary(summary):
     msg = ""
     for k, v in summary.items():
@@ -1016,6 +1024,21 @@ def get_local_mergin_projects_info(workspace=None):
     return local_projects_info
 
 
+def refresh_project_role(mc, project_dir):
+    """Ask the server for the user's current role on the project."""
+    try:
+        mp = MerginProject(project_dir)
+        try:
+            role = mc.project_info_v2(mp.project_id()).role
+        except (NotImplementedError, ClientError):
+            # servers below 2025.8.2 have no v2 project info, and old projects have no id in their metadata
+            role = mc.project_info(mp.project_full_name())["role"]
+        write_project_role_variable(role)
+    except (InvalidProject, ClientError, URLError):
+        # keep the role already read from the metadata, the variable has to stay usable offline
+        pass
+
+
 def set_qgis_project_mergin_variables(project_dir):
     """Check if QGIS project project_dir is a local Mergin Maps project and set QGIS project variables for Mergin Maps."""
 
@@ -1023,8 +1046,10 @@ def set_qgis_project_mergin_variables(project_dir):
         mp = MerginProject(project_dir)
 
         write_project_variables(mp.project_name(), mp.project_full_name(), mp.version())
+        write_project_role_variable(mp.project_role())
     except InvalidProject:
         remove_project_variables()
+        remove_project_role_variable()
 
 
 def mergin_project_local_path(project_name=None):
