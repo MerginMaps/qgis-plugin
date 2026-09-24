@@ -43,6 +43,8 @@ from .utils import (
     icon_path,
     mm_symbol_path,
     mergin_project_local_path,
+    refresh_project_role,
+    remove_project_role_variable,
     remove_project_variables,
     set_qgis_project_mergin_variables,
     unsaved_project_check,
@@ -247,6 +249,8 @@ class MerginPlugin:
             if self.mc is not None:
                 self.choose_active_workspace()
                 self.manager = MerginProjectsManager(self)
+                if self.mergin_proj_dir is not None:
+                    refresh_project_role(self.mc, self.mergin_proj_dir)
             else:
                 error = "Configure the Mergin Maps plugin \nto access your projects"
         except (URLError, ClientError, LoginError):
@@ -540,6 +544,11 @@ class MerginPlugin:
         if self.mergin_proj_dir is not None:
             self.enable_toolbar_actions()
             set_qgis_project_mergin_variables(self.mergin_proj_dir)
+            if self.mc is not None:
+                refresh_project_role(self.mc, self.mergin_proj_dir)
+        else:
+            # a global variable outlives the project it came from, unlike the project ones
+            remove_project_role_variable()
         # re-render Browser items so the opened-project indicator follows the active QGIS project.
         if self.has_browser_item():
             self.data_item_provider.root_item.reload_local()
@@ -582,6 +591,7 @@ class MerginPlugin:
         QgsExpressionContextUtils.removeGlobalVariable("mm_full_name")
         QgsExpressionContextUtils.removeGlobalVariable("mergin_user_email")
         QgsExpressionContextUtils.removeGlobalVariable("mm_user_email")
+        remove_project_role_variable()
         QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.data_item_provider)
         self.data_item_provider = None
         # unload pygeodiff to avoid .pyd to be write-protected and thus impossible to delete on Windows
