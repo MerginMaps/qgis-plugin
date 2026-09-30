@@ -9,6 +9,10 @@ import json
 import tempfile
 from pathlib import Path
 from typing import Dict
+from unittest.mock import MagicMock
+from urllib.error import URLError
+
+import pytest
 
 from qgis.core import (
     QgsCoordinateReferenceSystem,
@@ -23,10 +27,14 @@ from qgis.core import (
 from qgis.PyQt.QtCore import QVariant
 
 from Mergin.utils import (
+    AuthTokenExpiredError,
+    ClientError,
     create_map_sketches_layer,
     create_tracking_layer,
     get_datum_shift_grids,
     is_valid_name,
+    LoginError,
+    refresh_project_role,
     remove_project_role_variable,
     same_schema,
     set_qgis_project_mergin_variables,
@@ -258,4 +266,27 @@ def test_project_role_variable_missing_in_metadata(mergin_project_dir: Path):
 
     set_qgis_project_mergin_variables(str(mergin_project_dir))
     assert QgsExpressionContextUtils.globalScope().variable("mm_project_role") == ""
+    remove_project_role_variable()
+
+
+@pytest.mark.parametrize(
+    "error, expected_role",
+    [
+        (ClientError("Forbidden", http_error=403), ""),
+        (ClientError("Internal server error", http_error=500), "editor"),
+        (URLError("offline"), "editor"),
+        (AuthTokenExpiredError("Token has expired - please re-login"), "editor"),
+        (LoginError("Invalid username or password"), "editor"),
+    ],
+)
+def test_refresh_project_role_on_server_error(mergin_project_dir: Path, error: Exception, expected_role: str):
+    """Only removed access clears the role, any other failure keeps the one from the last sync."""
+    set_qgis_project_mergin_variables(str(mergin_project_dir))
+    mc = MagicMock()
+    mc.project_info_v2.side_effect = error
+    mc.project_info.side_effect = error
+
+    refresh_project_role(mc, str(mergin_project_dir))
+
+    assert QgsExpressionContextUtils.globalScope().variable("mm_project_role") == expected_role
     remove_project_role_variable()
