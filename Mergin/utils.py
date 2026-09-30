@@ -1024,11 +1024,6 @@ def get_local_mergin_projects_info(workspace=None):
     return local_projects_info
 
 
-def lost_project_access(error):
-    """Whether the server refused to read the project because the user's access to it was removed."""
-    return isinstance(error, ClientError) and error.http_error == 403
-
-
 def refresh_project_role(mc, project_dir):
     """Ask the server for the user's current role on the project."""
     try:
@@ -1039,9 +1034,9 @@ def refresh_project_role(mc, project_dir):
             # servers below 2025.8.2 have no v2 project info, and old projects have no id in their metadata
             role = mc.project_info(mp.project_full_name())["role"]
         write_project_role_variable(role)
-    except (InvalidProject, ClientError, URLError, LoginError, AuthTokenExpiredError) as e:
-        if lost_project_access(e):
-            write_project_role_variable(None)
+    except (InvalidProject, ClientError, URLError):
+        # keep the role already read from the metadata, the variable has to stay usable offline
+        pass
 
 
 def set_qgis_project_mergin_variables(project_dir):
