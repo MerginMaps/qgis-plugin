@@ -67,6 +67,7 @@ from .utils import (
     icon_for_layer,
     icon_path,
     is_versioned_file,
+    limit_canvas_zoom,
     mergin_project_local_path,
     parse_user_agent,
     duplicate_layer,
@@ -422,6 +423,7 @@ class VersionViewerDialog(QDialog):
             self.map_canvas.setSelectionColor(QColor(Qt.GlobalColor.cyan))
             self.pan_tool = QgsMapToolPan(self.map_canvas)
             self.map_canvas.setMapTool(self.pan_tool)
+            limit_canvas_zoom(self.map_canvas)
 
             self.current_diff: QgsVectorLayer = None
             self.diff_layers = []
