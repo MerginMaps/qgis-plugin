@@ -26,7 +26,7 @@ from qgis.utils import iface, OverrideCursor
 
 from .mergin.merginproject import MerginProject
 from .diff import make_local_changes_layer
-from .utils import icon_path, icon_for_layer
+from .utils import icon_path, icon_for_layer, limit_canvas_zoom
 
 ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui", "ui_diff_viewer_dialog.ui")
 
@@ -100,6 +100,7 @@ class DiffViewerDialog(QDialog):
             self.map_canvas.setSelectionColor(QColor(Qt.GlobalColor.cyan))
             self.pan_tool = QgsMapToolPan(self.map_canvas)
             self.map_canvas.setMapTool(self.pan_tool)
+            limit_canvas_zoom(self.map_canvas)
 
             self.tab_bar.setUsesScrollButtons(True)
             self.tab_bar.currentChanged.connect(self.diff_layer_changed)

@@ -69,7 +69,7 @@ from qgis.core import (
     QgsSymbolLayer,
     QgsGeometry,
 )
-from qgis.gui import QgsFileWidget
+from qgis.gui import QgsFileWidget, QgsMapCanvas
 
 from .mergin.utils import int_version, bytes_to_human_size
 from .mergin.merginproject import MerginProject
@@ -1708,6 +1708,17 @@ def duplicate_layer(layer: QgsVectorLayer) -> QgsVectorLayer:
         raise Exception(err_msg)
 
     return lyr_clone
+
+
+def limit_canvas_zoom(canvas: QgsMapCanvas, min_scale: float = 500):
+    """Keeps the canvas from zooming in closer than min_scale"""
+
+    def zoom_out(scale):
+        # QGIS can crash drawing rasters with bilinear resampling at about 1:1
+        if 0 < round(scale) < min_scale:
+            canvas.zoomScale(min_scale)
+
+    canvas.scaleChanged.connect(zoom_out)
 
 
 def invalid_filename_character(filename: str) -> str:
