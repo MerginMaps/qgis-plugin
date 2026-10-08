@@ -20,10 +20,12 @@ from qgis.core import (
     QgsDatumTransform,
     QgsExpressionContextUtils,
     QgsProject,
+    QgsRectangle,
     QgsSymbolLayer,
     QgsVectorLayer,
     QgsWkbTypes,
 )
+from qgis.gui import QgsMapCanvas
 from qgis.PyQt.QtCore import QVariant
 
 from Mergin.utils import (
@@ -35,6 +37,7 @@ from Mergin.utils import (
     is_valid_name,
     LoginError,
     refresh_project_role,
+    limit_canvas_zoom,
     remove_project_role_variable,
     same_schema,
     set_qgis_project_mergin_variables,
@@ -279,6 +282,7 @@ def test_project_role_variable_missing_in_metadata(mergin_project_dir: Path):
         (LoginError("Invalid username or password"), "editor"),
     ],
 )
+
 def test_refresh_project_role_on_server_error(mergin_project_dir: Path, error: Exception, expected_role: str):
     """Only removed access clears the role, any other failure keeps the one from the last sync."""
     set_qgis_project_mergin_variables(str(mergin_project_dir))
@@ -290,3 +294,20 @@ def test_refresh_project_role_on_server_error(mergin_project_dir: Path, error: E
 
     assert QgsExpressionContextUtils.globalScope().variable("mm_project_role") == expected_role
     remove_project_role_variable()
+
+
+def test_limit_canvas_zoom():
+    canvas = QgsMapCanvas()
+    canvas.resize(800, 500)
+    canvas.setDestinationCrs(QgsCoordinateReferenceSystem("EPSG:2056"))
+    limit_canvas_zoom(canvas)
+
+    # a single point buffered the way the changes viewers do it
+    canvas.setExtent(QgsRectangle(2739000, 1187000, 2739000.14, 1187000.14))
+    assert round(canvas.scale()) == 500
+
+    canvas.zoomScale(5000)
+    assert round(canvas.scale()) == 5000
+
+    canvas.zoomScale(1)
+    assert round(canvas.scale()) == 500
