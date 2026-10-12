@@ -28,6 +28,7 @@ from .utils import (
     LoginError,
     find_qgis_files,
     login_error_message,
+    lost_project_access,
     mergin_project_local_path,
     same_dir,
     send_logs,
@@ -234,14 +235,15 @@ class MerginProjectsManager(object):
 
         return True
 
-    def refresh_project_role_variable(self, project_dir):
+    def refresh_project_role_variable(self, project_dir, lost_access=False):
         """Re-read the role the client just refreshed, unless this is not the project open in QGIS.
 
         Both sync and the status dialog can be started from the Browser panel for any downloaded
         project, while the variable only ever describes the open one.
         """
         if same_dir(project_dir, mergin_project_local_path()):
-            write_project_role_variable(MerginProject(project_dir).project_role())
+            role = None if lost_access else MerginProject(project_dir).project_role()
+            write_project_role_variable(role)
 
     def project_status(self, project_dir):
         if project_dir is None:
@@ -293,6 +295,8 @@ class MerginProjectsManager(object):
                 self.reset_local_changes(project_dir, dlg.file_to_reset)
 
         except (URLError, ClientError, InvalidProject) as e:
+            if lost_project_access(e):
+                self.refresh_project_role_variable(project_dir, lost_access=True)
             msg = f"Failed to get status for project {project_name}:\n\n{str(e)}"
             QMessageBox.critical(None, "Project status", msg, QMessageBox.StandardButton.Close)
         except AuthTokenExpiredError:
