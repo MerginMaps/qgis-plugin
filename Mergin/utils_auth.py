@@ -89,8 +89,19 @@ def get_mergin_auth_cfg() -> QgsAuthMethodConfig:
 
     cfg = QgsAuthMethodConfig()
     auth_manager = QgsApplication.authManager()
-    auth_manager.setMasterPassword()
-    auth_manager.loadAuthenticationConfig(authcfg, cfg, True)
+    if auth_manager is None or auth_manager.isDisabled():
+        raise MissingAuthConfigError(
+            "QGIS authentication manager is not available. Initialize it in QGIS settings and try again."
+        )
+
+    try:
+        auth_manager.setMasterPassword()
+        loaded = auth_manager.loadAuthenticationConfig(authcfg, cfg, True)
+    except Exception as exc:
+        raise MissingAuthConfigError() from exc
+
+    if not loaded:
+        raise MissingAuthConfigError()
 
     return cfg
 
@@ -145,7 +156,8 @@ def store_mergin_authcfg_id(cfg: QgsAuthMethodConfig) -> None:
     auth_manager = QgsApplication.authManager()
     if auth_manager is None or auth_manager.isDisabled():
         raise MissingAuthConfigError(
-            "QGIS authentication manager is not available. Initialize it in QGIS settings and try logging in again."
+            "QGIS authentication manager is not available. Initialize it in QGIS settings "
+            "and try logging in again."
         )
 
     try:
