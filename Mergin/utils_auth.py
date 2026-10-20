@@ -51,7 +51,14 @@ class SSOLoginError(Exception):
 
 
 class MissingAuthConfigError(Exception):
-    pass
+    """Raised when Mergin credentials cannot be read or stored by QGIS."""
+
+    def __init__(
+        self,
+        message="QGIS authentication is unavailable or Mergin credentials could not be saved. "
+        "Check that the QGIS authentication manager is initialized and the master password is available.",
+    ):
+        super().__init__(message)
 
 
 def get_login_type() -> LoginType:
@@ -135,13 +142,27 @@ def set_mergin_auth_sso(url: str, auth_token: str, sso_email: typing.Optional[st
 
 def store_mergin_authcfg_id(cfg: QgsAuthMethodConfig) -> None:
     """Store Mergin auth config ID in QGIS auth manager and settings."""
-    if not cfg.id():
-        cfg.setMethod("Basic")
-        cfg.setName("mergin")
-        _, cfg = QgsApplication.authManager().storeAuthenticationConfig(cfg)
-    else:
-        QgsApplication.authManager().updateAuthenticationConfig(cfg)
+    auth_manager = QgsApplication.authManager()
+    if auth_manager is None or auth_manager.isDisabled():
+        raise MissingAuthConfigError(
+            "QGIS authentication manager is not available. Initialize it in QGIS settings "
+            "and try logging in again."
+        )
 
+    try:
+        if not cfg.id():
+            cfg.setMethod("Basic")
+            cfg.setName("mergin")
+            stored, cfg = auth_manager.storeAuthenticationConfig(cfg)
+        else:
+            stored = auth_manager.updateAuthenticationConfig(cfg)
+    except Exception as exc:
+        raise MissingAuthConfigError() from exc
+
+    if not stored or not cfg.id():
+        raise MissingAuthConfigError()
+
+    # Only persist the ID after QGIS confirms that the config was saved.
     settings = QSettings()
     settings.setValue("Mergin/authcfg", cfg.id())
 
