@@ -16,6 +16,7 @@ from qgis.core import (
     QgsApplication,
     QgsAuthMethodConfig,
     QgsBlockingNetworkRequest,
+    QgsDataSourceUri,
     QgsNetworkAccessManager,
     QgsExpressionContextUtils,
     Qgis,
@@ -588,6 +589,9 @@ class AuthSync:
             prov_type = layer.providerType()
             decoded_uri = reg.decodeUri(prov_type, source)
             auth_id = decoded_uri.get("authcfg")
+            if not auth_id:
+                # decodeUri does not return authcfg for every provider (e.g. WFS)
+                auth_id = QgsDataSourceUri(source).authConfigId()
             if auth_id:
                 auth_ids.add(auth_id)
         return list(auth_ids)
