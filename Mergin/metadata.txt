@@ -4,14 +4,20 @@ name=Mergin
 qgisMinimumVersion=3.40
 qgisMaximumVersion=4.99
 description=Handle Mergin Maps projects
-version=2026.5.2
+version=2026.5.3
 author=Lutra Consulting
 email=info@merginmaps.com
 about=Mergin Maps is a repository for storing and tracking changes to QGIS projects/data and has its mobile app for field geo-surveys. With this plugin, users can upload and sync their data to Mergin Maps service.
 ; end of mandatory metadata
 
 ; start of optional metadata
-changelog=2026.5.2
+changelog=2026.5.3
+  - Update geodiff to v2.3.2
+  - Add @mm_project_role variable with the signed-in user in the current project
+  - Fix QGIS crash in the changes viewers when zooming a single changed point
+  - Fix syncing projects with long file paths on Windows
+  - Fix QGIS freezing on Intel Macs
+  <p>2026.5.2
   - Update geodiff to v2.3.1 to resolve plugin crashes during macOS upgrades
   <p>2026.5.1
   - Fix truststore import
