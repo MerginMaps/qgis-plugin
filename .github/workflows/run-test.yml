@@ -6,6 +6,7 @@ concurrency:
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
     inputs:
       PYTHON_API_CLIENT_VER:
@@ -65,7 +66,7 @@ jobs:
           conda create -n qgis_env --no-default-packages --yes
           conda install -n qgis_env qgis=${{ matrix.qgis-version }} pytest pytest-qt pytest-cov pip setuptools qca --yes
           conda run -n qgis_env pip install --no-cache-dir pytest-qgis
-          # mergin cilent dependencies
+          # mergin client dependencies
           conda run -n qgis_env pip install python-dateutil pytz wheel
 
       - name: Install python-api-client dependencies
@@ -75,7 +76,7 @@ jobs:
           conda run -n qgis_env pip install pygeodiff --target=mergin/deps
           conda run -n qgis_env python setup.py sdist bdist_wheel
           # without __init__.py the deps dir may get recognized as "namespace package" in python
-          # and it can break qgis plugin unloading mechanism - see #126
+          # and it can break QGIS plugin unloading mechanism - see #126
           touch mergin/deps/__init__.py
           conda run -n qgis_env pip wheel -r mergin_client.egg-info/requires.txt -w mergin/deps
           unzip -o mergin/deps/pygeodiff-*.whl -d mergin/deps
@@ -84,6 +85,6 @@ jobs:
         run: cp -r client/mergin plugin/${{ env.PLUGIN_NAME }}
 
       - name: Run tests
-        run: conda run -n qgis_env pytest  ${{ github.workspace }}/plugin/tests --cov=Mergin --cov-report=term-missing:skip-covered --no-cov-on-fail -rP -vv -s
+        run: conda run -n qgis_env pytest ${{ github.workspace }}/plugin/tests --cov=Mergin --cov-report=term-missing:skip-covered --no-cov-on-fail -rP -vv -s
         env:
           PYTHONPATH: ${{ github.workspace }}/plugin
