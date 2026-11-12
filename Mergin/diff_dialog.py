@@ -150,7 +150,10 @@ class DiffViewerDialog(QDialog):
     def update_canvas(self, layers):
         self.map_canvas.setLayers(layers)
         if layers:
-            self.map_canvas.setDestinationCrs(layers[0].crs())
+            crs = layers[0].crs()
+            if not crs.isValid():
+                crs = QgsProject.instance().crs()
+            self.map_canvas.setDestinationCrs(crs)
             extent = layers[0].extent()
             d = min(extent.width(), extent.height())
             if d == 0:
