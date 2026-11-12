@@ -643,7 +643,10 @@ class VersionViewerDialog(QDialog):
 
         self.map_canvas.setLayers(layers)
         if set_extent:
-            self.map_canvas.setDestinationCrs(QgsProject.instance().crs())
+            crs = QgsProject.instance().crs()
+            if not crs.isValid() and layers:
+                crs = layers[0].crs()
+            self.map_canvas.setDestinationCrs(crs)
             if layers:
                 extent = layers[0].extent()
 
