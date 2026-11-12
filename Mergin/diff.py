@@ -27,7 +27,7 @@ from qgis.core import (
     QgsWkbTypes,
 )
 
-from .utils import pygeodiff, get_schema
+from .utils import pygeodiff, get_schema, get_base_file_path
 
 diff_layers_list = []
 
@@ -310,10 +310,9 @@ def get_table_name(layer):
 
 def get_local_changes(geodiff, db_file, mp):
     """Creates changeset containing local changes in the given GPKG file."""
-    f_name = os.path.split(db_file)[1]
-    base_path = mp.fpath_meta(f_name)
+    base_path = get_base_file_path(mp, db_file)
 
-    if not os.path.exists(base_path):
+    if base_path is None or not os.path.exists(base_path):
         return None
 
     diff_file = tempfile.NamedTemporaryFile(delete=False)
@@ -327,7 +326,7 @@ def make_local_changes_layer(mp, layer):
     geodiff = pygeodiff.GeoDiff()
 
     layer_path = layer.source().split("|")[0]
-    base_file = mp.fpath_meta(os.path.split(layer_path)[1])
+    base_file = get_base_file_path(mp, layer_path)
     diff_path = get_local_changes(geodiff, layer_path, mp)
 
     if diff_path is None:
