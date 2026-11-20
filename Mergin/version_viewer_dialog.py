@@ -643,7 +643,10 @@ class VersionViewerDialog(QDialog):
 
         self.map_canvas.setLayers(layers)
         if set_extent:
-            self.map_canvas.setDestinationCrs(QgsProject.instance().crs())
+            crs = QgsProject.instance().crs()
+            if not crs.isValid() and layers:
+                crs = layers[0].crs()
+            self.map_canvas.setDestinationCrs(crs)
             if layers:
                 extent = layers[0].extent()
 
@@ -652,16 +655,7 @@ class VersionViewerDialog(QDialog):
                     d = 1
                 extent = extent.buffered(d * 0.07)
 
-                if sys.platform in ("darwin", "linux"):
-                    extent = self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
-                else:
-                    # TODO bug specific on windows and older QGIS version
-                    # remove this madness and only keep above once you drop support for <=QGIS 3.34
-                    extent = (
-                        self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
-                        if not layers[0].extent().isEmpty()
-                        else extent
-                    )
+                extent = self.map_canvas.mapSettings().layerExtentToOutputExtent(layers[0], extent)
                 self.map_canvas.setExtent(extent)
 
         self.map_canvas.refresh()
