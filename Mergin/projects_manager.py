@@ -7,7 +7,7 @@ from pathlib import Path
 import posixpath
 import json
 
-from qgis.core import QgsProject, Qgis, QgsApplication
+from qgis.core import QgsProject, Qgis, QgsApplication, QgsProviderRegistry, QgsVectorLayer
 from qgis.utils import iface, OverrideCursor
 from qgis.PyQt.QtWidgets import (
     QMessageBox,
@@ -25,6 +25,7 @@ from .utils import (
     ErrorCode,
     InvalidProject,
     get_local_mergin_projects_info,
+    is_inside,
     LoginError,
     find_qgis_files,
     login_error_message,
@@ -245,6 +246,22 @@ class MerginProjectsManager(object):
             role = None if lost_access else MerginProject(project_dir).project_role()
             write_project_role_variable(role)
 
+    def reload_project_layers(self, project_dir):
+        """Reload the layers whose files are in the project directory.
+
+        A pull writes to those files behind QGIS, which keeps the feature counts it cached before.
+        """
+        for layer in QgsProject.instance().mapLayers().values():
+            path = QgsProviderRegistry.instance().decodeUri(layer.providerType(), layer.source()).get("path")
+            if not path or not is_inside(project_dir, path):
+                continue
+            layer.reload()
+            if isinstance(layer, QgsVectorLayer) and layer.renderer():
+                # setting a renderer is the only public way to make QGIS recount features per legend item
+                layer.setRenderer(layer.renderer().clone())
+            else:
+                self.iface.layerTreeView().refreshLayerSymbology(layer.id())
+
     def project_status(self, project_dir):
         if project_dir is None:
             return
@@ -462,6 +479,9 @@ class MerginProjectsManager(object):
             if self.mc.has_unfinished_pull(project_dir):
                 self.close_project_and_fix_pull(project_dir)
                 return
+
+            if dlg.is_complete and any(pull_changes.values()):
+                self.reload_project_layers(project_dir)
 
             if dlg.pull_conflicts:
                 self.report_conflicts(dlg.pull_conflicts)
