@@ -23,9 +23,6 @@ jobs:
     env:
       PY_PLATFORM: "manylinux_2_28_x86_64"
     steps:
-      - uses: actions/setup-python@v4
-        name: Install Python
-
       - name: Download pygeodiff binaries
         run: |
           pip3 download --only-binary=:all: \
@@ -45,7 +42,7 @@ jobs:
           patchelf --replace-needed ${SQLITE_LIB} libsqlite3.so.0 ./pygeodiff-binaries/libpygeodiff-${GEODIFF_VER}-python.so
           patchelf --remove-rpath ./pygeodiff-binaries/libpygeodiff-${GEODIFF_VER}-python.so
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: artifact-pygeodiff-linux
           path: ./pygeodiff-binaries/*.so
@@ -54,9 +51,6 @@ jobs:
     name: Extract geodiff binary windows
     runs-on: windows-latest
     steps:
-      - uses: actions/setup-python@v4
-        name: Install Python
-
       - name: Install deps
         run: |
           choco install unzip
@@ -68,7 +62,7 @@ jobs:
           mkdir pygeodiff-binaries
           copy tmp64\pygeodiff\*.pyd pygeodiff-binaries\
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: artifact-pygeodiff-windows
           path: ./pygeodiff-binaries/*.pyd
@@ -77,9 +71,6 @@ jobs:
     name: Extract geodiff binary macos
     runs-on: macos-latest
     steps:
-      - uses: actions/setup-python@v4
-        name: Install Python
-
       - name: Install deps
         run: |
           brew install unzip
@@ -123,7 +114,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: artifact-pygeodiff-macos
           path: ./pygeodiff-binaries/*.dylib
@@ -132,7 +123,7 @@ jobs:
     needs: [build_windows_binaries, build_linux_binary, build_macos_binaries]
     runs-on: ubuntu-latest
     steps:  
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           repository: MerginMaps/python-api-client
           ref: ${{ env.PYTHON_API_CLIENT_VER }}
@@ -162,23 +153,17 @@ jobs:
             echo "geodiff version defined in python-api-client requires.txt $GEODIFF_VER_FROM_CLIENT does not equal $GEODIFF_VER from the workpackage file"
             exit 1; # or just warning??
           fi
-      - name: Merge Artifacts
-        uses: actions/upload-artifact/merge@v4
+      - uses: actions/download-artifact@v8
         with:
-          name: artifact
           pattern: artifact-pygeodiff-*
-          delete-merged: true
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: artifact
           path: pygeodiff-binaries
+          merge-multiple: true
 
       - name: include pygeodiff deps
         run: |
           cp pygeodiff-binaries/* python-api-client/mergin/deps/pygeodiff
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           path: qgis-mergin-plugin
 
@@ -200,13 +185,13 @@ jobs:
           (cd output && zip -r9 ../mergin.zip Mergin/)
 
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: MM Plugin d-${{ env.BUILD_NUM }}
           path: output/
 
       - name: upload asset on tagged release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: MM Plugin r-${{ env.BUILD_NUM }}.zip

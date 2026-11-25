@@ -129,6 +129,7 @@ class CreateDiff(QgsProcessingAlgorithm):
         table_name = get_table_name(layer)
         layer_path = layer.source().split("|")[0]
         file_name = os.path.split(layer_path)[1]
+        file_path = os.path.relpath(layer_path, project_dir).replace(os.sep, "/")
 
         try:
             mc = create_mergin_client()
@@ -144,14 +145,14 @@ class CreateDiff(QgsProcessingAlgorithm):
 
         feedback.pushInfo("Downloading base file…")
         base_file = QgsProcessingUtils.generateTempFilename(file_name)
-        mc.download_file(project_dir, file_name, base_file, f"v{end}" if end else None)
+        mc.download_file(project_dir, file_path, base_file, f"v{end}" if end else None)
         feedback.setProgress(10)
 
         diff_file = QgsProcessingUtils.generateTempFilename(file_name + ".diff")
         try:
             mc.get_file_diff(
                 project_dir,
-                file_name,
+                file_path,
                 diff_file,
                 f"v{start}",
                 f"v{end}" if end else None,

@@ -39,8 +39,10 @@ from Mergin.utils import (
     refresh_project_role,
     limit_canvas_zoom,
     remove_project_role_variable,
+    remove_project_variables,
     same_schema,
     set_qgis_project_mergin_variables,
+    write_project_version_variable,
 )
 
 
@@ -282,7 +284,6 @@ def test_project_role_variable_missing_in_metadata(mergin_project_dir: Path):
         (LoginError("Invalid username or password"), "editor"),
     ],
 )
-
 def test_refresh_project_role_on_server_error(mergin_project_dir: Path, error: Exception, expected_role: str):
     """Only removed access clears the role, any other failure keeps the one from the last sync."""
     set_qgis_project_mergin_variables(str(mergin_project_dir))
@@ -294,6 +295,27 @@ def test_refresh_project_role_on_server_error(mergin_project_dir: Path, error: E
 
     assert QgsExpressionContextUtils.globalScope().variable("mm_project_role") == expected_role
     remove_project_role_variable()
+
+
+def test_project_version_variable_keeps_project_clean():
+    """The version changes with sync, not with an edit, so it must not ask the user to save the project."""
+    proj = QgsProject.instance()
+    proj.setDirty(False)
+
+    write_project_version_variable("v4")
+
+    project_scope = QgsExpressionContextUtils.projectScope(proj)
+    assert project_scope.variable("mm_project_version") == 4
+    assert project_scope.variable("mergin_project_version") == 4
+    assert not proj.isDirty()
+
+    # the user's own unsaved edits must still be flagged
+    proj.setTitle("edited by the user")
+    write_project_version_variable("v5")
+    assert proj.isDirty()
+
+    proj.setTitle("")
+    remove_project_variables()
 
 
 def test_limit_canvas_zoom():
