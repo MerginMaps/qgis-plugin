@@ -945,10 +945,17 @@ def unhandled_exception_message(error_details, dialog_title, error_text, mm_clie
 def write_project_variables(project_name, project_full_name, version):
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_name", project_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_full_name", project_full_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mergin_project_version", int_version(version))
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_name", project_name)
     QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_full_name", project_full_name)
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "mm_project_version", int_version(version))
+    write_project_version_variable(version)
+
+
+def write_project_version_variable(version):
+    project = QgsProject.instance()
+    # sync changes the version without any edit to the project, so it must not ask the user to save
+    with QgsProject.blockDirtying(project):
+        QgsExpressionContextUtils.setProjectVariable(project, "mergin_project_version", int_version(version))
+        QgsExpressionContextUtils.setProjectVariable(project, "mm_project_version", int_version(version))
 
 
 def remove_project_variables():
