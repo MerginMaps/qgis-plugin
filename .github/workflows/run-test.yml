@@ -37,25 +37,25 @@ jobs:
 
     steps:
       - name: Checkout plugin code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: plugin
 
       - name: Checkout python-client
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: MerginMaps/python-api-client
           ref: ${{ env.PYTHON_API_CLIENT_VER }}
           path: client
 
       - name: Cache conda packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/conda_pkgs_dir
           key: conda-pkgs-${{ runner.os }}-${{ matrix.qgis-version }}
 
       - name: Setup conda
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           use-mamba: true
           channels: conda-forge,defaults
