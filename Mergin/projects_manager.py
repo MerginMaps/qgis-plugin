@@ -38,6 +38,7 @@ from .utils import (
     UnsavedChangesStrategy,
     write_project_variables,
     write_project_role_variable,
+    write_project_version_variable,
     bytes_to_human_size,
     is_file_changed,
     get_push_changes_batch,
@@ -234,6 +235,11 @@ class MerginProjectsManager(object):
         )
 
         return True
+
+    def refresh_project_version_variable(self, project_dir):
+        """Re-read the version after a pull or push, if this is the project open in QGIS."""
+        if same_dir(project_dir, mergin_project_local_path()):
+            write_project_version_variable(MerginProject(project_dir).version())
 
     def refresh_project_role_variable(self, project_dir, lost_access=False):
         """Re-read the role the client just refreshed, unless this is not the project open in QGIS.
@@ -455,6 +461,8 @@ class MerginProjectsManager(object):
                     )
                 return
 
+            self.refresh_project_version_variable(project_dir)
+
             # after pull project might be in the unfinished pull state. So we
             # have to check and if this is the case, try to close project and
             # finish pull. As in the result we will have conflicted copies created
@@ -530,6 +538,7 @@ class MerginProjectsManager(object):
             error_retries_attempts = 0
             if not has_push_changes:
                 self.refresh_project_role_variable(project_dir)
+                self.refresh_project_version_variable(project_dir)
                 # TODO: report success only when we have actually done anything
                 msg = "Mergin Maps project {} synchronised successfully".format(project_name)
                 QMessageBox.information(None, "Project sync", msg, QMessageBox.StandardButton.Close)
