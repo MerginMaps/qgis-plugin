@@ -73,11 +73,11 @@ jobs:
           cd client
           mkdir -p mergin/deps
           conda run -n qgis_env pip install pygeodiff --target=mergin/deps
-          conda run -n qgis_env python setup.py sdist bdist_wheel
           # without __init__.py the deps dir may get recognized as "namespace package" in python
           # and it can break qgis plugin unloading mechanism - see #126
           touch mergin/deps/__init__.py
-          conda run -n qgis_env pip wheel -r mergin_client.egg-info/requires.txt -w mergin/deps
+          # bundle the pinned runtime dependencies of python-api-client
+          conda run -n qgis_env pip wheel --no-deps -r requirements.txt -w mergin/deps
           unzip -o mergin/deps/pygeodiff-*.whl -d mergin/deps
 
       - name: Copy client files to plugin directory
